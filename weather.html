@@ -1,20 +1,127 @@
 ```html
-<div class="weather-banner" style="display: flex; align-items: center; justify-content: space-around; padding: 20px; background-color: #f0f8ff; border-radius: 12px; font-family: 'Noto Sans TC', sans-serif; color: #333; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-    <div class="weather-main-info" style="text-align: center; margin-right: 25px;">
-        <div style="font-size: 2.5em; font-weight: bold; color: #333; margin-bottom: 5px;">台中</div>
-        <div style="font-size: 3.5em; font-weight: bold; color: #007bff;">33.3°C</div>
+<style>
+    .weather-banner {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        width: 100%;
+        max-width: 1200px; /* Adjust as needed for banner width */
+        background-color: #2c3e50; /* Dark blue/grey background */
+        color: #ecf0f1; /* Light text color */
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        gap: 15px; /* Space between flex items */
+        flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    }
+
+    .weather-banner > div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        white-space: nowrap; /* Prevent text wrapping for individual elements */
+    }
+
+    .location-temp .city-name {
+        font-size: 1.8em;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .location-temp .temperature {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #f1c40f; /* Yellow for temperature */
+    }
+
+    .weather-visual {
+        flex-direction: row; /* Icon and description side-by-side */
+        align-items: center;
+        gap: 10px;
+        flex-grow: 1; /* Allow it to take up available space */
+        min-width: 150px; /* Minimum width for this section */
+        justify-content: center;
+    }
+
+    .weather-visual .weather-icon {
+        width: 64px; /* Icon size */
+        height: 64px;
+        vertical-align: middle;
+    }
+
+    .weather-visual .description {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    .details div {
+        font-size: 1em;
+        margin: 2px 0;
+    }
+
+    .generated-date {
+        font-size: 0.8em;
+        color: #bdc3c7; /* Lighter grey for date */
+        align-self: flex-end; /* Align to the bottom right if space allows */
+        margin-top: auto; /* Push to bottom */
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .weather-banner {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 15px;
+            gap: 10px;
+        }
+
+        .weather-banner > div {
+            flex-direction: row;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .location-temp, .weather-visual, .details {
+            margin-bottom: 10px;
+            justify-content: flex-start;
+        }
+
+        .location-temp .city-name,
+        .location-temp .temperature {
+            font-size: 1.5em;
+        }
+
+        .weather-visual .description {
+            font-size: 1.2em;
+        }
+
+        .generated-date {
+            width: 100%;
+            text-align: right;
+            align-self: flex-end;
+        }
+    }
+</style>
+
+<div class="weather-banner">
+    <div class="location-temp">
+        <div class="city-name">台中市</div>
+        <div class="temperature">28.38°C</div>
     </div>
-    <div class="weather-icon" style="margin-right: 25px;">
-        <img src="https://openweathermap.org/img/wn/04d@2x.png" alt="多雲" style="width: 120px; height: 120px; object-fit: contain;">
+    <div class="weather-visual">
+        <img src="http://openweathermap.org/img/wn/04n@2x.png" alt="陰天" class="weather-icon">
+        <div class="description">陰天</div>
     </div>
-    <div class="weather-details" style="font-size: 1.2em; line-height: 1.8; flex-grow: 1;">
-        <div>體感溫度: <span style="font-weight: bold;">40.3°C</span></div>
-        <div>天氣狀況: <span style="font-weight: bold;">多雲</span></div>
-        <div>濕度: <span style="font-weight: bold;">62%</span></div>
-        <div>風速: <span style="font-weight: bold;">4.65 m/s</span></div>
+    <div class="details">
+        <div class="feels-like">體感 32.89°C</div>
+        <div class="humidity">濕度 79%</div>
+        <div class="wind-speed">風速 0.8 m/s</div>
     </div>
-    <div class="generated-date" style="font-size: 0.9em; color: #666; align-self: flex-end; white-space: nowrap; margin-left: 25px;">
-        產生的日期: 2023-10-27 10:30
+    <div class="generated-date">
+        產生日期: 2024/07/19 09:33:04
     </div>
 </div>
 ```
