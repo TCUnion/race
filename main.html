@@ -2,36 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>上下區塊示範</title>
+  <title>合併weather與index頁面區塊</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 20px;
-    }
-    #top-section {
-      background: #4caf50;
-      color: white;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    #bottom-section {
-      background: #f1f1f1;
-      color: #333;
-      padding: 20px;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    #top-section { background: #d0e8f2; padding: 20px; margin-bottom: 20px; }
+    #bottom-section { background: #f7f7f7; padding: 20px; }
   </style>
 </head>
 <body>
-  <div id="top-section">
-    <!-- 這裡放置上方htmlA內容 -->
-    <!-- 例如： -->
-{{ $json.html }}
-  </div>
+  <div id="top-section">載入中...</div>
+  <div id="bottom-section">載入中...</div>
 
-  <div id="bottom-section">
-    <!-- 這裡放置下方htmlB內容 -->
-    <!-- 例如： -->
-{{ $json.html }}
-  </div>
+  <script>
+    async function loadHtml(sectionId, url) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('載入失敗');
+        const html = await res.text();
+        document.getElementById(sectionId).innerHTML = html;
+      } catch(err) {
+        document.getElementById(sectionId).innerHTML = '內容載入失敗';
+        console.error(err);
+      }
+    }
+
+    loadHtml('top-section', 'https://raw.githubusercontent.com/TCUnion/race/main/weather.html');
+    loadHtml('bottom-section', 'https://raw.githubusercontent.com/TCUnion/race/main/index.html');
+  </script>
 </body>
 </html>
