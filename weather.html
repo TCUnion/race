@@ -1,15 +1,20 @@
-<div style="display: flex; align-items: center; justify-content: space-around; padding: 15px 25px; background-color: #e0f2f7; border-radius: 12px; font-family: 'Noto Sans TC', 'Arial', sans-serif; color: #333; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: fit-content; margin: 0 auto;">
-    <div style="text-align: center; margin-right: 30px;">
-        <h2 style="margin: 0; font-size: 2.2em; color: #0056b3;">臺中</h2>
-        <p style="margin: 5px 0 0; font-size: 1.1em; color: #555;">陰天</p>
+```html
+<div class="weather-banner" style="display: flex; align-items: center; justify-content: space-around; padding: 20px; background-color: #f0f8ff; border-radius: 12px; font-family: 'Noto Sans TC', sans-serif; color: #333; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <div class="weather-main-info" style="text-align: center; margin-right: 25px;">
+        <div style="font-size: 2.5em; font-weight: bold; color: #333; margin-bottom: 5px;">台中</div>
+        <div style="font-size: 3.5em; font-weight: bold; color: #007bff;">33.3°C</div>
     </div>
-    <div style="display: flex; align-items: center; margin-right: 30px;">
-        <img src="http://openweathermap.org/img/wn/04d.png" alt="陰天" style="width: 70px; height: 70px; margin-right: 10px;">
-        <p style="margin: 0; font-size: 3em; font-weight: bold; color: #e74c3c;">33°C</p>
+    <div class="weather-icon" style="margin-right: 25px;">
+        <img src="https://openweathermap.org/img/wn/04d@2x.png" alt="多雲" style="width: 120px; height: 120px; object-fit: contain;">
     </div>
-    <div style="text-align: left; font-size: 1em; line-height: 1.8; color: #666;">
-        <p style="margin: 0;">體感溫度: <strong style="color: #e67e22;">40°C</strong></p>
-        <p style="margin: 0;">濕度: <strong>64%</strong></p>
-        <p style="margin: 0;">風速: <strong>4.46 m/s</strong></p>
+    <div class="weather-details" style="font-size: 1.2em; line-height: 1.8; flex-grow: 1;">
+        <div>體感溫度: <span style="font-weight: bold;">40.3°C</span></div>
+        <div>天氣狀況: <span style="font-weight: bold;">多雲</span></div>
+        <div>濕度: <span style="font-weight: bold;">62%</span></div>
+        <div>風速: <span style="font-weight: bold;">4.65 m/s</span></div>
+    </div>
+    <div class="generated-date" style="font-size: 0.9em; color: #666; align-self: flex-end; white-space: nowrap; margin-left: 25px;">
+        產生的日期: 2023-10-27 10:30
     </div>
 </div>
+```
