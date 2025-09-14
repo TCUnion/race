@@ -1,101 +1,190 @@
 <style>
-    .weather-banner-container {
-        width: fit-content; /* 讓容器寬度根據內容調整 */
-        max-width: 100%; /* 確保容器不會超出父元素寬度 */
-        margin: 0 auto; /* 使橫幅居中 */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
     .weather-banner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between; /* 使內容在橫幅內均勻分佈 */
-        background-image: linear-gradient(to right, #6dd5ed, #2193b0); /* 藍色漸變背景 */
-        border-radius: 12px;
-        padding: 15px 30px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(to right, #6bb9f0, #5b9bd5); /* Soft blue gradient */
         color: #fff;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        min-width: 650px; /* 橫幅最小寬度 */
-        gap: 25px; /* 增加各部分間的間距 */
-    }
-    .weather-banner > div {
-        flex-shrink: 0; /* 防止項目縮小 */
-        text-align: center;
-    }
-    .weather-banner .city-info {
+        padding: 15px 25px;
+        border-radius: 12px;
         display: flex;
-        flex-direction: column;
-        align-items: flex-start; /* 城市資訊靠左對齊 */
+        justify-content: space-between;
+        align-items: center;
+        width: 100%; /* Adjust as needed */
+        max-width: 900px; /* Max width for larger screens */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        box-sizing: border-box;
+        position: relative;
     }
-    .weather-banner .city-name {
-        font-size: 1.8em;
-        font-weight: bold;
-        margin-bottom: 5px;
-        white-space: nowrap; /* 防止城市名稱換行 */
-    }
-    .weather-banner .weather-description {
-        font-size: 1.1em;
-        opacity: 0.9;
-        white-space: nowrap; /* 防止天氣描述換行 */
-    }
-    .weather-banner .temp-icon {
+
+    .weather-main {
         display: flex;
         align-items: center;
-        flex-grow: 1; /* 讓溫度和圖示區域可以佔用更多空間 */
-        justify-content: center; /* 使圖示和溫度居中 */
+        gap: 15px;
     }
-    .weather-banner .temp-icon img {
-        width: 80px; /* 較大圖示 */
+
+    .weather-icon {
+        width: 80px;
         height: 80px;
-        filter: drop-shadow(0 0 5px rgba(0,0,0,0.2)); /* 圖示輕微陰影 */
+        flex-shrink: 0;
     }
-    .weather-banner .current-temp {
-        font-size: 3em;
-        font-weight: bold;
-        line-height: 1; /* 調整溫度行高 */
-        margin-left: 10px;
-        white-space: nowrap; /* 防止溫度換行 */
-    }
-    .weather-banner .details-group {
+
+    .location-temp {
         display: flex;
         flex-direction: column;
-        align-items: flex-start; /* 細節資訊靠左對齊 */
-        font-size: 0.95em;
+        align-items: flex-start;
     }
-    .weather-banner .detail-item {
-        margin-bottom: 4px;
-        text-align: left;
-        white-space: nowrap; /* 防止細節項目換行 */
+
+    .city {
+        font-size: 2.2em;
+        font-weight: 600;
+        margin-bottom: 5px;
     }
+
+    .temperature {
+        font-size: 3em;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 5px;
+    }
+
+    .description {
+        font-size: 1.3em;
+        font-weight: 400;
+        text-transform: capitalize;
+    }
+
+    .weather-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+        flex-grow: 1;
+        margin-left: 30px;
+    }
+
+    .detail-item {
+        font-size: 1.1em;
+        display: flex;
+        gap: 5px;
+    }
+
+    .detail-item .label {
+        font-weight: 400;
+        opacity: 0.9;
+    }
+
+    .detail-item .value {
+        font-weight: 600;
+    }
+
     .generated-date {
-        margin-top: 15px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        position: absolute;
+        bottom: 8px;
+        right: 15px;
         font-size: 0.8em;
-        color: #555;
-        text-align: center;
-        width: 100%;
+        opacity: 0.8;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .weather-banner {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .weather-main {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .location-temp {
+            align-items: center;
+        }
+
+        .city {
+            font-size: 2em;
+        }
+
+        .temperature {
+            font-size: 2.8em;
+        }
+
+        .description {
+            font-size: 1.2em;
+        }
+
+        .weather-details {
+            width: 100%;
+            margin-left: 0;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .detail-item {
+            font-size: 1em;
+        }
+
+        .generated-date {
+            position: static;
+            margin-top: 20px;
+            align-self: flex-end;
+            text-align: right;
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .weather-icon {
+            width: 60px;
+            height: 60px;
+        }
+        .city {
+            font-size: 1.8em;
+        }
+        .temperature {
+            font-size: 2.5em;
+        }
+        .description {
+            font-size: 1.1em;
+        }
+        .detail-item {
+            font-size: 0.9em;
+        }
+        .weather-main {
+            gap: 10px;
+        }
+        .weather-banner {
+            padding: 15px;
+        }
     }
 </style>
 
-<div class="weather-banner-container">
-    <div class="weather-banner">
-        <div class="city-info">
-            <div class="city-name">臺中市</div>
-            <div class="weather-description">陰天</div>
-        </div>
-        <div class="temp-icon">
-            <img src="https://openweathermap.org/img/wn/04n@2x.png" alt="天氣圖示">
-            <span class="current-temp">28°C</span>
-        </div>
-        <div class="details-group">
-            <div class="detail-item">體感溫度: 32°C</div>
-            <div class="detail-item">濕度: 81%</div>
-            <div class="detail-item">風速: 1.7 m/s</div>
+<div class="weather-banner">
+    <div class="weather-main">
+        <img src="http://openweathermap.org/img/wn/04n.png" alt="overcast clouds" class="weather-icon">
+        <div class="location-temp">
+            <div class="city">台中</div>
+            <div class="temperature">28°C</div>
+            <div class="description">多雲</div>
         </div>
     </div>
-</div>
-<div class="generated-date">
-    產生日期: 2024年03月15日 00:16:11
+    <div class="weather-details">
+        <div class="detail-item">
+            <span class="label">體感溫度:</span> <span class="value">32°C</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">濕度:</span> <span class="value">81%</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">風向風速:</span> <span class="value">南風 (輕風, 1.72 m/s)</span>
+        </div>
+        <div class="detail-item">
+            <span class="label">氣壓:</span> <span class="value">1014 hPa</span>
+        </div>
+    </div>
+    <div class="generated-date">
+        生成日期: 2024年09月13日 16:16:11
+    </div>
 </div>
