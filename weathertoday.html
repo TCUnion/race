@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>今日天氣預報 - Taichung</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-sA+e2Z2fEmlxN+jrG9hBkykTLLvj0WyAa6cPOFvVuAM="
+    crossorigin=""
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-pc6+dqjeb+Xg24gmlPjmZkLpA4Dx5YFQDcEV9wgAwbWxEjmQE4mnqtnrT6Km47DqFGefZB0X7zV0zE8ow+FQmA=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <style>
+    body {
+      font-family: "Noto Sans TC", "微軟正黑體", Arial, sans-serif;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      color: #222;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    h2 {
+      color: #34495e;
+      margin-top: 5px;
+      text-align: center;
+      font-weight: 400;
+    }
+    .weather-icon {
+      font-size: 80px;
+      text-align: center;
+      margin: 20px 0;
+      color: #3399ff;
+    }
+    .temp {
+      font-size: 48px;
+      font-weight: bold;
+      text-align: center;
+      margin: 12px 0;
+      color: #2c3e50;
+    }
+    .details {
+      font-size: 18px;
+      margin-top: 15px;
+      line-height: 1.6;
+      color: #555;
+    }
+    #map {
+      height: 300px;
+      border-radius: 12px;
+      margin-top: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    }
+    .footer {
+      margin-top: 25px;
+      text-align: center;
+      font-size: 13px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>今日天氣預報 -Taichung </h1>
+    <h2>多雲(broken clouds)</h2>
+    <div class="weather-icon" id="weather-icon"></div>
+    <div class="temp"> 31.95℃</div>
+    <div class="details">
+      體感溫度：38.53 ℃<br />
+      濕度：65 %<br />
+      氣壓： 1009hPa<br />
+      風速：3.9 m/s，風向：330°<br />
+      能見度： 10000公尺<br />
+      雲量：72 %<br />
+     
+    </div>
+    <div id="map"></div>
+    <div class="footer">資料來源：OpenWeatherMap · Invalid Date</div>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-VjEeI21xZeEhoNyOnYXn/MSbO0pKcTn5S0tznOG2Uro="
+    crossorigin=""
+  ></script>
+  <script>
+    // 依天氣描述顯示對應 FontAwesome 圖案
+    const weatherIconMap = {
+      "clear sky": "fas fa-sun",
+      "few clouds": "fas fa-cloud-sun",
+      "scattered clouds": "fas fa-cloud",
+      "broken clouds": "fas fa-cloud",
+      "overcast clouds": "fas fa-cloud-meatball",
+      "light rain": "fas fa-cloud-showers-water",
+      "moderate rain": "fas fa-cloud-rain",
+      "heavy intensity rain": "fas fa-cloud-showers-heavy",
+      "thunderstorm": "fas fa-bolt",
+      "snow": "fas fa-snowflake",
+      "mist": "fas fa-smog",
+      "fog": "fas fa-smog"
+    };
+
+    const weatherDescEn = "undefined";
+    const iconClass = weatherIconMap[weatherDescEn] || "fas fa-question";
+
+    document.getElementById("weather-icon").className = iconClass + " weather-icon";
+
+    // Leaflet地圖設定
+    const lat = undefined;
+    const lon = undefined;
+    const map = L.map("map").setView([lat, lon], 11);
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: '© OpenStreetMap contributors',
+      }
+    ).addTo(map);
+
+    // 天氣座標標記
+    L.marker([lat, lon])
+      .addTo(map)
+      .bindPopup("undefined 天氣")
+      .openPopup();
+  </script>
+</body>
+</html>
