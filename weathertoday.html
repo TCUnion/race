@@ -3,19 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>今日天氣預報 - Taichung</title>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-sA+e2Z2fEmlxN+jrG9hBkykTLLvj0WyAa6cPOFvVuAM="
-    crossorigin=""
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    integrity="sha512-pc6+dqjeb+Xg24gmlPjmZkLpA4Dx5YFQDcEV9wgAwbWxEjmQE4mnqtnrT6Km47DqFGefZB0X7zV0zE8ow+FQmA=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
   <style>
     body {
       font-family: "Noto Sans TC", "微軟正黑體", Arial, sans-serif;
@@ -79,31 +68,27 @@
 </head>
 <body>
   <div class="container">
-    <h1>今日天氣預報 -Taichung </h1>
-    <h2>多雲(broken clouds)</h2>
+    <h1>今日天氣預報 - Taichung</h1>
+    <h2>多雲 (broken clouds)</h2>
     <div class="weather-icon" id="weather-icon"></div>
-    <div class="temp"> 31.95℃</div>
+    <div class="temp">31.95℃</div>
     <div class="details">
-      體感溫度：38.53 ℃<br />
-      濕度：65 %<br />
-      氣壓： 1009hPa<br />
-      風速：3.9 m/s，風向：330°<br />
-      能見度： 10000公尺<br />
-      雲量：72 %<br />
-     
+      體感溫度：38.53 ℃<br/>
+      濕度：65 %<br/>
+      氣壓：1009 hPa<br/>
+      風速：3.9 m/s，風向：330°<br/>
+      能見度：10000 公尺<br/>
+      雲量：72 %<br/>
     </div>
     <div id="map"></div>
-    <div class="footer">資料來源：OpenWeatherMap · Invalid Date</div>
+    <div class="footer">資料來源：OpenWeatherMap · 
+      <span id="weather-date"></span>
+    </div>
   </div>
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-VjEeI21xZeEhoNyOnYXn/MSbO0pKcTn5S0tznOG2Uro="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    // 依天氣描述顯示對應 FontAwesome 圖案
-    const weatherIconMap = {
+    // FontAwesome 圖標選擇
+    const iconMap = {
       "clear sky": "fas fa-sun",
       "few clouds": "fas fa-cloud-sun",
       "scattered clouds": "fas fa-cloud",
@@ -117,29 +102,22 @@
       "mist": "fas fa-smog",
       "fog": "fas fa-smog"
     };
+    const descEn = "broken clouds";
+    const faClass = iconMap[descEn] || "fas fa-question";
+    document.getElementById("weather-icon").className = faClass + " weather-icon";
 
-    const weatherDescEn = "undefined";
-    const iconClass = weatherIconMap[weatherDescEn] || "fas fa-question";
-
-    document.getElementById("weather-icon").className = iconClass + " weather-icon";
-
-    // Leaflet地圖設定
-    const lat = undefined;
-    const lon = undefined;
+    // Leaflet 地圖設置
+    const lat = 24.1469;
+    const lon = 120.6839;
     const map = L.map("map").setView([lat, lon], 11);
-
-    L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        attribution: '© OpenStreetMap contributors',
-      }
-    ).addTo(map);
-
-    // 天氣座標標記
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: '© OpenStreetMap contributors' }).addTo(map);
     L.marker([lat, lon])
       .addTo(map)
-      .bindPopup("undefined 天氣")
+      .bindPopup(" Taichung 天氣")
       .openPopup();
+
+    // 日期顯示
+    document.getElementById("weather-date").textContent = new Date(1758091802 * 1000).toLocaleString("zh-TW");
   </script>
 </body>
 </html>
