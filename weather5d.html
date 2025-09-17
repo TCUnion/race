@@ -1,0 +1,134 @@
+
+<html>
+<head>
+<title>5天天氣預報</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    margin: 0; background: #102337; color: white;
+  }
+  .container {
+    max-width: 960px; margin: 40px auto; padding: 28px 18px;
+    background: rgba(21,39,56,0.85); border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 42px;
+  }
+  .current {
+    font-size: 4rem; font-weight: 600; line-height: 1;
+  }
+  .current-desc {
+    font-size: 1.3rem; opacity: 0.9; margin-top: 6px;
+  }
+  .location-time {
+    text-align: right;
+    opacity: 0.75;
+    font-size: 1rem;
+    min-width: 130px;
+  }
+  .forecast {
+    display: flex; gap: 16px; flex-wrap: nowrap; overflow-x: auto;
+  }
+  .day-card {
+    flex: 1 0 120px;
+    padding: 26px 16px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 16px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    cursor: default;
+    transition: transform 0.3s ease;
+  }
+  .day-card:hover {
+    background: rgba(255,255,255,0.13);
+    transform: translateY(-6px);
+  }
+  .date-label {
+    font-size: 0.9rem; opacity: 0.75; margin-bottom: 4px;
+  }
+  .day-name {
+    font-size: 1.1rem; margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .weather-icon {
+    font-size: 2.8rem; margin-bottom: 14px;
+  }
+  .temp-range {
+    font-weight: 600; font-size: 1.2rem;
+  }
+  .temp-high {
+    color: #fff;
+  }
+  .temp-low {
+    color: rgba(255,255,255,0.6);
+  }
+  @media (max-width: 768px) {
+    .container {margin: 20px 12px; padding: 16px;}
+    .current {font-size: 3rem;}
+    .forecast {gap: 12px;}
+    .day-card {flex: 1 0 90px; padding: 18px 8px;}
+    .weather-icon {font-size: 2rem; margin-bottom: 12px;}
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <div class="current">32°</div>
+        <div class="current-desc">小雨</div>
+      </div>
+      <div class="location-time">
+        Taichung<br>
+        今日 上午07:49
+      </div>
+    </div>
+    <div class="forecast">
+
+    <div class="day-card">
+      <div class="date-label">9/17</div>
+      <div class="day-name">週三</div>
+      <div class="weather-icon">🌦️</div>
+      <div class="temp-range"><span class="temp-high">32°</span>/<span class="temp-low">27°</span></div>
+      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
+    </div>
+  
+    <div class="day-card">
+      <div class="date-label">9/18</div>
+      <div class="day-name">週四</div>
+      <div class="weather-icon">🌦️</div>
+      <div class="temp-range"><span class="temp-high">32°</span>/<span class="temp-low">25°</span></div>
+      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
+    </div>
+  
+    <div class="day-card">
+      <div class="date-label">9/19</div>
+      <div class="day-name">週五</div>
+      <div class="weather-icon">🌦️</div>
+      <div class="temp-range"><span class="temp-high">28°</span>/<span class="temp-low">25°</span></div>
+      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
+    </div>
+  
+    <div class="day-card">
+      <div class="date-label">9/20</div>
+      <div class="day-name">週六</div>
+      <div class="weather-icon">🌦️</div>
+      <div class="temp-range"><span class="temp-high">30°</span>/<span class="temp-low">25°</span></div>
+      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
+    </div>
+  
+    <div class="day-card">
+      <div class="date-label">9/21</div>
+      <div class="day-name">週日</div>
+      <div class="weather-icon">🌦️</div>
+      <div class="temp-range"><span class="temp-high">32°</span>/<span class="temp-low">24°</span></div>
+      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
+    </div>
+  
+    </div>
+  </div>
+</body>
+</html>
