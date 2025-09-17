@@ -1,134 +1,461 @@
 
 <html>
 <head>
-<title>5天天氣預報</title>
+<title>詳細天氣資料表</title>
 <style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    margin: 0; background: #102337; color: white;
-  }
-  .container {
-    max-width: 960px; margin: 40px auto; padding: 28px 18px;
-    background: rgba(21,39,56,0.85); border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-  .header {
-    display: flex; justify-content: space-between; align-items: flex-end;
-    margin-bottom: 42px;
-  }
-  .current {
-    font-size: 4rem; font-weight: 600; line-height: 1;
-  }
-  .current-desc {
-    font-size: 1.3rem; opacity: 0.9; margin-top: 6px;
-  }
-  .location-time {
-    text-align: right;
-    opacity: 0.75;
-    font-size: 1rem;
-    min-width: 130px;
-  }
-  .forecast {
-    display: flex; gap: 16px; flex-wrap: nowrap; overflow-x: auto;
-  }
-  .day-card {
-    flex: 1 0 120px;
-    padding: 26px 16px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 16px;
-    text-align: center;
-    backdrop-filter: blur(8px);
-    cursor: default;
-    transition: transform 0.3s ease;
-  }
-  .day-card:hover {
-    background: rgba(255,255,255,0.13);
-    transform: translateY(-6px);
-  }
-  .date-label {
-    font-size: 0.9rem; opacity: 0.75; margin-bottom: 4px;
-  }
-  .day-name {
-    font-size: 1.1rem; margin-bottom: 12px;
-    letter-spacing: 1px;
-  }
-  .weather-icon {
-    font-size: 2.8rem; margin-bottom: 14px;
-  }
-  .temp-range {
-    font-weight: 600; font-size: 1.2rem;
-  }
-  .temp-high {
-    color: #fff;
-  }
-  .temp-low {
-    color: rgba(255,255,255,0.6);
-  }
-  @media (max-width: 768px) {
-    .container {margin: 20px 12px; padding: 16px;}
-    .current {font-size: 3rem;}
-    .forecast {gap: 12px;}
-    .day-card {flex: 1 0 90px; padding: 18px 8px;}
-    .weather-icon {font-size: 2rem; margin-bottom: 12px;}
-  }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  margin: 20px;
+  background-color: #f8f9fa;
+  color: #212529;
+}
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.1);
+}
+th, td {
+  border: 1px solid #dee2e6;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+th {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+}
+tr:nth-child(even) td {
+  background-color: #f1f3f5;
+}
 </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div>
-        <div class="current">32°</div>
-        <div class="current-desc">小雨</div>
-      </div>
-      <div class="location-time">
-        Taichung<br>
-        今日 上午07:49
-      </div>
-    </div>
-    <div class="forecast">
+<h2>Taichung 5天3小時詳細天氣資料</h2>
+<table>
+  <thead>
+    <tr>
+      <th>時間</th>
+      <th>溫度 (°C)</th>
+      <th>體感溫度 (°C)</th>
+      <th>濕度 (%)</th>
+      <th>風速 (m/s)</th>
+      <th>天氣狀況</th>
+      <th>天氣描述</th>
+    </tr>
+  </thead>
+  <tbody>
 
-    <div class="day-card">
-      <div class="date-label">9/17</div>
-      <div class="day-name">週三</div>
-      <div class="weather-icon">🌦️</div>
-      <div class="temp-range"><span class="temp-high">32°</span>/<span class="temp-low">27°</span></div>
-      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
-    </div>
+    <tr>
+      <td>2025-09-17 09:00:00</td>
+      <td>32.4</td>
+      <td>39.4</td>
+      <td>66</td>
+      <td>2.4</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
   
-    <div class="day-card">
-      <div class="date-label">9/18</div>
-      <div class="day-name">週四</div>
-      <div class="weather-icon">🌦️</div>
-      <div class="temp-range"><span class="temp-high">32°</span>/<span class="temp-low">25°</span></div>
-      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
-    </div>
+    <tr>
+      <td>2025-09-17 12:00:00</td>
+      <td>30.1</td>
+      <td>36.5</td>
+      <td>75</td>
+      <td>0.6</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
   
-    <div class="day-card">
-      <div class="date-label">9/19</div>
-      <div class="day-name">週五</div>
-      <div class="weather-icon">🌦️</div>
-      <div class="temp-range"><span class="temp-high">28°</span>/<span class="temp-low">25°</span></div>
-      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
-    </div>
+    <tr>
+      <td>2025-09-17 15:00:00</td>
+      <td>27.7</td>
+      <td>31.9</td>
+      <td>84</td>
+      <td>1.0</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
   
-    <div class="day-card">
-      <div class="date-label">9/20</div>
-      <div class="day-name">週六</div>
-      <div class="weather-icon">🌦️</div>
-      <div class="temp-range"><span class="temp-high">30°</span>/<span class="temp-low">25°</span></div>
-      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
-    </div>
+    <tr>
+      <td>2025-09-17 18:00:00</td>
+      <td>27.5</td>
+      <td>30.9</td>
+      <td>80</td>
+      <td>1.6</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
   
-    <div class="day-card">
-      <div class="date-label">9/21</div>
-      <div class="day-name">週日</div>
-      <div class="weather-icon">🌦️</div>
-      <div class="temp-range"><span class="temp-high">32°</span>/<span class="temp-low">24°</span></div>
-      <div style="font-size:0.9rem; margin-top:6px; opacity:0.7;">小雨</div>
-    </div>
+    <tr>
+      <td>2025-09-17 21:00:00</td>
+      <td>27.1</td>
+      <td>29.6</td>
+      <td>76</td>
+      <td>1.7</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
   
-    </div>
-  </div>
+    <tr>
+      <td>2025-09-18 00:00:00</td>
+      <td>28.8</td>
+      <td>31.5</td>
+      <td>65</td>
+      <td>0.8</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 03:00:00</td>
+      <td>31.9</td>
+      <td>35.1</td>
+      <td>54</td>
+      <td>1.9</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 06:00:00</td>
+      <td>30.6</td>
+      <td>34.5</td>
+      <td>62</td>
+      <td>2.7</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 09:00:00</td>
+      <td>27.9</td>
+      <td>31.6</td>
+      <td>79</td>
+      <td>2.1</td>
+      <td>Rain</td>
+      <td>中雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 12:00:00</td>
+      <td>26.5</td>
+      <td>26.5</td>
+      <td>87</td>
+      <td>2.0</td>
+      <td>Rain</td>
+      <td>中雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 15:00:00</td>
+      <td>26.3</td>
+      <td>26.3</td>
+      <td>88</td>
+      <td>0.4</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 18:00:00</td>
+      <td>25.5</td>
+      <td>26.4</td>
+      <td>91</td>
+      <td>0.5</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-18 21:00:00</td>
+      <td>25.5</td>
+      <td>26.4</td>
+      <td>90</td>
+      <td>1.3</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 00:00:00</td>
+      <td>26.5</td>
+      <td>26.5</td>
+      <td>84</td>
+      <td>0.7</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 03:00:00</td>
+      <td>27.7</td>
+      <td>31.0</td>
+      <td>77</td>
+      <td>1.2</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 06:00:00</td>
+      <td>28.3</td>
+      <td>31.9</td>
+      <td>74</td>
+      <td>1.8</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 09:00:00</td>
+      <td>26.9</td>
+      <td>29.6</td>
+      <td>82</td>
+      <td>1.9</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 12:00:00</td>
+      <td>26.3</td>
+      <td>26.3</td>
+      <td>85</td>
+      <td>0.8</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 15:00:00</td>
+      <td>25.7</td>
+      <td>26.6</td>
+      <td>88</td>
+      <td>1.1</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 18:00:00</td>
+      <td>25.6</td>
+      <td>26.5</td>
+      <td>86</td>
+      <td>0.9</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-19 21:00:00</td>
+      <td>25.1</td>
+      <td>26.0</td>
+      <td>88</td>
+      <td>1.0</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 00:00:00</td>
+      <td>26.2</td>
+      <td>26.2</td>
+      <td>83</td>
+      <td>0.5</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 03:00:00</td>
+      <td>28.6</td>
+      <td>32.1</td>
+      <td>71</td>
+      <td>2.0</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 06:00:00</td>
+      <td>30.2</td>
+      <td>33.9</td>
+      <td>63</td>
+      <td>3.5</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 09:00:00</td>
+      <td>27.7</td>
+      <td>30.8</td>
+      <td>76</td>
+      <td>1.4</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 12:00:00</td>
+      <td>26.2</td>
+      <td>26.2</td>
+      <td>85</td>
+      <td>0.6</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 15:00:00</td>
+      <td>25.8</td>
+      <td>26.7</td>
+      <td>88</td>
+      <td>0.3</td>
+      <td>Clouds</td>
+      <td>陰天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 18:00:00</td>
+      <td>25.1</td>
+      <td>26.1</td>
+      <td>91</td>
+      <td>0.4</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-20 21:00:00</td>
+      <td>24.7</td>
+      <td>25.6</td>
+      <td>89</td>
+      <td>0.8</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 00:00:00</td>
+      <td>27.3</td>
+      <td>30.0</td>
+      <td>76</td>
+      <td>0.7</td>
+      <td>Clouds</td>
+      <td>多雲</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 03:00:00</td>
+      <td>31.6</td>
+      <td>35.9</td>
+      <td>59</td>
+      <td>2.7</td>
+      <td>Clouds</td>
+      <td>少雲</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 06:00:00</td>
+      <td>30.6</td>
+      <td>34.8</td>
+      <td>63</td>
+      <td>3.3</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 09:00:00</td>
+      <td>29.4</td>
+      <td>34.1</td>
+      <td>72</td>
+      <td>2.6</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 12:00:00</td>
+      <td>26.9</td>
+      <td>30.1</td>
+      <td>87</td>
+      <td>2.1</td>
+      <td>Rain</td>
+      <td>中雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 15:00:00</td>
+      <td>26.3</td>
+      <td>26.3</td>
+      <td>85</td>
+      <td>1.9</td>
+      <td>Rain</td>
+      <td>小雨</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 18:00:00</td>
+      <td>25.1</td>
+      <td>25.8</td>
+      <td>81</td>
+      <td>1.9</td>
+      <td>Clouds</td>
+      <td>少雲</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-21 21:00:00</td>
+      <td>23.8</td>
+      <td>24.2</td>
+      <td>75</td>
+      <td>1.7</td>
+      <td>Clear</td>
+      <td>晴天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-22 00:00:00</td>
+      <td>27.4</td>
+      <td>29.3</td>
+      <td>68</td>
+      <td>1.1</td>
+      <td>Clouds</td>
+      <td>少雲</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-22 03:00:00</td>
+      <td>31.3</td>
+      <td>35.4</td>
+      <td>60</td>
+      <td>3.1</td>
+      <td>Clear</td>
+      <td>晴天</td>
+    </tr>
+  
+    <tr>
+      <td>2025-09-22 06:00:00</td>
+      <td>33.4</td>
+      <td>36.8</td>
+      <td>49</td>
+      <td>2.4</td>
+      <td>Clouds</td>
+      <td>少雲</td>
+    </tr>
+  
+  </tbody>
+</table>
 </body>
 </html>
