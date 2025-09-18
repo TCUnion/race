@@ -79,16 +79,16 @@
 <body>
   <div class="container">
     <h1>今日天氣預報 - Taichung</h1>
-    <h2>陰天 (overcast clouds)</h2>
+    <h2>多雲 (broken clouds)</h2>
     <div class="weather-icon" id="weather-icon"></div>
-    <div class="temp">27.65℃</div>
+    <div class="temp">33.05℃</div>
     <div class="details">
-      體感溫度：31.93 ℃<br/>
-      濕度：85 %<br/>
-      氣壓：1011 hPa<br/>
-      風速：1.38 m/s，風向：138°<br/>
+      體感溫度：39.65 ℃<br/>
+      濕度：60 %<br/>
+      氣壓：1009 hPa<br/>
+      風速：3.06 m/s，風向：289°<br/>
       能見度：10000 公尺<br/>
-      雲量：91 %<br/>
+      雲量：64 %<br/>
     </div>
     <div id="map"></div>
     <div class="footer">資料來源：OpenWeatherMap · 
@@ -112,7 +112,7 @@
       "mist": "fas fa-smog",
       "fog": "fas fa-smog"
     };
-    const descEn = "overcast clouds";
+    const descEn = "broken clouds";
     const faClass = iconMap[descEn] || "fas fa-question";
     document.getElementById("weather-icon").className = faClass + " weather-icon";
 
@@ -127,7 +127,7 @@
       .openPopup();
 
     // 日期顯示
-    document.getElementById("weather-date").textContent = new Date(1758124800 * 1000).toLocaleString("zh-TW");
+    document.getElementById("weather-date").textContent = new Date(1758167972 * 1000).toLocaleString("zh-TW");
   </script>
 </body>
 </html>
