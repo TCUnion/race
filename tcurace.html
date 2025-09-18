@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>TCU賽事一覽表</title>
+  <title>2025賽事一覽表 by TCU</title>
   <style>
     body {
       font-family: "Noto Sans TC", "微軟正黑體", Arial, sans-serif;
@@ -14,8 +14,14 @@
     h1 {
       text-align: center;
       color: #2c3e50;
-      margin-bottom: 20px;
-      font-weight: 300;
+      margin-bottom: 10px;
+      font-weight: 1100;
+    }
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-weight: 100;
     }
     p.time {
       text-align: center;
@@ -27,7 +33,7 @@
       margin: 0 auto;
       border-collapse: collapse;
       width: 80%;
-      max-width: 800px;
+      max-width: 100%;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       background: #fff;
       border-radius: 8px;
@@ -47,19 +53,29 @@
       background: #d6e9f8;
       transition: background-color 0.3s ease;
     }
-    /* 星期列背景色 */
-    .week-mon { background: #1e90ff; }
-    .week-tue { background: #e7f4e4; }
-    .week-wed { background: #fff9db; }
-    .week-thu { background: #fde2e4; }
-    .week-fri { background: #ffa500; }
-    .week-sat { background: #3cb371	; }
-    .week-sun { background: #db7093; }
+
+/* 進階柔和深色星期列背景色 */
+.week-mon { background: rgba(65, 105, 225, 0.3); }   /* 深石藍 */
+.week-tue { background: rgba(60, 179, 113, 0.3); }   /* 中海洋綠 */
+.week-wed { background: rgba(255, 165, 79, 0.3); }   /* 深淺橙色 */
+.week-thu { background: rgba(219, 112, 147, 0.3); }  /* 深粉紅紫紅 */
+.week-fri { background: rgba(138, 43, 226, 0.3); }   /* 中紫色 */
+.week-sat { background: rgba(46, 139, 87, 0.3); }    /* 中海綠色 */
+.week-sun { background: rgba(199, 21, 133, 0.3); }   /* 深洋紅紅 */
+
+tbody tr:hover {
+  background-color: #34495e;  /* 深藍灰色 */
+  color: #f0f0f0;             /* 淺色文字 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;            /* 滑鼠指標變成手形 */
+}    
   </style>
 </head>
 <body>
-  <h1>TCU賽事一覽表</h1>
-  <p class="time">報表產生時間：2025-09-17 19:58:02</p>
+  <h1>2025 賽事一覽表</h1>
+
+
+  <p class="time">報表產生時間：2025-09-18 11:09:26 By TCU</p>
 <table>
 <thead>
   <tr>
