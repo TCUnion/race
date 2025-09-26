@@ -79,16 +79,16 @@
 <body>
   <div class="container">
     <h1>今日天氣預報 - Taichung</h1>
-    <h2>晴天 (clear sky)</h2>
+    <h2>中雨 (moderate rain)</h2>
     <div class="weather-icon" id="weather-icon"></div>
-    <div class="temp">28.42℃</div>
+    <div class="temp">32.48℃</div>
     <div class="details">
-      體感溫度：33.54 ℃<br/>
-      濕度：82 %<br/>
+      體感溫度：39.48 ℃<br/>
+      濕度：67 %<br/>
       氣壓：1013 hPa<br/>
-      風速：1.07 m/s，風向：109°<br/>
+      風速：2.18 m/s，風向：283°<br/>
       能見度：10000 公尺<br/>
-      雲量：2 %<br/>
+      雲量：74 %<br/>
     </div>
     <div id="map"></div>
     <div class="footer">資料來源：OpenWeatherMap · 
@@ -112,7 +112,7 @@
       "mist": "fas fa-smog",
       "fog": "fas fa-smog"
     };
-    const descEn = "clear sky";
+    const descEn = "moderate rain";
     const faClass = iconMap[descEn] || "fas fa-question";
     document.getElementById("weather-icon").className = faClass + " weather-icon";
 
@@ -127,7 +127,7 @@
       .openPopup();
 
     // 日期顯示
-    document.getElementById("weather-date").textContent = new Date(1758815772 * 1000).toLocaleString("zh-TW");
+    document.getElementById("weather-date").textContent = new Date(1758858961 * 1000).toLocaleString("zh-TW");
   </script>
 </body>
 </html>
