@@ -21,6 +21,7 @@
   <!-- 可水平捲動的容器，手機優先 -->
   <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
     <table
+      id="race-table"
       style="
         min-width: 600px;
         border-collapse: collapse;
@@ -33,7 +34,7 @@
       "
     >
       <thead>
-        <tr style="background-color: #3a3a3a;">
+        <tr style="background-color: #3a3a3a; cursor: pointer;">
           <th style="border: 1px solid #555; padding: 10px; white-space: nowrap;">賽事編號</th>
           <th style="border: 1px solid #555; padding: 10px; white-space: nowrap;">姓名</th>
           <th style="border: 1px solid #555; padding: 10px; white-space: nowrap;">組別</th>
@@ -796,3 +797,34 @@
     </table>
   </div>
 </div>
+
+<script>
+// 簡易排序：點擊表頭即可排序，再點切換升冪 / 降冪
+(function () {
+  const table = document.getElementById('race-table');
+  if (!table) return;
+
+  const getCellValue = (row, index) =>
+    row.children[index].innerText || row.children[index].textContent;
+
+  const comparer = (index, asc) => (a, b) => {
+    const v1 = getCellValue(asc ? a : b, index);
+    const v2 = getCellValue(asc ? b : a, index);
+    const n1 = parseFloat(v1.replace(/[^0-9.-]/g, ''));
+    const n2 = parseFloat(v2.replace(/[^0-9.-]/g, ''));
+    if (!isNaN(n1) && !isNaN(n2)) return n1 - n2;
+    return v1.localeCompare(v2, 'zh-Hant', { numeric: true });
+  };
+
+  Array.from(table.querySelectorAll('th')).forEach((th, index) => {
+    let asc = true;
+    th.addEventListener('click', () => {
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort(comparer(index, asc));
+      rows.forEach(tr => tbody.appendChild(tr));
+      asc = !asc;
+    });
+  });
+})();
+</script>
