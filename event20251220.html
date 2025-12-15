@@ -1,5 +1,5 @@
 
-<div style="max-width: 100%; margin: 0 auto; background-color: #2b2b2b; color: #ffffff;">
+<div style="max-width: 100%; margin: 0 auto; background-color: #2b2b2b; color: #ffffff; text-align: center;">
   <!-- 上方 Banner：全寬、等比例縮放 -->
   <img
     src="https://tcunion.net/wp-content/uploads/2025/12/2650x556_251014-scaled.webp"
@@ -9,14 +9,26 @@
 
   <!-- 可水平捲動的容器，手機優先 -->
   <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-    <table style="min-width: 600px; border-collapse: collapse; width: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; background-color: #2b2b2b; color: #ffffff;">
+    <table
+      style="
+        min-width: 600px;
+        border-collapse: collapse;
+        width: 100%;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        /* 手機預設 13px，桌機放大到約 16–17px */
+        font-size: clamp(13px, 1.6vw, 17px);
+        background-color: #2b2b2b;
+        color: #ffffff;
+        text-align: center;
+      "
+    >
       <thead>
         <tr style="background-color: #3a3a3a;">
-          <th style="border: 1px solid #555; padding: 8px; text-align: left; white-space: nowrap;">賽事編號</th>
-          <th style="border: 1px solid #555; padding: 8px; text-align: left; white-space: nowrap;">姓名</th>
-          <th style="border: 1px solid #555; padding: 8px; text-align: left; white-space: nowrap;">組別</th>
-          <th style="border: 1px solid #555; padding: 8px; text-align: left; white-space: nowrap;">加報1</th>
-          <th style="border: 1px solid #555; padding: 8px; text-align: left; white-space: nowrap;">加報2</th>
+          <th style="border: 1px solid #555; padding: 8px; white-space: nowrap; text-align: center;">賽事編號</th>
+          <th style="border: 1px solid #555; padding: 8px; white-space: nowrap; text-align: center;">姓名</th>
+          <th style="border: 1px solid #555; padding: 8px; white-space: nowrap; text-align: center;">組別</th>
+          <th style="border: 1px solid #555; padding: 8px; white-space: nowrap; text-align: center;">加報1</th>
+          <th style="border: 1px solid #555; padding: 8px; white-space: nowrap; text-align: center;">加報2</th>
         </tr>
       </thead>
       <tbody>
