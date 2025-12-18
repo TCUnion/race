@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TCU Criterium - 賽事報名表單</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 0.5rem;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 14px;
+    }
+    
+    /* Strava 連接狀態 */
+    .strava-status {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .strava-status.connected {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+    }
+    .strava-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .strava-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .strava-name {
+      font-weight: 600;
+      color: #333;
+    }
+    .strava-id {
+      font-size: 12px;
+      color: #666;
+    }
+    .btn-strava {
+      background: #fc5200;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-strava:hover {
+      background: #e04a00;
+      transform: translateY(-2px);
+    }
+    
+    /* 表單樣式 */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 14px;
+    }
+    label .required {
+      color: #dc3545;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    input:disabled, select:disabled {
+      background: #f8f9fa;
+      color: #6c757d;
+      cursor: not-allowed;
+    }
+    .input-hint {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
+    
+    /* 按鈕組 */
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    /* 成功訊息 */
+    .success-message {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    .success-message.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚴 TCU Criterium 賽事報名</h1>
+    <p class="subtitle">請填寫以下資訊完成報名</p>
+    
+    <!-- 成功訊息 -->
+    <div id="successMessage" class="success-message">
+      ✓ 表單已成功提交!
+    </div>
+    
+    <!-- Strava 連接狀態 -->
+    <div id="stravaStatus" class="strava-status">
+      <div class="strava-info">
+        <div>
+          <div class="strava-name">尚未連接 Strava</div>
+          <div class="strava-id">請先連接你的 Strava 帳號</div>
+        </div>
+      </div>
+      <button class="btn-strava" onclick="connectStrava()">
+        連接 Strava
+      </button>
+    </div>
+    
+    <!-- 報名表單 -->
+    <form id="registrationForm" onsubmit="handleSubmit(event)">
+      <!-- Strava 資料 (隱藏欄位) -->
+      <input type="hidden" id="strava_athlete_id" name="strava_athlete_id">
+      <input type="hidden" id="strava_username" name="strava_username">
+      <input type="hidden" id="strava_profile" name="strava_profile">
+      
+      <!-- 基本資料 -->
+      <div class="form-group">
+        <label>姓名 <span class="required">*</span></label>
+        <input type="text" id="name" name="name" required placeholder="請輸入真實姓名">
+      </div>
+      
+      <div class="form-group">
+        <label>Email <span class="required">*</span></label>
+        <input type="email" id="email" name="email" required placeholder="example@email.com">
+      </div>
+      
+      <div class="form-group">
+        <label>手機號碼 <span class="required">*</span></label>
+        <input type="tel" id="phone" name="phone" required placeholder="0912-345-678">
+      </div>
+      
+      <div class="form-group">
+        <label>性別 <span class="required">*</span></label>
+        <select id="gender" name="gender" required>
+          <option value="">請選擇</option>
+          <option value="M">男性</option>
+          <option value="F">女性</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>城市</label>
+        <input type="text" id="city" name="city" placeholder="例如: 台中市">
+        <div class="input-hint">從 Strava 自動帶入</div>
+      </div>
+      
+      <div class="form-group">
+        <label>參賽組別 <span class="required">*</span></label>
+        <select id="category" name="category" required>
+          <option value="">請選擇</option>
+          <option value="pro">菁英組</option>
+          <option value="amateur">業餘組</option>
+          <option value="junior">青少年組</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>緊急聯絡人 <span class="required">*</span></label>
+        <input type="text" id="emergency_contact" name="emergency_contact" required placeholder="姓名">
+      </div>
+      
+      <div class="form-group">
+        <label>緊急聯絡電話 <span class="required">*</span></label>
+        <input type="tel" id="emergency_phone" name="emergency_phone" required placeholder="0912-345-678">
+      </div>
+      
+      <div class="form-group">
+        <label>備註</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="其他需要說明的事項..."></textarea>
+      </div>
+      
+      <!-- 送出按鈕 -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+          重設
+        </button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          送出報名
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // ============================================
+    // 方案一: 從 URL 參數讀取 Strava 資料
+    // ============================================
+    
+    function loadStravaDataFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const dataStr = urlParams.get('data');
+      
+      if (dataStr) {
+        try {
+          const data = JSON.parse(decodeURIComponent(dataStr));
+          console.log('從 URL 收到 Strava 資料:', data);
+          
+          // 將資料填入表單
+          fillFormWithStravaData({
+            id: data.athlete_id,
+            firstName: data.athlete_name?.split(' ')[0] || '',
+            lastName: data.athlete_name?.split(' ').slice(1).join(' ') || '',
+            username: data.username,
+            profile: data.profile,
+            city: data.city,
+            country: data.country
+          });
+          
+          // 清除 URL 參數 (避免重新整理時重複處理)
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+        } catch (error) {
+          console.error('解析 URL 資料失敗:', error);
+        }
+      }
+    }
+    
+    // ============================================
+    // 方案二: 監聽 postMessage (Popup 視窗)
+    // ============================================
+    
+    window.addEventListener('message', function(event) {
+      // 生產環境請加上來源驗證
+      // if (event.origin !== 'https://n8n.criterium.tw') return;
+      
+      console.log('收到 postMessage:', event.data);
+      
+      if (event.data.type === 'STRAVA_AUTH_SUCCESS') {
+        const athlete = event.data.athlete;
+        
+        // 將資料填入表單
+        fillFormWithStravaData(athlete);
+        
+        // 儲存到 localStorage (可選)
+        localStorage.setItem('strava_athlete', JSON.stringify(athlete));
+      }
+    });
+    
+    // ============================================
+    // 填充表單的核心函數
+    // ============================================
+    
+    function fillFormWithStravaData(athlete) {
+      console.log('填充表單資料:', athlete);
+      
+      // 填入隱藏欄位
+      document.getElementById('strava_athlete_id').value = athlete.id || '';
+      document.getElementById('strava_username').value = athlete.username || '';
+      document.getElementById('strava_profile').value = athlete.profile || athlete.profile_medium || '';
+      
+      // 自動填入姓名
+      const fullName = `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+      if (fullName) {
+        document.getElementById('name').value = fullName;
+      }
+      
+      // 自動填入城市
+      if (athlete.city) {
+        document.getElementById('city').value = athlete.city;
+      }
+      
+      // 根據性別自動選擇
+      if (athlete.sex) {
+        document.getElementById('gender').value = athlete.sex;
+      }
+      
+      // 更新 Strava 連接狀態顯示
+      updateStravaStatus(athlete);
+    }
+    
+    // ============================================
+    // 更新 Strava 連接狀態 UI
+    // ============================================
+    
+    function updateStravaStatus(athlete) {
+      const statusEl = document.getElementById('stravaStatus');
+      
+      if (athlete && athlete.id) {
+        statusEl.className = 'strava-status connected';
+        statusEl.innerHTML = `
+          <div class="strava-info">
+            ${athlete.profile_medium ? 
+              `<img src="${athlete.profile_medium}" class="strava-avatar" alt="Profile">` : 
+              ''}
+            <div>
+              <div class="strava-name">
+                ${athlete.firstName} ${athlete.lastName}
+              </div>
+              <div class="strava-id">
+                ✓ 已連接 Strava (ID: ${athlete.id})
+              </div>
+            </div>
+          </div>
+          <button class="btn-strava" onclick="disconnectStrava()">
+            中斷連接
+          </button>
+        `;
+      } else {
+        statusEl.className = 'strava-status';
+        statusEl.innerHTML = `
+          <div class="strava-info">
+            <div>
+              <div class="strava-name">尚未連接 Strava</div>
+              <div class="strava-id">請先連接你的 Strava 帳號</div>
+            </div>
+          </div>
+          <button class="btn-strava" onclick="connectStrava()">
+            連接 Strava
+          </button>
+        `;
+      }
+    }
+    
+    // ============================================
+    // Strava 授權功能
+    // ============================================
+    
+    function connectStrava() {
+      const width = 600;
+      const height = 700;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      
+      const authWindow = window.open(
+        'https://n8n.criterium.tw/webhook/strava/auth/start',
+        'strava_auth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      if (!authWindow) {
+        alert('無法開啟授權視窗，請檢查瀏覽器是否阻擋彈出視窗');
+      }
+    }
+    
+    function disconnectStrava() {
+      if (confirm('確定要中斷 Strava 連接嗎？')) {
+        // 清除表單中的 Strava 資料
+        document.getElementById('strava_athlete_id').value = '';
+        document.getElementById('strava_username').value = '';
+        document.getElementById('strava_profile').value = '';
+        
+        // 清除 localStorage
+        localStorage.removeItem('strava_athlete');
+        
+        // 更新 UI
+        updateStravaStatus(null);
+      }
+    }
+    
+    // ============================================
+    // 表單提交處理
+    // ============================================
+    
+    function handleSubmit(event) {
+      event.preventDefault();
+      
+      // 收集表單資料
+      const formData = new FormData(event.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      console.log('提交表單資料:', data);
+      
+      // 驗證是否已連接 Strava
+      if (!data.strava_athlete_id) {
+        alert('請先連接 Strava 帳號');
+        return;
+      }
+      
+      // 這裡可以發送到你的後端 API
+      submitToBackend(data);
+    }
+    
+    async function submitToBackend(data) {
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中...';
+      
+      try {
+        // 範例: 發送到後端 API
+        const response = await fetch('https://n8n.criterium.tw/webhook/11a06ca8-2aec-4997-ac4b-f7a57b0d00ec', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          // 顯示成功訊息
+          document.getElementById('successMessage').classList.add('show');
+          
+          // 重設表單
+          setTimeout(() => {
+            resetForm();
+          }, 2000);
+        } else {
+          throw new Error('提交失敗');
+        }
+        
+      } catch (error) {
+        console.error('提交錯誤:', error);
+        alert('提交失敗，請稍後再試');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '送出報名';
+      }
+    }
+    
+    // ============================================
+    // 重設表單
+    // ============================================
+    
+    function resetForm() {
+      document.getElementById('registrationForm').reset();
+      document.getElementById('successMessage').classList.remove('show');
+    }
+    
+    // ============================================
+    // 頁面載入時執行
+    // ============================================
+    
+    window.addEventListener('DOMContentLoaded', function() {
+      // 方案一: 檢查 URL 參數
+      loadStravaDataFromURL();
+      
+      // 檢查 localStorage 是否有儲存的 Strava 資料
+      const savedAthlete = localStorage.getItem('strava_athlete');
+      if (savedAthlete) {
+        try {
+          const athlete = JSON.parse(savedAthlete);
+          fillFormWithStravaData(athlete);
+        } catch (error) {
+          console.error('載入 localStorage 資料失敗:', error);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
