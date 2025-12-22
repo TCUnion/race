@@ -224,19 +224,11 @@
         <input type="text" id="name" name="name" required placeholder="請輸入真實姓名">
       </div>
 
+      <!-- TCU-ID / 個人生身分證ID -->
       <div class="form-group">
-        <label>性別 <span class="required">*</span></label>
-        <select id="gender" name="gender" required>
-          <option value="">請選擇</option>
-          <option value="M">男性</option>
-          <option value="F">女性</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>城市</label>
-        <input type="text" id="city" name="city" placeholder="例如: 台中市">
-        <div class="input-hint">從 Strava 自動帶入</div>
+        <label>TCU-ID / 個人生身分證ID</label>
+        <input type="text" id="tcu_id" name="tcu_id" placeholder="內文為同步TCU資料">
+        <div class="input-hint">同步TCU資料用</div>
       </div>
 
       <div class="form-group">
@@ -319,12 +311,6 @@
       const fullName = `${firstName} ${lastName}`.trim();
       if (fullName && !document.getElementById('name').value) {
         document.getElementById('name').value = fullName;
-      }
-      if (athlete.city && !document.getElementById('city').value) {
-        document.getElementById('city').value = athlete.city;
-      }
-      if (athlete.sex && !document.getElementById('gender').value) {
-        document.getElementById('gender').value = athlete.sex;
       }
       updateStravaStatus(athlete);
       localStorage.setItem(CONFIG.storageKey, JSON.stringify(athlete));
@@ -608,24 +594,4 @@
     }
 
     window.addEventListener('DOMContentLoaded', function() {
-      loadStravaDataFromURL();
-      loadFormState();
-      const savedAthlete = localStorage.getItem(CONFIG.storageKey);
-      if (savedAthlete && !document.getElementById('strava_athlete_id').value) {
-        try {
-          const athlete = JSON.parse(savedAthlete);
-          fillFormWithStravaData(athlete);
-        } catch (error) {
-          console.error('載入 localStorage 資料失敗:', error);
-          localStorage.removeItem(CONFIG.storageKey);
-        }
-      }
-    });
-
-    window.addEventListener('beforeunload', function() {
-      if (pollingTimer) clearInterval(pollingTimer);
-      if (authWindow && !authWindow.closed) authWindow.close();
-    });
-  </script>
-</body>
-</html>
+      load
