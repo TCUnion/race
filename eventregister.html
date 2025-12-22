@@ -475,7 +475,10 @@
     }
 
     window.addEventListener('message', function(event) {
+  // 1. 原本允許的正式網域
   const isAllowedOrigin = !!event.origin && CONFIG.allowedOrigins.includes(event.origin);
+
+  // 2. 針對目前看到的 case：origin 為 "null"、而且是 Strava 授權成功的資料
   const isNullOriginSafeSuccess =
     event.origin === "null" &&
     event.data &&
@@ -489,6 +492,7 @@
     return;
   }
 
+  // 走到這裡就代表是我們認可的訊息
   if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
     stopPolling();
     fillFormWithStravaData(event.data.athlete);
@@ -499,6 +503,7 @@
     updateStravaStatus(null);
   }
 });
+
 
 
     function loadStravaDataFromURL() {
