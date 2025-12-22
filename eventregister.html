@@ -550,15 +550,29 @@
         });
         console.log('回應狀態:', response.status);
         if (response.ok) {
-          const result = await response.json().catch(() => ({}));
-          console.log('提交成功:', result);
-          console.log('redirect_url:', result.redirect_url);
-
-          // 有 redirect_url 就導向結果頁
-          if (result.redirect_url) {
-            window.location.href = result.redirect_url;
-            return;
-          }
+  const result = await response.json().catch(() => ({}));
+  
+  // 優先使用 redirect_url
+  if (result.redirect_url) {
+    window.location.href = result.redirect_url;
+    return;
+  }
+  
+  // 自動建構成功頁 URL
+  if (result.success !== false) {
+    const params = new URLSearchParams({
+      success: 'true',
+      message: result.message || '報名成功！',
+      registration_id: result.registration_id || '',
+      name: result.data?.name || '',
+      category: result.data?.category || '',
+      submitted_at: result.data?.submittedat || '',
+      email: result.data?.email || ''
+    });
+    window.location.href = `https://status.criterium.tw/register-result.html?${params.toString()}`;
+    return;
+  }
+  
 
           // 沒有 redirect_url 時留在本頁顯示成功訊息
           const msg = result.message || '表單已成功提交!';
