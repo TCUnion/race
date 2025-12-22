@@ -474,27 +474,14 @@
       }
     }
 
-    window.addEventListener('message', function(event) {
-  // 允許的正式網域
-  const isAllowedOrigin =
-    !!event.origin && CONFIG.allowedOrigins.includes(event.origin);
+   window.addEventListener('message', function(event) {
+  console.log('收到 postMessage:', event.origin, event.data);
 
-  // 特例：origin === "null"，且是我們期待的 Strava 授權成功格式
-  const isNullOriginSafeSuccess =
-    event.origin === "null" &&
-    event.data &&
-    typeof event.data === "object" &&
-    event.data.type === "STRAVA_AUTH_SUCCESS" &&
-    event.data.athlete &&
-    event.data.athlete.id;
-
-  if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
-    console.warn('收到來自未授權來源的訊息:', event.origin, event.data);
+  if (!event.data || typeof event.data !== 'object') {
     return;
   }
 
-  // 能走到這裡就代表是我們接受的訊息
-  if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+  if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete && event.data.athlete.id) {
     stopPolling();
     fillFormWithStravaData(event.data.athlete);
     showMessage('success', 'Strava 授權成功!');
@@ -504,6 +491,7 @@
     updateStravaStatus(null);
   }
 });
+
 
 
     function loadStravaDataFromURL() {
