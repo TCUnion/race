@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TCU STRAVA大挑戰</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: #000;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .tsu-banner {
+      width: 100%;
+      background: #000;
+      padding: 8px 24px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .tsu-banner img {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 0.5rem;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 14px;
+    }
+
+    .strava-status {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .strava-status.connected {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+    }
+    .strava-status.loading {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+    }
+    .strava-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .strava-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .strava-name { font-weight: 600; color: #333; }
+    .strava-id { font-size: 12px; color: #666; }
+    .btn-strava {
+      background: #fc5200;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-strava:hover { background: #e04a00; transform: translateY(-2px); }
+    .btn-strava:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+    .form-group { margin-bottom: 1.5rem; }
+    label {
+      display: block;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 14px;
+    }
+    label .required { color: #dc3545; }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    input:disabled {
+      background: #f8f9fa;
+      color: #6c757d;
+      cursor: not-allowed;
+    }
+    .input-hint { font-size: 12px; color: #6c757d; margin-top: 0.25rem; }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #5568d3; transform: translateY(-2px); }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: none;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .message.show {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .success-message {
+      background: #28a745;
+      border: 2px solid #1e7e34;
+      color: #fff;
+    }
+    .error-message {
+      background: #dc3545;
+      border: 2px solid #b21f2d;
+      color: #fff;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #fc5200;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .info-block {
+      background: #f1f3f5;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: #495057;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="tsu-banner">
+    <a href="https://www.tsu.com.tw/" target="_blank" rel="noopener noreferrer">
+      <img src="https://www.tsu.com.tw/images/logo.png" alt="TSU Logo">
+    </a>
+  </div>
+
+  <div class="container">
+    <h1>TCU STRAVA大挑戰</h1>
+    <p class="subtitle">授權資料，僅供TCU內部使用，並保證不對外使用</p>
+
+    <div id="successMessage" class="message success-message"></div>
+    <div id="errorMessage" class="message error-message"></div>
+
+    <div id="stravaStatus" class="strava-status">
+      <div class="strava-info">
+        <div>
+          <div class="strava-name">尚未連接 Strava</div>
+          <div class="strava-id">請先連接你的 Strava 帳號</div>
+        </div>
+      </div>
+      <button class="btn-strava" type="button" onclick="connectStrava()">
+        連接 Strava
+      </button>
+    </div>
+
+    <div class="info-block">
+      這是TCU針對後續釋出讓大家都可以用STRAVA可以辦比賽的測試。
+    </div>
+
+    <form id="registrationForm" onsubmit="handleSubmit(event)">
+      <input type="hidden" id="strava_athlete_id" name="strava_athlete_id">
+      <input type="hidden" id="strava_username" name="strava_username">
+      <input type="hidden" id="strava_profile" name="strava_profile">
+
+      <div class="form-group">
+        <label>TCU-ID / 個人身份證ID</label>
+        <input type="text" id="tcu_id" name="tcu_id" placeholder="TCU-zvnrqonh9coqy4kp 或是分份證 A123456789均可" autocomplete="off">
+       
+      </div>
+
+      <div class="form-group">
+        <label>姓名 </label>
+        <input type="text" id="name" name="name" required placeholder="同步後自動帶出" autocomplete="name">
+      </div>
+
+
+  
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="syncTCUData()">
+          同步個人資料
+   
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const CONFIG = {
+      stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
+      submitUrl: 'https://n8n.criterium.tw/webhook/0822a942-927b-41a1-a484-e1e487e63664',
+      tcuSyncUrl: 'https://n8n.criterium.tw/webhook/tcu-sync',
+      allowedOrigins: [
+        'https://n8n.criterium.tw',
+        'https://status.criterium.tw',
+        'https://criterium.tw'
+      ],
+      storageKey: 'strava_athlete_meta',
+      pollingInterval: 1000,
+      pollingTimeout: 120000
+    };
+
+    let authWindow = null;
+    let pollingTimer = null;
+    let pollingStartTime = null;
+
+    function showMessage(type, message) {
+      const messageEl = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
+      const otherEl = document.getElementById(type === 'success' ? 'errorMessage' : 'successMessage');
+      if (!messageEl) return;
+
+      if (otherEl) {
+        otherEl.classList.remove('show');
+        otherEl.textContent = '';
+      }
+
+      if (message) {
+        messageEl.textContent = (type === 'error' ? '✗ ' : '✓ ') + message;
+      }
+      messageEl.classList.add('show');
+    }
+
+    function saveFormState() {
+      try {
+        const formData = new FormData(document.getElementById('registrationForm'));
+        const data = Object.fromEntries(formData.entries());
+        sessionStorage.setItem('form_state', JSON.stringify(data));
+      } catch (err) {
+        console.warn('無法儲存表單狀態:', err);
+      }
+    }
+
+    function loadFormState() {
+      const savedState = sessionStorage.getItem('form_state');
+      if (savedState) {
+        try {
+          const data = JSON.parse(savedState);
+          Object.keys(data).forEach(key => {
+            const input = document.getElementById(key);
+            if (input && data[key] !== undefined && data[key] !== null) {
+              input.value = data[key];
+            }
+          });
+          sessionStorage.removeItem('form_state');
+        } catch (error) {
+          console.error('載入表單狀態失敗:', error);
+        }
+      }
+    }
+
+    function fillFormWithStravaData(athlete) {
+      if (!athlete || !athlete.id) return;
+
+      document.getElementById('strava_athlete_id').value = athlete.id || '';
+      document.getElementById('strava_username').value = athlete.username || '';
+      document.getElementById('strava_profile').value = athlete.profile || athlete.profile_medium || '';
+
+      const firstName = athlete.firstname || athlete.firstName || '';
+      const lastName = athlete.lastname || athlete.lastName || '';
+      const fullName = (firstName + ' ' + lastName).trim();
+      const nameInput = document.getElementById('name');
+
+      if (fullName && nameInput && !nameInput.value) {
+        nameInput.value = fullName;
+      }
+
+      updateStravaStatus(athlete);
+
+      try {
+        const meta = {
+          id: athlete.id,
+          ts: Date.now()
+        };
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(meta));
+      } catch (e) {
+        console.warn('無法寫入 localStorage:', e);
+      }
+    }
+
+    function updateStravaStatus(athlete) {
+      const statusEl = document.getElementById('stravaStatus');
+      if (!statusEl) return;
+
+      if (athlete && athlete.id) {
+        statusEl.className = 'strava-status connected';
+        const avatarHtml = (athlete.profile_medium || athlete.profile)
+          ? `<img src="${athlete.profile_medium || athlete.profile}" class="strava-avatar" alt="Profile">`
+          : '';
+
+        const firstName = athlete.firstname || athlete.firstName || '';
+        const lastName = athlete.lastname || athlete.lastName || '';
+        const username = athlete.username || '';
+        const displayName = (firstName || lastName)
+          ? `${firstName} ${lastName}`.trim()
+          : (username || `運動員 ${athlete.id}`);
+
+        statusEl.innerHTML = `
+          <div class="strava-info">
+            ${avatarHtml}
+            <div>
+              <div class="strava-name">${displayName}</div>
+              <div class="strava-id">✓ 已連接 Strava (ID: ${athlete.id})</div>
+            </div>
+          </div>
+          <button class="btn-strava" type="button" onclick="disconnectStrava()">中斷連接</button>
+        `;
+      } else {
+        statusEl.className = 'strava-status';
+        statusEl.innerHTML = `
+          <div class="strava-info">
+            <div>
+              <div class="strava-name">尚未連接 Strava</div>
+              <div class="strava-id">請先連接你的 Strava 帳號</div>
+            </div>
+          </div>
+          <button class="btn-strava" type="button" onclick="connectStrava()">連接 Strava</button>
+        `;
+      }
+    }
+
+    function updateStravaStatusLoading() {
+      const statusEl = document.getElementById('stravaStatus');
+      if (!statusEl) return;
+
+      statusEl.className = 'strava-status loading';
+      statusEl.innerHTML = `
+        <div class="strava-info">
+          <div>
+            <div class="strava-name">
+              <span class="spinner"></span>授權處理中...
+            </div>
+            <div class="strava-id">請在彈出視窗中完成 Strava 授權</div>
+          </div>
+        </div>
+        <button class="btn-strava" type="button" disabled>處理中...</button>
+      `;
+    }
+
+    function connectStrava() {
+      saveFormState();
+
+      if (pollingTimer) clearInterval(pollingTimer);
+      updateStravaStatusLoading();
+      try {
+        localStorage.removeItem(CONFIG.storageKey + '_temp');
+      } catch (e) {
+        console.warn('無法清除暫存:', e);
+      }
+
+      const width = 600, height = 700;
+      const left = (window.screen.width - width) / 2;
+      const top = (window.screen.height - height) / 2;
+      const returnUrl = encodeURIComponent(window.location.href);
+      const url = `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
+
+      authWindow = window.open(
+        url,
+        'strava_auth',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+      );
+
+      if (!authWindow) {
+        window.location.href = url;
+        return;
+      }
+      startPolling();
+    }
+
+    function startPolling() {
+      pollingStartTime = Date.now();
+      pollingTimer = setInterval(() => {
+        if (Date.now() - pollingStartTime > CONFIG.pollingTimeout) {
+          stopPolling();
+          showMessage('error', '授權超時,請重試');
+          updateStravaStatus(null);
+          return;
+        }
+        if (authWindow && authWindow.closed) {
+          stopPolling();
+          const athlete = checkStoredData();
+          if (!athlete) {
+            showMessage('error', '授權已取消或未完成');
+            updateStravaStatus(null);
+          }
+          return;
+        }
+        checkStoredData();
+      }, CONFIG.pollingInterval);
+    }
+
+    function stopPolling() {
+      if (pollingTimer) {
+        clearInterval(pollingTimer);
+        pollingTimer = null;
+      }
+      if (authWindow && !authWindow.closed) {
+        authWindow.close();
+      }
+      authWindow = null;
+    }
+
+    function checkStoredData() {
+      let tempData = null;
+      try {
+        tempData = localStorage.getItem(CONFIG.storageKey + '_temp');
+      } catch (e) {
+        console.warn('讀取暫存失敗:', e);
+      }
+
+      if (tempData) {
+        try {
+          const athlete = JSON.parse(tempData);
+          localStorage.removeItem(CONFIG.storageKey + '_temp');
+          stopPolling();
+          fillFormWithStravaData(athlete);
+          showMessage('success', 'Strava 授權成功!');
+          return athlete;
+        } catch (error) {
+          console.error('解析 Strava 資料失敗:', error);
+        }
+      }
+      return null;
+    }
+
+    function disconnectStrava() {
+      if (!confirm('確定要中斷 Strava 連接嗎?')) return;
+
+      document.getElementById('strava_athlete_id').value = '';
+      document.getElementById('strava_username').value = '';
+      document.getElementById('strava_profile').value = '';
+
+      try {
+        localStorage.removeItem(CONFIG.storageKey);
+        localStorage.removeItem(CONFIG.storageKey + '_temp');
+      } catch (e) {
+        console.warn('清除 localStorage 失敗:', e);
+      }
+
+      updateStravaStatus(null);
+      showMessage('success', '已中斷 Strava 連接');
+    }
+
+    window.addEventListener('message', function(event) {
+      const isAllowedOrigin =
+        !!event.origin && CONFIG.allowedOrigins.includes(event.origin);
+
+      const isNullOriginSafeSuccess =
+        event.origin === "null" &&
+        event.data &&
+        typeof event.data === "object" &&
+        event.data.type === "STRAVA_AUTH_SUCCESS" &&
+        event.data.athlete &&
+        event.data.athlete.id;
+
+      if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
+        console.warn('收到來自未授權來源的訊息:', event.origin, event.data);
+        return;
+      }
+
+      if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+        stopPolling();
+        fillFormWithStravaData(event.data.athlete);
+        showMessage('success', 'Strava 授權成功!');
+      } else if (event.data.type === 'STRAVA_AUTH_ERROR') {
+        stopPolling();
+        showMessage('error', event.data.message || 'Strava 授權失敗');
+        updateStravaStatus(null);
+      }
+    });
+
+    function loadStravaDataFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const dataStr = urlParams.get('data');
+      if (dataStr) {
+        try {
+          const data = JSON.parse(decodeURIComponent(dataStr));
+          fillFormWithStravaData(data);
+          showMessage('success', 'Strava 授權成功!');
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return;
+        } catch (error) {
+          console.error('解析 URL 資料失敗:', error);
+        }
+      }
+      const athleteId = urlParams.get('athlete_id');
+      if (athleteId) {
+        const athlete = {
+          id: athleteId,
+          firstname: urlParams.get('firstname') || '',
+          lastname: urlParams.get('lastname') || '',
+          username: urlParams.get('username') || '',
+          city: urlParams.get('city') || '',
+          profile: urlParams.get('profile') || '',
+          profile_medium: urlParams.get('profile_medium') || '',
+          sex: urlParams.get('sex') || ''
+        };
+        fillFormWithStravaData(athlete);
+        showMessage('success', 'Strava 授權成功!');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault();
+
+      const form = event.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      if (!data.strava_athlete_id) {
+        showMessage('error', '請先連接 Strava 帳號');
+        return;
+      }
+      if (!data.name) {
+        showMessage('error', '請填寫姓名');
+        return;
+      }
+
+      await submitToBackend(data);
+    }
+
+    async function submitToBackend(data) {
+      const submitBtn = document.getElementById('submitBtn');
+      if (!submitBtn) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中...';
+      try {
+        const response = await fetch(CONFIG.submitUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          const result = await response.json().catch(() => ({}));
+
+          if (result.redirect_url) {
+            window.location.href = result.redirect_url;
+            return;
+          }
+
+          if (result.success !== false) {
+            const params = new URLSearchParams({
+              success: 'true',
+              message: result.message || '報名成功！',
+              registration_id: result.registration_id || '',
+              name: result.data?.name || '',
+              category: result.data?.category || '',
+              submitted_at: result.data?.submittedat || '',
+              email: result.data?.email || ''
+            });
+            window.location.href = `https://status.criterium.tw/register-result.html?${params.toString()}`;
+            return;
+          }
+
+          const msg = result.message || '表單已成功提交!';
+          const regId = result.registration_id ? `（報名編號：${result.registration_id}）` : '';
+          showMessage('success', `${msg} ${regId}`);
+          try {
+            localStorage.removeItem(CONFIG.storageKey + '_temp');
+          } catch (e) {}
+        } else {
+          const errorText = await response.text();
+          let errorMessage = '提交失敗';
+          let errorData = null;
+          try {
+            errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+
+          if (errorData && errorData.redirect_url) {
+            window.location.href = errorData.redirect_url;
+            return;
+          }
+
+          throw new Error(errorMessage);
+        }
+      } catch (error) {
+        console.error('提交錯誤:', error);
+        showMessage('error', error.message || '提交失敗,請稍後再試');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '確認';
+      }
+    }
+
+ async function syncTCUData() {
+  const tcuInput = document.getElementById('tcu_id');
+  let tcuId = tcuInput.value.trim();
+
+  if (!tcuId) {
+    showMessage('error', '請先輸入 TCU-ID / 個人身份證ID');
+    return;
+  }
+
+  // 將 TCU-ID 正規化成預留字串格式（例：全部大寫）
+  tcuId = tcuId.toUpperCase();
+  tcuInput.value = tcuId;
+
+  const btn = document.querySelector('.btn.btn-secondary');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>同步中...';
+  }
+
+  try {
+    const response = await fetch(CONFIG.tcuSyncUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // 這裡同時送 TCU-ID 與 Strava ID
+        tcu_id: tcuId,
+        strava_athlete_id: document.getElementById('strava_athlete_id').value || ''
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (result.success) {
+      if (result.data) {
+        if (result.data.tcu_id) {
+          document.getElementById('tcu_id').value = result.data.tcu_id;
+        }
+        if (result.data.name) {
+          document.getElementById('name').value = result.data.name;
+        }
+        if (result.data.notes && document.getElementById('notes')) {
+          document.getElementById('notes').value = result.data.notes;
+        }
+      }
+      showMessage('success', result.message || 'TCU 資料同步成功！');
+    } else {
+      showMessage('error', result.message || 'TCU 資料同步失敗');
+    }
+  } catch (error) {
+    console.error('同步錯誤:', error);
+    showMessage('error', '同步失敗，請稍後再試');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '同步個人資料';
+    }
+  }
+}
+
+
+    function resetForm() {
+      const form = document.getElementById('registrationForm');
+      if (!form) return;
+      form.reset();
+      const err = document.getElementById('errorMessage');
+      const ok = document.getElementById('successMessage');
+      if (err) err.classList.remove('show');
+      if (ok) ok.classList.remove('show');
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      loadStravaDataFromURL();
+      loadFormState();
+
+      try {
+        const savedMeta = localStorage.getItem(CONFIG.storageKey);
+        if (savedMeta && !document.getElementById('strava_athlete_id').value) {
+          const meta = JSON.parse(savedMeta);
+          if (meta && meta.id) {
+            updateStravaStatus({ id: meta.id });
+          }
+        }
+      } catch (error) {
+        console.error('載入 localStorage 資料失敗:', error);
+        localStorage.removeItem(CONFIG.storageKey);
+      }
+    });
+
+    window.addEventListener('beforeunload', function() {
+      if (pollingTimer) clearInterval(pollingTimer);
+      if (authWindow && !authWindow.closed) authWindow.close();
+    });
+  </script>
+</body>
+</html>
