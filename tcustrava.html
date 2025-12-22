@@ -234,9 +234,9 @@
       </div>
 
       <div class="form-group">
-        <label>TCU-ID / 個人生身分證ID</label>
+        <label>TCU-ID / 個人身份證ID</label>
         <input type="text" id="tcu_id" name="tcu_id" placeholder="內文為同步TCU資料" autocomplete="off">
-        <div class="input-hint">同步TCU資料用</div>
+        <div class="input-hint">同步TCU資料用，將自動轉為標準格式（例：TCU-001）。</div>
       </div>
 
       <div class="form-group">
@@ -658,11 +658,17 @@
     }
 
     async function syncTCUData() {
-      const tcuId = document.getElementById('tcu_id').value.trim();
+      const tcuInput = document.getElementById('tcu_id');
+      let tcuId = tcuInput.value.trim();
+
       if (!tcuId) {
-        showMessage('error', '請先輸入 TCU-ID / 個人生身分證ID');
+        showMessage('error', '請先輸入 TCU-ID / 個人身份證ID');
         return;
       }
+
+      // 將 TCU-ID 正規化成預留字串格式（例：全部大寫）
+      tcuId = tcuId.toUpperCase();
+      tcuInput.value = tcuId;
 
       const btn = document.querySelector('.btn.btn-secondary');
       if (btn) {
@@ -704,7 +710,7 @@
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '同步';
+          btn.textContent = '同步個人資料';
         }
       }
     }
