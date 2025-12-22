@@ -696,6 +696,8 @@
       submitBtn.textContent = '提交中...';
       
       try {
+        console.log('準備提交資料:', data);
+        
         const response = await fetch(CONFIG.submitUrl, {
           method: 'POST',
           headers: {
@@ -704,15 +706,35 @@
           body: JSON.stringify(data)
         });
         
+        console.log('回應狀態:', response.status);
+        
         if (response.ok) {
+          const result = await response.json().catch(() => ({}));
+          console.log('提交成功:', result);
+          
           showMessage('success', '表單已成功提交!');
+          
+          // 清除 Strava 臨時資料
+          localStorage.removeItem(CONFIG.storageKey + '_temp');
           
           setTimeout(() => {
             resetForm();
+            // 可選：清除 Strava 連接狀態
+            // disconnectStrava();
           }, 2000);
         } else {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || '提交失敗');
+          const errorText = await response.text();
+          console.error('提交失敗回應:', errorText);
+          
+          let errorMessage = '提交失敗';
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
         }
         
       } catch (error) {
