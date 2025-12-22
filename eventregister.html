@@ -417,12 +417,22 @@
         const avatarHtml = athlete.profile_medium || athlete.profile ? 
           `<img src="${athlete.profile_medium || athlete.profile}" class="strava-avatar" alt="Profile">` : '';
         
+        // 智能處理姓名顯示
+        const firstName = athlete.firstname || athlete.firstName || '';
+        const lastName = athlete.lastname || athlete.lastName || '';
+        const username = athlete.username || '';
+        
+        // 優先顯示真實姓名，如果沒有則顯示 username
+        const displayName = (firstName || lastName) ? 
+          `${firstName} ${lastName}`.trim() : 
+          username || `運動員 ${athlete.id}`;
+        
         statusEl.innerHTML = `
           <div class="strava-info">
             ${avatarHtml}
             <div>
               <div class="strava-name">
-                ${athlete.firstname || athlete.firstName || ''} ${athlete.lastname || athlete.lastName || ''}
+                ${displayName}
               </div>
               <div class="strava-id">
                 ✓ 已連接 Strava (ID: ${athlete.id})
