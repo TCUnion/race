@@ -474,21 +474,14 @@
       }
     }
 
-   window.addEventListener('message', function(event) {
-  console.log('收到 postMessage:', event.origin, event.data);
+window.addEventListener('message', function(event) {
+  console.log('TEST message handler:', event.origin, event.data);
 
-  if (!event.data || typeof event.data !== 'object') {
-    return;
-  }
-
-  if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete && event.data.athlete.id) {
+  const d = event.data;
+  if (d && typeof d === 'object' && d.type === 'STRAVA_AUTH_SUCCESS' && d.athlete && d.athlete.id) {
     stopPolling();
-    fillFormWithStravaData(event.data.athlete);
+    fillFormWithStravaData(d.athlete);
     showMessage('success', 'Strava 授權成功!');
-  } else if (event.data.type === 'STRAVA_AUTH_ERROR') {
-    stopPolling();
-    showMessage('error', event.data.message || 'Strava 授權失敗');
-    updateStravaStatus(null);
   }
 });
 
