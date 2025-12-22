@@ -8,10 +8,26 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #000;
       min-height: 100vh;
       padding: 2rem;
     }
+
+    .tsu-banner {
+      width: 100%;
+      background: #000;
+      padding: 8px 24px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .tsu-banner img {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+
     .container {
       max-width: 600px;
       margin: 0 auto;
@@ -125,7 +141,6 @@
     .btn-secondary { background: #6c757d; color: white; }
     .btn-secondary:hover { background: #5a6268; }
 
-    /* 成功/錯誤訊息 */
     .message {
       padding: 12px 16px;
       border-radius: 8px;
@@ -173,6 +188,12 @@
   </style>
 </head>
 <body>
+  <div class="tsu-banner">
+    <a href="https://www.tsu.com.tw/" target="_blank" rel="noopener noreferrer">
+      <img src="https://www.tsu.com.tw/images/logo.png" alt="TSU Logo">
+    </a>
+  </div>
+
   <!-- DEBUG build: 2025-12-22 12:41 -->
   <div class="container">
     <h1>TCU STRAVA大挑戰</h1>
@@ -202,14 +223,7 @@
         <label>姓名 <span class="required">*</span></label>
         <input type="text" id="name" name="name" required placeholder="請輸入真實姓名">
       </div>
-      <div class="form-group">
-        <label>Email <span class="required">*</span></label>
-        <input type="email" id="email" name="email" required placeholder="example@email.com">
-      </div>
-      <div class="form-group">
-        <label>手機號碼 <span class="required">*</span></label>
-        <input type="tel" id="phone" name="phone" required placeholder="0912-345-678">
-      </div>
+
       <div class="form-group">
         <label>性別 <span class="required">*</span></label>
         <select id="gender" name="gender" required>
@@ -218,28 +232,13 @@
           <option value="F">女性</option>
         </select>
       </div>
+
       <div class="form-group">
         <label>城市</label>
         <input type="text" id="city" name="city" placeholder="例如: 台中市">
         <div class="input-hint">從 Strava 自動帶入</div>
       </div>
-      <div class="form-group">
-        <label>參賽組別 <span class="required">*</span></label>
-        <select id="category" name="category" required>
-          <option value="">請選擇</option>
-          <option value="pro">菁英組</option>
-          <option value="amateur">業餘組</option>
-          <option value="junior">青少年組</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>緊急聯絡人 <span class="required">*</span></label>
-        <input type="text" id="emergency_contact" name="emergency_contact" required placeholder="姓名">
-      </div>
-      <div class="form-group">
-        <label>緊急聯絡電話 <span class="required">*</span></label>
-        <input type="tel" id="emergency_phone" name="emergency_phone" required placeholder="0912-345-678">
-      </div>
+
       <div class="form-group">
         <label>備註</label>
         <textarea id="notes" name="notes" rows="3" placeholder="其他需要說明的事項..."></textarea>
@@ -550,31 +549,27 @@
         });
         console.log('回應狀態:', response.status);
         if (response.ok) {
-  const result = await response.json().catch(() => ({}));
-  
-  // 優先使用 redirect_url
-  if (result.redirect_url) {
-    window.location.href = result.redirect_url;
-    return;
-  }
-  
-  // 自動建構成功頁 URL
-  if (result.success !== false) {
-    const params = new URLSearchParams({
-      success: 'true',
-      message: result.message || '報名成功！',
-      registration_id: result.registration_id || '',
-      name: result.data?.name || '',
-      category: result.data?.category || '',
-      submitted_at: result.data?.submittedat || '',
-      email: result.data?.email || ''
-    });
-    window.location.href = `https://status.criterium.tw/register-result.html?${params.toString()}`;
-    return;
-  }
-  
+          const result = await response.json().catch(() => ({}));
+          
+          if (result.redirect_url) {
+            window.location.href = result.redirect_url;
+            return;
+          }
+          
+          if (result.success !== false) {
+            const params = new URLSearchParams({
+              success: 'true',
+              message: result.message || '報名成功！',
+              registration_id: result.registration_id || '',
+              name: result.data?.name || '',
+              category: result.data?.category || '',
+              submitted_at: result.data?.submittedat || '',
+              email: result.data?.email || ''
+            });
+            window.location.href = `https://status.criterium.tw/register-result.html?${params.toString()}`;
+            return;
+          }
 
-          // 沒有 redirect_url 時留在本頁顯示成功訊息
           const msg = result.message || '表單已成功提交!';
           const regId = result.registration_id ? `（報名編號：${result.registration_id}）` : '';
           showMessage('success', `${msg} ${regId}`);
@@ -591,7 +586,6 @@
             errorMessage = errorText || errorMessage;
           }
 
-          // 失敗時若也有 redirect_url，導向結果頁
           if (errorData && errorData.redirect_url) {
             window.location.href = errorData.redirect_url;
             return;
