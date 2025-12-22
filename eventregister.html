@@ -30,8 +30,6 @@
       margin-bottom: 2rem;
       font-size: 14px;
     }
-    
-    /* Strava 連接狀態 */
     .strava-status {
       background: #f8f9fa;
       padding: 1rem;
@@ -60,14 +58,8 @@
       border-radius: 50%;
       object-fit: cover;
     }
-    .strava-name {
-      font-weight: 600;
-      color: #333;
-    }
-    .strava-id {
-      font-size: 12px;
-      color: #666;
-    }
+    .strava-name { font-weight: 600; color: #333; }
+    .strava-id { font-size: 12px; color: #666; }
     .btn-strava {
       background: #fc5200;
       color: white;
@@ -79,20 +71,9 @@
       cursor: pointer;
       transition: all 0.3s;
     }
-    .btn-strava:hover {
-      background: #e04a00;
-      transform: translateY(-2px);
-    }
-    .btn-strava:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
-    /* 表單樣式 */
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
+    .btn-strava:hover { background: #e04a00; transform: translateY(-2px); }
+    .btn-strava:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+    .form-group { margin-bottom: 1.5rem; }
     label {
       display: block;
       color: #333;
@@ -100,9 +81,7 @@
       margin-bottom: 0.5rem;
       font-size: 14px;
     }
-    label .required {
-      color: #dc3545;
-    }
+    label .required { color: #dc3545; }
     input, select, textarea {
       width: 100%;
       padding: 12px;
@@ -121,13 +100,7 @@
       color: #6c757d;
       cursor: not-allowed;
     }
-    .input-hint {
-      font-size: 12px;
-      color: #6c757d;
-      margin-top: 0.25rem;
-    }
-    
-    /* 按鈕組 */
+    .input-hint { font-size: 12px; color: #6c757d; margin-top: 0.25rem; }
     .form-actions {
       display: flex;
       gap: 1rem;
@@ -143,27 +116,11 @@
       cursor: pointer;
       transition: all 0.3s;
     }
-    .btn-primary {
-      background: #667eea;
-      color: white;
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: #5568d3;
-      transform: translateY(-2px);
-    }
-    .btn-primary:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #5a6268;
-    }
-    
-    /* 成功/錯誤訊息 */
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #5568d3; transform: translateY(-2px); }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
     .message {
       padding: 1rem;
       border-radius: 8px;
@@ -185,17 +142,9 @@
       color: #721c24;
     }
     @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-
-    /* 載入動畫 */
     .spinner {
       display: inline-block;
       width: 16px;
@@ -214,13 +163,13 @@
   </style>
 </head>
 <body>
+  <!-- DEBUG build: 2025-12-22 12:05 -->
   <div class="container">
     <h1>🚴 TCU Criterium 賽事報名</h1>
     <p class="subtitle">請填寫以下資訊完成報名</p>
     
     <!-- 成功訊息（初始為空） -->
     <div id="successMessage" class="message success-message"></div>
-    
     <!-- 錯誤訊息 -->
     <div id="errorMessage" class="message error-message"></div>
     
@@ -239,27 +188,22 @@
     
     <!-- 報名表單 -->
     <form id="registrationForm" onsubmit="handleSubmit(event)">
-      <!-- Strava 資料 (隱藏欄位) -->
       <input type="hidden" id="strava_athlete_id" name="strava_athlete_id">
       <input type="hidden" id="strava_username" name="strava_username">
       <input type="hidden" id="strava_profile" name="strava_profile">
       
-      <!-- 基本資料 -->
       <div class="form-group">
         <label>姓名 <span class="required">*</span></label>
         <input type="text" id="name" name="name" required placeholder="請輸入真實姓名">
       </div>
-      
       <div class="form-group">
         <label>Email <span class="required">*</span></label>
         <input type="email" id="email" name="email" required placeholder="example@email.com">
       </div>
-      
       <div class="form-group">
         <label>手機號碼 <span class="required">*</span></label>
         <input type="tel" id="phone" name="phone" required placeholder="0912-345-678">
       </div>
-      
       <div class="form-group">
         <label>性別 <span class="required">*</span></label>
         <select id="gender" name="gender" required>
@@ -268,13 +212,11 @@
           <option value="F">女性</option>
         </select>
       </div>
-      
       <div class="form-group">
         <label>城市</label>
         <input type="text" id="city" name="city" placeholder="例如: 台中市">
         <div class="input-hint">從 Strava 自動帶入</div>
       </div>
-      
       <div class="form-group">
         <label>參賽組別 <span class="required">*</span></label>
         <select id="category" name="category" required>
@@ -284,23 +226,19 @@
           <option value="junior">青少年組</option>
         </select>
       </div>
-      
       <div class="form-group">
         <label>緊急聯絡人 <span class="required">*</span></label>
         <input type="text" id="emergency_contact" name="emergency_contact" required placeholder="姓名">
       </div>
-      
       <div class="form-group">
         <label>緊急聯絡電話 <span class="required">*</span></label>
         <input type="tel" id="emergency_phone" name="emergency_phone" required placeholder="0912-345-678">
       </div>
-      
       <div class="form-group">
         <label>備註</label>
         <textarea id="notes" name="notes" rows="3" placeholder="其他需要說明的事項..."></textarea>
       </div>
       
-      <!-- 送出按鈕 -->
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" onclick="resetForm()">
           重設
@@ -313,9 +251,6 @@
   </div>
 
   <script>
-    // ============================================
-    // 配置設定
-    // ============================================
     const CONFIG = {
       stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
       submitUrl: 'https://n8n.criterium.tw/webhook/0822a942-927b-41a1-a484-e1e487e63664',
@@ -326,19 +261,20 @@
       ],
       storageKey: 'strava_athlete_data',
       pollingInterval: 1000,
-      pollingTimeout: 120000 // 2分鐘超時
+      pollingTimeout: 120000
     };
 
     let authWindow = null;
     let pollingTimer = null;
     let pollingStartTime = null;
 
-    // ============================================
-    // 工具函數
-    // ============================================
     function showMessage(type, message) {
       console.log('showMessage called:', type, message);
       const messageEl = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
+      if (!messageEl) {
+        console.warn('no element for showMessage:', type);
+        return;
+      }
       if (message) {
         messageEl.textContent = (type === 'error' ? '✗ ' : '✓ ') + message;
       }
@@ -358,9 +294,7 @@
           const data = JSON.parse(savedState);
           Object.keys(data).forEach(key => {
             const input = document.getElementById(key);
-            if (input && data[key]) {
-              input.value = data[key];
-            }
+            if (input && data[key]) input.value = data[key];
           });
           sessionStorage.removeItem('form_state');
         } catch (error) {
@@ -369,68 +303,49 @@
       }
     }
 
-    // ============================================
-    // Strava 資料處理
-    // ============================================
     function fillFormWithStravaData(athlete) {
       console.log('填充表單資料:', athlete);
-      
       document.getElementById('strava_athlete_id').value = athlete.id || '';
       document.getElementById('strava_username').value = athlete.username || '';
       document.getElementById('strava_profile').value = athlete.profile || athlete.profile_medium || '';
-      
+
       const firstName = athlete.firstname || athlete.firstName || '';
       const lastName = athlete.lastname || athlete.lastName || '';
       const fullName = `${firstName} ${lastName}`.trim();
-      
       if (fullName && !document.getElementById('name').value) {
         document.getElementById('name').value = fullName;
       }
-      
       if (athlete.city && !document.getElementById('city').value) {
         document.getElementById('city').value = athlete.city;
       }
-      
       if (athlete.sex && !document.getElementById('gender').value) {
         document.getElementById('gender').value = athlete.sex;
       }
-      
       updateStravaStatus(athlete);
-      
       localStorage.setItem(CONFIG.storageKey, JSON.stringify(athlete));
     }
-    
+
     function updateStravaStatus(athlete) {
       const statusEl = document.getElementById('stravaStatus');
-      
       if (athlete && athlete.id) {
         statusEl.className = 'strava-status connected';
-        const avatarHtml = athlete.profile_medium || athlete.profile ? 
+        const avatarHtml = athlete.profile_medium || athlete.profile ?
           `<img src="${athlete.profile_medium || athlete.profile}" class="strava-avatar" alt="Profile">` : '';
-        
         const firstName = athlete.firstname || athlete.firstName || '';
         const lastName = athlete.lastname || athlete.lastName || '';
         const username = athlete.username || '';
-        
-        const displayName = (firstName || lastName) ? 
-          `${firstName} ${lastName}`.trim() : 
+        const displayName = (firstName || lastName) ?
+          `${firstName} ${lastName}`.trim() :
           username || `運動員 ${athlete.id}`;
-        
         statusEl.innerHTML = `
           <div class="strava-info">
             ${avatarHtml}
             <div>
-              <div class="strava-name">
-                ${displayName}
-              </div>
-              <div class="strava-id">
-                ✓ 已連接 Strava (ID: ${athlete.id})
-              </div>
+              <div class="strava-name">${displayName}</div>
+              <div class="strava-id">✓ 已連接 Strava (ID: ${athlete.id})</div>
             </div>
           </div>
-          <button class="btn-strava" onclick="disconnectStrava()">
-            中斷連接
-          </button>
+          <button class="btn-strava" onclick="disconnectStrava()">中斷連接</button>
         `;
       } else {
         statusEl.className = 'strava-status';
@@ -441,9 +356,7 @@
               <div class="strava-id">請先連接你的 Strava 帳號</div>
             </div>
           </div>
-          <button class="btn-strava" onclick="connectStrava()">
-            連接 Strava
-          </button>
+          <button class="btn-strava" onclick="connectStrava()">連接 Strava</button>
         `;
       }
     }
@@ -460,50 +373,35 @@
             <div class="strava-id">請在彈出視窗中完成 Strava 授權</div>
           </div>
         </div>
-        <button class="btn-strava" disabled>
-          處理中...
-        </button>
+        <button class="btn-strava" disabled>處理中...</button>
       `;
     }
 
-    // ============================================
-    // Strava 授權功能
-    // ============================================
     function connectStrava() {
       saveFormState();
-      
-      if (pollingTimer) {
-        clearInterval(pollingTimer);
-      }
-      
+      if (pollingTimer) clearInterval(pollingTimer);
       updateStravaStatusLoading();
-      
       localStorage.removeItem(CONFIG.storageKey + '_temp');
-      
-      const width = 600;
-      const height = 700;
+
+      const width = 600, height = 700;
       const left = (screen.width - width) / 2;
       const top = (screen.height - height) / 2;
-      
       const returnUrl = encodeURIComponent(window.location.href);
       authWindow = window.open(
         `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`,
         'strava_auth',
         `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
       );
-      
       if (!authWindow) {
-        console.log('Popup 被阻擋,使用重定向方案');
+        console.log('Popup 被阻擋, 使用重定向方案');
         window.location.href = `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
         return;
       }
-      
       startPolling();
     }
 
     function startPolling() {
       pollingStartTime = Date.now();
-      
       pollingTimer = setInterval(() => {
         if (Date.now() - pollingStartTime > CONFIG.pollingTimeout) {
           stopPolling();
@@ -511,7 +409,6 @@
           updateStravaStatus(null);
           return;
         }
-        
         if (authWindow && authWindow.closed) {
           stopPolling();
           const athlete = checkStoredData();
@@ -521,7 +418,6 @@
           }
           return;
         }
-        
         checkStoredData();
       }, CONFIG.pollingInterval);
     }
@@ -531,9 +427,7 @@
         clearInterval(pollingTimer);
         pollingTimer = null;
       }
-      if (authWindow && !authWindow.closed) {
-        authWindow.close();
-      }
+      if (authWindow && !authWindow.closed) authWindow.close();
       authWindow = null;
     }
 
@@ -543,14 +437,10 @@
         try {
           const athlete = JSON.parse(tempData);
           console.log('從 localStorage 取得 Strava 資料:', athlete);
-          
           localStorage.removeItem(CONFIG.storageKey + '_temp');
-          
           stopPolling();
-          
           fillFormWithStravaData(athlete);
           showMessage('success', 'Strava 授權成功!');
-          
           return athlete;
         } catch (error) {
           console.error('解析 Strava 資料失敗:', error);
@@ -564,18 +454,13 @@
         document.getElementById('strava_athlete_id').value = '';
         document.getElementById('strava_username').value = '';
         document.getElementById('strava_profile').value = '';
-        
         localStorage.removeItem(CONFIG.storageKey);
         localStorage.removeItem(CONFIG.storageKey + '_temp');
-        
         updateStravaStatus(null);
         showMessage('success', '已中斷 Strava 連接');
       }
     }
 
-    // ============================================
-    // 監聽授權視窗訊息
-    // ============================================
     window.addEventListener('message', function(event) {
       if (event.origin === 'null' || event.origin === null) {
         if (!event.data || event.data.type !== 'STRAVA_AUTH_SUCCESS') {
@@ -601,12 +486,8 @@
       }
     });
 
-    // ============================================
-    // 處理 URL 參數
-    // ============================================
     function loadStravaDataFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
-      
       const dataStr = urlParams.get('data');
       if (dataStr) {
         try {
@@ -614,14 +495,12 @@
           console.log('從 URL 收到 Strava 資料:', data);
           fillFormWithStravaData(data);
           showMessage('success', 'Strava 授權成功!');
-          
           window.history.replaceState({}, document.title, window.location.pathname);
           return;
         } catch (error) {
           console.error('解析 URL 資料失敗:', error);
         }
       }
-      
       const athleteId = urlParams.get('athlete_id');
       if (athleteId) {
         const athlete = {
@@ -634,69 +513,46 @@
           profile_medium: urlParams.get('profile_medium') || '',
           sex: urlParams.get('sex') || ''
         };
-        
         fillFormWithStravaData(athlete);
         showMessage('success', 'Strava 授權成功!');
-        
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
 
-    // ============================================
-    // 表單提交處理
-    // ============================================
     async function handleSubmit(event) {
       event.preventDefault();
-      
       const formData = new FormData(event.target);
       const data = Object.fromEntries(formData.entries());
-      
       console.log('提交表單資料:', data);
-      
       if (!data.strava_athlete_id) {
         showMessage('error', '請先連接 Strava 帳號');
         return;
       }
-      
       await submitToBackend(data);
     }
-    
+
     async function submitToBackend(data) {
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
       submitBtn.textContent = '提交中...';
-      
       try {
         console.log('準備提交資料:', data);
-        
         const response = await fetch(CONFIG.submitUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
-        
         console.log('回應狀態:', response.status);
-        
         if (response.ok) {
           const result = await response.json().catch(() => ({}));
           console.log('提交成功:', result);
-
           const msg = result.message || '表單已成功提交!';
           const regId = result.registration_id ? `（報名編號：${result.registration_id}）` : '';
           showMessage('success', `${msg} ${regId}`);
-
           localStorage.removeItem(CONFIG.storageKey + '_temp');
-
-          // 測試期間先不要自動 reset，確認訊息有出現
-          // setTimeout(() => {
-          //   resetForm();
-          // }, 2000);
         } else {
           const errorText = await response.text();
           console.error('提交失敗回應:', errorText);
-          
           let errorMessage = '提交失敗';
           try {
             const errorData = JSON.parse(errorText);
@@ -704,10 +560,8 @@
           } catch (e) {
             errorMessage = errorText || errorMessage;
           }
-          
           throw new Error(errorMessage);
         }
-        
       } catch (error) {
         console.error('提交錯誤:', error);
         showMessage('error', error.message || '提交失敗,請稍後再試');
@@ -716,24 +570,15 @@
         submitBtn.textContent = '送出報名';
       }
     }
-    
-    // ============================================
-    // 重設表單
-    // ============================================
+
     function resetForm() {
       document.getElementById('registrationForm').reset();
-      // 若希望 reset 時保留成功訊息，就不要移除 successMessage 的 show
-      // document.getElementById('successMessage').classList.remove('show');
       document.getElementById('errorMessage').classList.remove('show');
     }
-    
-    // ============================================
-    // 頁面載入時執行
-    // ============================================
+
     window.addEventListener('DOMContentLoaded', function() {
       loadStravaDataFromURL();
       loadFormState();
-      
       const savedAthlete = localStorage.getItem(CONFIG.storageKey);
       if (savedAthlete && !document.getElementById('strava_athlete_id').value) {
         try {
@@ -747,12 +592,8 @@
     });
 
     window.addEventListener('beforeunload', function() {
-      if (pollingTimer) {
-        clearInterval(pollingTimer);
-      }
-      if (authWindow && !authWindow.closed) {
-        authWindow.close();
-      }
+      if (pollingTimer) clearInterval(pollingTimer);
+      if (authWindow && !authWindow.closed) authWindow.close();
     });
   </script>
 </body>
