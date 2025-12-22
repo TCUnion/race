@@ -40,7 +40,7 @@
     }
     .info-row:last-child { border-bottom: none; }
     .label { color: #666; }
-    .value { color: #333; font-weight: 600; }
+    .value { color: #333; font-weight: 600; text-align: right; }
     .btn {
       display: inline-block;
       padding: 0.75rem 1.5rem;
@@ -82,6 +82,34 @@
         <span class="label">Email</span>
         <span class="value" id="email">-</span>
       </div>
+      <div class="info-row">
+        <span class="label">手機</span>
+        <span class="value" id="phone">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Strava ID</span>
+        <span class="value" id="stravaId">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">性別</span>
+        <span class="value" id="gender">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">城市</span>
+        <span class="value" id="city">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">緊急聯絡人</span>
+        <span class="value" id="emergencyContact">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">緊急聯絡電話</span>
+        <span class="value" id="emergencyPhone">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">備註</span>
+        <span class="value" id="notes">-</span>
+      </div>
     </div>
 
     <a href="/eventregister.html" class="btn btn-primary">返回報名頁</a>
@@ -98,20 +126,28 @@
 
     msgEl.textContent = message;
 
+    const get = (key) => params.get(key) || '-';
+
     if (success) {
       titleEl.textContent = '報名成功';
       titleEl.classList.add('success');
       infoEl.style.display = 'block';
 
-      document.getElementById('regId').textContent = params.get('registration_id') || '-';
-      document.getElementById('name').textContent = params.get('name') || '-';
-      document.getElementById('category').textContent = params.get('category') || '-';
-      document.getElementById('submittedAt').textContent = params.get('submitted_at') || '-';
-      document.getElementById('email').textContent = params.get('email') || '-';
+      document.getElementById('regId').textContent = get('registration_id');
+      document.getElementById('name').textContent = get('name');
+      document.getElementById('category').textContent = get('category');
+      document.getElementById('submittedAt').textContent = get('submitted_at');
+      document.getElementById('email').textContent = get('email');
+      document.getElementById('phone').textContent = get('phone');
+      document.getElementById('stravaId').textContent = get('strava_athlete_id');
+      document.getElementById('gender').textContent = get('gender');
+      document.getElementById('city').textContent = get('city');
+      document.getElementById('emergencyContact').textContent = get('emergency_contact');
+      document.getElementById('emergencyPhone').textContent = get('emergency_phone');
+      document.getElementById('notes').textContent = get('notes');
     } else {
       titleEl.textContent = '報名失敗';
       titleEl.classList.add('error');
-      // 如有缺少欄位清單，可一起顯示
       const missing = params.get('missing_fields');
       if (missing) {
         msgEl.textContent += `（缺少欄位：${missing}）`;
