@@ -339,17 +339,15 @@
     // 工具函數
     // ============================================
     
-    function showMessage(type, message) {
-      const messageEl = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
-      if (type === 'error') {
-        messageEl.textContent = '✗ ' + message;
-      }
-      messageEl.classList.add('show');
-      
-      setTimeout(() => {
-        messageEl.classList.remove('show');
-      }, 5000);
-    }
+function showMessage(type, message) {
+  const messageEl = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
+  if (message) {
+    messageEl.textContent = (type === 'error' ? '✗ ' : '✓ ') + message;
+  }
+  messageEl.classList.add('show');
+  
+
+}
 
     function saveFormState() {
       const formData = new FormData(document.getElementById('registrationForm'));
@@ -719,21 +717,22 @@ window.addEventListener('message', function(event) {
         
         console.log('回應狀態:', response.status);
         
-        if (response.ok) {
-          const result = await response.json().catch(() => ({}));
-          console.log('提交成功:', result);
-          
-          showMessage('success', '表單已成功提交!');
-          
-          // 清除 Strava 臨時資料
-          localStorage.removeItem(CONFIG.storageKey + '_temp');
-          
-          setTimeout(() => {
-            resetForm();
-            // 可選：清除 Strava 連接狀態
-            // disconnectStrava();
-          }, 2000);
-        } else {
+if (response.ok) {
+  const result = await response.json().catch(() => ({}));
+  console.log('提交成功:', result);
+
+  const msg = result.message || '表單已成功提交!';
+  const regId = result.registration_id ? `（報名編號：${result.registration_id}）` : '';
+  showMessage('success', `${msg} ${regId}`);
+
+  localStorage.removeItem(CONFIG.storageKey + '_temp');
+
+  setTimeout(() => {
+    resetForm();
+    // 這行如果你想保留成功訊息，就先不要 resetForm
+    // 或把 resetForm() 的 successMessage 清除那一行註解掉
+  }, 2000);
+} else {
           const errorText = await response.text();
           console.error('提交失敗回應:', errorText);
           
