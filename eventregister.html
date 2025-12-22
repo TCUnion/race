@@ -607,25 +607,32 @@
     // 監聽來自授權視窗的訊息
     // ============================================
     
-    window.addEventListener('message', function(event) {
-      // 驗證來源
-      if (!CONFIG.allowedOrigins.includes(event.origin)) {
-        console.warn('收到來自未知來源的訊息:', event.origin);
-        return;
-      }
-      
-      console.log('收到 postMessage:', event.data);
-      
-      if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
-        stopPolling();
-        fillFormWithStravaData(event.data.athlete);
-        showMessage('success', 'Strava 授權成功!');
-      } else if (event.data.type === 'STRAVA_AUTH_ERROR') {
-        stopPolling();
-        showMessage('error', event.data.message || 'Strava 授權失敗');
-        updateStravaStatus(null);
-      }
-    });
+window.addEventListener('message', function(event) {
+  // 先處理 null 的情況（某些瀏覽器 / 特殊來源）
+  if (event.origin === 'null' || event.origin === null) {
+    // 額外再檢查一次訊息格式，避免亂源
+    if (!event.data || event.data.type !== 'STRAVA_AUTH_SUCCESS') {
+      console.warn('收到 origin 為 null 的未知訊息:', event.data);
+      return;
+    }
+    console.log('收到來自 origin=null 的授權訊息:', event.data);
+  } else if (!CONFIG.allowedOrigins.includes(event.origin)) {
+    console.warn('收到來自未知來源的訊息:', event.origin);
+    return;
+  }
+
+  console.log('收到 postMessage:', event.data);
+
+  if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+    stopPolling();
+    fillFormWithStravaData(event.data.athlete);
+    showMessage('success', 'Strava 授權成功!');
+  } else if (event.data.type === 'STRAVA_AUTH_ERROR') {
+    stopPolling();
+    showMessage('error', event.data.message || 'Strava 授權失敗');
+    updateStravaStatus(null);
+  }
+});
 
     // ============================================
     // 處理從 URL 參數返回的資料
