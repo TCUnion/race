@@ -657,63 +657,65 @@
       }
     }
 
-    async function syncTCUData() {
-      const tcuInput = document.getElementById('tcu_id');
-      let tcuId = tcuInput.value.trim();
+ async function syncTCUData() {
+  const tcuInput = document.getElementById('tcu_id');
+  let tcuId = tcuInput.value.trim();
 
-      if (!tcuId) {
-        showMessage('error', '請先輸入 TCU-ID / 個人身份證ID');
-        return;
-      }
+  if (!tcuId) {
+    showMessage('error', '請先輸入 TCU-ID / 個人身份證ID');
+    return;
+  }
 
-      // 將 TCU-ID 正規化成預留字串格式（例：全部大寫）
-      tcuId = tcuId.toUpperCase();
-      tcuInput.value = tcuId;
+  // 將 TCU-ID 正規化成預留字串格式（例：全部大寫）
+  tcuId = tcuId.toUpperCase();
+  tcuInput.value = tcuId;
 
-      const btn = document.querySelector('.btn.btn-secondary');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>同步中...';
-      }
+  const btn = document.querySelector('.btn.btn-secondary');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>同步中...';
+  }
 
-      try {
-        const response = await fetch(CONFIG.tcuSyncUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tcu_id: tcuId,
-            strava_athlete_id: document.getElementById('strava_athlete_id').value || ''
-          })
-        });
+  try {
+    const response = await fetch(CONFIG.tcuSyncUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // 這裡同時送 TCU-ID 與 Strava ID
+        tcu_id: tcuId,
+        strava_athlete_id: document.getElementById('strava_athlete_id').value || ''
+      })
+    });
 
-        const result = await response.json().catch(() => ({}));
+    const result = await response.json().catch(() => ({}));
 
-        if (result.success) {
-          if (result.data) {
-            if (result.data.tcu_id) {
-              document.getElementById('tcu_id').value = result.data.tcu_id;
-            }
-            if (result.data.name) {
-              document.getElementById('name').value = result.data.name;
-            }
-            if (result.data.notes && document.getElementById('notes')) {
-              document.getElementById('notes').value = result.data.notes;
-            }
-          }
-          showMessage('success', result.message || 'TCU 資料同步成功！');
-        } else {
-          showMessage('error', result.message || 'TCU 資料同步失敗');
+    if (result.success) {
+      if (result.data) {
+        if (result.data.tcu_id) {
+          document.getElementById('tcu_id').value = result.data.tcu_id;
         }
-      } catch (error) {
-        console.error('同步錯誤:', error);
-        showMessage('error', '同步失敗，請稍後再試');
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = '同步個人資料';
+        if (result.data.name) {
+          document.getElementById('name').value = result.data.name;
+        }
+        if (result.data.notes && document.getElementById('notes')) {
+          document.getElementById('notes').value = result.data.notes;
         }
       }
+      showMessage('success', result.message || 'TCU 資料同步成功！');
+    } else {
+      showMessage('error', result.message || 'TCU 資料同步失敗');
     }
+  } catch (error) {
+    console.error('同步錯誤:', error);
+    showMessage('error', '同步失敗，請稍後再試');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '同步個人資料';
+    }
+  }
+}
+
 
     function resetForm() {
       const form = document.getElementById('registrationForm');
