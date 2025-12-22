@@ -340,13 +340,12 @@
     // ============================================
     
 function showMessage(type, message) {
+  console.log('showMessage called:', type, message);
   const messageEl = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
   if (message) {
     messageEl.textContent = (type === 'error' ? '✗ ' : '✓ ') + message;
   }
   messageEl.classList.add('show');
-  
-
 }
 
     function saveFormState() {
