@@ -100,7 +100,7 @@
       font-size: 14px;
     }
     label .required { color: #dc3545; }
-    input, select, textarea {
+    input, textarea {
       width: 100%;
       padding: 12px;
       border: 2px solid #e9ecef;
@@ -109,11 +109,11 @@
       font-family: inherit;
       transition: border-color 0.3s;
     }
-    input:focus, select:focus, textarea:focus {
+    input:focus, textarea:focus {
       outline: none;
       border-color: #667eea;
     }
-    input:disabled, select:disabled {
+    input:disabled {
       background: #f8f9fa;
       color: #6c757d;
       cursor: not-allowed;
@@ -200,7 +200,6 @@
     </a>
   </div>
 
-  <!-- DEBUG build: 2025-12-22 12:41 (secured, simplified) -->
   <div class="container">
     <h1>TCU STRAVA大挑戰</h1>
     <p class="subtitle">請先授權STRAVA</p>
@@ -220,7 +219,6 @@
       </button>
     </div>
 
-    <!-- 新增說明欄：介於 Strava 區塊與姓名欄位之間 -->
     <div class="info-block">
       這是TCU針對後續釋出讓大家都可以用STRAVA可以辦比賽的測試。
     </div>
@@ -241,24 +239,22 @@
         <div class="input-hint">同步TCU資料用</div>
       </div>
 
-      <!-- 性別 & 城市已依需求移除 -->
-
       <div class="form-group">
         <label>備註</label>
         <textarea id="notes" name="notes" rows="3" placeholder="其他需要說明的事項..."></textarea>
       </div>
 
       <div class="form-actions">
-        <!-- 原本：重設 => 改成 同步 -->
         <button type="button" class="btn btn-secondary" onclick="resetForm()">
           同步
         </button>
-        <!-- 原本：送出報名 => 改成 確認 -->
         <button type="submit" class="btn btn-primary" id="submitBtn">
           確認
         </button>
       </div>
+    </form> <!-- ★ 這個在你貼的版本裡漏掉 -->
 
+  </div>
 
   <script>
     const CONFIG = {
@@ -650,7 +646,7 @@
         showMessage('error', error.message || '提交失敗,請稍後再試');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = '送出報名';
+        submitBtn.textContent = '確認';
       }
     }
 
