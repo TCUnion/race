@@ -684,6 +684,9 @@
 
         if (result.success) {
           if (result.data) {
+            if (result.data.tcu_id) {
+              document.getElementById('tcu_id').value = result.data.tcu_id;
+            }
             if (result.data.name) {
               document.getElementById('name').value = result.data.name;
             }
