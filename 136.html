@@ -814,24 +814,24 @@
         const result = await response.json().catch(() => ({}));
 
         if (result.success) {
-          if (result.data) {
-            if (result.data.tcu_id) {
-              document.getElementById('tcu_id').value = result.data.tcu_id;
-            }
-            if (result.data.name) {
-              document.getElementById('name').value = result.data.name;
-            }
-          }
-          showMessage('success', result.message || 'TCU 資料同步成功！');
-        } else {
-          showMessage('error', result.message || 'TCU 資料同步失敗');
-        }
-      } catch (error) {
-        console.error('同步錯誤:', error);
-        showMessage('error', '同步失敗，請稍後再試');
-      } finally {
+  if (result.data) {
+    if (result.data.tcu_id) {
+      document.getElementById('tcu_id').value = result.data.tcu_id;
+    }
+    if (result.data.name) {
+      document.getElementById('name').value = result.data.name;
+    }
+    // 🔽 新增: 同步車隊欄位
+    if (result.data.team) {
+      document.getElementById('team').value = result.data.team;
+    }
+  }
+  showMessage('success', result.message || 'TCU 資料同步成功！');
+} else {
+  showMessage('error', result.message || 'TCU 資料同步失敗');
+} finally {
         btn.disabled = false;
-        btn.textContent = '📊 同步個人資料';
+        btn.textContent = ' 同步個人資料成功';
       }
     }
 
