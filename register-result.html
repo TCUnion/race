@@ -71,48 +71,60 @@
         <span class="value" id="name">-</span>
       </div>
       <div class="info-row">
-        <span class="label">組別</span>
-        <span class="value" id="category">-</span>
+        <span class="label">TCU-ID</span>
+        <span class="value" id="tcuId">-</span>
       </div>
       <div class="info-row">
-        <span class="label">提交時間</span>
-        <span class="value" id="submittedAt">-</span>
+        <span class="label">號碼</span>
+        <span class="value" id="number">-</span>
       </div>
       <div class="info-row">
-        <span class="label">Email</span>
-        <span class="value" id="email">-</span>
-      </div>
-      <div class="info-row">
-        <span class="label">手機</span>
-        <span class="value" id="phone">-</span>
+        <span class="label">車隊</span>
+        <span class="value" id="team">-</span>
       </div>
       <div class="info-row">
         <span class="label">Strava ID</span>
         <span class="value" id="stravaId">-</span>
       </div>
       <div class="info-row">
+        <span class="label">提交時間</span>
+        <span class="value" id="submittedAt">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="categoryRow">
+        <span class="label">組別</span>
+        <span class="value" id="category">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="emailRow">
+        <span class="label">Email</span>
+        <span class="value" id="email">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="phoneRow">
+        <span class="label">手機</span>
+        <span class="value" id="phone">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="genderRow">
         <span class="label">性別</span>
         <span class="value" id="gender">-</span>
       </div>
-      <div class="info-row">
+      <div class="info-row" style="display:none;" id="cityRow">
         <span class="label">城市</span>
         <span class="value" id="city">-</span>
       </div>
-      <div class="info-row">
+      <div class="info-row" style="display:none;" id="emergencyContactRow">
         <span class="label">緊急聯絡人</span>
         <span class="value" id="emergencyContact">-</span>
       </div>
-      <div class="info-row">
+      <div class="info-row" style="display:none;" id="emergencyPhoneRow">
         <span class="label">緊急聯絡電話</span>
         <span class="value" id="emergencyPhone">-</span>
       </div>
-      <div class="info-row">
+      <div class="info-row" style="display:none;" id="notesRow">
         <span class="label">備註</span>
         <span class="value" id="notes">-</span>
       </div>
     </div>
 
-    <a href="/eventregister.html" class="btn btn-primary">返回報名頁</a>
+    <a href="https://tcunion.github.io/race/136.html" class="btn btn-primary">返回報名頁</a>
   </div>
 
   <script>
@@ -128,6 +140,15 @@
 
     const get = (key) => params.get(key) || '-';
 
+    // 顯示/隱藏有值的欄位
+    function showRowIfHasValue(rowId, elementId, key) {
+      const value = params.get(key);
+      if (value && value !== '-') {
+        document.getElementById(rowId).style.display = 'flex';
+        document.getElementById(elementId).textContent = value;
+      }
+    }
+
     if (success) {
       titleEl.textContent = '報名成功';
       titleEl.classList.add('success');
@@ -135,16 +156,21 @@
 
       document.getElementById('regId').textContent = get('registration_id');
       document.getElementById('name').textContent = get('name');
-      document.getElementById('category').textContent = get('category');
-      document.getElementById('submittedAt').textContent = get('submitted_at');
-      document.getElementById('email').textContent = get('email');
-      document.getElementById('phone').textContent = get('phone');
+      document.getElementById('tcuId').textContent = get('tcu_id');
+      document.getElementById('number').textContent = get('number');
+      document.getElementById('team').textContent = get('team');
       document.getElementById('stravaId').textContent = get('strava_athlete_id');
-      document.getElementById('gender').textContent = get('gender');
-      document.getElementById('city').textContent = get('city');
-      document.getElementById('emergencyContact').textContent = get('emergency_contact');
-      document.getElementById('emergencyPhone').textContent = get('emergency_phone');
-      document.getElementById('notes').textContent = get('notes');
+      document.getElementById('submittedAt').textContent = get('submitted_at');
+
+      // 顯示選填欄位（如果有值）
+      showRowIfHasValue('categoryRow', 'category', 'category');
+      showRowIfHasValue('emailRow', 'email', 'email');
+      showRowIfHasValue('phoneRow', 'phone', 'phone');
+      showRowIfHasValue('genderRow', 'gender', 'gender');
+      showRowIfHasValue('cityRow', 'city', 'city');
+      showRowIfHasValue('emergencyContactRow', 'emergencyContact', 'emergency_contact');
+      showRowIfHasValue('emergencyPhoneRow', 'emergencyPhone', 'emergency_phone');
+      showRowIfHasValue('notesRow', 'notes', 'notes');
     } else {
       titleEl.textContent = '報名失敗';
       titleEl.classList.add('error');
