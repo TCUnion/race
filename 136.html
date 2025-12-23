@@ -344,8 +344,7 @@
           id="tcu_id" 
           name="tcu_id" 
           placeholder="TCU-zvnrqonh9coqy4kp 或身份證 A123456789"
-          autocomplete="off"
-          required>
+          autocomplete="off">
         <div class="input-hint">請輸入您的TCU會員ID或身份證字號後可同步TCU個人資料。若不同步，填寫姓名跟號碼即可</div>
       </div>
 
@@ -717,10 +716,10 @@
         showMessage('error', '請先連接 Strava 帳號');
         return;
       }
-      if (!data.tcu_id) {
-        showMessage('error', '請填寫 TCU-ID / 身份證ID');
-        return;
-      }
+      // if (!data.tcu_id) {
+      //  showMessage('error', '請填寫 TCU-ID / 身份證ID');
+      //  return;
+      // }
       if (!data.name) {
         showMessage('error', '請填寫姓名');
         return;
