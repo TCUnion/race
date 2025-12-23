@@ -841,12 +841,17 @@
 
       try {
         const savedMeta = localStorage.getItem(CONFIG.storageKey);
-        if (savedMeta && !document.getElementById('strava_athlete_id').value) {
-          const meta = JSON.parse(savedMeta);
-          if (meta?.id) {
-            updateStravaStatus({ id: meta.id });
-          }
-        }
+if (savedMeta && !document.getElementById('strava_athlete_id').value) {
+  const meta = JSON.parse(savedMeta);
+  if (meta?.id) {
+    // 補回 hidden 欄位的值
+    document.getElementById('strava_athlete_id').value = meta.id;
+
+    // 如果你想畫面顯示「已連接」,可以用 minimal data 更新狀態
+    updateStravaStatus({ id: meta.id });
+  }
+}
+
       } catch (error) {
         console.error('載入 localStorage 資料失敗:', error);
         localStorage.removeItem(CONFIG.storageKey);
