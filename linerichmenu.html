@@ -32,7 +32,9 @@
         const Settings = ({ className, ...props }) => (
             <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6m0 6v6m0-6h6m-6 0H6m0 0l4.5-4.5M6 12l4.5 4.5M18 12l-4.5-4.5M18 12l-4.5 4.5"/>
+                <path d="M12 1v6m0 6v6"/>
+                <path d="M16.24 7.76l-2.12 2.12m-4.24 4.24l-2.12 2.12"/>
+                <path d="M7.76 7.76l2.12 2.12m4.24 4.24l2.12 2.12"/>
             </svg>
         );
 
@@ -59,6 +61,19 @@
             </svg>
         );
 
+        const Loader = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="2" x2="12" y2="6"/>
+                <line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                <line x1="2" y1="12" x2="6" y2="12"/>
+                <line x1="18" y1="12" x2="22" y2="12"/>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+            </svg>
+        );
+
         const LineRichMenuViewer = () => {
             const [menus, setMenus] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -66,6 +81,8 @@
             const [selectedMenu, setSelectedMenu] = useState(null);
             const [viewMode, setViewMode] = useState('list');
             const [showConfig, setShowConfig] = useState(false);
+            const [imageCache, setImageCache] = useState({});
+            const [loadingImages, setLoadingImages] = useState({});
             const [config, setConfig] = useState({
                 channelAccessToken: '',
                 proxyUrl: 'https://n8n.criterium.tw/webhook/line-richmenu-api'
@@ -74,17 +91,22 @@
             useEffect(() => {
                 const savedConfig = localStorage.getItem('lineRichMenuConfig');
                 if (savedConfig) {
-                    setConfig(JSON.parse(savedConfig));
+                    try {
+                        setConfig(JSON.parse(savedConfig));
+                    } catch (e) {
+                        console.error('載入設定失敗:', e);
+                    }
                 }
             }, []);
 
             const saveConfig = () => {
                 localStorage.setItem('lineRichMenuConfig', JSON.stringify(config));
                 setShowConfig(false);
+                setError(null);
             };
 
             // 使用 n8n 代理調用 LINE API
-            const callLineAPI = async (endpoint, method = 'GET', body = null) => {
+            const callLineAPI = async (endpoint, method = 'GET', body = null, isBinary = false) => {
                 const response = await fetch(config.proxyUrl, {
                     method: 'POST',
                     headers: {
@@ -94,13 +116,18 @@
                         token: config.channelAccessToken,
                         endpoint: endpoint,
                         method: method,
-                        body: body
+                        body: body,
+                        responseType: isBinary ? 'blob' : 'json'
                     })
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `API 錯誤: ${response.status}`);
+                    throw new Error(errorData.error || errorData.message || `API 錯誤: ${response.status}`);
+                }
+
+                if (isBinary) {
+                    return await response.blob();
                 }
 
                 return await response.json();
@@ -133,29 +160,38 @@
 
             const getRichMenuImage = async (richMenuId) => {
                 if (!config.channelAccessToken) return null;
+                
+                // 檢查快取
+                if (imageCache[richMenuId]) {
+                    return imageCache[richMenuId];
+                }
+
+                // 檢查是否正在載入
+                if (loadingImages[richMenuId]) {
+                    return null;
+                }
+
+                setLoadingImages(prev => ({ ...prev, [richMenuId]: true }));
 
                 try {
-                    // 這個需要特殊處理，因為返回的是圖片而不是 JSON
-                    const response = await fetch(config.proxyUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            token: config.channelAccessToken,
-                            endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
-                            method: 'GET',
-                            responseType: 'blob'
-                        })
-                    });
+                    const blob = await callLineAPI(
+                        `/v2/bot/richmenu/${richMenuId}/content`,
+                        'GET',
+                        null,
+                        true
+                    );
 
-                    if (!response.ok) return null;
-
-                    const blob = await response.blob();
-                    return URL.createObjectURL(blob);
+                    const imageUrl = URL.createObjectURL(blob);
+                    
+                    // 儲存到快取
+                    setImageCache(prev => ({ ...prev, [richMenuId]: imageUrl }));
+                    
+                    return imageUrl;
                 } catch (err) {
                     console.error('獲取圖片失敗:', err);
                     return null;
+                } finally {
+                    setLoadingImages(prev => ({ ...prev, [richMenuId]: false }));
                 }
             };
 
@@ -163,7 +199,7 @@
                 setSelectedMenu(menu);
                 setViewMode('preview');
                 
-                if (menu.richMenuId && !menu.imageUrl) {
+                if (menu.richMenuId && !imageCache[menu.richMenuId]) {
                     const imageUrl = await getRichMenuImage(menu.richMenuId);
                     if (imageUrl) {
                         setSelectedMenu(prev => ({ ...prev, imageUrl }));
@@ -197,6 +233,17 @@
 
                 try {
                     await callLineAPI(`/v2/bot/richmenu/${richMenuId}`, 'DELETE');
+                    
+                    // 清除快取
+                    if (imageCache[richMenuId]) {
+                        URL.revokeObjectURL(imageCache[richMenuId]);
+                        setImageCache(prev => {
+                            const newCache = { ...prev };
+                            delete newCache[richMenuId];
+                            return newCache;
+                        });
+                    }
+                    
                     alert('已成功刪除 Rich Menu！');
                     await fetchRichMenus();
                 } catch (err) {
@@ -229,7 +276,7 @@
                             }}
                         >
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="bg-black bg-opacity-90 text-white text-xs px-3 py-2 rounded shadow-lg max-w-xs">
+                                <div className="bg-black bg-opacity-90 text-white text-xs px-3 py-2 rounded shadow-lg max-w-xs z-10">
                                     <div className="font-semibold mb-1">
                                         {area.action.label || area.action.text || `熱區 ${index + 1}`}
                                     </div>
@@ -244,6 +291,17 @@
                     );
                 });
             };
+
+            // 清理 URL 物件以避免記憶體洩漏
+            useEffect(() => {
+                return () => {
+                    Object.values(imageCache).forEach(url => {
+                        if (url && url.startsWith('blob:')) {
+                            URL.revokeObjectURL(url);
+                        }
+                    });
+                };
+            }, []);
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-6">
@@ -267,7 +325,7 @@
                                     <button
                                         onClick={fetchRichMenus}
                                         disabled={loading}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                                         {loading ? '載入中...' : '重新載入'}
@@ -360,7 +418,7 @@
                                     <button
                                         onClick={() => setViewMode('preview')}
                                         disabled={!selectedMenu}
-                                        className={`px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50 ${
+                                        className={`px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
                                             viewMode === 'preview'
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -525,9 +583,15 @@
                                             
                                             <div className="bg-gray-200 rounded-lg overflow-hidden mx-auto shadow-xl" style={{ maxWidth: '600px' }}>
                                                 <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
-                                                    {selectedMenu.imageUrl ? (
+                                                    {loadingImages[selectedMenu.richMenuId] && (
+                                                        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-20">
+                                                            <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {imageCache[selectedMenu.richMenuId] ? (
                                                         <img 
-                                                            src={selectedMenu.imageUrl} 
+                                                            src={imageCache[selectedMenu.richMenuId]} 
                                                             alt={selectedMenu.name}
                                                             className="absolute inset-0 w-full h-full object-cover"
                                                         />
@@ -562,4 +626,35 @@
                                                         使用說明
                                                     </h4>
                                                     <ul className="text-sm text-blue-800 space-y-1">
-                                                        <li>• 藍色邊框區域代表可點擊的熱區</li
+                                                        <li>• 藍色邊框區域代表可點擊的熱區</li>
+                                                        <li>• 將滑鼠移至熱區上可查看詳細資訊</li>
+                                                        <li>• 每個熱區都有對應的動作設定</li>
+                                                    </ul>
+                                                </div>
+                                                <div className="p-4 bg-green-50 rounded-lg">
+                                                    <h4 className="font-semibold text-green-900 mb-2">選單資訊</h4>
+                                                    <ul className="text-sm text-green-800 space-y-1">
+                                                        <li>• 尺寸: {selectedMenu.size.width} × {selectedMenu.size.height} px</li>
+                                                        <li>• 熱區數量: {selectedMenu.areas?.length || 0} 個</li>
+                                                        <li>• 選單名稱: {selectedMenu.name}</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <p className="text-gray-500">請選擇一個 Rich Menu 進行預覽</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<LineRichMenuViewer />, document.getElementById('root'));
+    </script>
+</body>
+</html>
