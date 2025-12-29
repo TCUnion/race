@@ -1,1 +1,980 @@
 
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE Rich Menu 完整管理系統</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Icon 組件
+        const RefreshCw = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            </svg>
+        );
+
+        const Upload = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        );
+
+        const Plus = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+        );
+
+        const Eye = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        );
+
+        const Settings = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6"/>
+            </svg>
+        );
+
+        const Check = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        );
+
+        const Trash2 = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+        );
+
+        const AlertCircle = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        );
+
+        const Loader = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="2" x2="12" y2="6"/>
+                <line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                <line x1="2" y1="12" x2="6" y2="12"/>
+                <line x1="18" y1="12" x2="22" y2="12"/>
+            </svg>
+        );
+
+        const List = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+            </svg>
+        );
+
+        const Info = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+        );
+
+        const X = ({ className, ...props }) => (
+            <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        );
+
+        const LineRichMenuManager = () => {
+            const [menus, setMenus] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [success, setSuccess] = useState(null);
+            const [selectedMenu, setSelectedMenu] = useState(null);
+            const [viewMode, setViewMode] = useState('list');
+            const [showConfig, setShowConfig] = useState(false);
+            const [imageCache, setImageCache] = useState({});
+            const [loadingImages, setLoadingImages] = useState({});
+            const [defaultRichMenuId, setDefaultRichMenuId] = useState(null);
+            const [uploadingImage, setUploadingImage] = useState(false);
+            const fileInputRef = useRef(null);
+            const [config, setConfig] = useState({
+                channelAccessToken: '',
+                proxyUrl: 'https://n8n.criterium.tw/webhook/line-richmenu-api'
+            });
+
+            // Rich Menu 建立表單
+            const [newMenu, setNewMenu] = useState({
+                name: '',
+                chatBarText: '選單',
+                selected: false,
+                size: { width: 2500, height: 1686 },
+                areas: []
+            });
+
+            const [currentArea, setCurrentArea] = useState({
+                bounds: { x: 0, y: 0, width: 833, height: 843 },
+                action: { type: 'uri', uri: '', label: '' }
+            });
+
+            const [selectedImage, setSelectedImage] = useState(null);
+            const [imagePreview, setImagePreview] = useState(null);
+
+            useEffect(() => {
+                const savedConfig = localStorage.getItem('lineRichMenuConfig');
+                if (savedConfig) {
+                    try {
+                        const parsedConfig = JSON.parse(savedConfig);
+                        setConfig(parsedConfig);
+                        if (parsedConfig.channelAccessToken) {
+                            fetchRichMenus();
+                            fetchDefaultRichMenu();
+                        }
+                    } catch (e) {
+                        console.error('載入設定失敗:', e);
+                    }
+                } else {
+                    setShowConfig(true);
+                }
+            }, []);
+
+            const saveConfig = () => {
+                localStorage.setItem('lineRichMenuConfig', JSON.stringify(config));
+                setShowConfig(false);
+                setError(null);
+                if (config.channelAccessToken) {
+                    fetchRichMenus();
+                    fetchDefaultRichMenu();
+                }
+            };
+
+            const callLineAPI = async (endpoint, method = 'GET', body = null, isBinary = false) => {
+                const response = await fetch(config.proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: config.channelAccessToken,
+                        endpoint: endpoint,
+                        method: method,
+                        body: body,
+                        responseType: isBinary ? 'blob' : 'json'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || errorData.message || `API 錯誤: ${response.status}`);
+                }
+
+                if (isBinary) {
+                    return await response.blob();
+                }
+
+                return await response.json();
+            };
+
+            const fetchDefaultRichMenu = async () => {
+                if (!config.channelAccessToken) return;
+
+                try {
+                    const data = await callLineAPI('/v2/bot/user/all/richmenu');
+                    setDefaultRichMenuId(data.richMenuId);
+                } catch (err) {
+                    console.warn('無法取得預設 Rich Menu:', err);
+                    setDefaultRichMenuId(null);
+                }
+            };
+
+            const fetchRichMenus = async () => {
+                if (!config.channelAccessToken) {
+                    setError('請先設定 LINE Channel Access Token');
+                    setShowConfig(true);
+                    return;
+                }
+
+                setLoading(true);
+                setError(null);
+
+                try {
+                    const data = await callLineAPI('/v2/bot/richmenu/list');
+                    setMenus(data.richmenus || []);
+                } catch (err) {
+                    setError(`無法載入 Rich Menu 列表: ${err.message}`);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const loadMenuImage = async (richMenuId) => {
+                if (!config.channelAccessToken) return null;
+
+                if (imageCache[richMenuId]) {
+                    return imageCache[richMenuId];
+                }
+
+                if (loadingImages[richMenuId]) {
+                    return null;
+                }
+
+                setLoadingImages(prev => ({ ...prev, [richMenuId]: true }));
+
+                try {
+                    const blob = await callLineAPI(
+                        `/v2/bot/richmenu/${richMenuId}/content`,
+                        'GET',
+                        null,
+                        true
+                    );
+
+                    const imageUrl = URL.createObjectURL(blob);
+                    setImageCache(prev => ({ ...prev, [richMenuId]: imageUrl }));
+                    return imageUrl;
+                } catch (err) {
+                    setError(`無法載入圖片: ${err.message}`);
+                    return null;
+                } finally {
+                    setLoadingImages(prev => {
+                        const newState = { ...prev };
+                        delete newState[richMenuId];
+                        return newState;
+                    });
+                }
+            };
+
+            const handleImageSelect = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setImagePreview(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const addArea = () => {
+                if (newMenu.areas.length >= 20) {
+                    setError('最多只能建立 20 個熱區');
+                    return;
+                }
+
+                setNewMenu(prev => ({
+                    ...prev,
+                    areas: [...prev.areas, { ...currentArea }]
+                }));
+
+                // 重置表單
+                setCurrentArea({
+                    bounds: { x: 0, y: 0, width: 833, height: 843 },
+                    action: { type: 'uri', uri: '', label: '' }
+                });
+            };
+
+            const removeArea = (index) => {
+                setNewMenu(prev => ({
+                    ...prev,
+                    areas: prev.areas.filter((_, i) => i !== index)
+                }));
+            };
+
+            const createRichMenu = async () => {
+                if (!config.channelAccessToken) {
+                    setError('請先設定 LINE Channel Access Token');
+                    return;
+                }
+
+                if (!newMenu.name) {
+                    setError('請輸入選單名稱');
+                    return;
+                }
+
+                if (newMenu.areas.length === 0) {
+                    setError('請至少新增一個熱區');
+                    return;
+                }
+
+                if (!selectedImage) {
+                    setError('請選擇圖片');
+                    return;
+                }
+
+                setLoading(true);
+                setError(null);
+                setSuccess(null);
+
+                try {
+                    // 1. 建立 Rich Menu
+                    const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
+                    const richMenuId = createData.richMenuId;
+
+                    console.log('✅ Rich Menu 已建立:', richMenuId);
+
+                    // 2. 上傳圖片
+                    setUploadingImage(true);
+                    const formData = new FormData();
+                    formData.append('image', selectedImage);
+                    formData.append('richMenuId', richMenuId);
+                    formData.append('token', config.channelAccessToken);
+
+                    const uploadResponse = await fetch(config.proxyUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error('圖片上傳失敗');
+                    }
+
+                    console.log('✅ 圖片已上傳');
+
+                    setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
+
+                    // 重置表單
+                    setNewMenu({
+                        name: '',
+                        chatBarText: '選單',
+                        selected: false,
+                        size: { width: 2500, height: 1686 },
+                        areas: []
+                    });
+                    setSelectedImage(null);
+                    setImagePreview(null);
+
+                    // 重新載入列表
+                    await fetchRichMenus();
+                    setViewMode('list');
+                } catch (err) {
+                    setError(`建立 Rich Menu 失敗: ${err.message}`);
+                } finally {
+                    setLoading(false);
+                    setUploadingImage(false);
+                }
+            };
+
+            const setAsDefault = async (richMenuId) => {
+                try {
+                    await callLineAPI(`/v2/bot/user/all/richmenu/${richMenuId}`, 'POST');
+                    setSuccess('已成功設為預設選單！');
+                    await fetchDefaultRichMenu();
+                } catch (err) {
+                    setError(`設定預設選單失敗: ${err.message}`);
+                }
+            };
+
+            const deleteRichMenu = async (richMenuId) => {
+                if (!confirm('確定要刪除這個 Rich Menu 嗎？')) return;
+
+                try {
+                    await callLineAPI(`/v2/bot/richmenu/${richMenuId}`, 'DELETE');
+
+                    if (imageCache[richMenuId]) {
+                        URL.revokeObjectURL(imageCache[richMenuId]);
+                        setImageCache(prev => {
+                            const newCache = { ...prev };
+                            delete newCache[richMenuId];
+                            return newCache;
+                        });
+                    }
+
+                    setSuccess('已成功刪除 Rich Menu！');
+                    await fetchRichMenus();
+                    await fetchDefaultRichMenu();
+                } catch (err) {
+                    setError(`刪除 Rich Menu 失敗: ${err.message}`);
+                }
+            };
+
+            const previewMenu = async (menu) => {
+                setSelectedMenu(menu);
+                setViewMode('preview');
+
+                if (menu.richMenuId && !imageCache[menu.richMenuId] && !loadingImages[menu.richMenuId]) {
+                    await loadMenuImage(menu.richMenuId);
+                }
+            };
+
+            const renderHotspots = (areas, containerWidth, containerHeight, menuSize) => {
+                if (!areas) return null;
+
+                return areas.map((area, index) => {
+                    const scaleX = containerWidth / menuSize.width;
+                    const scaleY = containerHeight / menuSize.height;
+
+                    const x = area.bounds.x * scaleX;
+                    const y = area.bounds.y * scaleY;
+                    const width = area.bounds.width * scaleX;
+                    const height = area.bounds.height * scaleY;
+
+                    return (
+                        <div
+                            key={index}
+                            className="absolute border-2 border-blue-500 bg-blue-500 bg-opacity-20 hover:bg-opacity-40 transition-all cursor-pointer group"
+                            style={{
+                                left: `${x}px`,
+                                top: `${y}px`,
+                                width: `${width}px`,
+                                height: `${height}px`
+                            }}
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-black bg-opacity-90 text-white text-xs px-3 py-2 rounded shadow-lg max-w-xs z-10">
+                                    <div className="font-semibold mb-1">
+                                        {area.action.label || area.action.text || `熱區 ${index + 1}`}
+                                    </div>
+                                    <div className="text-xs opacity-75">
+                                        類型: {area.action.type}
+                                        {area.action.uri && <div>→ {area.action.uri}</div>}
+                                        {area.action.text && <div>→ "{area.action.text}"</div>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                });
+            };
+
+            useEffect(() => {
+                return () => {
+                    Object.values(imageCache).forEach(url => {
+                        if (url && url.startsWith('blob:')) {
+                            URL.revokeObjectURL(url);
+                        }
+                    });
+                };
+            }, []);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        {/* 頂部導航 */}
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                                    LINE Rich Menu 完整管理系統
+                                </h1>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                    >
+                                        <List className="w-5 h-5" />
+                                        選單列表
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('create')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${viewMode === 'create' ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        建立新選單
+                                    </button>
+                                    <button
+                                        onClick={() => setShowConfig(!showConfig)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                    >
+                                        <Settings className="w-5 h-5" />
+                                        設定
+                                    </button>
+                                    <button
+                                        onClick={() => { fetchRichMenus(); fetchDefaultRichMenu(); }}
+                                        disabled={loading}
+                                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50"
+                                    >
+                                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                                        重新載入
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 設定面板 */}
+                            {showConfig && (
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border-2 border-blue-200">
+                                    <h2 className="text-xl font-semibold mb-4 text-gray-800">API 設定</h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                LINE Channel Access Token
+                                            </label>
+                                            <input
+                                                type="password"
+                                                value={config.channelAccessToken}
+                                                onChange={(e) => setConfig({...config, channelAccessToken: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="輸入你的 Channel Access Token"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                n8n Proxy URL
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={config.proxyUrl}
+                                                onChange={(e) => setConfig({...config, proxyUrl: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="https://n8n.criterium.tw/webhook/line-richmenu-api"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={saveConfig}
+                                            className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all font-medium"
+                                        >
+                                            儲存設定
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 錯誤訊息 */}
+                            {error && (
+                                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+                                    <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-red-800 mb-1">發生錯誤</h3>
+                                        <p className="text-red-600 text-sm">{error}</p>
+                                    </div>
+                                    <button onClick={() => setError(null)}>
+                                        <X className="w-5 h-5 text-red-400 hover:text-red-600" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* 成功訊息 */}
+                            {success && (
+                                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+                                    <Check className="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-green-800 mb-1">操作成功</h3>
+                                        <p className="text-green-600 text-sm">{success}</p>
+                                    </div>
+                                    <button onClick={() => setSuccess(null)}>
+                                        <X className="w-5 h-5 text-green-400 hover:text-green-600" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 主要內容區域 */}
+                        {viewMode === 'create' && (
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-2xl font-bold mb-6">建立新的 Rich Menu</h2>
+
+                                <div className="space-y-6">
+                                    {/* 基本資訊 */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                選單名稱 *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newMenu.name}
+                                                onChange={(e) => setNewMenu({...newMenu, name: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                placeholder="例如：主選單"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                聊天欄文字 *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={newMenu.chatBarText}
+                                                onChange={(e) => setNewMenu({...newMenu, chatBarText: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                placeholder="例如：選單"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* 圖片尺寸選擇 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            圖片尺寸 *
+                                        </label>
+                                        <select
+                                            value={`${newMenu.size.width}x${newMenu.size.height}`}
+                                            onChange={(e) => {
+                                                const [width, height] = e.target.value.split('x').map(Number);
+                                                setNewMenu({...newMenu, size: { width, height }});
+                                            }}
+                                            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="2500x1686">2500 × 1686 (大)</option>
+                                            <option value="2500x843">2500 × 843 (小)</option>
+                                            <option value="1200x810">1200 × 810 (大 - 舊版)</option>
+                                            <option value="1200x405">1200 × 405 (小 - 舊版)</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 上傳圖片 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Rich Menu 圖片 * (PNG/JPG, 最大 1MB)
+                                        </label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/png,image/jpeg"
+                                                onChange={handleImageSelect}
+                                                className="hidden"
+                                            />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                            >
+                                                <Upload className="w-5 h-5" />
+                                                選擇圖片
+                                            </button>
+                                            {selectedImage && (
+                                                <span className="text-sm text-gray-600">
+                                                    ✓ {selectedImage.name} ({(selectedImage.size / 1024).toFixed(2)} KB)
+                                                </span>
+                                            )}
+                                        </div>
+                                        {imagePreview && (
+                                            <div className="mt-4">
+                                                <img src={imagePreview} alt="預覽" className="max-w-md rounded-lg shadow-md" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 熱區設定 */}
+                                    <div className="border-t-2 border-gray-200 pt-6">
+                                        <h3 className="text-xl font-bold mb-4">熱區設定 ({newMenu.areas.length}/20)</h3>
+
+                                        <div className="bg-blue-50 rounded-lg p-6 mb-4">
+                                            <h4 className="font-semibold mb-3">新增熱區</h4>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">X 座標</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.x}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, x: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">Y 座標</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.y}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, y: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">寬度</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.width}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, width: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">高度</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.height}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, height: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">動作類型</label>
+                                                    <select
+                                                        value={currentArea.action.type}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            action: {...currentArea.action, type: e.target.value}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    >
+                                                        <option value="uri">開啟網址</option>
+                                                        <option value="message">傳送訊息</option>
+                                                        <option value="postback">Postback</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">
+                                                        {currentArea.action.type === 'uri' ? '網址' : '文字/Data'}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={currentArea.action.uri || currentArea.action.text || currentArea.action.data || ''}
+                                                        onChange={(e) => {
+                                                            const key = currentArea.action.type === 'uri' ? 'uri' : 
+                                                                       currentArea.action.type === 'message' ? 'text' : 'data';
+                                                            setCurrentArea({
+                                                                ...currentArea,
+                                                                action: {...currentArea.action, [key]: e.target.value}
+                                                            });
+                                                        }}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        placeholder={currentArea.action.type === 'uri' ? 'https://example.com' : '文字內容'}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">標籤 (選填)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={currentArea.action.label || ''}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            action: {...currentArea.action, label: e.target.value}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        placeholder="熱區說明"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={addArea}
+                                                disabled={newMenu.areas.length >= 20}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                                新增熱區
+                                            </button>
+                                        </div>
+
+                                        {/* 已建立的熱區列表 */}
+                                        {newMenu.areas.length > 0 && (
+                                            <div className="space-y-2">
+                                                <h4 className="font-semibold mb-2">已建立的熱區:</h4>
+                                                {newMenu.areas.map((area, index) => (
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium">
+                                                                熱區 {index + 1}: {area.action.label || '(無標籤)'}
+                                                            </div>
+                                                            <div className="text-sm text-gray-600">
+                                                                位置: ({area.bounds.x}, {area.bounds.y}) | 
+                                                                尺寸: {area.bounds.width} × {area.bounds.height} | 
+                                                                類型: {area.action.type}
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => removeArea(index)}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 建立按鈕 */}
+                                    <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+                                        <button
+                                            onClick={createRichMenu}
+                                            disabled={loading || uploadingImage}
+                                            className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {loading || uploadingImage ? (
+                                                <>
+                                                    <Loader className="w-6 h-6 animate-spin" />
+                                                    {uploadingImage ? '上傳圖片中...' : '建立中...'}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Check className="w-6 h-6" />
+                                                    建立 Rich Menu
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode('list')}
+                                            className="px-6 py-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                                        >
+                                            取消
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 選單列表 */}
+                        {viewMode === 'list' && (
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <h2 className="text-2xl font-bold mb-4">Rich Menu 列表</h2>
+
+                                {loading ? (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <Loader className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+                                        <p className="text-gray-600">載入中...</p>
+                                    </div>
+                                ) : menus.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <p className="mb-2">尚無 Rich Menu</p>
+                                        <p className="text-sm">請點擊「建立新選單」開始建立</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {menus.map((menu) => {
+                                            const isDefault = menu.richMenuId === defaultRichMenuId;
+
+                                            return (
+                                                <div
+                                                    key={menu.richMenuId}
+                                                    className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h3 className="font-semibold text-lg text-gray-800">
+                                                                    {menu.name}
+                                                                </h3>
+                                                                {isDefault && (
+                                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                                                        預設
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 font-mono break-all">
+                                                                {menu.richMenuId}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-2 mt-3">
+                                                        <button
+                                                            onClick={() => previewMenu(menu)}
+                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                            預覽
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setAsDefault(menu.richMenuId)}
+                                                            disabled={isDefault}
+                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            <Check className="w-4 h-4" />
+                                                            {isDefault ? '已預設' : '設為預設'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteRichMenu(menu.richMenuId)}
+                                                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 預覽模式 */}
+                        {viewMode === 'preview' && selectedMenu && (
+                            <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold">預覽: {selectedMenu.name}</h2>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                                    >
+                                        返回列表
+                                    </button>
+                                </div>
+
+                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+                                    <div className="bg-gray-200 rounded-lg overflow-hidden mx-auto shadow-xl" style={{ maxWidth: '600px' }}>
+                                        <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
+                                            {loadingImages[selectedMenu.richMenuId] ? (
+                                                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                                                    <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+                                                </div>
+                                            ) : imageCache[selectedMenu.richMenuId] ? (
+                                                <img 
+                                                    src={imageCache[selectedMenu.richMenuId]} 
+                                                    alt={selectedMenu.name}
+                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex flex-col items-center justify-center text-white">
+                                                    <button 
+                                                        onClick={() => loadMenuImage(selectedMenu.richMenuId)}
+                                                        className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50"
+                                                    >
+                                                        載入圖片
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <div className="absolute inset-0">
+                                                {renderHotspots(
+                                                    selectedMenu.areas,
+                                                    600,
+                                                    600 * (selectedMenu.size.height / selectedMenu.size.width),
+                                                    selectedMenu.size
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white border-t-2 border-gray-300 p-3 text-center text-gray-700 font-medium">
+                                            {selectedMenu.chatBarText}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<LineRichMenuManager />, document.getElementById('root'));
+    </script>
+</body>
+</html>
