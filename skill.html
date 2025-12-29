@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSU 會員能力管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .skill-button {
+            transition: all 0.3s ease;
+        }
+        .skill-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .skill-button.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 黑色 Banner -->
+    <div class="bg-black py-4 px-6 shadow-lg">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <img src="https://www.tsu.com.tw/images/logo.png" alt="TSU Logo" class="h-12">
+            <h1 class="text-white text-xl font-bold hidden md:block">會員能力管理系統</h1>
+        </div>
+    </div>
+
+    <!-- 主要內容 -->
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- 會員查詢區 -->
+        <div id="querySection" class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">會員資料查詢</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        會員系統ID *
+                    </label>
+                    <input
+                        type="text"
+                        id="memberId"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        placeholder="請輸入會員系統ID"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        會員身分證ID *
+                    </label>
+                    <input
+                        type="text"
+                        id="memberIdCard"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        placeholder="請輸入身分證字號"
+                        maxlength="10"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        會員姓名 *
+                    </label>
+                    <input
+                        type="text"
+                        id="memberName"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        placeholder="請輸入會員姓名"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        n8n Webhook URL *
+                    </label>
+                    <input
+                        type="text"
+                        id="webhookUrl"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        placeholder="https://n8n.criterium.tw/webhook/member-ability"
+                        value="https://n8n.criterium.tw/webhook/member-ability"
+                    />
+                </div>
+
+                <button
+                    id="queryBtn"
+                    onclick="queryMember()"
+                    class="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-[1.02] shadow-lg"
+                >
+                    查詢會員能力
+                </button>
+            </div>
+        </div>
+
+        <!-- 載入中 -->
+        <div id="loadingSection" class="hidden bg-white rounded-2xl shadow-xl p-12 mb-6">
+            <div class="flex flex-col items-center justify-center">
+                <div class="loading-spinner mb-4"></div>
+                <p class="text-gray-600 text-lg">查詢中，請稍候...</p>
+            </div>
+        </div>
+
+        <!-- 錯誤訊息 -->
+        <div id="errorSection" class="hidden bg-red-50 border-2 border-red-200 rounded-2xl p-6 mb-6">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-red-800 mb-1">查詢失敗</h3>
+                    <p id="errorMessage" class="text-red-600 text-sm"></p>
+                </div>
+                <button onclick="closeError()" class="text-red-400 hover:text-red-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 會員資料顯示 -->
+        <div id="memberSection" class="hidden fade-in">
+            <!-- 會員基本資訊 -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">會員資料</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 mb-1">會員ID</p>
+                        <p id="displayMemberId" class="text-lg font-bold text-gray-800"></p>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 mb-1">身分證字號</p>
+                        <p id="displayIdCard" class="text-lg font-bold text-gray-800"></p>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                        <p class="text-sm text-gray-600 mb-1">會員姓名</p>
+                        <p id="displayName" class="text-lg font-bold text-gray-800"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 目前能力狀態 -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">目前能力狀態</h2>
+                <div id="currentAbilities" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- 動態生成 -->
+                </div>
+            </div>
+
+            <!-- 能力修正 -->
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">能力修正</h2>
+                <p class="text-gray-600 mb-6">請點選會員具備的能力項目（可複選）</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <button
+                        onclick="toggleAbility('公路賽')"
+                        data-ability="公路賽"
+                        class="skill-button p-6 border-2 border-gray-300 rounded-xl text-center font-semibold text-gray-700 hover:border-blue-400"
+                    >
+                        <div class="text-4xl mb-2">🚴</div>
+                        <div>公路賽</div>
+                    </button>
+                    <button
+                        onclick="toggleAbility('公路登山')"
+                        data-ability="公路登山"
+                        class="skill-button p-6 border-2 border-gray-300 rounded-xl text-center font-semibold text-gray-700 hover:border-blue-400"
+                    >
+                        <div class="text-4xl mb-2">⛰️</div>
+                        <div>公路登山</div>
+                    </button>
+                    <button
+                        onclick="toggleAbility('公路繞圈')"
+                        data-ability="公路繞圈"
+                        class="skill-button p-6 border-2 border-gray-300 rounded-xl text-center font-semibold text-gray-700 hover:border-blue-400"
+                    >
+                        <div class="text-4xl mb-2">🔄</div>
+                        <div>公路繞圈</div>
+                    </button>
+                    <button
+                        onclick="toggleAbility('計時賽TT')"
+                        data-ability="計時賽TT"
+                        class="skill-button p-6 border-2 border-gray-300 rounded-xl text-center font-semibold text-gray-700 hover:border-blue-400"
+                    >
+                        <div class="text-4xl mb-2">⏱️</div>
+                        <div>計時賽TT</div>
+                    </button>
+                </div>
+
+                <div class="flex gap-4">
+                    <button
+                        onclick="submitAbilities()"
+                        class="flex-1 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-[1.02] shadow-lg"
+                    >
+                        提交能力修正
+                    </button>
+                    <button
+                        onclick="resetForm()"
+                        class="px-8 py-4 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-all"
+                    >
+                        重新查詢
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交成功 -->
+        <div id="successSection" class="hidden bg-green-50 border-2 border-green-200 rounded-2xl p-8 mb-6 fade-in">
+            <div class="flex flex-col items-center justify-center text-center">
+                <svg class="w-16 h-16 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="text-2xl font-bold text-green-800 mb-2">更新成功！</h3>
+                <p class="text-green-600 mb-6">會員能力已成功更新</p>
+                <button
+                    onclick="resetForm()"
+                    class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
+                >
+                    查詢其他會員
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let memberData = null;
+        let selectedAbilities = new Set();
+
+        // 查詢會員
+        async function queryMember() {
+            const memberId = document.getElementById('memberId').value.trim();
+            const memberIdCard = document.getElementById('memberIdCard').value.trim();
+            const memberName = document.getElementById('memberName').value.trim();
+            const webhookUrl = document.getElementById('webhookUrl').value.trim();
+
+            // 驗證輸入
+            if (!memberId || !memberIdCard || !memberName) {
+                showError('請填寫所有必填欄位');
+                return;
+            }
+
+            if (!webhookUrl) {
+                showError('請輸入 n8n Webhook URL');
+                return;
+            }
+
+            // 顯示載入中
+            document.getElementById('querySection').classList.add('hidden');
+            document.getElementById('errorSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'query',
+                        memberId: memberId,
+                        memberIdCard: memberIdCard,
+                        memberName: memberName
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`查詢失敗: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success === false) {
+                    throw new Error(data.message || '查無此會員資料');
+                }
+
+                memberData = data;
+                displayMemberData(data);
+
+            } catch (error) {
+                console.error('查詢錯誤:', error);
+                showError(error.message);
+                document.getElementById('querySection').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+            }
+        }
+
+        // 顯示會員資料
+        function displayMemberData(data) {
+            document.getElementById('displayMemberId').textContent = data.memberId;
+            document.getElementById('displayIdCard').textContent = data.memberIdCard;
+            document.getElementById('displayName').textContent = data.memberName;
+
+            // 顯示目前能力
+            const abilities = data.abilities || [];
+            const currentAbilitiesDiv = document.getElementById('currentAbilities');
+            currentAbilitiesDiv.innerHTML = '';
+
+            const allAbilities = ['公路賽', '公路登山', '公路繞圈', '計時賽TT'];
+            allAbilities.forEach(ability => {
+                const hasAbility = abilities.includes(ability);
+                const div = document.createElement('div');
+                div.className = `p-4 rounded-lg text-center ${hasAbility ? 'bg-green-100 border-2 border-green-400' : 'bg-gray-100'}`;
+                div.innerHTML = `
+                    <div class="text-2xl mb-1">${hasAbility ? '✅' : '❌'}</div>
+                    <div class="font-semibold ${hasAbility ? 'text-green-700' : 'text-gray-500'}">${ability}</div>
+                `;
+                currentAbilitiesDiv.appendChild(div);
+            });
+
+            // 設定選中的能力
+            selectedAbilities = new Set(abilities);
+            updateAbilityButtons();
+
+            // 顯示會員區塊
+            document.getElementById('memberSection').classList.remove('hidden');
+        }
+
+        // 切換能力選擇
+        function toggleAbility(ability) {
+            if (selectedAbilities.has(ability)) {
+                selectedAbilities.delete(ability);
+            } else {
+                selectedAbilities.add(ability);
+            }
+            updateAbilityButtons();
+        }
+
+        // 更新按鈕狀態
+        function updateAbilityButtons() {
+            document.querySelectorAll('.skill-button').forEach(button => {
+                const ability = button.getAttribute('data-ability');
+                if (selectedAbilities.has(ability)) {
+                    button.classList.add('selected');
+                } else {
+                    button.classList.remove('selected');
+                }
+            });
+        }
+
+        // 提交能力修正
+        async function submitAbilities() {
+            if (!memberData) {
+                showError('請先查詢會員資料');
+                return;
+            }
+
+            const webhookUrl = document.getElementById('webhookUrl').value.trim();
+
+            // 顯示載入中
+            document.getElementById('memberSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'update',
+                        memberId: memberData.memberId,
+                        memberIdCard: memberData.memberIdCard,
+                        memberName: memberData.memberName,
+                        abilities: Array.from(selectedAbilities)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`更新失敗: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success === false) {
+                    throw new Error(data.message || '更新失敗');
+                }
+
+                // 顯示成功訊息
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('successSection').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('更新錯誤:', error);
+                showError(error.message);
+                document.getElementById('memberSection').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingSection').classList.add('hidden');
+            }
+        }
+
+        // 重置表單
+        function resetForm() {
+            document.getElementById('memberId').value = '';
+            document.getElementById('memberIdCard').value = '';
+            document.getElementById('memberName').value = '';
+
+            memberData = null;
+            selectedAbilities.clear();
+
+            document.getElementById('querySection').classList.remove('hidden');
+            document.getElementById('memberSection').classList.add('hidden');
+            document.getElementById('successSection').classList.add('hidden');
+            document.getElementById('errorSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.add('hidden');
+        }
+
+        // 顯示錯誤
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorSection').classList.remove('hidden');
+        }
+
+        // 關閉錯誤
+        function closeError() {
+            document.getElementById('errorSection').classList.add('hidden');
+        }
+
+        // Enter 鍵提交
+        document.addEventListener('DOMContentLoaded', function() {
+            ['memberId', 'memberIdCard', 'memberName'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        queryMember();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
