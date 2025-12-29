@@ -15,6 +15,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // Icon 組件
         const RefreshCw = ({ className, ...props }) => (
             <svg className={className} {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
@@ -124,9 +125,9 @@
                 }
             };
 
-            const callLineAPI = async (endpoint, method = 'GET', body = null, expectBinary = false) => {
-                console.log('🔄 Calling API:', { endpoint, method, expectBinary });
-                
+            const callLineAPI = async (endpoint, method = 'GET', body = null, isBinary = false) => {
+                console.log('🔄 Calling API:', { endpoint, method, isBinary });
+
                 const response = await fetch(config.proxyUrl, {
                     method: 'POST',
                     headers: {
@@ -136,29 +137,25 @@
                         token: config.channelAccessToken,
                         endpoint: endpoint,
                         method: method,
-                        body: body
+                        body: body,
+                        responseType: isBinary ? 'blob' : 'json'
                     })
                 });
 
-                console.log('📊 Response:', response.status, response.headers.get('content-type'));
+                console.log('📊 Response:', response.status, response.statusText);
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ API Error:', errorText);
-                    throw new Error(`API 錯誤: ${response.status} - ${errorText}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || errorData.message || `API 錯誤: ${response.status}`);
                 }
 
-                // 檢查回應類型
-                const contentType = response.headers.get('content-type');
-                if (expectBinary || contentType?.includes('image')) {
+                if (isBinary) {
                     const blob = await response.blob();
-                    console.log('✅ Binary response:', blob.size, blob.type);
+                    console.log('✅ Blob:', blob.size, blob.type);
                     return blob;
                 }
 
-                const data = await response.json();
-                console.log('✅ JSON response:', data);
-                return data;
+                return await response.json();
             };
 
             const fetchRichMenus = async () => {
@@ -170,7 +167,7 @@
 
                 setLoading(true);
                 setError(null);
-                
+
                 try {
                     const data = await callLineAPI('/v2/bot/richmenu/list');
                     console.log('📋 Rich Menus:', data);
@@ -190,16 +187,16 @@
             };
 
             const loadMenuImage = async (richMenuId) => {
-                if (!config.channelAccessToken) return;
-                
+                if (!config.channelAccessToken) return null;
+
                 if (imageCache[richMenuId]) {
                     console.log('✨ 使用快取圖片:', richMenuId);
-                    return;
+                    return imageCache[richMenuId];
                 }
 
                 if (loadingImages[richMenuId]) {
                     console.log('⏳ 圖片載入中:', richMenuId);
-                    return;
+                    return null;
                 }
 
                 setLoadingImages(prev => ({ ...prev, [richMenuId]: true }));
@@ -215,16 +212,24 @@
 
                     const imageUrl = URL.createObjectURL(blob);
                     console.log('🎨 圖片 URL 建立:', imageUrl);
-                    
-                    setImageCache(prev => ({
-                        ...prev,
-                        [richMenuId]: imageUrl
-                    }));
+
+                    setImageCache(prev => {
+                        const newCache = { ...prev, [richMenuId]: imageUrl };
+                        console.log('💾 更新快取:', Object.keys(newCache));
+                        return newCache;
+                    });
+
+                    return imageUrl;
                 } catch (err) {
                     console.error('❌ 獲取圖片失敗:', err);
                     setError(`無法載入圖片: ${err.message}`);
+                    return null;
                 } finally {
-                    setLoadingImages(prev => ({ ...prev, [richMenuId]: false }));
+                    setLoadingImages(prev => {
+                        const newState = { ...prev };
+                        delete newState[richMenuId];
+                        return newState;
+                    });
                 }
             };
 
@@ -232,8 +237,8 @@
                 console.log('👁️ 預覽選單:', menu.name, menu.richMenuId);
                 setSelectedMenu(menu);
                 setViewMode('preview');
-                
-                if (!imageCache[menu.richMenuId]) {
+
+                if (menu.richMenuId && !imageCache[menu.richMenuId] && !loadingImages[menu.richMenuId]) {
                     await loadMenuImage(menu.richMenuId);
                 }
             };
@@ -264,7 +269,7 @@
 
                 try {
                     await callLineAPI(`/v2/bot/richmenu/${richMenuId}`, 'DELETE');
-                    
+
                     if (imageCache[richMenuId]) {
                         URL.revokeObjectURL(imageCache[richMenuId]);
                         setImageCache(prev => {
@@ -273,7 +278,7 @@
                             return newCache;
                         });
                     }
-                    
+
                     alert('已成功刪除 Rich Menu！');
                     await fetchRichMenus();
                 } catch (err) {
@@ -284,16 +289,16 @@
 
             const renderHotspots = (areas, containerWidth, containerHeight, menuSize) => {
                 if (!areas) return null;
-                
+
                 return areas.map((area, index) => {
                     const scaleX = containerWidth / menuSize.width;
                     const scaleY = containerHeight / menuSize.height;
-                    
+
                     const x = area.bounds.x * scaleX;
                     const y = area.bounds.y * scaleY;
                     const width = area.bounds.width * scaleX;
                     const height = area.bounds.height * scaleY;
-                    
+
                     return (
                         <div
                             key={index}
@@ -322,6 +327,52 @@
                 });
             };
 
+            const renderMenuImage = () => {
+                if (!selectedMenu) return null;
+
+                const richMenuId = selectedMenu.richMenuId;
+                const cachedImageUrl = imageCache[richMenuId];
+                const isLoading = loadingImages[richMenuId];
+
+                if (isLoading) {
+                    return (
+                        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-20">
+                            <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+                        </div>
+                    );
+                }
+
+                if (cachedImageUrl) {
+                    return (
+                        <img 
+                            src={cachedImageUrl} 
+                            alt={selectedMenu.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onLoad={() => console.log('✅ 圖片載入成功:', richMenuId)}
+                            onError={(e) => {
+                                console.error('❌ 圖片載入失敗:', richMenuId, e);
+                                loadMenuImage(richMenuId);
+                            }}
+                        />
+                    );
+                }
+
+                return (
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex flex-col items-center justify-center text-white">
+                        <div className="text-lg font-semibold mb-2">Rich Menu 圖片區域</div>
+                        <div className="text-sm opacity-75">
+                            {selectedMenu.size.width} × {selectedMenu.size.height}
+                        </div>
+                        <button 
+                            onClick={() => loadMenuImage(richMenuId)}
+                            className="mt-4 px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                        >
+                            載入圖片
+                        </button>
+                    </div>
+                );
+            };
+
             useEffect(() => {
                 return () => {
                     Object.values(imageCache).forEach(url => {
@@ -343,25 +394,25 @@
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => setShowConfig(!showConfig)}
-                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all flex items-center gap-2 shadow-sm"
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                                     >
                                         <Settings className="w-5 h-5" />
                                         設定
                                     </button>
                                     <button
                                         onClick={fetchRichMenus}
-                                        disabled={loading || !config.channelAccessToken}
-                                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
+                                        disabled={loading}
+                                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                                        {loading ? '載入中...' : '重新載入'}
+                                        重新載入
                                     </button>
                                 </div>
                             </div>
 
                             {showConfig && (
-                                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border-2 border-blue-200">
-                                    <h2 className="text-xl font-semibold mb-4 text-gray-800">設定</h2>
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-6 border-2 border-blue-200">
+                                    <h2 className="text-xl font-semibold mb-4 text-gray-800">API 設定</h2>
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -371,27 +422,26 @@
                                                 type="password"
                                                 value={config.channelAccessToken}
                                                 onChange={(e) => setConfig({...config, channelAccessToken: e.target.value})}
-                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
-                                                placeholder="請輸入 Channel Access Token"
+                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="輸入你的 Channel Access Token"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                API Proxy URL
+                                                n8n Proxy URL
                                             </label>
                                             <input
                                                 type="text"
                                                 value={config.proxyUrl}
                                                 onChange={(e) => setConfig({...config, proxyUrl: e.target.value})}
-                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-all"
+                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 placeholder="https://n8n.criterium.tw/webhook/line-richmenu-api"
                                             />
                                         </div>
                                         <button
                                             onClick={saveConfig}
-                                            className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg transition-all flex items-center justify-center gap-2 shadow-md"
+                                            className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all font-medium"
                                         >
-                                            <Check className="w-5 h-5" />
                                             儲存設定
                                         </button>
                                     </div>
@@ -400,10 +450,10 @@
 
                             {error && (
                                 <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-                                    <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                                    <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                        <p className="text-red-800 font-medium">發生錯誤</p>
-                                        <p className="text-red-600 text-sm mt-1">{error}</p>
+                                        <h3 className="font-semibold text-red-800 mb-1">發生錯誤</h3>
+                                        <p className="text-red-600 text-sm">{error}</p>
                                     </div>
                                 </div>
                             )}
@@ -412,50 +462,51 @@
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-1">
                                 <div className="bg-white rounded-xl shadow-lg p-6">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <List className="w-5 h-5 text-blue-600" />
-                                        <h2 className="text-xl font-semibold text-gray-800">Rich Menu 列表</h2>
-                                    </div>
-                                    
-                                    {loading && menus.length === 0 ? (
+                                    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                                        <List className="w-6 h-6" />
+                                        Rich Menu 列表
+                                    </h2>
+
+                                    {loading ? (
                                         <div className="flex flex-col items-center justify-center py-12">
                                             <Loader className="w-12 h-12 text-blue-600 animate-spin mb-4" />
                                             <p className="text-gray-600">載入中...</p>
                                         </div>
                                     ) : menus.length === 0 ? (
                                         <div className="text-center py-12 text-gray-500">
-                                            <p>尚未找到任何 Rich Menu</p>
-                                            <p className="text-sm mt-2">請確認 Token 設定是否正確</p>
+                                            <p className="mb-2">尚無 Rich Menu</p>
+                                            <p className="text-sm">請確認 API 設定是否正確</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
                                             {menus.map((menu) => (
                                                 <div
                                                     key={menu.richMenuId}
-                                                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                                    className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
                                                         selectedMenu?.richMenuId === menu.richMenuId
-                                                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                                                            ? 'border-blue-500 bg-blue-50'
                                                             : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                                                     }`}
                                                     onClick={() => previewMenu(menu)}
                                                 >
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <h3 className="font-semibold text-gray-800 flex-1">
-                                                            {menu.name}
-                                                        </h3>
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex-1">
+                                                            <h3 className="font-semibold text-lg text-gray-800 mb-1">
+                                                                {menu.name}
+                                                            </h3>
+                                                            <p className="text-xs text-gray-500 font-mono break-all">
+                                                                {menu.richMenuId}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-500 space-y-1 mb-3">
-                                                        <div>大小: {menu.size.width} × {menu.size.height}</div>
-                                                        <div>區域數: {menu.areas.length}</div>
-                                                        <div className="truncate">ID: {menu.richMenuId}</div>
-                                                    </div>
-                                                    <div className="flex gap-2">
+
+                                                    <div className="flex gap-2 mt-3">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 previewMenu(menu);
                                                             }}
-                                                            className="flex-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm rounded transition-all flex items-center justify-center gap-1"
+                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                             預覽
@@ -465,7 +516,7 @@
                                                                 e.stopPropagation();
                                                                 setAsDefault(menu.richMenuId);
                                                             }}
-                                                            className="flex-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-sm rounded transition-all flex items-center justify-center gap-1"
+                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                                                         >
                                                             <Check className="w-4 h-4" />
                                                             設為預設
@@ -475,7 +526,7 @@
                                                                 e.stopPropagation();
                                                                 deleteRichMenu(menu.richMenuId);
                                                             }}
-                                                            className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-sm rounded transition-all"
+                                                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
@@ -488,60 +539,114 @@
                             </div>
 
                             <div className="lg:col-span-2">
-                                {viewMode === 'preview' && selectedMenu ? (
+                                {viewMode === 'preview' && selectedMenu && (
                                     <div className="bg-white rounded-xl shadow-lg p-6">
-                                        <div className="mb-6">
-                                            <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedMenu.name}</h2>
-                                            <p className="text-gray-600">Rich Menu ID: {selectedMenu.richMenuId}</p>
-                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold mb-4">預覽: {selectedMenu.name}</h2>
 
-                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
-                                            <p className="text-sm text-gray-600 mb-4 flex items-center gap-2">
-                                                <Eye className="w-4 h-4" />
-                                                模擬 Rich Menu 畫面（將滑鼠移到熱區上查看動作）
-                                            </p>
-                                            
-                                            <div className="bg-gray-200 rounded-lg overflow-hidden mx-auto shadow-xl" style={{ maxWidth: '600px' }}>
-                                                <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
-                                                    {loadingImages[selectedMenu.richMenuId] && (
-                                                        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-20">
-                                                            <Loader className="w-8 h-8 text-blue-600 animate-spin" />
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {imageCache[selectedMenu.richMenuId] ? (
-                                                        <img 
-                                                            src={imageCache[selectedMenu.richMenuId]} 
-                                                            alt={selectedMenu.name}
-                                                            className="absolute inset-0 w-full h-full object-cover"
-                                                            onLoad={() => console.log('✅ 圖片顯示成功')}
-                                                            onError={(e) => console.error('❌ 圖片顯示失敗:', e)}
-                                                        />
-                                                    ) : (
-                                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex flex-col items-center justify-center text-white">
-                                                            <div className="text-lg font-semibold mb-2">Rich Menu 圖片區域</div>
-                                                            <div className="text-sm opacity-75">
-                                                                {selectedMenu.size.width} × {selectedMenu.size.height}
-                                                            </div>
-                                                            {!loadingImages[selectedMenu.richMenuId] && (
-                                                                <button 
-                                                                    onClick={() => loadMenuImage(selectedMenu.richMenuId)}
-                                                                    className="mt-4 px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-all"
-                                                                >
-                                                                    載入圖片
-                                                                </button>
+                                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+                                                <p className="text-sm text-gray-600 mb-4 flex items-center gap-2">
+                                                    <Eye className="w-4 h-4" />
+                                                    模擬 Rich Menu 畫面（將滑鼠移到熱區上查看動作）
+                                                </p>
+
+                                                <div className="bg-gray-200 rounded-lg overflow-hidden mx-auto shadow-xl" style={{ maxWidth: '600px' }}>
+                                                    <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
+                                                        {renderMenuImage()}
+
+                                                        <div className="absolute inset-0">
+                                                            {renderHotspots(
+                                                                selectedMenu.areas,
+                                                                600,
+                                                                600 * (selectedMenu.size.height / selectedMenu.size.width),
+                                                                selectedMenu.size
                                                             )}
                                                         </div>
-                                                    )}
-                                                    
-                                                    <div className="absolute inset-0">
-                                                        {renderHotspots(
-                                                            selectedMenu.areas,
-                                                            600,
-                                                            600 * (selectedMenu.size.height / selectedMenu.size.width),
-                                                            selectedMenu.size
-                                                        )}
+                                                    </div>
+
+                                                    <div className="bg-white border-t-2 border-gray-300 p-3 text-center text-gray-700 font-medium">
+                                                        {selectedMenu.chatBarText}
                                                     </div>
                                                 </div>
-                                                
-                                                <div className="bg-white border-t-2 border-gray-300 p-3 text-center text-gray-700 font-medium">
+
+                                                <div className="mt-6 bg-white rounded-lg p-4 border-2 border-gray-200">
+                                                    <h3 className="font-semibold text-lg mb-3">選單資訊</h3>
+                                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                                        <div>
+                                                            <span className="text-gray-600">尺寸:</span>
+                                                            <span className="ml-2 font-mono">{selectedMenu.size.width} × {selectedMenu.size.height}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-gray-600">預設選擇:</span>
+                                                            <span className="ml-2">{selectedMenu.selected ? '是' : '否'}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-gray-600">熱區數量:</span>
+                                                            <span className="ml-2">{selectedMenu.areas?.length || 0} 個</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-gray-600">聊天欄文字:</span>
+                                                            <span className="ml-2">{selectedMenu.chatBarText}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {selectedMenu.areas && selectedMenu.areas.length > 0 && (
+                                                    <div className="mt-4 bg-white rounded-lg p-4 border-2 border-gray-200">
+                                                        <h3 className="font-semibold text-lg mb-3">熱區動作列表</h3>
+                                                        <div className="space-y-2">
+                                                            {selectedMenu.areas.map((area, index) => (
+                                                                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                                                                        {index + 1}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="font-medium text-gray-800">
+                                                                            {area.action.label || area.action.text || `熱區 ${index + 1}`}
+                                                                        </div>
+                                                                        <div className="text-sm text-gray-600 mt-1">
+                                                                            <span className="font-semibold">類型:</span> {area.action.type}
+                                                                        </div>
+                                                                        {area.action.uri && (
+                                                                            <div className="text-sm text-blue-600 mt-1 break-all">
+                                                                                <span className="font-semibold">網址:</span> {area.action.uri}
+                                                                            </div>
+                                                                        )}
+                                                                        {area.action.text && (
+                                                                            <div className="text-sm text-green-600 mt-1">
+                                                                                <span className="font-semibold">文字:</span> "{area.action.text}"
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="text-xs text-gray-500 mt-2">
+                                                                            位置: ({area.bounds.x}, {area.bounds.y}) | 
+                                                                            尺寸: {area.bounds.width} × {area.bounds.height}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!selectedMenu && (
+                                    <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+                                        <Eye className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-xl font-semibold text-gray-600 mb-2">請選擇一個 Rich Menu</h3>
+                                        <p className="text-gray-500">從左側列表中點擊選單以預覽</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<LineRichMenuViewer />, document.getElementById('root'));
+    </script>
+</body>
+</html>
