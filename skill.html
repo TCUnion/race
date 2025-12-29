@@ -44,6 +44,7 @@
         .grade-C { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
         .grade-D { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
         .grade-E { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+        .grade-\- { background: #e5e7eb; color: #6b7280; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -73,7 +74,7 @@
                         placeholder="請輸入身分證字號（例如：A123456789）"
                         maxlength="10"
                     />
-                    <p class="text-sm text-gray-500 mt-2">請輸入完整的身分證字號（含英文字母）</p>
+                    <p class="text-sm text-gray-500 mt-2">請輸入完整的身分證字號或居留證號碼（含英文字母）</p>
                 </div>
 
                 <button
@@ -102,7 +103,7 @@
                 </svg>
                 <div class="flex-1">
                     <h3 class="font-semibold text-red-800 mb-1">查詢失敗</h3>
-                    <p id="errorMessage" class="text-red-600 text-sm"></p>
+                    <p id="errorMessage" class="text-red-600 text-sm leading-relaxed"></p>
                 </div>
                 <button onclick="closeError()" class="text-red-400 hover:text-red-600">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,20 +216,21 @@
                         </div>
                     </div>
                 </div>
-<!-- 修正原因 -->
-<div class="border-2 border-gray-200 rounded-xl p-6 bg-yellow-50">
-    <label class="block text-lg font-bold text-gray-800 mb-2">
-        <span class="text-red-500">*</span> 修正原因
-    </label>
-    <p class="text-sm text-gray-600 mb-3">請說明為何需要修正能力組別（必填）</p>
-    <textarea
-        id="correctionReason"
-        rows="4"
-        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-        placeholder="例如：最近參加多場比賽成績進步，希望調整組別以獲得更合適的挑戰..."
-    ></textarea>
-    <p class="text-xs text-gray-500 mt-2">此資訊將協助管理員審核您的申請</p>
-</div>
+
+                <!-- 修正原因 -->
+                <div class="border-2 border-gray-200 rounded-xl p-6 bg-yellow-50 mt-6">
+                    <label class="block text-lg font-bold text-gray-800 mb-2">
+                        <span class="text-red-500">*</span> 修正原因
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">請說明為何需要修正能力組別（必填）</p>
+                    <textarea
+                        id="correctionReason"
+                        rows="4"
+                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                        placeholder="例如：最近參加多場比賽成績進步，希望調整組別以獲得更合適的挑戰..."
+                    ></textarea>
+                    <p class="text-xs text-gray-500 mt-2">此資訊將協助管理員審核您的申請</p>
+                </div>
 
                 <div class="flex gap-4 mt-8">
                     <button
@@ -289,13 +291,7 @@
             const memberIdCard = document.getElementById('memberIdCard').value.trim().toUpperCase();
 
             if (!memberIdCard) {
-                showError('請輸入身分證字號');
-                return;
-            }
-
-            // 驗證身分證格式
-            if (!/^[A-Z][12]\d{8}$/.test(memberIdCard)) {
-                showError('身分證字號格式不正確，請輸入正確格式（例如：A123456789）');
+                showError('請輸入身分證字號或居留證號碼');
                 return;
             }
 
@@ -388,8 +384,6 @@
                 if (btn.getAttribute('data-grade') === grade) {
                     btn.classList.add('ring-4', 'ring-offset-2');
 
-                    // 根據組別添加不同顏色的 ring
-                    btn.classList.remove('ring-purple-400', 'ring-pink-400', 'ring-blue-400', 'ring-green-400', 'ring-yellow-400');
                     const ringColors = {
                         'A': 'ring-purple-400',
                         'B': 'ring-pink-400',
@@ -426,6 +420,20 @@
                 return;
             }
 
+            // 檢查修正原因是否填寫
+            const correctionReason = document.getElementById('correctionReason').value.trim();
+            if (!correctionReason) {
+                showError('請填寫修正原因');
+                document.getElementById('correctionReason').focus();
+                return;
+            }
+
+            if (correctionReason.length < 10) {
+                showError('修正原因至少需要 10 個字');
+                document.getElementById('correctionReason').focus();
+                return;
+            }
+
             document.getElementById('memberSection').classList.add('hidden');
             document.getElementById('loadingSection').classList.remove('hidden');
 
@@ -440,7 +448,8 @@
                         memberIdCard: memberData.memberIdCard,
                         memberName: memberData.memberName,
                         abilities: abilityGrades,
-                        email: memberData.email || ''
+                        email: memberData.email || '',
+                        correctionReason: correctionReason
                     })
                 });
 
@@ -469,6 +478,7 @@
         // 重置表單
         function resetForm() {
             document.getElementById('memberIdCard').value = '';
+            document.getElementById('correctionReason').value = '';
 
             memberData = null;
             abilityGrades = {
@@ -478,7 +488,6 @@
                 '計時賽TT': null
             };
 
-            // 移除所有按鈕的選中樣式
             document.querySelectorAll('.ability-select').forEach(btn => {
                 btn.classList.remove('ring-4', 'ring-offset-2', 'ring-purple-400', 'ring-pink-400', 'ring-blue-400', 'ring-green-400', 'ring-yellow-400');
             });
@@ -490,9 +499,20 @@
             document.getElementById('loadingSection').classList.add('hidden');
         }
 
-        // 顯示錯誤
+        // 顯示錯誤（支援連結）
         function showError(message) {
-            document.getElementById('errorMessage').textContent = message;
+            const errorMessageEl = document.getElementById('errorMessage');
+
+            // 檢查訊息中是否包含網址
+            if (message.includes('https://')) {
+                // 將網址轉換為可點擊的連結
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const htmlMessage = message.replace(urlRegex, '<a href="$1" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-semibold">$1</a>');
+                errorMessageEl.innerHTML = htmlMessage;
+            } else {
+                errorMessageEl.textContent = message;
+            }
+
             document.getElementById('errorSection').classList.remove('hidden');
         }
 
