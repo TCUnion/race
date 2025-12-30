@@ -352,17 +352,29 @@
                 }
             };
 
-            const handleImageSelect = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    setSelectedImage(file);
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        setImagePreview(reader.result);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
+const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        // 檢查檔案大小
+        if (file.size > 1024 * 1024) {
+            setError('圖片檔案不能超過 1MB');
+            return;
+        }
+        
+        // 檢查檔案類型
+        if (!file.type.match(/image\/(png|jpeg|jpg)/)) {
+            setError('只支援 PNG 或 JPG 格式');
+            return;
+        }
+        
+        setSelectedImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    }
+};
 const createRichMenu = async () => {
     if (!config.channelAccessToken) {
         setError('請先設定 LINE Channel Access Token');
@@ -390,13 +402,14 @@ const createRichMenu = async () => {
 
     try {
         // 步驟 1: 建立 Rich Menu
+        console.log('🔵 步驟 1: 建立 Rich Menu...');
         const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
         const richMenuId = createData.richMenuId;
-
         console.log('✅ Rich Menu 已建立:', richMenuId);
 
         // 步驟 2: 上傳圖片 (修正版)
         setUploadingImage(true);
+        console.log('🔵 步驟 2: 準備上傳圖片...');
         
         // 讀取檔案為 ArrayBuffer
         const arrayBuffer = await selectedImage.arrayBuffer();
@@ -408,6 +421,13 @@ const createRichMenu = async () => {
             binary += String.fromCharCode(bytes[i]);
         }
         const base64Data = btoa(binary);
+        
+        console.log('📊 圖片資訊:', {
+            檔名: selectedImage.name,
+            大小: `${(selectedImage.size / 1024).toFixed(2)} KB`,
+            類型: selectedImage.type,
+            Base64長度: base64Data.length
+        });
 
         // 使用專門的圖片上傳端點
         const uploadResponse = await fetch(config.proxyUrl, {
@@ -425,9 +445,12 @@ const createRichMenu = async () => {
             })
         });
 
+        console.log('📡 上傳回應狀態:', uploadResponse.status);
+
         if (!uploadResponse.ok) {
             const errorData = await uploadResponse.json().catch(() => ({}));
-            throw new Error(errorData.error || errorData.message || '圖片上傳失敗');
+            console.error('❌ 上傳失敗:', errorData);
+            throw new Error(errorData.error || errorData.message || `圖片上傳失敗 (${uploadResponse.status})`);
         }
 
         const uploadResult = await uploadResponse.json();
@@ -449,8 +472,8 @@ const createRichMenu = async () => {
         await fetchRichMenus();
         setViewMode('list');
     } catch (err) {
+        console.error('❌ 建立失敗:', err);
         setError(`建立 Rich Menu 失敗: ${err.message}`);
-        console.error('Error details:', err);
     } finally {
         setLoading(false);
         setUploadingImage(false);
