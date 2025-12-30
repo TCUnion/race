@@ -433,26 +433,53 @@ const createRichMenu = async () => {
         console.log('✅ Rich Menu 已建立:', richMenuId);
 
         // 步驟 2: 上傳圖片 (修正版)
-        setUploadingImage(true);
-        console.log('🔵 步驟 2: 準備上傳圖片...');
-        
-        // 讀取檔案為 ArrayBuffer
-        const arrayBuffer = await selectedImage.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        
-        // 轉換為 base64
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Data = btoa(binary);
-        
-        console.log('📊 圖片資訊:', {
-            檔名: selectedImage.name,
-            大小: `${(selectedImage.size / 1024).toFixed(2)} KB`,
-            類型: selectedImage.type,
-            Base64長度: base64Data.length
-        });
+setUploadingImage(true);
+console.log('🔵 步驟 2: 準備上傳圖片...');
+
+// 讀取檔案為 ArrayBuffer
+const arrayBuffer = await selectedImage.arrayBuffer();
+const bytes = new Uint8Array(arrayBuffer);
+
+// 轉換為 base64
+let binary = '';
+for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+}
+const base64Data = btoa(binary);
+
+console.log('📊 圖片資訊:', {
+    檔名: selectedImage.name,
+    大小: `${(selectedImage.size / 1024).toFixed(2)} KB`,
+    類型: selectedImage.type,
+    Base64長度: base64Data.length
+});
+
+// 使用專門的圖片上傳端點
+const uploadResponse = await fetch(config.proxyUrl, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        token: config.channelAccessToken,
+        endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
+        method: 'POST',
+        isImageUpload: true,
+        imageData: base64Data,
+        contentType: selectedImage.type
+    })
+});
+
+console.log('📡 上傳回應狀態:', uploadResponse.status);
+
+if (!uploadResponse.ok) {
+    const errorData = await uploadResponse.json().catch(() => ({}));
+    console.error('❌ 上傳失敗:', errorData);
+    throw new Error(errorData.error || errorData.message || `圖片上傳失敗 (${uploadResponse.status})`);
+}
+
+const uploadResult = await uploadResponse.json();
+console.log('✅ 圖片已上傳', uploadResult);
 
         // 使用專門的圖片上傳端點
         const uploadResponse = await fetch(config.proxyUrl, {
