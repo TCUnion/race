@@ -182,11 +182,6 @@
                 areas: []
             });
 
-            const [currentArea, setCurrentArea] = useState({
-                bounds: { x: 0, y: 0, width: 833, height: 843 },
-                action: { type: 'uri', uri: '', label: '' }
-            });
-
             const [selectedImage, setSelectedImage] = useState(null);
             const [imagePreview, setImagePreview] = useState(null);
 
@@ -197,10 +192,41 @@
                     setNewMenu({
                         ...newMenu,
                         size: template.size,
-                        areas: JSON.parse(JSON.stringify(template.areas)) // 深拷貝
+                        areas: JSON.parse(JSON.stringify(template.areas))
                     });
                     setSuccess(`已套用 ${template.name} 範本！座標已自動填入`);
                 }
+            };
+
+            // 更新特定熱區
+            const updateArea = (index, field, value) => {
+                setNewMenu(prev => ({
+                    ...prev,
+                    areas: prev.areas.map((area, i) => {
+                        if (i === index) {
+                            if (field.includes('.')) {
+                                const [parent, child] = field.split('.');
+                                return {
+                                    ...area,
+                                    [parent]: {
+                                        ...area[parent],
+                                        [child]: value
+                                    }
+                                };
+                            }
+                            return { ...area, [field]: value };
+                        }
+                        return area;
+                    })
+                }));
+            };
+
+            // 刪除熱區
+            const removeArea = (index) => {
+                setNewMenu(prev => ({
+                    ...prev,
+                    areas: prev.areas.filter((_, i) => i !== index)
+                }));
             };
 
             useEffect(() => {
@@ -338,31 +364,6 @@
                 }
             };
 
-            const addArea = () => {
-                if (newMenu.areas.length >= 20) {
-                    setError('最多只能建立 20 個熱區');
-                    return;
-                }
-
-                setNewMenu(prev => ({
-                    ...prev,
-                    areas: [...prev.areas, { ...currentArea }]
-                }));
-
-                // 重置表單
-                setCurrentArea({
-                    bounds: { x: 0, y: 0, width: 833, height: 843 },
-                    action: { type: 'uri', uri: '', label: '' }
-                });
-            };
-
-            const removeArea = (index) => {
-                setNewMenu(prev => ({
-                    ...prev,
-                    areas: prev.areas.filter((_, i) => i !== index)
-                }));
-            };
-
             const createRichMenu = async () => {
                 if (!config.channelAccessToken) {
                     setError('請先設定 LINE Channel Access Token');
@@ -375,7 +376,7 @@
                 }
 
                 if (newMenu.areas.length === 0) {
-                    setError('請至少新增一個熱區');
+                    setError('請至少套用一個範本或新增熱區');
                     return;
                 }
 
@@ -389,13 +390,11 @@
                 setSuccess(null);
 
                 try {
-                    // 1. 建立 Rich Menu
                     const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
                     const richMenuId = createData.richMenuId;
 
                     console.log('✅ Rich Menu 已建立:', richMenuId);
 
-                    // 2. 上傳圖片
                     setUploadingImage(true);
                     const formData = new FormData();
                     formData.append('image', selectedImage);
@@ -415,7 +414,6 @@
 
                     setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
 
-                    // 重置表單
                     setNewMenu({
                         name: '',
                         chatBarText: '選單',
@@ -426,7 +424,6 @@
                     setSelectedImage(null);
                     setImagePreview(null);
 
-                    // 重新載入列表
                     await fetchRichMenus();
                     setViewMode('list');
                 } catch (err) {
@@ -673,27 +670,7 @@
                                         </div>
                                     </div>
 
-                                    {/* 圖片尺寸選擇 */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            圖片尺寸 *
-                                        </label>
-                                        <select
-                                            value={`${newMenu.size.width}x${newMenu.size.height}`}
-                                            onChange={(e) => {
-                                                const [width, height] = e.target.value.split('x').map(Number);
-                                                setNewMenu({...newMenu, size: { width, height }});
-                                            }}
-                                            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            <option value="2500x1686">2500 × 1686 (大)</option>
-                                            <option value="2500x843">2500 × 843 (小)</option>
-                                            <option value="1200x810">1200 × 810 (大 - 舊版)</option>
-                                            <option value="1200x405">1200 × 405 (小 - 舊版)</option>
-                                        </select>
-                                    </div>
-
-                                    {/* 快速套用範本 - 新增區域 */}
+                                    {/* 快速套用範本 */}
                                     <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border-2 border-purple-200">
                                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                                             <Info className="w-5 h-5 text-purple-600" />
@@ -732,12 +709,114 @@
                                             </button>
                                         </div>
                                         <p className="text-xs text-gray-600 mt-3">
-                                            💡 套用範本後,系統會自動填入標準座標與尺寸,您可以直接修改每格的連結與標籤
+                                            💡 套用範本後可直接在下方編輯每格的連結與標籤
                                         </p>
                                     </div>
 
+                                    {/* 已設定的熱區 - 可直接編輯 */}
+                                    {newMenu.areas.length > 0 && (
+                                        <div className="border-t-2 border-gray-200 pt-6">
+                                            <h3 className="text-xl font-bold mb-4">熱區設定 ({newMenu.areas.length}/20)</h3>
+                                            <div className="space-y-4">
+                                                {newMenu.areas.map((area, index) => (
+                                                    <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-5 border-2 border-blue-200">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h4 className="font-semibold text-gray-900">熱區 {index + 1}</h4>
+                                                            <button
+                                                                onClick={() => removeArea(index)}
+                                                                className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                                                            >
+                                                                <Trash2 className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">X 座標</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={area.bounds.x}
+                                                                    onChange={(e) => updateArea(index, 'bounds.x', Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">Y 座標</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={area.bounds.y}
+                                                                    onChange={(e) => updateArea(index, 'bounds.y', Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">寬度</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={area.bounds.width}
+                                                                    onChange={(e) => updateArea(index, 'bounds.width', Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">高度</label>
+                                                                <input
+                                                                    type="number"
+                                                                    value={area.bounds.height}
+                                                                    onChange={(e) => updateArea(index, 'bounds.height', Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">動作類型</label>
+                                                                <select
+                                                                    value={area.action.type}
+                                                                    onChange={(e) => updateArea(index, 'action.type', e.target.value)}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                >
+                                                                    <option value="uri">開啟網址</option>
+                                                                    <option value="message">傳送訊息</option>
+                                                                    <option value="postback">Postback</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">
+                                                                    {area.action.type === 'uri' ? '網址' : '文字/Data'}
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={area.action.uri || area.action.text || area.action.data || ''}
+                                                                    onChange={(e) => {
+                                                                        const key = area.action.type === 'uri' ? 'uri' : 
+                                                                                   area.action.type === 'message' ? 'text' : 'data';
+                                                                        updateArea(index, `action.${key}`, e.target.value);
+                                                                    }}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder={area.action.type === 'uri' ? 'https://...' : '訊息內容'}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs text-gray-600 mb-1">標籤</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={area.action.label || ''}
+                                                                    onChange={(e) => updateArea(index, 'action.label', e.target.value)}
+                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                                    placeholder="按鈕名稱"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* 上傳圖片 */}
-                                    <div>
+                                    <div className="border-t-2 border-gray-200 pt-6">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Rich Menu 圖片 * (PNG/JPG, 最大 1MB)
                                         </label>
@@ -767,157 +846,6 @@
                                                 <img src={imagePreview} alt="預覽" className="max-w-md rounded-lg shadow-md" />
                                             </div>
                                         )}
-                                    </div>
-
-                                    {/* 熱區設定 */}
-                                    <div className="border-t-2 border-gray-200 pt-6">
-                                        <h3 className="text-xl font-bold mb-4">熱區設定 ({newMenu.areas.length}/20)</h3>
-
-                                        {/* 已新增的熱區列表 */}
-                                        {newMenu.areas.length > 0 && (
-                                            <div className="mb-6">
-                                                <h4 className="font-semibold mb-3">已設定的熱區</h4>
-                                                <div className="space-y-2">
-                                                    {newMenu.areas.map((area, index) => (
-                                                        <div key={index} className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-                                                            <div className="flex-1">
-                                                                <div className="font-medium text-gray-900">
-                                                                    {area.action.label || `熱區 ${index + 1}`}
-                                                                </div>
-                                                                <div className="text-sm text-gray-600">
-                                                                    座標: ({area.bounds.x}, {area.bounds.y}) | 
-                                                                    尺寸: {area.bounds.width} × {area.bounds.height} | 
-                                                                    類型: {area.action.type}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    {area.action.uri || area.action.text || area.action.data || '(未設定)'}
-                                                                </div>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => removeArea(index)}
-                                                                className="ml-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                            >
-                                                                <Trash2 className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className="bg-blue-50 rounded-lg p-6 mb-4">
-                                            <h4 className="font-semibold mb-3">新增熱區 (手動設定)</h4>
-
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">X 座標</label>
-                                                    <input
-                                                        type="number"
-                                                        value={currentArea.bounds.x}
-                                                        onChange={(e) => setCurrentArea({
-                                                            ...currentArea,
-                                                            bounds: {...currentArea.bounds, x: Number(e.target.value)}
-                                                        })}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">Y 座標</label>
-                                                    <input
-                                                        type="number"
-                                                        value={currentArea.bounds.y}
-                                                        onChange={(e) => setCurrentArea({
-                                                            ...currentArea,
-                                                            bounds: {...currentArea.bounds, y: Number(e.target.value)}
-                                                        })}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">寬度</label>
-                                                    <input
-                                                        type="number"
-                                                        value={currentArea.bounds.width}
-                                                        onChange={(e) => setCurrentArea({
-                                                            ...currentArea,
-                                                            bounds: {...currentArea.bounds, width: Number(e.target.value)}
-                                                        })}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">高度</label>
-                                                    <input
-                                                        type="number"
-                                                        value={currentArea.bounds.height}
-                                                        onChange={(e) => setCurrentArea({
-                                                            ...currentArea,
-                                                            bounds: {...currentArea.bounds, height: Number(e.target.value)}
-                                                        })}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">動作類型</label>
-                                                    <select
-                                                        value={currentArea.action.type}
-                                                        onChange={(e) => setCurrentArea({
-                                                            ...currentArea,
-                                                            action: {...currentArea.action, type: e.target.value}
-                                                        })}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                    >
-                                                        <option value="uri">開啟網址</option>
-                                                        <option value="message">傳送訊息</option>
-                                                        <option value="postback">Postback</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">
-                                                        {currentArea.action.type === 'uri' ? '網址' : '文字/Data'}
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={currentArea.action.uri || currentArea.action.text || currentArea.action.data || ''}
-                                                        onChange={(e) => {
-                                                            const key = currentArea.action.type === 'uri' ? 'uri' : 
-                                                                       currentArea.action.type === 'message' ? 'text' : 'data';
-                                                            setCurrentArea({
-                                                                ...currentArea,
-                                                                action: {...currentArea.action, [key]: e.target.value}
-                                                            });
-                                                        }}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                        placeholder={currentArea.action.type === 'uri' ? 'https://...' : '訊息內容'}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">標籤</label>
-                                                    <input
-                                                        type="text"
-                                                        value={currentArea.action.label}
-                                                        onChange={(e) => setCurrentArea({
-                                                            ...currentArea,
-                                                            action: {...currentArea.action, label: e.target.value}
-                                                        })}
-                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                        placeholder="按鈕名稱"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={addArea}
-                                                disabled={newMenu.areas.length >= 20}
-                                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <Plus className="w-5 h-5" />
-                                                新增此熱區
-                                            </button>
-                                        </div>
                                     </div>
 
                                     {/* 建立按鈕 */}
