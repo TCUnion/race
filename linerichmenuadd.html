@@ -352,28 +352,39 @@
                 }
             };
 
+// 將此函數替換到 linerichmenuadd.html
+// 搜尋 "const handleImageSelect = (e) => {" 並替換整個函數
+
 const handleImageSelect = (e) => {
     const file = e.target.files[0];
-    if (file) {
-        // 檢查檔案大小
-        if (file.size > 1024 * 1024) {
-            setError('圖片檔案不能超過 1MB');
-            return;
-        }
-        
-        // 檢查檔案類型
-        if (!file.type.match(/image\/(png|jpeg|jpg)/)) {
-            setError('只支援 PNG 或 JPG 格式');
-            return;
-        }
-        
-        setSelectedImage(file);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setImagePreview(reader.result);
-        };
-        reader.readAsDataURL(file);
+    if (!file) return;
+    
+    // 檢查檔案大小
+    if (file.size > 1024 * 1024) {
+        setError('圖片檔案不能超過 1MB,請壓縮後再上傳');
+        e.target.value = ''; // 清除選擇
+        return;
     }
+    
+    // 檢查檔案類型
+    if (!file.type.match(/image\/(png|jpeg|jpg)/)) {
+        setError('只支援 PNG 或 JPG 格式的圖片');
+        e.target.value = ''; // 清除選擇
+        return;
+    }
+    
+    // 一切正常,設定圖片
+    setSelectedImage(file);
+    setError(null); // 清除之前的錯誤
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        setImagePreview(reader.result);
+    };
+    reader.onerror = () => {
+        setError('圖片讀取失敗,請重試');
+    };
+    reader.readAsDataURL(file);
 };
 const createRichMenu = async () => {
     if (!config.channelAccessToken) {
