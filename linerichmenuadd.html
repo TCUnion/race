@@ -284,17 +284,31 @@
                 return await response.json();
             };
 
-            const fetchDefaultRichMenu = async () => {
-                if (!config.channelAccessToken) return;
+const fetchDefaultRichMenu = async () => {
+    if (!config.channelAccessToken) return;
 
-                try {
-                    const data = await callLineAPI('/v2/bot/user/all/richmenu');
-                    setDefaultRichMenuId(data.richMenuId);
-                } catch (err) {
-                    console.warn('無法取得預設 Rich Menu:', err);
-                    setDefaultRichMenuId(null);
-                }
-            };
+    try {
+        const data = await callLineAPI('/v2/bot/user/all/richmenu');
+        
+        // 檢查是否有 richMenuId
+        if (data && data.richMenuId) {
+            setDefaultRichMenuId(data.richMenuId);
+        } else {
+            // 沒有預設選單
+            setDefaultRichMenuId(null);
+        }
+    } catch (err) {
+        // 403 或其他錯誤都視為沒有預設選單
+        console.warn('無法取得預設 Rich Menu:', err);
+        setDefaultRichMenuId(null);
+        
+        // 403 錯誤不顯示給使用者
+        if (!err.message.includes('403') && !err.message.includes('owned by another')) {
+            setError(`取得預設 Rich Menu 失敗: ${err.message}`);
+        }
+    }
+};
+
 
             const fetchRichMenus = async () => {
                 if (!config.channelAccessToken) {
