@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -107,6 +106,55 @@
             </svg>
         );
 
+        // Rich Menu 範本定義
+        const RICHMENU_TEMPLATES = {
+            grid_6: {
+                name: '6格版型 (3×2)',
+                size: { width: 2500, height: 1686 },
+                areas: [
+                    { bounds: { x: 0, y: 0, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '左上' } },
+                    { bounds: { x: 834, y: 0, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '中上' } },
+                    { bounds: { x: 1667, y: 0, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '右上' } },
+                    { bounds: { x: 0, y: 843, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '左下' } },
+                    { bounds: { x: 834, y: 843, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '中下' } },
+                    { bounds: { x: 1667, y: 843, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '右下' } }
+                ]
+            },
+            grid_4: {
+                name: '4格版型 (2×2)',
+                size: { width: 2500, height: 1686 },
+                areas: [
+                    { bounds: { x: 0, y: 0, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '左上' } },
+                    { bounds: { x: 1250, y: 0, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '右上' } },
+                    { bounds: { x: 0, y: 843, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '左下' } },
+                    { bounds: { x: 1250, y: 843, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '右下' } }
+                ]
+            },
+            grid_2_vertical: {
+                name: '2格版型 (上下)',
+                size: { width: 2500, height: 1686 },
+                areas: [
+                    { bounds: { x: 0, y: 0, width: 2500, height: 843 }, action: { type: 'uri', uri: '', label: '上' } },
+                    { bounds: { x: 0, y: 843, width: 2500, height: 843 }, action: { type: 'uri', uri: '', label: '下' } }
+                ]
+            },
+            grid_2_horizontal: {
+                name: '2格版型 (左右)',
+                size: { width: 2500, height: 1686 },
+                areas: [
+                    { bounds: { x: 0, y: 0, width: 1250, height: 1686 }, action: { type: 'uri', uri: '', label: '左' } },
+                    { bounds: { x: 1250, y: 0, width: 1250, height: 1686 }, action: { type: 'uri', uri: '', label: '右' } }
+                ]
+            },
+            grid_1: {
+                name: '1格版型',
+                size: { width: 2500, height: 1686 },
+                areas: [
+                    { bounds: { x: 0, y: 0, width: 2500, height: 1686 }, action: { type: 'uri', uri: '', label: '全版' } }
+                ]
+            }
+        };
+
         const LineRichMenuManager = () => {
             const [menus, setMenus] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -141,6 +189,19 @@
 
             const [selectedImage, setSelectedImage] = useState(null);
             const [imagePreview, setImagePreview] = useState(null);
+
+            // 套用範本函式
+            const applyTemplate = (templateKey) => {
+                const template = RICHMENU_TEMPLATES[templateKey];
+                if (template) {
+                    setNewMenu({
+                        ...newMenu,
+                        size: template.size,
+                        areas: JSON.parse(JSON.stringify(template.areas)) // 深拷貝
+                    });
+                    setSuccess(`已套用 ${template.name} 範本！座標已自動填入`);
+                }
+            };
 
             useEffect(() => {
                 const savedConfig = localStorage.getItem('lineRichMenuConfig');
@@ -632,6 +693,49 @@
                                         </select>
                                     </div>
 
+                                    {/* 快速套用範本 - 新增區域 */}
+                                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border-2 border-purple-200">
+                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                            <Info className="w-5 h-5 text-purple-600" />
+                                            快速套用範本 (自動填入座標)
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                            <button
+                                                onClick={() => applyTemplate('grid_6')}
+                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
+                                            >
+                                                📱 6格 (3×2)
+                                            </button>
+                                            <button
+                                                onClick={() => applyTemplate('grid_4')}
+                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
+                                            >
+                                                📱 4格 (2×2)
+                                            </button>
+                                            <button
+                                                onClick={() => applyTemplate('grid_2_vertical')}
+                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
+                                            >
+                                                📱 2格 (上下)
+                                            </button>
+                                            <button
+                                                onClick={() => applyTemplate('grid_2_horizontal')}
+                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
+                                            >
+                                                📱 2格 (左右)
+                                            </button>
+                                            <button
+                                                onClick={() => applyTemplate('grid_1')}
+                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
+                                            >
+                                                📱 1格 (全版)
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-600 mt-3">
+                                            💡 套用範本後,系統會自動填入標準座標與尺寸,您可以直接修改每格的連結與標籤
+                                        </p>
+                                    </div>
+
                                     {/* 上傳圖片 */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -669,8 +773,40 @@
                                     <div className="border-t-2 border-gray-200 pt-6">
                                         <h3 className="text-xl font-bold mb-4">熱區設定 ({newMenu.areas.length}/20)</h3>
 
+                                        {/* 已新增的熱區列表 */}
+                                        {newMenu.areas.length > 0 && (
+                                            <div className="mb-6">
+                                                <h4 className="font-semibold mb-3">已設定的熱區</h4>
+                                                <div className="space-y-2">
+                                                    {newMenu.areas.map((area, index) => (
+                                                        <div key={index} className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="font-medium text-gray-900">
+                                                                    {area.action.label || `熱區 ${index + 1}`}
+                                                                </div>
+                                                                <div className="text-sm text-gray-600">
+                                                                    座標: ({area.bounds.x}, {area.bounds.y}) | 
+                                                                    尺寸: {area.bounds.width} × {area.bounds.height} | 
+                                                                    類型: {area.action.type}
+                                                                </div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    {area.action.uri || area.action.text || area.action.data || '(未設定)'}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeArea(index)}
+                                                                className="ml-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                            >
+                                                                <Trash2 className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="bg-blue-50 rounded-lg p-6 mb-4">
-                                            <h4 className="font-semibold mb-3">新增熱區</h4>
+                                            <h4 className="font-semibold mb-3">新增熱區 (手動設定)</h4>
 
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                                                 <div>
@@ -755,20 +891,20 @@
                                                             });
                                                         }}
                                                         className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                        placeholder={currentArea.action.type === 'uri' ? 'https://example.com' : '文字內容'}
+                                                        placeholder={currentArea.action.type === 'uri' ? 'https://...' : '訊息內容'}
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">標籤 (選填)</label>
+                                                    <label className="block text-xs text-gray-600 mb-1">標籤</label>
                                                     <input
                                                         type="text"
-                                                        value={currentArea.action.label || ''}
+                                                        value={currentArea.action.label}
                                                         onChange={(e) => setCurrentArea({
                                                             ...currentArea,
                                                             action: {...currentArea.action, label: e.target.value}
                                                         })}
                                                         className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                        placeholder="熱區說明"
+                                                        placeholder="按鈕名稱"
                                                     />
                                                 </div>
                                             </div>
@@ -776,47 +912,20 @@
                                             <button
                                                 onClick={addArea}
                                                 disabled={newMenu.areas.length >= 20}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <Plus className="w-5 h-5" />
-                                                新增熱區
+                                                新增此熱區
                                             </button>
                                         </div>
-
-                                        {/* 已建立的熱區列表 */}
-                                        {newMenu.areas.length > 0 && (
-                                            <div className="space-y-2">
-                                                <h4 className="font-semibold mb-2">已建立的熱區:</h4>
-                                                {newMenu.areas.map((area, index) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                        <div className="flex-1">
-                                                            <div className="font-medium">
-                                                                熱區 {index + 1}: {area.action.label || '(無標籤)'}
-                                                            </div>
-                                                            <div className="text-sm text-gray-600">
-                                                                位置: ({area.bounds.x}, {area.bounds.y}) | 
-                                                                尺寸: {area.bounds.width} × {area.bounds.height} | 
-                                                                類型: {area.action.type}
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => removeArea(index)}
-                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        >
-                                                            <Trash2 className="w-5 h-5" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* 建立按鈕 */}
-                                    <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+                                    <div className="flex gap-4">
                                         <button
                                             onClick={createRichMenu}
                                             disabled={loading || uploadingImage}
-                                            className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
                                         >
                                             {loading || uploadingImage ? (
                                                 <>
@@ -831,95 +940,109 @@
                                             )}
                                         </button>
                                         <button
-                                            onClick={() => setViewMode('list')}
-                                            className="px-6 py-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                                            onClick={() => {
+                                                setNewMenu({
+                                                    name: '',
+                                                    chatBarText: '選單',
+                                                    selected: false,
+                                                    size: { width: 2500, height: 1686 },
+                                                    areas: []
+                                                });
+                                                setSelectedImage(null);
+                                                setImagePreview(null);
+                                            }}
+                                            className="px-8 py-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                                         >
-                                            取消
+                                            清除表單
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* 選單列表 */}
+                        {/* 列表檢視 */}
                         {viewMode === 'list' && (
                             <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h2 className="text-2xl font-bold mb-4">Rich Menu 列表</h2>
+                                <h2 className="text-2xl font-bold mb-6">Rich Menu 列表</h2>
 
-                                {loading ? (
-                                    <div className="flex flex-col items-center justify-center py-12">
-                                        <Loader className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-                                        <p className="text-gray-600">載入中...</p>
+                                {loading && (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+                                        <span className="ml-3 text-gray-600">載入中...</span>
                                     </div>
-                                ) : menus.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <p className="mb-2">尚無 Rich Menu</p>
-                                        <p className="text-sm">請點擊「建立新選單」開始建立</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {menus.map((menu) => {
-                                            const isDefault = menu.richMenuId === defaultRichMenuId;
+                                )}
 
-                                            return (
-                                                <div
-                                                    key={menu.richMenuId}
-                                                    className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-all"
-                                                >
-                                                    <div className="flex items-start justify-between mb-3">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <h3 className="font-semibold text-lg text-gray-800">
-                                                                    {menu.name}
-                                                                </h3>
-                                                                {isDefault && (
-                                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                                                                        預設
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-xs text-gray-500 font-mono break-all">
-                                                                {menu.richMenuId}
-                                                            </p>
-                                                        </div>
+                                {!loading && menus.length === 0 && (
+                                    <div className="text-center py-12">
+                                        <div className="text-gray-400 mb-4">
+                                            <Info className="w-16 h-16 mx-auto" />
+                                        </div>
+                                        <p className="text-gray-600 text-lg">尚無 Rich Menu</p>
+                                        <p className="text-gray-500 text-sm mt-2">點擊上方「建立新選單」開始建立</p>
+                                    </div>
+                                )}
+
+                                {!loading && menus.length > 0 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {menus.map(menu => (
+                                            <div key={menu.richMenuId} className="border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-gray-900">{menu.name}</h3>
+                                                        <p className="text-sm text-gray-500">{menu.chatBarText}</p>
                                                     </div>
+                                                    {defaultRichMenuId === menu.richMenuId && (
+                                                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                                                            預設
+                                                        </span>
+                                                    )}
+                                                </div>
 
-                                                    <div className="flex gap-2 mt-3">
-                                                        <button
-                                                            onClick={() => previewMenu(menu)}
-                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                                                        >
-                                                            <Eye className="w-4 h-4" />
-                                                            預覽
-                                                        </button>
+                                                <div className="bg-gray-100 rounded-lg p-2 mb-3 text-xs text-gray-600">
+                                                    <div>尺寸: {menu.size.width} × {menu.size.height}</div>
+                                                    <div>熱區數: {menu.areas.length}</div>
+                                                    <div className="truncate">ID: {menu.richMenuId}</div>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => previewMenu(menu)}
+                                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        預覽
+                                                    </button>
+                                                    {defaultRichMenuId !== menu.richMenuId && (
                                                         <button
                                                             onClick={() => setAsDefault(menu.richMenuId)}
-                                                            disabled={isDefault}
-                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                                                         >
                                                             <Check className="w-4 h-4" />
-                                                            {isDefault ? '已預設' : '設為預設'}
+                                                            設為預設
                                                         </button>
-                                                        <button
-                                                            onClick={() => deleteRichMenu(menu.richMenuId)}
-                                                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
+                                                    )}
+                                                    <button
+                                                        onClick={() => deleteRichMenu(menu.richMenuId)}
+                                                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
-                                            );
-                                        })}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* 預覽模式 */}
+                        {/* 預覽檢視 */}
                         {viewMode === 'preview' && selectedMenu && (
                             <div className="bg-white rounded-xl shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold">預覽: {selectedMenu.name}</h2>
+                                    <div>
+                                        <h2 className="text-2xl font-bold">{selectedMenu.name}</h2>
+                                        <p className="text-gray-600">{selectedMenu.chatBarText}</p>
+                                    </div>
                                     <button
                                         onClick={() => setViewMode('list')}
                                         className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
@@ -928,42 +1051,77 @@
                                     </button>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
-                                    <div className="bg-gray-200 rounded-lg overflow-hidden mx-auto shadow-xl" style={{ maxWidth: '600px' }}>
-                                        <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
-                                            {loadingImages[selectedMenu.richMenuId] ? (
-                                                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                                                    <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* 圖片預覽 */}
+                                    <div>
+                                        <h3 className="font-semibold mb-3">圖片預覽</h3>
+                                        <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+                                            {loadingImages[selectedMenu.richMenuId] && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+                                                    <Loader className="w-8 h-8 animate-spin text-blue-500" />
                                                 </div>
-                                            ) : imageCache[selectedMenu.richMenuId] ? (
-                                                <img 
-                                                    src={imageCache[selectedMenu.richMenuId]} 
-                                                    alt={selectedMenu.name}
-                                                    className="absolute inset-0 w-full h-full object-cover"
-                                                />
+                                            )}
+                                            {imageCache[selectedMenu.richMenuId] ? (
+                                                <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
+                                                    <img
+                                                        src={imageCache[selectedMenu.richMenuId]}
+                                                        alt={selectedMenu.name}
+                                                        className="absolute inset-0 w-full h-full object-contain"
+                                                    />
+                                                    <div className="absolute inset-0">
+                                                        {renderHotspots(
+                                                            selectedMenu.areas,
+                                                            document.querySelector('.relative')?.offsetWidth || 500,
+                                                            document.querySelector('.relative')?.offsetHeight || 337,
+                                                            selectedMenu.size
+                                                        )}
+                                                    </div>
+                                                </div>
                                             ) : (
-                                                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex flex-col items-center justify-center text-white">
-                                                    <button 
+                                                <div className="aspect-[2500/1686] flex items-center justify-center">
+                                                    <button
                                                         onClick={() => loadMenuImage(selectedMenu.richMenuId)}
-                                                        className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50"
+                                                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                                                     >
                                                         載入圖片
                                                     </button>
                                                 </div>
                                             )}
-
-                                            <div className="absolute inset-0">
-                                                {renderHotspots(
-                                                    selectedMenu.areas,
-                                                    600,
-                                                    600 * (selectedMenu.size.height / selectedMenu.size.width),
-                                                    selectedMenu.size
-                                                )}
-                                            </div>
                                         </div>
+                                    </div>
 
-                                        <div className="bg-white border-t-2 border-gray-300 p-3 text-center text-gray-700 font-medium">
-                                            {selectedMenu.chatBarText}
+                                    {/* 詳細資訊 */}
+                                    <div>
+                                        <h3 className="font-semibold mb-3">詳細資訊</h3>
+                                        <div className="space-y-4">
+                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                <div className="text-sm text-gray-600 mb-1">Rich Menu ID</div>
+                                                <div className="font-mono text-sm break-all">{selectedMenu.richMenuId}</div>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                <div className="text-sm text-gray-600 mb-1">圖片尺寸</div>
+                                                <div>{selectedMenu.size.width} × {selectedMenu.size.height}</div>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-lg p-4">
+                                                <div className="text-sm text-gray-600 mb-2">熱區 ({selectedMenu.areas.length})</div>
+                                                <div className="space-y-2 max-h-96 overflow-y-auto">
+                                                    {selectedMenu.areas.map((area, index) => (
+                                                        <div key={index} className="bg-white rounded p-3 text-sm border border-gray-200">
+                                                            <div className="font-semibold text-gray-900 mb-1">
+                                                                {area.action.label || `熱區 ${index + 1}`}
+                                                            </div>
+                                                            <div className="text-xs text-gray-600 space-y-1">
+                                                                <div>座標: ({area.bounds.x}, {area.bounds.y})</div>
+                                                                <div>尺寸: {area.bounds.width} × {area.bounds.height}</div>
+                                                                <div>類型: {area.action.type}</div>
+                                                                {area.action.uri && <div className="break-all">網址: {area.action.uri}</div>}
+                                                                {area.action.text && <div>文字: {area.action.text}</div>}
+                                                                {area.action.data && <div>Data: {area.action.data}</div>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
