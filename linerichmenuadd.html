@@ -363,8 +363,7 @@
                     reader.readAsDataURL(file);
                 }
             };
-
-           const createRichMenu = async () => {
+const createRichMenu = async () => {
     if (!config.channelAccessToken) {
         setError('請先設定 LINE Channel Access Token');
         return;
@@ -396,18 +395,21 @@
 
         console.log('✅ Rich Menu 已建立:', richMenuId);
 
-        // 步驟 2: 上傳圖片
+        // 步驟 2: 上傳圖片 (修正版)
         setUploadingImage(true);
         
-        // 將圖片轉為 base64
-        const reader = new FileReader();
-        const imageBase64 = await new Promise((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(selectedImage);
-        });
+        // 讀取檔案為 ArrayBuffer
+        const arrayBuffer = await selectedImage.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        
+        // 轉換為 base64
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const base64Data = btoa(binary);
 
-        // 使用 JSON 格式上傳圖片資訊
+        // 使用專門的圖片上傳端點
         const uploadResponse = await fetch(config.proxyUrl, {
             method: 'POST',
             headers: {
@@ -417,9 +419,9 @@
                 token: config.channelAccessToken,
                 endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
                 method: 'POST',
-                imageData: imageBase64,
-                contentType: selectedImage.type,
-                isImageUpload: true
+                isImageUpload: true,
+                imageData: base64Data,
+                contentType: selectedImage.type
             })
         });
 
@@ -428,7 +430,8 @@
             throw new Error(errorData.error || errorData.message || '圖片上傳失敗');
         }
 
-        console.log('✅ 圖片已上傳');
+        const uploadResult = await uploadResponse.json();
+        console.log('✅ 圖片已上傳', uploadResult);
 
         setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
 
@@ -447,6 +450,7 @@
         setViewMode('list');
     } catch (err) {
         setError(`建立 Rich Menu 失敗: ${err.message}`);
+        console.error('Error details:', err);
     } finally {
         setLoading(false);
         setUploadingImage(false);
