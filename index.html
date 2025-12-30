@@ -529,20 +529,39 @@
         }
         
         function filterEvents(type) {
-            const cards = document.querySelectorAll('.event-card');
-            const buttons = document.querySelectorAll('.filter-btn');
-            
-            buttons.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            cards.forEach(card => {
-                if (type === 'all' || card.dataset.type === type) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+    const cards = document.querySelectorAll('.event-card');
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    // 修正：使用正確的方式取得當前按鈕
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.includes(getFilterLabel(type))) {
+            btn.classList.add('active');
         }
+    });
+    
+    cards.forEach(card => {
+        if (type === 'all' || card.dataset.type === type) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// 新增輔助函數
+function getFilterLabel(type) {
+    const labels = {
+        'all': '全部賽事',
+        'ultra': '超長距離',
+        'climbing': '登山挑戰',
+        'touring': '環島系列',
+        'race': '競賽類',
+        'challenge': '挑戰賽'
+    };
+    return labels[type] || '全部賽事';
+}
+
         
         // 初始化
         window.addEventListener('DOMContentLoaded', () => {
