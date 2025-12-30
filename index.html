@@ -1,102 +1,546 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <title>2025賽事一覽表 by TCU</title>
-  <style>
-    td.align-left { text-align: left; }
-    body {
-      font-family: "Noto Sans TC", "微軟正黑體", Arial, sans-serif;
-      background: #f5f7fa;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      color: #2c3e50;
-      margin-bottom: 10px;
-      font-weight: 1100;
-    }
-    h2 {
-      text-align: center;
-      color: #2c3e50;
-      margin-bottom: 10px;
-      font-weight: 100;
-    }
-    p.time {
-      text-align: center;
-      color: #888;
-      font-size: 0.9rem;
-      margin-bottom: 30px;
-    }
-    table {
-      margin: 0 auto;
-      border-collapse: collapse;
-      width: 80%;
-      max-width: 100%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      background: #fff;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    thead {
-      background: #2980b9;
-      color: #fff;
-    }
-    th, td {
-      padding: 15px 20px;
-      text-align: center;
-      border-bottom: 1px solid #ddd;
-      white-space: nowrap;
-      font-size: 1.3rem;
-    }
-    .row-red {
-  background-color: #2c2c2c; /* 深灰色或其他你喜歡的深色 */
-  color: #ffffff; /* 白色文字 */
-}
-    tbody tr:hover {
-      background: #d6e9f8;
-      transition: background-color 0.3s ease;
-    }
-    .week-mon { background: rgba(65, 105, 225, 0.3); }
-    .week-tue { background: rgba(60, 179, 113, 0.3); }
-    .week-wed { background: rgba(255, 165, 79, 0.3); }
-    .week-thu { background: rgba(219, 112, 147, 0.3); }
-    .week-fri { background: rgba(138, 43, 226, 0.3); }
-    .week-sat { background: rgba(46, 139, 87, 0.3); }
-    .week-sun { background: rgba(199, 21, 133, 0.3); }
-    tbody tr:hover {
-      background-color: #34495e;
-      color: #f0f0f0;
-      transition: background-color 0.3s ease, color 0.3s ease;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 台灣自行車賽事行事曆</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .month-section {
+            margin-bottom: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .month-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            font-size: 1.8em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .event-count {
+            font-size: 0.6em;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .event-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+            border-left: 5px solid #667eea;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        .event-card.ultra { border-left-color: #e74c3c; }
+        .event-card.climbing { border-left-color: #f39c12; }
+        .event-card.touring { border-left-color: #3498db; }
+        .event-card.race { border-left-color: #2ecc71; }
+        .event-card.challenge { border-left-color: #9b59b6; }
+
+        .event-date {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .date-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .event-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .meta-tag {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .event-status {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-open {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-closed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .event-link {
+            margin-top: 12px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .event-link:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .event-link.disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2em; }
+            .events-grid { grid-template-columns: 1fr; }
+            .stats { gap: 15px; }
+        }
+    </style>
 </head>
 <body>
-  <h1>2025 賽事一覽表</h1>
-  <p class="time">報表產生時間：2025-10-20 15:20:56 By TCU</p>
-  <table>
-<thead>
-  <tr>
-    <th>日期／星期</th>
-    <th>賽事名稱</th>
-    <th>主辦單位</th>
-    <th>備註</th>
-  </tr>
-</thead>
-<tbody><tr class="week-sun" ><td>2025/1/5 (週日)</td><td class="align-left"><a href="https://www.google.com/search?q=北橫+雪霧鬧+Liv+Cycling+Club+2025+報名" target="_blank">NS陽金P字山道</a></td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/1/5 (週日)</td><td class="align-left"><a href="https://sports.e-land.gov.tw/2025-chungliao-kom-registration" target="_blank">中寮KOM</a></td><td>TCU</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/1/12 (週日)</td><td class="align-left"><a href="https://livday-tainan.com/register" target="_blank">LIVDAY台南</a></td><td>Giant</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/2/22 (週六)</td><td class="align-left"><a href="https://www.ultrarunningtaiwan.com/taipei/2025/02/22/third-east-three-towers-ultra-run" target="_blank">第3屆 東三塔</a></td><td>TWB台灣自行車協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/2/23 (週日)</td><td class="align-left"><a href="https://www.runclub.com.tw/event/3751" target="_blank">Gravel Fundo 員林站</a></td><td>輪動台灣運動協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/2/23 (週日)</td><td class="align-left"><a href="https://www.runtaiwanrun.com/race/梅山36彎挑戰賽" target="_blank">梅山36彎挑戰賽</a></td><td>聯網國際資訊股份有限公司</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/2/23 (週日)</td><td class="align-left"><a href="https://www.google.com/search?q=北橫+雪霧鬧+Liv+Cycling+Club+2025+報名" target="_blank">北橫_雪霧鬧</a></td><td>Liv Cycling Club</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/2/28 (週五)</td><td class="align-left">第六屆東三(雙)塔        </td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/3/7 (週五)</td><td class="align-left">Beer Mile啤酒路跑</td><td>LAVA鐵人公司</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/8 (週六)</td><td class="align-left">環海岸山脈220K,110K挑戰</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/8 (週六)</td><td class="align-left">環花東350 自行車挑戰</td><td>LAVA鐵人公司</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/3/9 (週日)</td><td class="align-left">環海岸山脈220K,110K挑戰</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/3/9 (週日)</td><td class="align-left">環花東350 自行車挑戰</td><td>LAVA鐵人公司</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/3/16 (週日)</td><td class="align-left">輪霸西濱</td><td>TBA中華民國自行車協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/22 (週六)</td><td class="align-left">陽明山-公路賽.團隊計時賽(聯賽1)</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/22 (週六)</td><td class="align-left">陽明山</td><td>雪巴運動</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/22 (週六)</td><td class="align-left">2025萬眾騎BIKE</td><td>萬眾騎BIKE</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/22 (週六)</td><td class="align-left">NS青年盃繞圈賽</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/3/23 (週日)</td><td class="align-left">NS 城市盃繞圈賽-春</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-wed" ><td>2025/3/26 (週三)</td><td class="align-left">自行車台北展</td><td></td><td>官網資料</td></tr><tr class="week-thu" ><td>2025/3/27 (週四)</td><td class="align-left">自行車台北展</td><td></td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/3/28 (週五)</td><td class="align-left">自行車台北展</td><td></td><td>官網資料</td></tr><tr class="week-sat" ><td>3/29 (週六)</td><td class="align-left">2025普悠瑪鐵人三項</td><td>臺東縣城鄉生活運動協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/3/29 (週六)</td><td class="align-left">自行車台北展</td><td></td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/3/30 (週日)</td><td class="align-left">序幕站 台北站</td><td>96 自轉車</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/3/31 (週一)</td><td class="align-left">台灣登山王之路-春季(聯賽2)</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/4/11 (週五)</td><td class="align-left"><a href="https://www.cyclist.org.tw/event_txt.asp?pno=303" target="_blank">環花東國際自行車賽(聯賽3,4)
-環花東自行車365/160挑戰賽</a></td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/4/12 (週六)</td><td class="align-left"><a href="https://www.cyclist.org.tw/event_txt.asp?pno=303" target="_blank">環花東國際自行車賽(聯賽3,4)
-環花東自行車365/160挑戰賽</a></td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/4/12 (週六)</td><td class="align-left">彰化經典百K</td><td>美利達自行車</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/13 (週日)</td><td class="align-left"><a href="https://www.cyclist.org.tw/event_txt.asp?pno=303" target="_blank">環花東國際自行車賽(聯賽3,4)
-環花東自行車365/160挑戰賽</a></td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/13 (週日)</td><td class="align-left">JJSC武嶺</td><td>JJSC</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/4/19 (週六)</td><td class="align-left">114年全國中等學校運動會在台南</td><td></td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/20 (週日)</td><td class="align-left">台中城市繞圈賽</td><td>TCU</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/20 (週日)</td><td class="align-left">114年全國中等學校運動會在台南</td><td></td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/4/21 (週一)</td><td class="align-left">114年全國中等學校運動會在台南</td><td></td><td>官網資料</td></tr><tr class="week-tue" ><td>2025/4/22 (週二)</td><td class="align-left">114年全國中等學校運動會在台南</td><td></td><td>官網資料</td></tr><tr class="week-wed" ><td>2025/4/23 (週三)</td><td class="align-left">114年全國中等學校運動會在台南</td><td></td><td>官網資料</td></tr><tr class="week-thu" ><td>2025/4/24 (週四)</td><td class="align-left">114年全國中等學校運動會在台南</td><td></td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/4/26 (週六)</td><td class="align-left">Challenge Taiwan 2025</td><td>Challenge Taiwan</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/27 (週日)</td><td class="align-left">2025  TIS 崇越盃佛陀KOM自行車挑戰賽</td><td>桃園市鐵人運動協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/27 (週日)</td><td class="align-left">Gravel Fundo玉井站</td><td>輪動台灣運動協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/4/27 (週日)</td><td class="align-left">Challenge Taiwan 2025</td><td>Challenge Taiwan</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/5/3 (週六)</td><td class="align-left">太平山-公路賽.個人.團隊計時賽(聯賽5)</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/5/4 (週日)</td><td class="align-left">塔塔加探索新中橫</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/5/17 (週六)</td><td class="align-left">114年桃園市市長盃登山車錦標賽</td><td>桃園市體育總會自由車委員會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/5/17 (週六)</td><td class="align-left">FTL二日賽梅南橋TT</td><td>FTL Cycling Team </td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/5/18 (週日)</td><td class="align-left">世壯運自由車賽-場地賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/5/18 (週日)</td><td class="align-left">FTL二日賽 石壁 雲嶺之巔 公路賽</td><td>FTL Cycling Team </td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/5/19 (週一)</td><td class="align-left">世壯運自由車賽-場地賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-tue" ><td>2025/5/20 (週二)</td><td class="align-left">世壯運自由車賽-場地賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-wed" ><td>2025/5/21 (週三)</td><td class="align-left">世壯運自由車賽-場地賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-thu" ><td>2025/5/22 (週四)</td><td class="align-left">世壯運自由車賽-場地賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/5/23 (週五)</td><td class="align-left">世壯運自由車賽-休息日</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/5/24 (週六)</td><td class="align-left">休息日世壯運自由車賽-</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/5/24 (週六)</td><td class="align-left">桃園市市長盃自由車錦標賽 </td><td>桃園市體育總會自由車委員會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/5/25 (週日)</td><td class="align-left">世壯運自由車賽-休息日</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/5/25 (週日)</td><td class="align-left">LIVDAY台北</td><td>Giant</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/5/26 (週一)</td><td class="align-left">世壯運自由車賽-繞圈賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-tue" ><td>2025/5/27 (週二)</td><td class="align-left">世壯運自由車賽-公路賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-wed" ><td>2025/5/28 (週三)</td><td class="align-left">世壯運自由車賽-公路賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-thu" ><td>2025/5/29 (週四)</td><td class="align-left">世壯運自由車賽-計時賽</td><td>2025雙北世界壯年運動會</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/5/30 (週五)</td><td class="align-left">第二屆瘋系列環台賽	</td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/6/1 (週日)</td><td class="align-left">🇯🇵富士山挑戰賽</td><td>fujihc.jp</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/6/8 (週日)</td><td class="align-left">紫南宮一騎來發財 環縣自行車 99.9K</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/6/14 (週六)</td><td class="align-left">太平山</td><td>雪巴運動</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/6/15 (週日)</td><td class="align-left">第二站 台中站</td><td>96 自轉車</td><td>官網資料</td></tr><tr class="week-thu" ><td>2025/6/19 (週四)</td><td class="align-left">中央山脈極致挑戰</td><td>TBA中華民國自行車協會</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/6/23 (週一)</td><td class="align-left">TIS崇越盃武嶺</td><td>桃園市鐵人運動協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/6/28 (週六)</td><td class="align-left">挑戰巔峰武嶺</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/6/30 (週一)</td><td class="align-left">台灣登山王之路-夏季(聯賽 6)</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/6/30 (週一)</td><td class="align-left">高峰會＿武嶺</td><td>Liv Cycling Club</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/7/6 (週日)</td><td class="align-left">第三站 桃竹站</td><td>96 自轉車</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/7/27 (週日)</td><td class="align-left">Gravel Fundo 台南年終站</td><td>輪動台灣運動協會</td><td></td></tr><tr class="week-sun" ><td>2025/8/24 (週日)</td><td class="align-left">2025 環大苗栗經典百K挑戰</td><td>TBA中華民國自行車協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/8/31 (週日)</td><td class="align-left">新竹＿觀霧</td><td>Liv Cycling Club</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/9/1 (週一)</td><td class="align-left">TIS崇越盃武嶺 夏季</td><td>桃園市鐵人運動協會</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/9/8 (週一)</td><td class="align-left">第四站 武嶺</td><td>96 自轉車</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/9/13 (週六)</td><td class="align-left">環大台北自行車挑戰賽</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/9/13 (週六)</td><td class="align-left">大雪山</td><td>雪巴運動</td><td>官網資料</td></tr><tr class="week-tue" ><td>2025/9/16 (週二)</td><td class="align-left">自行車台中週</td><td></td><td>官網資料</td></tr><tr class="week-wed" ><td>2025/9/17 (週三)</td><td class="align-left">自行車台中週</td><td></td><td>官網資料</td></tr><tr class="week-thu" ><td>2025/9/18 (週四)</td><td class="align-left">自行車台中週</td><td></td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/9/19 (週五)</td><td class="align-left">自行車台中週</td><td></td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/9/21 (週日)</td><td class="align-left">2025 TIS桃園市第五屆鐵人兩項錦標賽</td><td>桃園市鐵人運動協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/9/21 (週日)</td><td class="align-left">LIVDAY台中(自行車嘉年華)</td><td>Giant</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/9/21 (週日)</td><td class="align-left">美利達盃單車嘉年華</td><td></td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/9/27 (週六)</td><td class="align-left">第五站 花蓮站</td><td>96 自轉車</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/9/28 (週日)</td><td class="align-left">收官站 台東站</td><td>96 自轉車</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/10/5 (週日)</td><td class="align-left">YBT鳥嘴潭大逃殺</td><td>TCU</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/10/10 (週五)</td><td class="align-left">第六屆瘋系列中雙塔	</td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/10/12 (週日)</td><td class="align-left">自由車-個人計時公路賽</td><td>全運會</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/10/13 (週一)</td><td class="align-left">自由車-個人公路賽</td><td>全運會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/10/18 (週六)</td><td class="align-left">L'ETAPE環法挑戰賽日</td><td>名衍行銷</td><td>官網資料</td></tr><tr class="week-sun" id="closest-row"><td>2025/10/19 (週日)</td><td class="align-left">仙山KOM</td><td>南庄農會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/10/19 (週日)</td><td class="align-left">時代騎輪節</td><td>單車時代</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/10/25 (週六)</td><td class="align-left">2025TIS桃園台南280KM雙城挑戰賽</td><td>桃園市鐵人運動協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/10/25 (週六)</td><td class="align-left">少年場地錦標賽</td><td>中華民國自由車協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/10/26 (週日)</td><td class="align-left">不厭五分100K</td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/10/26 (週日)</td><td class="align-left">少年場地錦標賽</td><td>中華民國自由車協會</td><td>官網資料</td></tr><tr class="week-mon" ><td>2025/10/27 (週一)</td><td class="align-left">台灣KOM自行車登山王挑戰</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/11/1 (週六)</td><td class="align-left">113年中正盃自由車錦標賽</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/11/2 (週日)</td><td class="align-left">IRONMAN 70.3墾丁</td><td>LAVA鐵人公司</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/11/2 (週日)</td><td class="align-left">海鷗盃團體繞圈賽</td><td>Liv Cycling Club</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/11/2 (週日)</td><td class="align-left">2025第四屆城市盃繞圈賽-秋</td><td>NeverStop 永不放棄</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/11/8 (週六)</td><td class="align-left">🇯🇵環沖繩</td><td>NPO 法人 Tour De Okinawa 協會 </td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/11/14 (週五)</td><td class="align-left">西三塔、西雙塔、北高</td><td>TWB台灣自行車協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/11/15 (週六)</td><td class="align-left"><a href="https://www.cyclist.org.tw/event_txt.asp?pno=315" target="_blank">花蓮太平洋盃-公路賽.團隊計時賽(聯賽7)</a></td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-fri" ><td>2025/11/21 (週五)</td><td class="align-left">瘋系列北高挑戰</td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/11/22 (週六)</td><td class="align-left">瘋系列三極塔挑戰
-瘋系列四極點挑戰        </td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/11/22 (週六)</td><td class="align-left">四極塔620、西雙塔、北高</td><td>TBA中華民國自行車協會</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/11/22 (週六)</td><td class="align-left">公路錦標賽</td><td>中華民國自由車協會</td><td></td></tr><tr class="week-sun" ><td>2025/11/23 (週日)</td><td class="align-left">2025 第七屆經典新玉門關 x EDWONDER 公路自行車聯名賽</td><td>有藝思國際娛樂</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/11/23 (週日)</td><td class="align-left">公路錦標賽</td><td>中華民國自由車協會</td><td></td></tr><tr class="week-sat" ><td>2025/11/29 (週六)</td><td class="align-left"><a href="https://irunner.biji.co/Meridacarnival2025" target="_blank">美利達盃嘉年華</a></td><td>美利達</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/11/30 (週日)</td><td class="align-left"><a href="https://irunner.biji.co/2025CyclingFestival" target="_blank">2025輪躍台南單車嘉年華</a></td><td>輪動台灣運動協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/11/30 (週日)</td><td class="align-left"><a href="https://www.tsu.com.tw/race/detail/TCU-gdo9nzex8wp7z35il3tdykrmy35jkl62" target="_blank">台中城市繞圈賽</a></td><td>TCU</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/12/6 (週六)</td><td class="align-left">雲林公路繞圈賽.個人.團隊計時賽(聯賽8)</td><td>中華民國騎士協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/12/7 (週日)</td><td class="align-left"><a href="https://bao-ming.com/eb/content/6557#31820" target="_blank">戀戀197</a></td><td>臺東縣城鄉生活運動協會</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/12/7 (週日)</td><td class="align-left"><a href="https://bao-ming.com/eb/content/6646#31547" target="_blank">LAVA TRI 大鵬灣鐵人賽</a></td><td>LAVA鐵人公司</td><td>官網資料</td></tr><tr class="week-sat" ><td>2025/12/13 (週六)</td><td class="align-left"><a href="https://bao-ming.com/eb/content/6764#reg" target="_blank">阿里山</a></td><td>雪巴運動</td><td>官網資料</td></tr><tr class="row-red" ><td>2025/12/14 (週日)</td><td class="align-left">中寮KOM，柳丁盃</td><td>TCU</td><td>預估資料</td></tr><tr class="week-sat" ><td>2025/12/20 (週六)</td><td class="align-left"><a href="https://www.tsu.com.tw/race/detail/TCU-bjp8e9lgyq5rox5fgqc9xkrx3o6mvw2z" target="_blank">2025 頂成ZIPP盃-府城越野繞圈賽</a></td><td>頂成公司</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/12/21 (週日)</td><td class="align-left">蘇花100K	</td><td>台灣瘋系列自行車協會(MAD)</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/12/21 (週日)</td><td class="align-left">碧湖山/海屬山</td><td>Liv Cycling Club</td><td>官網資料</td></tr><tr class="week-sun" ><td>2025/12/28 (週日)</td><td class="align-left">LAVA QUEEN台北女子二鐵賽</td><td>LAVA鐵人公司</td><td>官網資料</td></tr><tr class="week-sun" ><td>2026/1/25 (週日)</td><td class="align-left">LIVDAY高雄</td><td>Giant</td><td>官網資料</td></tr></tbody></table>
+    <div class="container">
+        <div class="header">
+            <h1>🚴 2026 台灣自行車賽事行事曆</h1>
+            <p>Taiwan Cycling Events Calendar 2026</p>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalEvents">-</div>
+                    <div class="stat-label">總賽事數</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="openEvents">-</div>
+                    <div class="stat-label">報名中</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="upcomingEvents">-</div>
+                    <div class="stat-label">待開放</div>
+                </div>
+            </div>
+        </div>
 
-  <script>
-    window.addEventListener('DOMContentLoaded', function () {
-      var row = document.getElementById('closest-row');
-      if (row) row.scrollIntoView({behavior: 'smooth', block: 'center'});
-    });
-  </script>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e74c3c;"></div>
+                <span>超長距離</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f39c12;"></div>
+                <span>登山挑戰</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3498db;"></div>
+                <span>環島系列</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ecc71;"></div>
+                <span>競賽類</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #9b59b6;"></div>
+                <span>挑戰賽</span>
+            </div>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterEvents('all')">全部賽事</button>
+            <button class="filter-btn" onclick="filterEvents('ultra')">超長距離</button>
+            <button class="filter-btn" onclick="filterEvents('climbing')">登山挑戰</button>
+            <button class="filter-btn" onclick="filterEvents('touring')">環島系列</button>
+            <button class="filter-btn" onclick="filterEvents('race')">競賽類</button>
+            <button class="filter-btn" onclick="filterEvents('challenge')">挑戰賽</button>
+        </div>
+
+        <div id="calendar"></div>
+    </div>
+
+    <script>
+        // 內嵌賽事資料
+        const eventsData = [{"row_number": 2, "日期": "2026/1/11", "星期": "週日", "賽事名稱": "2026 NeverStop永不放棄系列活動挑戰【經典】陽金P字山道", "主辦單位": "臺北市體育總會自由車協會", "賽事連結": "https://www.bao-ming.com/eb/content/6752#31779", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 3, "日期": "2026/1/17", "星期": "週六", "賽事名稱": "第4屆 2026 TWB 東三塔", "主辦單位": "TWB台灣自行車協會", "賽事連結": "", "說明": "報名截止", "官網連結": "", "FB連結": ""}, {"row_number": 4, "日期": "2026/1/17", "星期": "週六", "賽事名稱": "第4屆 2026 TWB東雙塔", "主辦單位": "TWB台灣自行車協會", "賽事連結": "", "說明": "報名截止", "官網連結": "", "FB連結": ""}, {"row_number": 5, "日期": "2026/2/1", "星期": "週日", "賽事名稱": "2026梅山36彎自行車挑戰賽", "主辦單位": "聯網國際資訊股份有限公司", "賽事連結": "https://www.eventpal.com.tw/FOAS/actions/ActivityIndex.action?showTabContent&seqno=82f43cbf-f3ce-47e5-81da-8bfaa03cbb59", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 6, "日期": "2026/2/28", "星期": "週六", "賽事名稱": "2026第七屆東三(雙)塔", "主辦單位": "瘋系列", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 7, "日期": "2026/3/1", "星期": "週日", "賽事名稱": "第2屆 2026 彰化騎福", "主辦單位": "TWB台灣自行車協會", "賽事連結": "https://twbike.org/activity/?act=data&amp;id=394&amp;ptype=0", "說明": "報名中", "官網連結": "", "FB連結": ""}, {"row_number": 8, "日期": "2026/3/1", "星期": "週日", "賽事名稱": "屏東四重溪溫泉自行車挑戰賽", "主辦單位": "屏東縣政府", "賽事連結": "https://www.bao-ming.com/eb/content/6749#31787", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 9, "日期": "2026/3/7", "星期": "週六", "賽事名稱": "陽明山王 公路賽・團隊計時賽", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=344", "說明": "待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 10, "日期": "2026/3/7", "星期": "週六", "賽事名稱": "2026 NeverStop 北高挑戰行", "主辦單位": "臺灣自由車運動協會", "賽事連結": "https://bao-ming.com/eb/content/6810#32068", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 11, "日期": "2026/3/15", "星期": "週日", "賽事名稱": "第16屆雙主場輪霸西濱挑戰", "主辦單位": "中華民國自行車協會(TBA)", "賽事連結": "https://taiwanbike.org/index.php/679-2026-0315-0", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 12, "日期": "2026/3/15", "星期": "週日", "賽事名稱": "2026輪轉台灣百K單車挑戰賽-苗栗站", "主辦單位": "全統運動用品股份有限公司", "賽事連結": "https://www.ctrun.com.tw/Activity?EventMain_ID=279", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 13, "日期": "2026/3/21", "星期": "週六", "賽事名稱": "雪巴陽明山站", "主辦單位": "雪巴運動股份有限公司", "賽事連結": "https://bao-ming.com/eb/content/6853#32308", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 14, "日期": "2026/3/29", "星期": "週日", "賽事名稱": "2026輪轉台灣百K單車挑戰賽-台南站", "主辦單位": "全統運動用品股份有限公司", "賽事連結": "https://www.ctrun.com.tw/Activity?EventMain_ID=278", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 15, "日期": "2026/4/10", "星期": "週五", "賽事名稱": "環花東國際自行車系列活動", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=347", "說明": "待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 16, "日期": "2026/4/10", "星期": "週五", "賽事名稱": "環花東-團隊計時賽&公路賽", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=348", "說明": "待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 17, "日期": "2026/4/10", "星期": "週五", "賽事名稱": "環花東365挑戰", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=349", "說明": "待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 18, "日期": "2026/4/10", "星期": "週五", "賽事名稱": "環花東200挑戰", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=350", "說明": "待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 19, "日期": "2026/4/10", "星期": "週五", "賽事名稱": "環花東100挑戰", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=352", "說明": "待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 20, "日期": "2026/5/9", "星期": "週六", "賽事名稱": "太平山王 公路賽&團隊計時賽", "主辦單位": "中華民國自行車騎士協會", "賽事連結": "https://www.cyclist.org.tw/event_txt.asp?pno=346", "說明": "King of Taipingshan，待開放報名", "官網連結": "https://www.cyclist.org.tw", "FB連結": ""}, {"row_number": 21, "日期": "2026/5/24", "星期": "週日", "賽事名稱": "2026 NeverStop永不放棄-塔塔加探索新中橫", "主辦單位": "臺灣自由車運動協會", "賽事連結": "https://bao-ming.com/eb/content/6830#32194", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 22, "日期": "2026/5/30", "星期": "週六", "賽事名稱": "雪巴太平山站", "主辦單位": "雪巴運動股份有限公司", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 23, "日期": "2026/6/7", "星期": "週日", "賽事名稱": "紫南宮一騎來發財環縣自行車 99.9K", "主辦單位": "臺灣自由車運動協會", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 24, "日期": "2026/6/18", "星期": "週四", "賽事名稱": "2026第三屆瘋系列環台賽", "主辦單位": "瘋系列", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 25, "日期": "2026/6/27", "星期": "週六", "賽事名稱": "永不放棄-挑戰巔峰武嶺", "主辦單位": "臺灣自由車運動協會", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 26, "日期": "2026/6/28", "星期": "週日", "賽事名稱": "第15屆-挑戰台灣屋脊-超越巔峰 中央山脈極致挑戰", "主辦單位": "中華民國自行車協會(TBA)", "賽事連結": "https://taiwanbike.org/index.php/696-2026-0628-1", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 27, "日期": "2026/8/24", "星期": "週一", "賽事名稱": "雪巴大雪山站", "主辦單位": "雪巴運動股份有限公司", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 28, "日期": "2026/9/19", "星期": "週六", "賽事名稱": "第1屆 2026 TWB 高北360", "主辦單位": "TWB台灣自行車協會", "賽事連結": "https://twbike.org/activity/?act=data&amp;id=403&amp;ptype=0", "說明": "尚未報名", "官網連結": "", "FB連結": ""}, {"row_number": 29, "日期": "2026/10/9", "星期": "週五", "賽事名稱": "2026 第七屆中雙塔", "主辦單位": "瘋系列", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 30, "日期": "2026/11/6", "星期": "週五", "賽事名稱": "第1屆 2026 TWB 四極620", "主辦單位": "TWB台灣自行車協會", "賽事連結": "https://twbike.org/activity/?ptype=0", "說明": "報名中", "官網連結": "", "FB連結": ""}, {"row_number": 31, "日期": "2026/11/6", "星期": "週五", "賽事名稱": "第13屆 2026 TWB 雙塔520", "主辦單位": "TWB台灣自行車協會", "賽事連結": "https://twbike.org/activity/?act=data&amp;id=397&amp;ptype=0", "說明": "報名中", "官網連結": "", "FB連結": ""}, {"row_number": 32, "日期": "2026/11/6", "星期": "週五", "賽事名稱": "第13屆 2026 TWB 北高360", "主辦單位": "TWB台灣自行車協會", "賽事連結": "https://twbike.org/activity/?act=data&amp;id=399&amp;ptype=0", "說明": "報名中", "官網連結": "", "FB連結": ""}, {"row_number": 33, "日期": "2026/11/13", "星期": "週五", "賽事名稱": "TBA 四極點-超級認證", "主辦單位": "中華民國自行車協會(TBA)", "賽事連結": "https://taiwanbike.org/index.php/692-20261114620-1", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 34, "日期": "2026/11/13", "星期": "週五", "賽事名稱": "TBA 北高360極限認證", "主辦單位": "中華民國自行車協會(TBA)", "賽事連結": "https://taiwanbike.org/index.php/684-20261113360-1", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 35, "日期": "2026/11/14", "星期": "週六", "賽事名稱": "TBA 雙塔極限認證", "主辦單位": "中華民國自行車協會(TBA)", "賽事連結": "https://taiwanbike.org/index.php/688-20261114520-1", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 36, "日期": "2026/11/20", "星期": "週五", "賽事名稱": "2026 瘋系列北高挑戰", "主辦單位": "瘋系列", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 37, "日期": "2026/11/21", "星期": "週六", "賽事名稱": "2026 瘋系列三極點挑戰", "主辦單位": "瘋系列", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 38, "日期": "2026/11/21", "星期": "週六", "賽事名稱": "2026 瘋系列四極點挑戰", "主辦單位": "瘋系列", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 39, "日期": "2026/12/12", "星期": "週六", "賽事名稱": "雪巴阿里山站", "主辦單位": "雪巴運動股份有限公司", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 40, "日期": "待公布", "星期": "待公布", "賽事名稱": "環大台北自行車挑戰", "主辦單位": "中華民國自行車協會(TBA)", "賽事連結": "", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 41, "日期": "3/21", "星期": "週五", "賽事名稱": "2026萬眾騎BIKE", "主辦單位": "", "賽事連結": "https://signup.lohasnet.tw/signup/4172", "說明": "", "官網連結": "", "FB連結": ""}, {"row_number": 42, "日期": "4/11", "星期": "週五", "賽事名稱": "2026(第16屆) 兆豐銀行‧美利達彰化經典百K", "主辦單位": "美利達", "賽事連結": "https://irunner.biji.co/2026merida", "說明": "", "官網連結": "", "FB連結": ""}];
+
+        // 判斷賽事類型
+        function getEventTag(eventName) {
+            if (eventName.includes('雙塔') || eventName.includes('三塔') || eventName.includes('四極') || eventName.includes('三極')) {
+                return 'ultra';
+            } else if (eventName.includes('武嶺') || eventName.includes('山王') || eventName.includes('太平山') || eventName.includes('大雪山') || eventName.includes('阿里山')) {
+                return 'climbing';
+            } else if (eventName.includes('環花東') || eventName.includes('環台') || eventName.includes('環縣')) {
+                return 'touring';
+            } else if (eventName.includes('公路賽') || eventName.includes('繞圈賽') || eventName.includes('計時賽')) {
+                return 'race';
+            } else if (eventName.includes('挑戰') || eventName.includes('百K')) {
+                return 'challenge';
+            }
+            return 'other';
+        }
+
+        // 主辦單位簡稱
+        function getOrganizerShort(organizer) {
+            if (organizer.includes('TWB') || organizer.includes('台灣自行車協會')) return 'TWB';
+            if (organizer.includes('TBA') || organizer.includes('中華民國自行車協會')) return 'TBA';
+            if (organizer.includes('騎士協會')) return 'TCF';
+            if (organizer.includes('瘋系列')) return '瘋系列';
+            if (organizer.includes('NeverStop') || organizer.includes('永不放棄') || organizer.includes('自由車運動協會')) return 'NeverStop';
+            if (organizer.includes('雪巴')) return '雪巴';
+            return organizer.length > 6 ? organizer.substring(0, 6) : organizer;
+        }
+
+        // 渲染行事曆
+        function renderCalendar(data) {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+
+            // 按月份分組
+            const eventsByMonth = {};
+
+            data.forEach(event => {
+                const dateStr = event['日期'] || '';
+                let monthKey = '其他';
+
+                if (dateStr.startsWith('2026/')) {
+                    const datePart = dateStr.split('-')[0];
+                    try {
+                        const parts = datePart.split('/');
+                        if (parts.length >= 2) {
+                            monthKey = `2026-${parts[1].padStart(2, '0')}`;
+                        }
+                    } catch (e) {
+                        console.error('日期解析錯誤:', dateStr);
+                    }
+                } else if (dateStr.match(/^\d{1,2}\/\d{1,2}$/)) {
+                    const parts = dateStr.split('/');
+                    monthKey = `2026-${parts[0].padStart(2, '0')}`;
+                }
+
+                if (!eventsByMonth[monthKey]) {
+                    eventsByMonth[monthKey] = [];
+                }
+                eventsByMonth[monthKey].push(event);
+            });
+
+            // 月份名稱
+            const monthNames = {
+                '2026-01': '2026年 1月', '2026-02': '2026年 2月', '2026-03': '2026年 3月',
+                '2026-04': '2026年 4月', '2026-05': '2026年 5月', '2026-06': '2026年 6月',
+                '2026-07': '2026年 7月', '2026-08': '2026年 8月', '2026-09': '2026年 9月',
+                '2026-10': '2026年 10月', '2026-11': '2026年 11月', '2026-12': '2026年 12月',
+                '其他': '其他賽事'
+            };
+
+            // 排序月份
+            const sortedMonths = Object.keys(eventsByMonth).sort();
+
+            sortedMonths.forEach(month => {
+                const events = eventsByMonth[month];
+                const monthName = monthNames[month] || month;
+
+                const monthSection = document.createElement('div');
+                monthSection.className = 'month-section';
+
+                const monthHeader = document.createElement('div');
+                monthHeader.className = 'month-header';
+                monthHeader.innerHTML = `
+                    <span>${monthName}</span>
+                    <span class="event-count">${events.length} 場賽事</span>
+                `;
+
+                const eventsGrid = document.createElement('div');
+                eventsGrid.className = 'events-grid';
+
+                events.forEach(event => {
+                    const eventType = getEventTag(event['賽事名稱'] || '');
+                    const organizerShort = getOrganizerShort(event['主辦單位'] || '');
+
+                    // 判斷報名狀態
+                    let statusClass = '';
+                    let statusText = '';
+                    const description = event['說明'] || '';
+
+                    if (description.includes('報名中')) {
+                        statusClass = 'status-open';
+                        statusText = '🟢 報名中';
+                    } else if (description.includes('待開放') || description.includes('尚未報名')) {
+                        statusClass = 'status-pending';
+                        statusText = '🟡 待開放';
+                    } else if (description.includes('報名截止') || description.includes('截止')) {
+                        statusClass = 'status-closed';
+                        statusText = '🔴 已截止';
+                    } else if (description.trim()) {
+                        statusClass = 'status-pending';
+                        statusText = `ℹ️ ${description}`;
+                    }
+
+                    // 賽事連結
+                    let linkHtml = '';
+                    const eventLink = event['賽事連結'] || '';
+                    const officialLink = event['官網連結'] || '';
+
+                    if (eventLink.trim()) {
+                        linkHtml = `<a href="${eventLink}" class="event-link" target="_blank">📋 查看詳情</a>`;
+                    } else if (officialLink.trim()) {
+                        linkHtml = `<a href="${officialLink}" class="event-link" target="_blank">🌐 官網</a>`;
+                    } else {
+                        linkHtml = '<span class="event-link disabled">暫無連結</span>';
+                    }
+
+                    const eventCard = document.createElement('div');
+                    eventCard.className = `event-card ${eventType}`;
+                    eventCard.setAttribute('data-type', eventType);
+                    eventCard.innerHTML = `
+                        <div class="event-date">
+                            <span class="date-badge">${event['日期'] || '-'}</span>
+                            <span>${event['星期'] || ''}</span>
+                        </div>
+                        <div class="event-title">${event['賽事名稱'] || '未命名賽事'}</div>
+                        <div class="event-meta">
+                            <span class="meta-tag">🏢 ${organizerShort}</span>
+                        </div>
+                        ${statusText ? `<div class="event-status ${statusClass}">${statusText}</div>` : ''}
+                        ${linkHtml}
+                    `;
+
+                    eventsGrid.appendChild(eventCard);
+                });
+
+                monthSection.appendChild(monthHeader);
+                monthSection.appendChild(eventsGrid);
+                calendar.appendChild(monthSection);
+            });
+        }
+
+        // 更新統計
+        function updateStats(data) {
+            const totalEvents = data.length;
+            const openEvents = data.filter(e => (e['說明'] || '').includes('報名中')).length;
+            const upcomingEvents = data.filter(e => {
+                const desc = e['說明'] || '';
+                return desc.includes('待開放') || desc.includes('尚未報名');
+            }).length;
+
+            document.getElementById('totalEvents').textContent = totalEvents;
+            document.getElementById('openEvents').textContent = openEvents;
+            document.getElementById('upcomingEvents').textContent = upcomingEvents;
+        }
+
+        // 篩選功能
+        function filterEvents(type) {
+            const cards = document.querySelectorAll('.event-card');
+            const buttons = document.querySelectorAll('.filter-btn');
+
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            cards.forEach(card => {
+                if (type === 'all' || card.dataset.type === type) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // 頁面載入時渲染
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCalendar(eventsData);
+            updateStats(eventsData);
+        });
+    </script>
 </body>
 </html>
