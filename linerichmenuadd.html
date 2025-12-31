@@ -638,42 +638,56 @@
                 return;
             }
             
-            // 先顯示基本資訊
-            container.innerHTML = menuArray.map(menu => `
-                <div class="menu-item" id="menu-${menu.richMenuId}">
-                    <div class="menu-preview loading" id="preview-${menu.richMenuId}">
-                        載入圖片中...
-                    </div>
-                    <div class="menu-info">
-                        <h3>${menu.name || '未命名選單'}</h3>
-                        <p><strong>ID:</strong> ${menu.richMenuId || 'N/A'}</p>
-                        <p><strong>尺寸:</strong> ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
-                        <p><strong>按鈕區域:</strong> ${menu.areas?.length || 0} 個</p>
-                        <p><strong>底部文字:</strong> ${menu.chatBarText || 'N/A'}</p>
-                        ${menu.selected ? '<p style="color: #00B900; font-weight: bold; margin-top: 8px;">✓ 預設顯示</p>' : ''}
-                    </div>
-                    <div class="menu-actions">
-                        ${!menu.selected ? `<button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">設為預設</button>` : ''}
-                        <button class="btn btn-danger" onclick="deleteMenu('${menu.richMenuId}')">刪除</button>
-                    </div>
-                </div>
-            `).join('');
-            
-            // 非同步載入圖片
-            menuArray.forEach(async (menu) => {
-                const imageUrl = await fetchRichMenuImage(menu.richMenuId, token);
-                const previewDiv = document.getElementById(`preview-${menu.richMenuId}`);
-                
-                if (imageUrl && previewDiv) {
-                    previewDiv.classList.remove('loading');
-                    previewDiv.innerHTML = `<img src="${imageUrl}" alt="${menu.name}">`;
-                } else if (previewDiv) {
-                    previewDiv.classList.remove('loading');
-                    previewDiv.classList.add('error');
-                    previewDiv.innerHTML = '無法載入圖片';
-                }
-            });
+           // 顯示選單列表 - 平行載入版本
+async function displayMenuList(data, token) {
+    const container = document.getElementById('menuList');
+    
+    console.log('收到的資料:', data);
+    
+    const menuArray = data.richmenus || [];
+    
+    if (menuArray.length === 0) {
+        container.innerHTML = '<p style="color: #666;">目前沒有 Rich Menu</p>';
+        return;
+    }
+    
+    // 先顯示基本資訊
+    container.innerHTML = menuArray.map(menu => `
+        <div class="menu-item" id="menu-${menu.richMenuId}">
+            <div class="menu-preview loading" id="preview-${menu.richMenuId}">
+                載入圖片中...
+            </div>
+            <div class="menu-info">
+                <h3>${menu.name || '未命名選單'}</h3>
+                <p><strong>ID:</strong> ${menu.richMenuId || 'N/A'}</p>
+                <p><strong>尺寸:</strong> ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
+                <p><strong>按鈕區域:</strong> ${menu.areas?.length || 0} 個</p>
+                <p><strong>底部文字:</strong> ${menu.chatBarText || 'N/A'}</p>
+                ${menu.selected ? '<p style="color: #00B900; font-weight: bold; margin-top: 8px;">✓ 預設顯示</p>' : ''}
+            </div>
+            <div class="menu-actions">
+                ${!menu.selected ? `<button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">設為預設</button>` : ''}
+                <button class="btn btn-danger" onclick="deleteMenu('${menu.richMenuId}')">刪除</button>
+            </div>
+        </div>
+    `).join('');
+    
+    // ✅ 修正:使用 Promise.all 平行載入所有圖片
+    await Promise.all(menuArray.map(async (menu) => {
+        const imageUrl = await fetchRichMenuImage(menu.richMenuId, token);
+        const previewDiv = document.getElementById(`preview-${menu.richMenuId}`);
+        
+        if (imageUrl && previewDiv) {
+            previewDiv.classList.remove('loading');
+            previewDiv.innerHTML = `<img src="${imageUrl}" alt="${menu.name}">`;
+        } else if (previewDiv) {
+            previewDiv.classList.remove('loading');
+            previewDiv.classList.add('error');
+            previewDiv.innerHTML = '無法載入圖片';
         }
+    }));
+}
+
 
         // 建立 Rich Menu
         async function createRichMenu() {
