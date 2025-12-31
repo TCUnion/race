@@ -284,7 +284,7 @@
             
             <!-- Section 1: Channel Access Token -->
             <div class="section">
-                <h2>🔑 步驟 1：輸入 Channel Access Token</h2>
+                <h2>🔑 步驟 1:輸入 Channel Access Token</h2>
                 <div class="form-group">
                     <label>Channel Access Token</label>
                     <input type="password" id="accessToken" placeholder="請輸入您的 LINE Channel Access Token">
@@ -309,7 +309,7 @@
             
             <!-- Section 3: 選擇範本 -->
             <div class="section">
-                <h2>🎨 步驟 2：選擇 Rich Menu 範本</h2>
+                <h2>🎨 步驟 2:選擇 Rich Menu 範本</h2>
                 <div class="template-grid">
                     <div class="template-card" onclick="selectTemplate('template1')" data-template="template1">
                         <div class="template-preview">
@@ -347,24 +347,24 @@
             
             <!-- Section 4: 建立新的 Rich Menu -->
             <div class="section">
-                <h2>🎯 步驟 3：設定 Rich Menu 內容</h2>
+                <h2>🎯 步驟 3:設定 Rich Menu 內容</h2>
                 
                 <div class="form-group">
                     <label>選單名稱</label>
-                    <input type="text" id="menuName" placeholder="例如：主選單">
+                    <input type="text" id="menuName" placeholder="例如:主選單">
                 </div>
                 
                 <div class="form-group">
                     <label>底部按鈕文字</label>
-                    <input type="text" id="chatBarText" placeholder="例如：功能選單" maxlength="14">
+                    <input type="text" id="chatBarText" placeholder="例如:功能選單" maxlength="14">
                 </div>
                 
                 <div class="form-group">
                     <label>上傳圖片</label>
                     <input type="file" id="menuImage" accept="image/png,image/jpeg" onchange="previewImage()">
                     <small style="color: #666; display: block; margin-top: 5px;">
-                        圖片格式：PNG 或 JPG，大小不超過 1MB<br>
-                        大型選單：2500×1686 px / 小型選單：2500×843 px
+                        圖片格式:PNG 或 JPG,大小不超過 1MB<br>
+                        大型選單:2500×1686 px / 小型選單:2500×843 px
                     </small>
                 </div>
                 
@@ -385,7 +385,7 @@
     </div>
 
     <script>
-        // N8N Webhook URLs（請替換為您的實際 URL）
+        // N8N Webhook URLs(請替換為您的實際 URL)
         const N8N_WEBHOOK_BASE = 'https://n8n.criterium.tw/webhook';
         const WEBHOOKS = {
             listMenus: `${N8N_WEBHOOK_BASE}/line-richmenu-list`,
@@ -496,7 +496,7 @@
             
             switch(actionType) {
                 case 'uri':
-                    input.placeholder = '請輸入網址（例如：https://example.com）';
+                    input.placeholder = '請輸入網址(例如:https://example.com)';
                     break;
                 case 'message':
                     input.placeholder = '請輸入要傳送的訊息文字';
@@ -553,53 +553,49 @@
                 const data = await response.json();
                 loading.classList.remove('active');
                 
-                if (data.success) {
-                    displayMenuList(data.richmenus);
+                if (data.richmenus) {
+                    displayMenuList(data);
                     showAlert('成功取得 Rich Menu 列表');
                 } else {
                     showAlert(data.error || '取得列表失敗', 'error');
                 }
             } catch (error) {
                 loading.classList.remove('active');
-                showAlert('連接失敗：' + error.message, 'error');
+                showAlert('連接失敗:' + error.message, 'error');
             }
         }
         
         // 顯示選單列表 - 修正版本
-function displayMenuList(menus) {
-    const container = document.getElementById('menuList');
-    
-    // 檢查回傳資料結構
-    console.log('收到的資料:', menus);
-    
-    if (!menus || menus.length === 0) {
-        container.innerHTML = '<p style="color: #666;">目前沒有 Rich Menu</p>';
-        return;
-    }
-    
-    // 確保 menus 是陣列
-    const menuArray = Array.isArray(menus) ? menus : [menus];
-    
-    container.innerHTML = menuArray.map(menu => `
-        <div class="menu-item">
-            <div class="menu-info">
-                <h3>${menu.name || '未命名選單'}</h3>
-                <p>ID: ${menu.richMenuId || 'N/A'}</p>
-                <p>尺寸: ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
-                <p>按鈕區域: ${menu.areas?.length || 0} 個</p>
-                ${menu.selected ? '<span style="color: #00B900; font-weight: bold;">✓ 預設顯示</span>' : ''}
-            </div>
-            <div class="menu-actions">
-                <button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">
-                    設為預設
-                </button>
-                <button class="btn btn-danger" onclick="deleteMenu('${menu.richMenuId}')">
-                    刪除
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
+        function displayMenuList(data) {
+            const container = document.getElementById('menuList');
+            
+            console.log('收到的資料:', data);
+            
+            // 從回應中提取 richmenus 陣列
+            const menuArray = data.richmenus || [];
+            
+            if (menuArray.length === 0) {
+                container.innerHTML = '<p style="color: #666;">目前沒有 Rich Menu</p>';
+                return;
+            }
+            
+            container.innerHTML = menuArray.map(menu => `
+                <div class="menu-item">
+                    <div class="menu-info">
+                        <h3>${menu.name || '未命名選單'}</h3>
+                        <p>ID: ${menu.richMenuId || 'N/A'}</p>
+                        <p>尺寸: ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
+                        <p>按鈕區域: ${menu.areas?.length || 0} 個</p>
+                        <p>底部文字: ${menu.chatBarText || 'N/A'}</p>
+                        ${menu.selected ? '<span style="color: #00B900; font-weight: bold;">✓ 預設顯示</span>' : ''}
+                    </div>
+                    <div class="menu-actions">
+                        ${!menu.selected ? `<button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">設為預設</button>` : ''}
+                        <button class="btn btn-danger" onclick="deleteMenu('${menu.richMenuId}')">刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
         // 建立 Rich Menu
         async function createRichMenu() {
@@ -647,7 +643,7 @@ function displayMenuList(menus) {
                 
                 const createData = await createResponse.json();
                 if (!createData.success) {
-                    showAlert('建立失敗：' + createData.error, 'error');
+                    showAlert('建立失敗:' + createData.error, 'error');
                     return;
                 }
                 
@@ -666,15 +662,15 @@ function displayMenuList(menus) {
                 
                 const uploadData = await uploadResponse.json();
                 if (!uploadData.success) {
-                    showAlert('圖片上傳失敗：' + uploadData.error, 'error');
+                    showAlert('圖片上傳失敗:' + uploadData.error, 'error');
                     return;
                 }
                 
-                showAlert('Rich Menu 建立成功！ID: ' + richMenuId);
+                showAlert('Rich Menu 建立成功!ID: ' + richMenuId);
                 resetForm();
                 fetchRichMenuList();
             } catch (error) {
-                showAlert('建立失敗：' + error.message, 'error');
+                showAlert('建立失敗:' + error.message, 'error');
             }
         }
         
@@ -692,17 +688,18 @@ function displayMenuList(menus) {
                 const data = await response.json();
                 if (data.success) {
                     showAlert('已設定為預設選單');
+                    fetchRichMenuList();
                 } else {
-                    showAlert('設定失敗：' + data.error, 'error');
+                    showAlert('設定失敗:' + data.error, 'error');
                 }
             } catch (error) {
-                showAlert('設定失敗：' + error.message, 'error');
+                showAlert('設定失敗:' + error.message, 'error');
             }
         }
         
         // 刪除選單
         async function deleteMenu(richMenuId) {
-            if (!confirm('確定要刪除此 Rich Menu 嗎？')) return;
+            if (!confirm('確定要刪除此 Rich Menu 嗎?')) return;
             
             const token = document.getElementById('accessToken').value;
             
@@ -718,10 +715,10 @@ function displayMenuList(menus) {
                     showAlert('刪除成功');
                     fetchRichMenuList();
                 } else {
-                    showAlert('刪除失敗：' + data.error, 'error');
+                    showAlert('刪除失敗:' + data.error, 'error');
                 }
             } catch (error) {
-                showAlert('刪除失敗：' + error.message, 'error');
+                showAlert('刪除失敗:' + error.message, 'error');
             }
         }
         
