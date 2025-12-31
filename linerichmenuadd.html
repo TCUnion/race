@@ -565,33 +565,42 @@
             }
         }
         
-        // 顯示選單列表
-        function displayMenuList(menus) {
-            const container = document.getElementById('menuList');
-            if (!menus || menus.length === 0) {
-                container.innerHTML = '<p style="color: #666;">目前沒有 Rich Menu</p>';
-                return;
-            }
-            
-            container.innerHTML = menus.map(menu => `
-                <div class="menu-item">
-                    <div class="menu-info">
-                        <h3>${menu.name}</h3>
-                        <p>ID: ${menu.richMenuId}</p>
-                        <p>尺寸: ${menu.size.width}x${menu.size.height}</p>
-                    </div>
-                    <div class="menu-actions">
-                        <button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">
-                            設為預設
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteMenu('${menu.richMenuId}')">
-                            刪除
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
+        // 顯示選單列表 - 修正版本
+function displayMenuList(menus) {
+    const container = document.getElementById('menuList');
+    
+    // 檢查回傳資料結構
+    console.log('收到的資料:', menus);
+    
+    if (!menus || menus.length === 0) {
+        container.innerHTML = '<p style="color: #666;">目前沒有 Rich Menu</p>';
+        return;
+    }
+    
+    // 確保 menus 是陣列
+    const menuArray = Array.isArray(menus) ? menus : [menus];
+    
+    container.innerHTML = menuArray.map(menu => `
+        <div class="menu-item">
+            <div class="menu-info">
+                <h3>${menu.name || '未命名選單'}</h3>
+                <p>ID: ${menu.richMenuId || 'N/A'}</p>
+                <p>尺寸: ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
+                <p>按鈕區域: ${menu.areas?.length || 0} 個</p>
+                ${menu.selected ? '<span style="color: #00B900; font-weight: bold;">✓ 預設顯示</span>' : ''}
+            </div>
+            <div class="menu-actions">
+                <button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">
+                    設為預設
+                </button>
+                <button class="btn btn-danger" onclick="deleteMenu('${menu.richMenuId}')">
+                    刪除
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
         // 建立 Rich Menu
         async function createRichMenu() {
             const token = document.getElementById('accessToken').value;
