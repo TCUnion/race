@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -106,55 +107,6 @@
             </svg>
         );
 
-        // Rich Menu 範本定義
-        const RICHMENU_TEMPLATES = {
-            grid_6: {
-                name: '6格版型 (3×2)',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '左上' } },
-                    { bounds: { x: 834, y: 0, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '中上' } },
-                    { bounds: { x: 1667, y: 0, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '右上' } },
-                    { bounds: { x: 0, y: 843, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '左下' } },
-                    { bounds: { x: 834, y: 843, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '中下' } },
-                    { bounds: { x: 1667, y: 843, width: 833, height: 843 }, action: { type: 'uri', uri: '', label: '右下' } }
-                ]
-            },
-            grid_4: {
-                name: '4格版型 (2×2)',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '左上' } },
-                    { bounds: { x: 1250, y: 0, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '右上' } },
-                    { bounds: { x: 0, y: 843, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '左下' } },
-                    { bounds: { x: 1250, y: 843, width: 1250, height: 843 }, action: { type: 'uri', uri: '', label: '右下' } }
-                ]
-            },
-            grid_2_vertical: {
-                name: '2格版型 (上下)',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 2500, height: 843 }, action: { type: 'uri', uri: '', label: '上' } },
-                    { bounds: { x: 0, y: 843, width: 2500, height: 843 }, action: { type: 'uri', uri: '', label: '下' } }
-                ]
-            },
-            grid_2_horizontal: {
-                name: '2格版型 (左右)',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 1250, height: 1686 }, action: { type: 'uri', uri: '', label: '左' } },
-                    { bounds: { x: 1250, y: 0, width: 1250, height: 1686 }, action: { type: 'uri', uri: '', label: '右' } }
-                ]
-            },
-            grid_1: {
-                name: '1格版型',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 2500, height: 1686 }, action: { type: 'uri', uri: '', label: '全版' } }
-                ]
-            }
-        };
-
         const LineRichMenuManager = () => {
             const [menus, setMenus] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -182,52 +134,13 @@
                 areas: []
             });
 
+            const [currentArea, setCurrentArea] = useState({
+                bounds: { x: 0, y: 0, width: 833, height: 843 },
+                action: { type: 'uri', uri: '', label: '' }
+            });
+
             const [selectedImage, setSelectedImage] = useState(null);
             const [imagePreview, setImagePreview] = useState(null);
-
-            // 套用範本函式
-            const applyTemplate = (templateKey) => {
-                const template = RICHMENU_TEMPLATES[templateKey];
-                if (template) {
-                    setNewMenu({
-                        ...newMenu,
-                        size: template.size,
-                        areas: JSON.parse(JSON.stringify(template.areas))
-                    });
-                    setSuccess(`已套用 ${template.name} 範本！座標已自動填入`);
-                }
-            };
-
-            // 更新特定熱區
-            const updateArea = (index, field, value) => {
-                setNewMenu(prev => ({
-                    ...prev,
-                    areas: prev.areas.map((area, i) => {
-                        if (i === index) {
-                            if (field.includes('.')) {
-                                const [parent, child] = field.split('.');
-                                return {
-                                    ...area,
-                                    [parent]: {
-                                        ...area[parent],
-                                        [child]: value
-                                    }
-                                };
-                            }
-                            return { ...area, [field]: value };
-                        }
-                        return area;
-                    })
-                }));
-            };
-
-            // 刪除熱區
-            const removeArea = (index) => {
-                setNewMenu(prev => ({
-                    ...prev,
-                    areas: prev.areas.filter((_, i) => i !== index)
-                }));
-            };
 
             useEffect(() => {
                 const savedConfig = localStorage.getItem('lineRichMenuConfig');
@@ -284,31 +197,17 @@
                 return await response.json();
             };
 
-const fetchDefaultRichMenu = async () => {
-    if (!config.channelAccessToken) return;
+            const fetchDefaultRichMenu = async () => {
+                if (!config.channelAccessToken) return;
 
-    try {
-        const data = await callLineAPI('/v2/bot/user/all/richmenu');
-        
-        // 檢查是否有 richMenuId
-        if (data && data.richMenuId) {
-            setDefaultRichMenuId(data.richMenuId);
-        } else {
-            // 沒有預設選單
-            setDefaultRichMenuId(null);
-        }
-    } catch (err) {
-        // 403 或其他錯誤都視為沒有預設選單
-        console.warn('無法取得預設 Rich Menu:', err);
-        setDefaultRichMenuId(null);
-        
-        // 403 錯誤不顯示給使用者
-        if (!err.message.includes('403') && !err.message.includes('owned by another')) {
-            setError(`取得預設 Rich Menu 失敗: ${err.message}`);
-        }
-    }
-};
-
+                try {
+                    const data = await callLineAPI('/v2/bot/user/all/richmenu');
+                    setDefaultRichMenuId(data.richMenuId);
+                } catch (err) {
+                    console.warn('無法取得預設 Rich Menu:', err);
+                    setDefaultRichMenuId(null);
+                }
+            };
 
             const fetchRichMenus = async () => {
                 if (!config.channelAccessToken) {
@@ -366,172 +265,116 @@ const fetchDefaultRichMenu = async () => {
                 }
             };
 
-// 將此函數替換到 linerichmenuadd.html
-// 搜尋 "const handleImageSelect = (e) => {" 並替換整個函數
+            const handleImageSelect = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setImagePreview(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
 
-const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // 檢查檔案大小
-    if (file.size > 1024 * 1024) {
-        setError('圖片檔案不能超過 1MB,請壓縮後再上傳');
-        e.target.value = ''; // 清除選擇
-        return;
-    }
-    
-    // 檢查檔案類型
-    if (!file.type.match(/image\/(png|jpeg|jpg)/)) {
-        setError('只支援 PNG 或 JPG 格式的圖片');
-        e.target.value = ''; // 清除選擇
-        return;
-    }
-    
-    // 一切正常,設定圖片
-    setSelectedImage(file);
-    setError(null); // 清除之前的錯誤
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-        setImagePreview(reader.result);
-    };
-    reader.onerror = () => {
-        setError('圖片讀取失敗,請重試');
-    };
-    reader.readAsDataURL(file);
-};
-const createRichMenu = async () => {
-    if (!config.channelAccessToken) {
-        setError('請先設定 LINE Channel Access Token');
-        return;
-    }
+            const addArea = () => {
+                if (newMenu.areas.length >= 20) {
+                    setError('最多只能建立 20 個熱區');
+                    return;
+                }
 
-    if (!newMenu.name) {
-        setError('請輸入選單名稱');
-        return;
-    }
+                setNewMenu(prev => ({
+                    ...prev,
+                    areas: [...prev.areas, { ...currentArea }]
+                }));
 
-    if (newMenu.areas.length === 0) {
-        setError('請至少套用一個範本或新增熱區');
-        return;
-    }
+                // 重置表單
+                setCurrentArea({
+                    bounds: { x: 0, y: 0, width: 833, height: 843 },
+                    action: { type: 'uri', uri: '', label: '' }
+                });
+            };
 
-    if (!selectedImage) {
-        setError('請選擇圖片');
-        return;
-    }
+            const removeArea = (index) => {
+                setNewMenu(prev => ({
+                    ...prev,
+                    areas: prev.areas.filter((_, i) => i !== index)
+                }));
+            };
 
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+            const createRichMenu = async () => {
+                if (!config.channelAccessToken) {
+                    setError('請先設定 LINE Channel Access Token');
+                    return;
+                }
 
-    try {
-        // 步驟 1: 建立 Rich Menu
-        console.log('🔵 步驟 1: 建立 Rich Menu...');
-        const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
-        const richMenuId = createData.richMenuId;
-        console.log('✅ Rich Menu 已建立:', richMenuId);
+                if (!newMenu.name) {
+                    setError('請輸入選單名稱');
+                    return;
+                }
 
-        // 步驟 2: 上傳圖片 (修正版)
-setUploadingImage(true);
-console.log('🔵 步驟 2: 準備上傳圖片...');
+                if (newMenu.areas.length === 0) {
+                    setError('請至少新增一個熱區');
+                    return;
+                }
 
-// 讀取檔案為 ArrayBuffer
-const arrayBuffer = await selectedImage.arrayBuffer();
-const bytes = new Uint8Array(arrayBuffer);
+                if (!selectedImage) {
+                    setError('請選擇圖片');
+                    return;
+                }
 
-// 轉換為 base64
-let binary = '';
-for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-}
-const base64Data = btoa(binary);
+                setLoading(true);
+                setError(null);
+                setSuccess(null);
 
-console.log('📊 圖片資訊:', {
-    檔名: selectedImage.name,
-    大小: `${(selectedImage.size / 1024).toFixed(2)} KB`,
-    類型: selectedImage.type,
-    Base64長度: base64Data.length
-});
+                try {
+                    // 1. 建立 Rich Menu
+                    const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
+                    const richMenuId = createData.richMenuId;
 
-// 使用專門的圖片上傳端點
-const uploadResponse = await fetch(config.proxyUrl, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        token: config.channelAccessToken,
-        endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
-        method: 'POST',
-        isImageUpload: true,
-        imageData: base64Data,
-        contentType: selectedImage.type
-    })
-});
+                    console.log('✅ Rich Menu 已建立:', richMenuId);
 
-console.log('📡 上傳回應狀態:', uploadResponse.status);
+                    // 2. 上傳圖片
+                    setUploadingImage(true);
+                    const formData = new FormData();
+                    formData.append('image', selectedImage);
+                    formData.append('richMenuId', richMenuId);
+                    formData.append('token', config.channelAccessToken);
 
-if (!uploadResponse.ok) {
-    const errorData = await uploadResponse.json().catch(() => ({}));
-    console.error('❌ 上傳失敗:', errorData);
-    throw new Error(errorData.error || errorData.message || `圖片上傳失敗 (${uploadResponse.status})`);
-}
+                    const uploadResponse = await fetch(config.proxyUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
 
-const uploadResult = await uploadResponse.json();
-console.log('✅ 圖片已上傳', uploadResult);
+                    if (!uploadResponse.ok) {
+                        throw new Error('圖片上傳失敗');
+                    }
 
-        // 使用專門的圖片上傳端點
-        const uploadResponse = await fetch(config.proxyUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                token: config.channelAccessToken,
-                endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
-                method: 'POST',
-                isImageUpload: true,
-                imageData: base64Data,
-                contentType: selectedImage.type
-            })
-        });
+                    console.log('✅ 圖片已上傳');
 
-        console.log('📡 上傳回應狀態:', uploadResponse.status);
+                    setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
 
-        if (!uploadResponse.ok) {
-            const errorData = await uploadResponse.json().catch(() => ({}));
-            console.error('❌ 上傳失敗:', errorData);
-            throw new Error(errorData.error || errorData.message || `圖片上傳失敗 (${uploadResponse.status})`);
-        }
+                    // 重置表單
+                    setNewMenu({
+                        name: '',
+                        chatBarText: '選單',
+                        selected: false,
+                        size: { width: 2500, height: 1686 },
+                        areas: []
+                    });
+                    setSelectedImage(null);
+                    setImagePreview(null);
 
-        const uploadResult = await uploadResponse.json();
-        console.log('✅ 圖片已上傳', uploadResult);
-
-        setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
-
-        // 重置表單
-        setNewMenu({
-            name: '',
-            chatBarText: '選單',
-            selected: false,
-            size: { width: 2500, height: 1686 },
-            areas: []
-        });
-        setSelectedImage(null);
-        setImagePreview(null);
-
-        await fetchRichMenus();
-        setViewMode('list');
-    } catch (err) {
-        console.error('❌ 建立失敗:', err);
-        setError(`建立 Rich Menu 失敗: ${err.message}`);
-    } finally {
-        setLoading(false);
-        setUploadingImage(false);
-    }
-};
-
+                    // 重新載入列表
+                    await fetchRichMenus();
+                    setViewMode('list');
+                } catch (err) {
+                    setError(`建立 Rich Menu 失敗: ${err.message}`);
+                } finally {
+                    setLoading(false);
+                    setUploadingImage(false);
+                }
+            };
 
             const setAsDefault = async (richMenuId) => {
                 try {
@@ -769,224 +612,211 @@ console.log('✅ 圖片已上傳', uploadResult);
                                         </div>
                                     </div>
 
-                                    {/* 上傳圖片區塊 - 移到上方 */}
-                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border-2 border-blue-200">
-                                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                            <Upload className="w-5 h-5 text-blue-600" />
-                                            上傳 Rich Menu 圖片
-                                        </h3>
+                                    {/* 圖片尺寸選擇 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            圖片尺寸 *
+                                        </label>
+                                        <select
+                                            value={`${newMenu.size.width}x${newMenu.size.height}`}
+                                            onChange={(e) => {
+                                                const [width, height] = e.target.value.split('x').map(Number);
+                                                setNewMenu({...newMenu, size: { width, height }});
+                                            }}
+                                            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="2500x1686">2500 × 1686 (大)</option>
+                                            <option value="2500x843">2500 × 843 (小)</option>
+                                            <option value="1200x810">1200 × 810 (大 - 舊版)</option>
+                                            <option value="1200x405">1200 × 405 (小 - 舊版)</option>
+                                        </select>
+                                    </div>
 
-                                        {/* 圖片尺寸選擇 */}
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                圖片尺寸 * (依 LINE 官方規範)
-                                            </label>
-                                            <select
-                                                value={`${newMenu.size.width}x${newMenu.size.height}`}
-                                                onChange={(e) => {
-                                                    const [width, height] = e.target.value.split('x').map(Number);
-                                                    setNewMenu({...newMenu, size: { width, height }});
-                                                }}
-                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                                    {/* 上傳圖片 */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Rich Menu 圖片 * (PNG/JPG, 最大 1MB)
+                                        </label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/png,image/jpeg"
+                                                onChange={handleImageSelect}
+                                                className="hidden"
+                                            />
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                                             >
-                                                <option value="2500x1686">2500 × 1686 px (標準大版面)</option>
-                                                <option value="2500x843">2500 × 843 px (標準小版面)</option>
-                                                <option value="1200x810">1200 × 810 px (舊版大版面)</option>
-                                                <option value="1200x405">1200 × 405 px (舊版小版面)</option>
-                                            </select>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                💡 建議使用標準尺寸 2500×1686 或 2500×843
-                                            </p>
+                                                <Upload className="w-5 h-5" />
+                                                選擇圖片
+                                            </button>
+                                            {selectedImage && (
+                                                <span className="text-sm text-gray-600">
+                                                    ✓ {selectedImage.name} ({(selectedImage.size / 1024).toFixed(2)} KB)
+                                                </span>
+                                            )}
                                         </div>
-
-                                        {/* 上傳按鈕 */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                選擇圖片檔案 * (PNG/JPG, 最大 1MB)
-                                            </label>
-                                            <div className="flex items-center gap-4">
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    accept="image/png,image/jpeg"
-                                                    onChange={handleImageSelect}
-                                                    className="hidden"
-                                                />
-                                                <button
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                                                >
-                                                    <Upload className="w-5 h-5" />
-                                                    選擇圖片
-                                                </button>
-                                                {selectedImage && (
-                                                    <span className="text-sm text-gray-700 font-medium">
-                                                        ✓ {selectedImage.name} ({(selectedImage.size / 1024).toFixed(2)} KB)
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* 圖片預覽 */}
                                         {imagePreview && (
                                             <div className="mt-4">
-                                                <p className="text-sm font-medium text-gray-700 mb-2">圖片預覽：</p>
-                                                <img src={imagePreview} alt="預覽" className="max-w-full max-h-96 rounded-lg shadow-md border-2 border-gray-200" />
+                                                <img src={imagePreview} alt="預覽" className="max-w-md rounded-lg shadow-md" />
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* 快速套用範本 */}
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border-2 border-purple-200">
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <Info className="w-5 h-5 text-purple-600" />
-                                            快速套用範本 (自動填入座標)
-                                        </h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    {/* 熱區設定 */}
+                                    <div className="border-t-2 border-gray-200 pt-6">
+                                        <h3 className="text-xl font-bold mb-4">熱區設定 ({newMenu.areas.length}/20)</h3>
+
+                                        <div className="bg-blue-50 rounded-lg p-6 mb-4">
+                                            <h4 className="font-semibold mb-3">新增熱區</h4>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">X 座標</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.x}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, x: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">Y 座標</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.y}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, y: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">寬度</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.width}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, width: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">高度</label>
+                                                    <input
+                                                        type="number"
+                                                        value={currentArea.bounds.height}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            bounds: {...currentArea.bounds, height: Number(e.target.value)}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">動作類型</label>
+                                                    <select
+                                                        value={currentArea.action.type}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            action: {...currentArea.action, type: e.target.value}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                    >
+                                                        <option value="uri">開啟網址</option>
+                                                        <option value="message">傳送訊息</option>
+                                                        <option value="postback">Postback</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">
+                                                        {currentArea.action.type === 'uri' ? '網址' : '文字/Data'}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={currentArea.action.uri || currentArea.action.text || currentArea.action.data || ''}
+                                                        onChange={(e) => {
+                                                            const key = currentArea.action.type === 'uri' ? 'uri' : 
+                                                                       currentArea.action.type === 'message' ? 'text' : 'data';
+                                                            setCurrentArea({
+                                                                ...currentArea,
+                                                                action: {...currentArea.action, [key]: e.target.value}
+                                                            });
+                                                        }}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        placeholder={currentArea.action.type === 'uri' ? 'https://example.com' : '文字內容'}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">標籤 (選填)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={currentArea.action.label || ''}
+                                                        onChange={(e) => setCurrentArea({
+                                                            ...currentArea,
+                                                            action: {...currentArea.action, label: e.target.value}
+                                                        })}
+                                                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                                                        placeholder="熱區說明"
+                                                    />
+                                                </div>
+                                            </div>
+
                                             <button
-                                                onClick={() => applyTemplate('grid_6')}
-                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
+                                                onClick={addArea}
+                                                disabled={newMenu.areas.length >= 20}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                📱 6格 (3×2)
-                                            </button>
-                                            <button
-                                                onClick={() => applyTemplate('grid_4')}
-                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
-                                            >
-                                                📱 4格 (2×2)
-                                            </button>
-                                            <button
-                                                onClick={() => applyTemplate('grid_2_vertical')}
-                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
-                                            >
-                                                📱 2格 (上下)
-                                            </button>
-                                            <button
-                                                onClick={() => applyTemplate('grid_2_horizontal')}
-                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
-                                            >
-                                                📱 2格 (左右)
-                                            </button>
-                                            <button
-                                                onClick={() => applyTemplate('grid_1')}
-                                                className="px-4 py-3 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-500 transition-all text-sm font-medium"
-                                            >
-                                                📱 1格 (全版)
+                                                <Plus className="w-5 h-5" />
+                                                新增熱區
                                             </button>
                                         </div>
-                                        <p className="text-xs text-gray-600 mt-3">
-                                            💡 套用範本後可直接在下方編輯每格的連結與標籤
-                                        </p>
-                                    </div>
 
-                                    {/* 已設定的熱區 - 可直接編輯 */}
-                                    {newMenu.areas.length > 0 && (
-                                        <div className="border-t-2 border-gray-200 pt-6">
-                                            <h3 className="text-xl font-bold mb-4">熱區設定 ({newMenu.areas.length}/20)</h3>
-                                            <div className="space-y-4">
+                                        {/* 已建立的熱區列表 */}
+                                        {newMenu.areas.length > 0 && (
+                                            <div className="space-y-2">
+                                                <h4 className="font-semibold mb-2">已建立的熱區:</h4>
                                                 {newMenu.areas.map((area, index) => (
-                                                    <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-5 border-2 border-blue-200">
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <h4 className="font-semibold text-gray-900">熱區 {index + 1}</h4>
-                                                            <button
-                                                                onClick={() => removeArea(index)}
-                                                                className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
-                                                            >
-                                                                <Trash2 className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">X 座標</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={area.bounds.x}
-                                                                    onChange={(e) => updateArea(index, 'bounds.x', Number(e.target.value))}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                />
+                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium">
+                                                                熱區 {index + 1}: {area.action.label || '(無標籤)'}
                                                             </div>
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">Y 座標</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={area.bounds.y}
-                                                                    onChange={(e) => updateArea(index, 'bounds.y', Number(e.target.value))}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">寬度</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={area.bounds.width}
-                                                                    onChange={(e) => updateArea(index, 'bounds.width', Number(e.target.value))}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">高度</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={area.bounds.height}
-                                                                    onChange={(e) => updateArea(index, 'bounds.height', Number(e.target.value))}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                />
+                                                            <div className="text-sm text-gray-600">
+                                                                位置: ({area.bounds.x}, {area.bounds.y}) | 
+                                                                尺寸: {area.bounds.width} × {area.bounds.height} | 
+                                                                類型: {area.action.type}
                                                             </div>
                                                         </div>
-
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">動作類型</label>
-                                                                <select
-                                                                    value={area.action.type}
-                                                                    onChange={(e) => updateArea(index, 'action.type', e.target.value)}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                >
-                                                                    <option value="uri">開啟網址</option>
-                                                                    <option value="message">傳送訊息</option>
-                                                                    <option value="postback">Postback</option>
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">
-                                                                    {area.action.type === 'uri' ? '網址' : '文字/Data'}
-                                                                </label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={area.action.uri || area.action.text || area.action.data || ''}
-                                                                    onChange={(e) => {
-                                                                        const key = area.action.type === 'uri' ? 'uri' : 
-                                                                                   area.action.type === 'message' ? 'text' : 'data';
-                                                                        updateArea(index, `action.${key}`, e.target.value);
-                                                                    }}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                    placeholder={area.action.type === 'uri' ? 'https://...' : '訊息內容'}
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs text-gray-600 mb-1">標籤</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={area.action.label || ''}
-                                                                    onChange={(e) => updateArea(index, 'action.label', e.target.value)}
-                                                                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                                                                    placeholder="按鈕名稱"
-                                                                />
-                                                            </div>
-                                                        </div>
+                                                        <button
+                                                            onClick={() => removeArea(index)}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
 
                                     {/* 建立按鈕 */}
-                                    <div className="flex gap-4 border-t-2 border-gray-200 pt-6">
+                                    <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
                                         <button
                                             onClick={createRichMenu}
                                             disabled={loading || uploadingImage}
-                                            className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+                                            className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:from-green-600 hover:to-blue-600 transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading || uploadingImage ? (
                                                 <>
@@ -1001,109 +831,95 @@ console.log('✅ 圖片已上傳', uploadResult);
                                             )}
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                setNewMenu({
-                                                    name: '',
-                                                    chatBarText: '選單',
-                                                    selected: false,
-                                                    size: { width: 2500, height: 1686 },
-                                                    areas: []
-                                                });
-                                                setSelectedImage(null);
-                                                setImagePreview(null);
-                                            }}
-                                            className="px-8 py-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                                            onClick={() => setViewMode('list')}
+                                            className="px-6 py-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                                         >
-                                            清除表單
+                                            取消
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* 列表檢視 */}
+                        {/* 選單列表 */}
                         {viewMode === 'list' && (
                             <div className="bg-white rounded-xl shadow-lg p-6">
-                                <h2 className="text-2xl font-bold mb-6">Rich Menu 列表</h2>
+                                <h2 className="text-2xl font-bold mb-4">Rich Menu 列表</h2>
 
-                                {loading && (
-                                    <div className="flex items-center justify-center py-12">
-                                        <Loader className="w-8 h-8 animate-spin text-blue-500" />
-                                        <span className="ml-3 text-gray-600">載入中...</span>
+                                {loading ? (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <Loader className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+                                        <p className="text-gray-600">載入中...</p>
                                     </div>
-                                )}
-
-                                {!loading && menus.length === 0 && (
-                                    <div className="text-center py-12">
-                                        <div className="text-gray-400 mb-4">
-                                            <Info className="w-16 h-16 mx-auto" />
-                                        </div>
-                                        <p className="text-gray-600 text-lg">尚無 Rich Menu</p>
-                                        <p className="text-gray-500 text-sm mt-2">點擊上方「建立新選單」開始建立</p>
+                                ) : menus.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <p className="mb-2">尚無 Rich Menu</p>
+                                        <p className="text-sm">請點擊「建立新選單」開始建立</p>
                                     </div>
-                                )}
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {menus.map((menu) => {
+                                            const isDefault = menu.richMenuId === defaultRichMenuId;
 
-                                {!loading && menus.length > 0 && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {menus.map(menu => (
-                                            <div key={menu.richMenuId} className="border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div>
-                                                        <h3 className="font-bold text-lg text-gray-900">{menu.name}</h3>
-                                                        <p className="text-sm text-gray-500">{menu.chatBarText}</p>
+                                            return (
+                                                <div
+                                                    key={menu.richMenuId}
+                                                    className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h3 className="font-semibold text-lg text-gray-800">
+                                                                    {menu.name}
+                                                                </h3>
+                                                                {isDefault && (
+                                                                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                                                        預設
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 font-mono break-all">
+                                                                {menu.richMenuId}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    {defaultRichMenuId === menu.richMenuId && (
-                                                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                                            預設
-                                                        </span>
-                                                    )}
-                                                </div>
 
-                                                <div className="bg-gray-100 rounded-lg p-2 mb-3 text-xs text-gray-600">
-                                                    <div>尺寸: {menu.size.width} × {menu.size.height}</div>
-                                                    <div>熱區數: {menu.areas.length}</div>
-                                                    <div className="truncate">ID: {menu.richMenuId}</div>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => previewMenu(menu)}
-                                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                        預覽
-                                                    </button>
-                                                    {defaultRichMenuId !== menu.richMenuId && (
+                                                    <div className="flex gap-2 mt-3">
+                                                        <button
+                                                            onClick={() => previewMenu(menu)}
+                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                            預覽
+                                                        </button>
                                                         <button
                                                             onClick={() => setAsDefault(menu.richMenuId)}
-                                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                                                            disabled={isDefault}
+                                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                             <Check className="w-4 h-4" />
-                                                            設為預設
+                                                            {isDefault ? '已預設' : '設為預設'}
                                                         </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => deleteRichMenu(menu.richMenuId)}
-                                                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                        <button
+                                                            onClick={() => deleteRichMenu(menu.richMenuId)}
+                                                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* 預覽檢視 */}
+                        {/* 預覽模式 */}
                         {viewMode === 'preview' && selectedMenu && (
                             <div className="bg-white rounded-xl shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">{selectedMenu.name}</h2>
-                                        <p className="text-gray-600">{selectedMenu.chatBarText}</p>
-                                    </div>
+                                    <h2 className="text-2xl font-bold">預覽: {selectedMenu.name}</h2>
                                     <button
                                         onClick={() => setViewMode('list')}
                                         className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
@@ -1112,77 +928,42 @@ console.log('✅ 圖片已上傳', uploadResult);
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* 圖片預覽 */}
-                                    <div>
-                                        <h3 className="font-semibold mb-3">圖片預覽</h3>
-                                        <div className="relative bg-gray-100 rounded-lg overflow-hidden">
-                                            {loadingImages[selectedMenu.richMenuId] && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
-                                                    <Loader className="w-8 h-8 animate-spin text-blue-500" />
+                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6">
+                                    <div className="bg-gray-200 rounded-lg overflow-hidden mx-auto shadow-xl" style={{ maxWidth: '600px' }}>
+                                        <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
+                                            {loadingImages[selectedMenu.richMenuId] ? (
+                                                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                                                    <Loader className="w-8 h-8 text-blue-600 animate-spin" />
                                                 </div>
-                                            )}
-                                            {imageCache[selectedMenu.richMenuId] ? (
-                                                <div className="relative" style={{ paddingBottom: `${(selectedMenu.size.height / selectedMenu.size.width) * 100}%` }}>
-                                                    <img
-                                                        src={imageCache[selectedMenu.richMenuId]}
-                                                        alt={selectedMenu.name}
-                                                        className="absolute inset-0 w-full h-full object-contain"
-                                                    />
-                                                    <div className="absolute inset-0">
-                                                        {renderHotspots(
-                                                            selectedMenu.areas,
-                                                            document.querySelector('.relative')?.offsetWidth || 500,
-                                                            document.querySelector('.relative')?.offsetHeight || 337,
-                                                            selectedMenu.size
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            ) : imageCache[selectedMenu.richMenuId] ? (
+                                                <img 
+                                                    src={imageCache[selectedMenu.richMenuId]} 
+                                                    alt={selectedMenu.name}
+                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                />
                                             ) : (
-                                                <div className="aspect-[2500/1686] flex items-center justify-center">
-                                                    <button
+                                                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 flex flex-col items-center justify-center text-white">
+                                                    <button 
                                                         onClick={() => loadMenuImage(selectedMenu.richMenuId)}
-                                                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                                        className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50"
                                                     >
                                                         載入圖片
                                                     </button>
                                                 </div>
                                             )}
-                                        </div>
-                                    </div>
 
-                                    {/* 詳細資訊 */}
-                                    <div>
-                                        <h3 className="font-semibold mb-3">詳細資訊</h3>
-                                        <div className="space-y-4">
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="text-sm text-gray-600 mb-1">Rich Menu ID</div>
-                                                <div className="font-mono text-sm break-all">{selectedMenu.richMenuId}</div>
+                                            <div className="absolute inset-0">
+                                                {renderHotspots(
+                                                    selectedMenu.areas,
+                                                    600,
+                                                    600 * (selectedMenu.size.height / selectedMenu.size.width),
+                                                    selectedMenu.size
+                                                )}
                                             </div>
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="text-sm text-gray-600 mb-1">圖片尺寸</div>
-                                                <div>{selectedMenu.size.width} × {selectedMenu.size.height}</div>
-                                            </div>
-                                            <div className="bg-gray-50 rounded-lg p-4">
-                                                <div className="text-sm text-gray-600 mb-2">熱區 ({selectedMenu.areas.length})</div>
-                                                <div className="space-y-2 max-h-96 overflow-y-auto">
-                                                    {selectedMenu.areas.map((area, index) => (
-                                                        <div key={index} className="bg-white rounded p-3 text-sm border border-gray-200">
-                                                            <div className="font-semibold text-gray-900 mb-1">
-                                                                {area.action.label || `熱區 ${index + 1}`}
-                                                            </div>
-                                                            <div className="text-xs text-gray-600 space-y-1">
-                                                                <div>座標: ({area.bounds.x}, {area.bounds.y})</div>
-                                                                <div>尺寸: {area.bounds.width} × {area.bounds.height}</div>
-                                                                <div>類型: {area.action.type}</div>
-                                                                {area.action.uri && <div className="break-all">網址: {area.action.uri}</div>}
-                                                                {area.action.text && <div>文字: {area.action.text}</div>}
-                                                                {area.action.data && <div>Data: {area.action.data}</div>}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                        </div>
+
+                                        <div className="bg-white border-t-2 border-gray-300 p-3 text-center text-gray-700 font-medium">
+                                            {selectedMenu.chatBarText}
                                         </div>
                                     </div>
                                 </div>
