@@ -114,52 +114,36 @@
             </svg>
         );
 
-        // Rich Menu 範本
-        const RICHMENU_TEMPLATES = [
-            {
-                id: 'large_6',
-                name: '大型 (6格)',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 833, height: 843 } },
-                    { bounds: { x: 833, y: 0, width: 834, height: 843 } },
-                    { bounds: { x: 1667, y: 0, width: 833, height: 843 } },
-                    { bounds: { x: 0, y: 843, width: 833, height: 843 } },
-                    { bounds: { x: 833, y: 843, width: 834, height: 843 } },
-                    { bounds: { x: 1667, y: 843, width: 833, height: 843 } }
-                ]
-            },
-            {
-                id: 'large_4',
-                name: '大型 (4格)',
-                size: { width: 2500, height: 1686 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 1250, height: 843 } },
-                    { bounds: { x: 1250, y: 0, width: 1250, height: 843 } },
-                    { bounds: { x: 0, y: 843, width: 1250, height: 843 } },
-                    { bounds: { x: 1250, y: 843, width: 1250, height: 843 } }
-                ]
-            },
-            {
-                id: 'compact_6',
-                name: '精簡型 (6格)',
-                size: { width: 2500, height: 843 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 833, height: 843 } },
-                    { bounds: { x: 833, y: 0, width: 834, height: 843 } },
-                    { bounds: { x: 1667, y: 0, width: 833, height: 843 } }
-                ]
-            },
-            {
-                id: 'compact_4',
-                name: '精簡型 (4格)',
-                size: { width: 2500, height: 843 },
-                areas: [
-                    { bounds: { x: 0, y: 0, width: 1250, height: 843 } },
-                    { bounds: { x: 1250, y: 0, width: 1250, height: 843 } }
-                ]
-            }
-        ];
+       // Rich Menu 範本
+const RICHMENU_TEMPLATES = [
+    {
+        id: 'large_6',
+        name: '大型 (6格)',
+        size: { width: 2500, height: 1686 },
+        areas: [
+            { bounds: { x: 0, y: 0, width: 833, height: 843 } },
+            { bounds: { x: 833, y: 0, width: 834, height: 843 } },
+            { bounds: { x: 1667, y: 0, width: 833, height: 843 } },
+            { bounds: { x: 0, y: 843, width: 833, height: 843 } },
+            { bounds: { x: 833, y: 843, width: 834, height: 843 } },
+            { bounds: { x: 1667, y: 843, width: 833, height: 843 } }
+        ]
+    },
+    {
+        id: 'compact_6',
+        name: '精簡型 (6格)',
+        size: { width: 2500, height: 843 },
+        areas: [
+            { bounds: { x: 0, y: 0, width: 416, height: 843 } },
+            { bounds: { x: 416, y: 0, width: 417, height: 843 } },
+            { bounds: { x: 833, y: 0, width: 417, height: 843 } },
+            { bounds: { x: 1250, y: 0, width: 416, height: 843 } },
+            { bounds: { x: 1666, y: 0, width: 417, height: 843 } },
+            { bounds: { x: 2083, y: 0, width: 417, height: 843 } }
+        ]
+    }
+];
+
 
         const LineRichMenuViewer = () => {
             const [menus, setMenus] = useState([]);
