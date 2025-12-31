@@ -328,53 +328,68 @@
                 setSuccess(null);
 
                 try {
-                    // 1. 建立 Rich Menu
-                    const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
-                    const richMenuId = createData.richMenuId;
+        // 1. 建立 Rich Menu
+        const createData = await callLineAPI('/v2/bot/richmenu', 'POST', newMenu);
+        const richMenuId = createData.richMenuId;
 
-                    console.log('✅ Rich Menu 已建立:', richMenuId);
+        console.log('✅ Rich Menu 已建立:', richMenuId);
 
-                    // 2. 上傳圖片
-                    setUploadingImage(true);
-                    const formData = new FormData();
-                    formData.append('image', selectedImage);
-                    formData.append('richMenuId', richMenuId);
-                    formData.append('token', config.channelAccessToken);
+        // 2. 讀取圖片為 Base64
+        setUploadingImage(true);
+        const reader = new FileReader();
+        
+        const imageBase64 = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result.split(',')[1]); // 移除 data:image/xxx;base64, 前綴
+            reader.onerror = reject;
+            reader.readAsDataURL(selectedImage);
+        });
 
-                    const uploadResponse = await fetch(config.proxyUrl, {
-                        method: 'POST',
-                        body: formData
-                    });
+        // 3. 上傳圖片 (使用 Base64)
+        const uploadResult = await fetch(config.proxyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: config.channelAccessToken,
+                endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
+                method: 'POST',
+                isImageUpload: true,
+                imageData: imageBase64,
+                contentType: selectedImage.type // image/png 或 image/jpeg
+            })
+        });
 
-                    if (!uploadResponse.ok) {
-                        throw new Error('圖片上傳失敗');
-                    }
+        if (!uploadResult.ok) {
+            const errorData = await uploadResult.json();
+            throw new Error(errorData.error || '圖片上傳失敗');
+        }
 
-                    console.log('✅ 圖片已上傳');
+        console.log('✅ 圖片已上傳');
 
-                    setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
+        setSuccess(`Rich Menu "${newMenu.name}" 建立成功！ ID: ${richMenuId}`);
 
-                    // 重置表單
-                    setNewMenu({
-                        name: '',
-                        chatBarText: '選單',
-                        selected: false,
-                        size: { width: 2500, height: 1686 },
-                        areas: []
-                    });
-                    setSelectedImage(null);
-                    setImagePreview(null);
+        // 重置表單
+        setNewMenu({
+            name: '',
+            chatBarText: '選單',
+            selected: false,
+            size: { width: 2500, height: 1686 },
+            areas: []
+        });
+        setSelectedImage(null);
+        setImagePreview(null);
 
-                    // 重新載入列表
-                    await fetchRichMenus();
-                    setViewMode('list');
-                } catch (err) {
-                    setError(`建立 Rich Menu 失敗: ${err.message}`);
-                } finally {
-                    setLoading(false);
-                    setUploadingImage(false);
-                }
-            };
+        // 重新載入列表
+        await fetchRichMenus();
+        setViewMode('list');
+    } catch (err) {
+        setError(`建立 Rich Menu 失敗: ${err.message}`);
+    } finally {
+        setLoading(false);
+        setUploadingImage(false);
+    }
+};
 
             const setAsDefault = async (richMenuId) => {
                 try {
