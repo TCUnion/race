@@ -188,8 +188,33 @@
             margin-bottom: 15px;
             border: 1px solid #e0e0e0;
             display: flex;
-            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .menu-preview {
+            flex-shrink: 0;
+            width: 250px;
+            height: auto;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
             align-items: center;
+            justify-content: center;
+        }
+        
+        .menu-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+        
+        .menu-preview.loading {
+            min-height: 120px;
+            font-size: 14px;
+            color: #999;
         }
         
         .menu-info {
@@ -198,17 +223,21 @@
         
         .menu-info h3 {
             color: #333;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
+            font-size: 18px;
         }
         
         .menu-info p {
             color: #666;
             font-size: 14px;
+            margin-bottom: 5px;
         }
         
         .menu-actions {
             display: flex;
+            flex-direction: column;
             gap: 10px;
+            min-width: 120px;
         }
         
         .loading {
@@ -554,7 +583,7 @@
                 loading.classList.remove('active');
                 
                 if (data.richmenus) {
-                    displayMenuList(data);
+                    displayMenuList(data, token);
                     showAlert('成功取得 Rich Menu 列表');
                 } else {
                     showAlert(data.error || '取得列表失敗', 'error');
@@ -565,13 +594,33 @@
             }
         }
         
-        // 顯示選單列表 - 修正版本
-        function displayMenuList(data) {
+        // 取得 Rich Menu 圖片
+        async function fetchRichMenuImage(richMenuId, token) {
+            try {
+                const response = await fetch(`https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    return URL.createObjectURL(blob);
+                }
+                return null;
+            } catch (error) {
+                console.error('Failed to fetch image:', error);
+                return null;
+            }
+        }
+        
+        // 顯示選單列表 - 新增圖片預覽
+        async function displayMenuList(data, token) {
             const container = document.getElementById('menuList');
             
             console.log('收到的資料:', data);
             
-            // 從回應中提取 richmenus 陣列
             const menuArray = data.richmenus || [];
             
             if (menuArray.length === 0) {
@@ -579,15 +628,19 @@
                 return;
             }
             
+            // 先顯示基本資訊
             container.innerHTML = menuArray.map(menu => `
-                <div class="menu-item">
+                <div class="menu-item" id="menu-${menu.richMenuId}">
+                    <div class="menu-preview loading" id="preview-${menu.richMenuId}">
+                        載入圖片中...
+                    </div>
                     <div class="menu-info">
                         <h3>${menu.name || '未命名選單'}</h3>
-                        <p>ID: ${menu.richMenuId || 'N/A'}</p>
-                        <p>尺寸: ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
-                        <p>按鈕區域: ${menu.areas?.length || 0} 個</p>
-                        <p>底部文字: ${menu.chatBarText || 'N/A'}</p>
-                        ${menu.selected ? '<span style="color: #00B900; font-weight: bold;">✓ 預設顯示</span>' : ''}
+                        <p><strong>ID:</strong> ${menu.richMenuId || 'N/A'}</p>
+                        <p><strong>尺寸:</strong> ${menu.size?.width || 0}x${menu.size?.height || 0}</p>
+                        <p><strong>按鈕區域:</strong> ${menu.areas?.length || 0} 個</p>
+                        <p><strong>底部文字:</strong> ${menu.chatBarText || 'N/A'}</p>
+                        ${menu.selected ? '<p style="color: #00B900; font-weight: bold; margin-top: 8px;">✓ 預設顯示</p>' : ''}
                     </div>
                     <div class="menu-actions">
                         ${!menu.selected ? `<button class="btn btn-primary" onclick="setDefaultMenu('${menu.richMenuId}')">設為預設</button>` : ''}
@@ -595,6 +648,19 @@
                     </div>
                 </div>
             `).join('');
+            
+            // 非同步載入圖片
+            menuArray.forEach(async (menu) => {
+                const imageUrl = await fetchRichMenuImage(menu.richMenuId, token);
+                const previewDiv = document.getElementById(`preview-${menu.richMenuId}`);
+                
+                if (imageUrl && previewDiv) {
+                    previewDiv.classList.remove('loading');
+                    previewDiv.innerHTML = `<img src="${imageUrl}" alt="${menu.name}">`;
+                } else if (previewDiv) {
+                    previewDiv.innerHTML = '無法載入圖片';
+                }
+            });
         }
 
         // 建立 Rich Menu
