@@ -232,23 +232,57 @@ const RICHMENU_TEMPLATES = [
                 return await response.json();
             };
 
-            const uploadRichMenuImage = async (richMenuId, imageFile) => {
-                const formData = new FormData();
-                formData.append('image', imageFile);
-                
-                const response = await fetch(config.proxyUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        token: config.channelAccessToken,
-                        endpoint: `/v2/bot/richmenu/${richMenuId}/content`,
-                        method: 'POST',
-                        imageBase64: await fileToBase64(imageFile),
-                        contentType: imageFile.type
-                    })
-                });
+            const createRichMenu = async () => {
+    if (!newMenu.name || !newMenu.template || !newMenu.imageFile) {
+        alert('請填寫完整資料並上傳圖片');
+        return;
+    }
+
+    setLoading(true);
+    try {
+        // 1. 建立 Rich Menu
+        const richMenuData = {
+            size: newMenu.template.size,
+            selected: newMenu.selected,
+            name: newMenu.name,
+            chatBarText: newMenu.chatBarText,
+            areas: newMenu.areas
+        };
+
+        console.log('🔨 建立 Rich Menu:', richMenuData);
+        const createResponse = await callLineAPI('/v2/bot/richmenu', 'POST', richMenuData);
+        const richMenuId = createResponse.richMenuId;
+        console.log('✅ Rich Menu ID:', richMenuId);
+
+        // 2. 🔥 轉換圖片為 Base64
+        const imageBase64 = await fileToBase64(newMenu.imageFile);
+        console.log('📤 準備上傳圖片...');
+        console.log('imageBase64 length:', imageBase64.length);
+        console.log('contentType:', newMenu.imageFile.type);
+
+        // 3. 🔥 上傳圖片（重要修改！）
+        await callLineAPI(
+            `/v2/bot/richmenu/${richMenuId}/content`,
+            'POST',
+            null,  // 不需要 JSON body
+            false, // 不是 binary response
+            imageBase64,  // 🔥 傳遞 Base64
+            newMenu.imageFile.type  // 🔥 傳遞 Content-Type
+        );
+        console.log('✅ 圖片上傳成功');
+
+        alert('Rich Menu 建立成功！');
+        setShowCreateModal(false);
+        resetNewMenu();
+        await fetchRichMenus();
+    } catch (err) {
+        console.error('❌ 建立 Rich Menu 失敗:', err);
+        setError(`建立 Rich Menu 失敗: ${err.message}`);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
