@@ -614,20 +614,16 @@
         if (!response.ok) throw new Error('載入失敗');
         
         const data = await response.json();
-        // 強制轉換成陣列
-if (Array.isArray(data.leaderboard)) {
+        // 處理巢狀的 leaderboard
+if (data.leaderboard && data.leaderboard.leaderboard) {
+    leaderboardData = data.leaderboard.leaderboard;
+} else if (Array.isArray(data.leaderboard)) {
     leaderboardData = data.leaderboard;
-} else if (data.leaderboard && typeof data.leaderboard === 'object') {
-    leaderboardData = Object.values(data.leaderboard);
-} else if (Array.isArray(data)) {
-    leaderboardData = data;
 } else {
     leaderboardData = [];
 }
 
-console.log('✅ 轉換後的 leaderboardData:', leaderboardData);
-console.log('✅ 是否為陣列:', Array.isArray(leaderboardData));
-console.log('✅ 資料筆數:', leaderboardData.length);
+console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
 
         
         updateStatistics();
@@ -832,67 +828,7 @@ console.log('✅ 資料筆數:', leaderboardData.length);
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
     });
 
-    // 模擬資料 (開發測試用,正式環境請移除)
-    // 取消註解以下代碼進行本地測試
-    /*
-    function loadMockData() {
-      leaderboardData = [
-        {
-          name: '林谷薰',
-          strava_username: 'jason_lin',
-          strava_athlete_id: '2838277',
-          number: 11,
-          team: '蠻動工作室',
-          tcu_id: 'TCU-zvnrqonh9coqy4kq',
-          elapsed_time: 14520, // 4:02:00
-          distance: 136000,
-          average_speed: 9.37,
-          average_watts: 245,
-          average_heartrate: 155,
-          start_date: '2026-01-08T08:30:00Z',
-          activity_id: '13856277091',
-          profile: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/2838277/890969/1/large.jpg'
-        },
-        {
-          name: '王小明',
-          strava_username: 'wang_ming',
-          strava_athlete_id: '1234567',
-          number: 22,
-          team: '台中單車',
-          tcu_id: 'TCU-abc123',
-          elapsed_time: 15300,
-          distance: 136200,
-          average_speed: 8.9,
-          average_watts: 220,
-          average_heartrate: 148,
-          start_date: '2026-01-08T09:00:00Z',
-          activity_id: '13856277092',
-          profile: 'https://via.placeholder.com/40'
-        },
-        {
-          name: '李大華',
-          strava_username: 'lee_dahua',
-          strava_athlete_id: '7654321',
-          number: 33,
-          team: '蠻動工作室',
-          tcu_id: 'TCU-def456',
-          elapsed_time: 15900,
-          distance: 136100,
-          average_speed: 8.56,
-          average_watts: 210,
-          average_heartrate: 142,
-          start_date: '2026-01-08T09:30:00Z',
-          activity_id: '13856277093',
-          profile: 'https://via.placeholder.com/40'
-        }
-      ];
-      updateStatistics();
-      populateTeamFilter();
-      applyFilters();
-      updateLastUpdated();
-    }
-    // loadMockData();
-    */
+    
   </script>
 </body>
 </html>
