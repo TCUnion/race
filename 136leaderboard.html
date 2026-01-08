@@ -614,7 +614,19 @@
         if (!response.ok) throw new Error('載入失敗');
         
         const data = await response.json();
-        leaderboardData = data.leaderboard || [];
+        
+        
+        // 處理巢狀的 leaderboard
+        if (data.leaderboard && data.leaderboard.leaderboard) {
+            leaderboardData = data.leaderboard.leaderboard;
+        } else if (Array.isArray(data.leaderboard)) {
+            leaderboardData = data.leaderboard;
+        } else {
+            leaderboardData = [];
+        }
+
+console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
+
         
         updateStatistics();
         populateTeamFilter();
