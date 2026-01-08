@@ -714,7 +714,6 @@
     let mapInstance = null;
     let mapPolyline = null;
 
-    // 格式化時間 (秒 -> HH:MM:SS)
     function formatTime(seconds) {
       if (!seconds || seconds <= 0) return '-';
       const hours = Math.floor(seconds / 3600);
@@ -723,7 +722,6 @@
       return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // 格式化日期時間
     function formatDateTime(dateString) {
       if (!dateString) return '-';
       const date = new Date(dateString);
@@ -736,19 +734,16 @@
       });
     }
 
-    // 格式化距離 (公尺 -> 公里)
     function formatDistance(meters) {
       if (!meters) return '-';
       return (meters / 1000).toFixed(2) + ' km';
     }
 
-    // 格式化速度 (公尺/秒 -> 公里/小時)
     function formatSpeed(metersPerSec) {
       if (!metersPerSec) return '-';
       return (metersPerSec * 3.6).toFixed(1) + ' km/h';
     }
 
-    // decode Google/Strava polyline 到 [lat, lng] 陣列
     function decodePolyline(encoded) {
       if (!encoded) return [];
       let points = [];
@@ -780,9 +775,18 @@
       return points;
     }
 
-    // 更新 Segment 資訊 + 地圖
+    // 更新 Segment 資訊 + 地圖（含 Authorization Error fallback）
     function updateSegmentSection(segment) {
-      if (!segment) return;
+      // 如果 Strava 授權失敗或 segment 缺少必要資訊，用 fallback
+      if (!segment || segment.message === 'Authorization Error') {
+        document.getElementById('segmentName').textContent = '136 正上';
+        document.getElementById('segmentActivityType').textContent = 'Ride';
+        document.getElementById('segmentDistance').textContent = '14.46 km';
+        document.getElementById('segmentAvgGrade').textContent = '3.7 %';
+        document.getElementById('segmentMaxGrade').textContent = '19.8 %';
+        document.getElementById('segmentElevation').textContent = '135 m → 667 m';
+        return;
+      }
 
       segmentData = segment;
 
@@ -830,7 +834,6 @@
       mapInstance.fitBounds(mapPolyline.getBounds(), { padding: [20, 20] });
     }
 
-    // 更新天氣卡（使用 n8n 已整理的 weather）
     function updateWeatherCard(weather) {
       const elLoc  = document.getElementById('weatherLocation');
       const elDesc = document.getElementById('weatherDesc');
@@ -878,7 +881,6 @@
       elMeta.textContent = metaParts.join(' · ') || '--';
     }
 
-    // 取得功率區間
     function getPowerZone(watts) {
       if (!watts) return '';
       if (watts < 150) return 'z1';
@@ -888,7 +890,6 @@
       return 'z5';
     }
 
-    // 載入排行榜資料
     async function loadLeaderboard() {
       const refreshBtn = document.querySelector('.btn-refresh');
       const refreshText = document.getElementById('refreshText');
@@ -899,26 +900,26 @@
       try {
         const response = await fetch(CONFIG.apiUrl);
         if (!response.ok) throw new Error('載入失敗');
-        
-        const data = await response.json();
 
-        // 1) Segment
+        const raw = await response.json();
+        const data = Array.isArray(raw) ? raw[0] : raw;
+
         if (data.segment) {
           updateSegmentSection(data.segment);
+        } else {
+          updateSegmentSection(null);
         }
 
-        // 1.5) Weather（由 n8n 每日更新一次）
         if (data.weather) {
           updateWeatherCard(data.weather);
         } else {
           updateWeatherCard(null);
         }
 
-        // 2) Leaderboard（相容舊格式）
-        if (data.leaderboard && data.leaderboard.leaderboard) {
-          leaderboardData = data.leaderboard.leaderboard;
-        } else if (Array.isArray(data.leaderboard)) {
+        if (Array.isArray(data.leaderboard)) {
           leaderboardData = data.leaderboard;
+        } else if (data.leaderboard && data.leaderboard.leaderboard) {
+          leaderboardData = data.leaderboard.leaderboard;
         } else {
           leaderboardData = [];
         }
@@ -932,13 +933,13 @@
         console.error('載入排行榜失敗:', error);
         showEmptyState('載入資料失敗,請稍後再試');
         updateWeatherCard(null);
+        updateSegmentSection(null);
       } finally {
         refreshBtn.disabled = false;
         refreshText.textContent = '🔄 重新整理';
       }
     }
 
-    // 更新統計資訊
     function updateStatistics() {
       const total = leaderboardData.length;
       const completed = leaderboardData.filter(a => a.elapsed_time > 0).length;
@@ -962,7 +963,6 @@
           : '-';
     }
 
-    // 填充車隊篩選選項
     function populateTeamFilter() {
       const teams = [...new Set(leaderboardData.map(a => a.team).filter(t => t))];
       const teamFilter = document.getElementById('teamFilter');
@@ -976,7 +976,6 @@
       });
     }
 
-    // 套用篩選
     function applyFilters() {
       const teamFilter = document.getElementById('teamFilter').value;
       const searchInput = document.getElementById('searchInput').value.toLowerCase();
@@ -996,7 +995,6 @@
       applySorting();
     }
 
-    // 套用排序
     function applySorting() {
       const sortBy = document.getElementById('sortBy').value;
 
@@ -1020,7 +1018,6 @@
       renderLeaderboard();
     }
 
-    // 渲染排行榜
     function renderLeaderboard() {
       const tbody = document.getElementById('leaderboardBody');
       
@@ -1099,7 +1096,6 @@
       tbody.innerHTML = html;
     }
 
-    // 顯示空狀態
     function showEmptyState(message) {
       const tbody = document.getElementById('leaderboardBody');
       tbody.innerHTML = `
@@ -1114,14 +1110,12 @@
       `;
     }
 
-    // 更新最後更新時間
     function updateLastUpdated() {
       const now = new Date();
       document.getElementById('lastUpdated').textContent =
         now.toLocaleString('zh-TW');
     }
 
-    // 啟動自動刷新
     function startAutoRefresh() {
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
       autoRefreshTimer = setInterval(() => {
@@ -1129,13 +1123,11 @@
       }, CONFIG.refreshInterval);
     }
 
-    // 頁面載入時執行
     window.addEventListener('DOMContentLoaded', function() {
       loadLeaderboard();
       startAutoRefresh();
     });
 
-    // 頁面卸載時清除定時器
     window.addEventListener('beforeunload', function() {
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
     });
