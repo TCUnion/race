@@ -481,8 +481,6 @@ body {
   <script>
     const CONFIG = {
       stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
-          stravaAuthCancelUrl: 'https://n8n.criterium.tw/webhook/strava/auth/cancel',
-      
       submitUrl: 'https://n8n.criterium.tw/webhook/136submit',
       tcuSyncUrl: 'https://n8n.criterium.tw/webhook/tcu-sync',
       allowedOrigins: [
@@ -741,8 +739,7 @@ body {
       return null;
     }
 
-    800
-      () {
+    function disconnectStrava() {
       if (!confirm('確定要取消 Strava 授權嗎?')) return;
 
       document.getElementById('strava_athlete_id').value = '';
@@ -755,18 +752,6 @@ body {
       } catch (e) {
         console.warn('清除 localStorage 失敗:', e);
       }
-          // 呼叫 webhook 通知後端取消授權
-          try {
-                  fetch(CONFIG.stravaAuthCancelUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                        strava_athlete_id: document.getElementById('strava_athlete_id').value
-                                                  })
-                                    }).catch(err => console.warn('取消授權請求失敗:', err));
-                } catch (e) {
-                  console.warn('呼叫取消授權 webhook 失敗:', e);
-                }
 
       updateStravaStatus(null);
       showMessage('success', '已取消 Strava 授權');
