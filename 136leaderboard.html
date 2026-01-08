@@ -13,12 +13,13 @@
       min-height: 100vh;
       padding: 2rem;
     }
-      .powered-by-strava {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1rem;
-  }
+.powered-by-strava {
+  display: flex; /* 關鍵修改 */
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
+  padding-bottom: 2rem; /* 建議：因為是頁尾，加一點底部留白會比較好看 */
+}
   .strava-logo {
     height: 32px;
     width: auto;
