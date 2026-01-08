@@ -571,6 +571,7 @@ body {
       lastname: athlete.lastname || athlete.lastName || '',
       profile: athlete.profile || athlete.profile_medium || '',
       profile_medium: athlete.profile_medium || athlete.profile || '',
+      access_token: athlete.access_token || '', // 新增此行
       ts: Date.now()
     };
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(athleteData));
@@ -740,22 +741,53 @@ body {
     }
 
     function disconnectStrava() {
-      if (!confirm('確定要取消 Strava 授權嗎?')) return;
-
-      document.getElementById('strava_athlete_id').value = '';
-      document.getElementById('strava_username').value = '';
-      document.getElementById('strava_profile').value = '';
-
-      try {
-        localStorage.removeItem(CONFIG.storageKey);
-        localStorage.removeItem(CONFIG.storageKey + '_temp');
-      } catch (e) {
-        console.warn('清除 localStorage 失敗:', e);
-      }
-
-      updateStravaStatus(null);
-      showMessage('success', '已取消 Strava 授權');
+       if (!confirm('確定要取消 Strava 授權嗎?')) return;
+  
+  // 取得儲存的 access_token
+  let accessToken = '';
+  try {
+    const savedData = localStorage.getItem(CONFIG.storageKey);
+    if (savedData) {
+      const athlete = JSON.parse(savedData);
+      accessToken = athlete.access_token || '';
     }
+  } catch (e) {
+    console.warn('讀取 access_token 失敗:', e);
+  }
+  
+  // 發送取消授權請求到 n8n webhook
+  if (accessToken) {
+    try {
+      await fetch('https://n8n.criterium.tw/webhook/strava/auth/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          athlete_id: document.getElementById('strava_athlete_id').value
+        })
+      });
+    } catch (e) {
+      console.error('發送取消授權請求失敗:', e);
+    }
+  }
+  
+  // 清除前端資料
+  document.getElementById('strava_athlete_id').value = '';
+  document.getElementById('strava_username').value = '';
+  document.getElementById('strava_profile').value = '';
+  
+  try {
+    localStorage.removeItem(CONFIG.storageKey);
+    localStorage.removeItem(CONFIG.storageKey + '_temp');
+  } catch (e) {
+    console.warn('清除 localStorage 失敗:', e);
+  }
+  
+  updateStravaStatus(null);
+  showMessage('success', '已取消 Strava 授權');
+}
 
     window.addEventListener('message', function(event) {
       const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
