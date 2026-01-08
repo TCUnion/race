@@ -14,6 +14,19 @@
       padding: 2rem;
     }
 
+    /* 修正: Powered by Strava 標誌 */
+  .powered-by-strava {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  .strava-logo {
+    height: 32px;
+    width: auto;
+    display: block;
+  }
+    
     .tsu-banner {
       width: 100%;
       background: rgba(0,0,0,0.95);
@@ -544,6 +557,11 @@
         最後更新時間: <span id="lastUpdated">-</span>
       </div>
     </div>
+         <div class="powered-by-strava">
+          <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" 
+               alt="Powered by Strava" 
+               class="strava-logo">
+        </div>
   </div>
 
   <script>
