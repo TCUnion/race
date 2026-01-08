@@ -545,30 +545,40 @@ body {
     }
 
     function fillFormWithStravaData(athlete) {
-      if (!athlete || !athlete.id) return;
+  if (!athlete || !athlete.id) return;
+  
+  document.getElementById('strava_athlete_id').value = athlete.id || '';
+  document.getElementById('strava_username').value = athlete.username || '';
+  document.getElementById('strava_profile').value = athlete.profile || athlete.profile_medium || '';
+  
+  const firstName = athlete.firstname || athlete.firstName || '';
+  const lastName = athlete.lastname || athlete.lastName || '';
+  const fullName = (firstName + ' ' + lastName).trim();
+  
+  const nameInput = document.getElementById('name');
+  if (fullName && nameInput && !nameInput.value) {
+    nameInput.value = fullName;
+  }
+  
+  updateStravaStatus(athlete);
+  
+  // ✅ 修正:儲存完整的 athlete 資料而非只有 id
+  try {
+    const athleteData = {
+      id: athlete.id,
+      username: athlete.username || '',
+      firstname: athlete.firstname || athlete.firstName || '',
+      lastname: athlete.lastname || athlete.lastName || '',
+      profile: athlete.profile || athlete.profile_medium || '',
+      profile_medium: athlete.profile_medium || athlete.profile || '',
+      ts: Date.now()
+    };
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify(athleteData));
+  } catch (e) {
+    console.warn('無法寫入 localStorage:', e);
+  }
+}
 
-      document.getElementById('strava_athlete_id').value = athlete.id || '';
-      document.getElementById('strava_username').value = athlete.username || '';
-      document.getElementById('strava_profile').value = athlete.profile || athlete.profile_medium || '';
-
-      const firstName = athlete.firstname || athlete.firstName || '';
-      const lastName = athlete.lastname || athlete.lastName || '';
-      const fullName = (firstName + ' ' + lastName).trim();
-      const nameInput = document.getElementById('name');
-
-      if (fullName && nameInput && !nameInput.value) {
-        nameInput.value = fullName;
-      }
-
-      updateStravaStatus(athlete);
-
-      try {
-        const meta = { id: athlete.id, ts: Date.now() };
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify(meta));
-      } catch (e) {
-        console.warn('無法寫入 localStorage:', e);
-      }
-    }
 
     function updateStravaStatus(athlete) {
       const statusEl = document.getElementById('stravaStatus');
@@ -928,23 +938,26 @@ body {
     }
 
     window.addEventListener('DOMContentLoaded', function() {
-      loadStravaDataFromURL();
-      loadFormState();
-
-      try {
-        const savedMeta = localStorage.getItem(CONFIG.storageKey);
-        if (savedMeta && !document.getElementById('strava_athlete_id').value) {
-          const meta = JSON.parse(savedMeta);
-          if (meta?.id) {
-            document.getElementById('strava_athlete_id').value = meta.id;
-            updateStravaStatus({ id: meta.id });
-          }
-        }
-      } catch (error) {
-        console.error('載入 localStorage 資料失敗:', error);
-        localStorage.removeItem(CONFIG.storageKey);
+  loadStravaDataFromURL();
+  loadFormState();
+  
+  // ✅ 修正:從 localStorage 恢復完整的 Strava 資料
+  try {
+    const savedData = localStorage.getItem(CONFIG.storageKey);
+    if (savedData && !document.getElementById('strava_athlete_id').value) {
+      const athlete = JSON.parse(savedData);
+      
+      if (athlete?.id) {
+        // 直接使用 fillFormWithStravaData 來填充所有欄位
+        fillFormWithStravaData(athlete);
       }
-    });
+    }
+  } catch (error) {
+    console.error('載入 localStorage 資料失敗:', error);
+    localStorage.removeItem(CONFIG.storageKey);
+  }
+});
+
 
     window.addEventListener('beforeunload', function() {
       if (pollingTimer) clearInterval(pollingTimer);
