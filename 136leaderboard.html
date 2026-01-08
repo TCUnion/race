@@ -14,19 +14,6 @@
       padding: 2rem;
     }
 
-    /* 修正: Powered by Strava 標誌 */
-  .powered-by-strava {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1rem;
-  }
-  .strava-logo {
-    height: 32px;
-    width: auto;
-    display: block;
-  }
-    
     .tsu-banner {
       width: 100%;
       background: rgba(0,0,0,0.95);
@@ -557,11 +544,6 @@
         最後更新時間: <span id="lastUpdated">-</span>
       </div>
     </div>
-         <div class="powered-by-strava">
-          <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" 
-               alt="Powered by Strava" 
-               class="strava-logo">
-        </div>
   </div>
 
   <script>
@@ -836,7 +818,67 @@
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
     });
 
-    
+    // 模擬資料 (開發測試用,正式環境請移除)
+    // 取消註解以下代碼進行本地測試
+    /*
+    function loadMockData() {
+      leaderboardData = [
+        {
+          name: '林谷薰',
+          strava_username: 'jason_lin',
+          strava_athlete_id: '2838277',
+          number: 11,
+          team: '蠻動工作室',
+          tcu_id: 'TCU-zvnrqonh9coqy4kq',
+          elapsed_time: 14520, // 4:02:00
+          distance: 136000,
+          average_speed: 9.37,
+          average_watts: 245,
+          average_heartrate: 155,
+          start_date: '2026-01-08T08:30:00Z',
+          activity_id: '13856277091',
+          profile: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/2838277/890969/1/large.jpg'
+        },
+        {
+          name: '王小明',
+          strava_username: 'wang_ming',
+          strava_athlete_id: '1234567',
+          number: 22,
+          team: '台中單車',
+          tcu_id: 'TCU-abc123',
+          elapsed_time: 15300,
+          distance: 136200,
+          average_speed: 8.9,
+          average_watts: 220,
+          average_heartrate: 148,
+          start_date: '2026-01-08T09:00:00Z',
+          activity_id: '13856277092',
+          profile: 'https://via.placeholder.com/40'
+        },
+        {
+          name: '李大華',
+          strava_username: 'lee_dahua',
+          strava_athlete_id: '7654321',
+          number: 33,
+          team: '蠻動工作室',
+          tcu_id: 'TCU-def456',
+          elapsed_time: 15900,
+          distance: 136100,
+          average_speed: 8.56,
+          average_watts: 210,
+          average_heartrate: 142,
+          start_date: '2026-01-08T09:30:00Z',
+          activity_id: '13856277093',
+          profile: 'https://via.placeholder.com/40'
+        }
+      ];
+      updateStatistics();
+      populateTeamFilter();
+      applyFilters();
+      updateLastUpdated();
+    }
+    // loadMockData();
+    */
   </script>
 </body>
 </html>
