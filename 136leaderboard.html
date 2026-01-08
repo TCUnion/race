@@ -586,34 +586,37 @@
           </div>
         </div>
 
-    <!-- 右：地圖 + 天氣 -->
-<div
-  style="
-    background: white;
-    border-radius: 16px;
-    padding: 0.75rem;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  "
->
-  <!-- 天氣資訊 -->
-  <div id="weatherCard"
-       style="padding:0.5rem 0.75rem 0.75rem;border-bottom:1px solid #f1f3f5;
-              margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem;">
-    <div style="flex:1;">
-      <div style="font-size:13px;color:#868e96;">目前天氣</div>
-      <div id="weatherLocation"
-           style="font-size:14px;font-weight:600;color:#343a40;">載入中…</div>
-      <div id="weatherDesc"
-           style="font-size:12px;color:#495057;margin-top:2px;">請稍候</div>
-    </div>
-    <div style="text-align:right;">
-      <div id="weatherTemp"
-           style="font-size:20px;font-weight:700;color:#333;">--°C</div>
-      <div id="weatherMeta"
-           style="font-size:11px;color:#868e96;">--</div>
-    </div>
-  </div>
-
+        <!-- 右：地圖 + 天氣 -->
+        <div
+          style="
+            background: white;
+            border-radius: 16px;
+            padding: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          "
+        >
+          <!-- 天氣資訊 -->
+          <div id="weatherCard"
+               style="padding:0.5rem 0.75rem 0.75rem;
+                      border-bottom:1px solid #f1f3f5;
+                      margin-bottom:0.75rem;
+                      display:flex;
+                      align-items:center;
+                      gap:0.75rem;">
+            <div style="flex:1;">
+              <div style="font-size:13px;color:#868e96;">目前天氣</div>
+              <div id="weatherLocation"
+                   style="font-size:14px;font-weight:600;color:#343a40;">載入中…</div>
+              <div id="weatherDesc"
+                   style="font-size:12px;color:#495057;margin-top:2px;">請稍候</div>
+            </div>
+            <div style="text-align:right;">
+              <div id="weatherTemp"
+                   style="font-size:20px;font-weight:700;color:#333;">--°C</div>
+              <div id="weatherMeta"
+                   style="font-size:11px;color:#868e96;">--</div>
+            </div>
+          </div>
 
           <div
             id="segmentMap"
@@ -827,6 +830,54 @@
       mapInstance.fitBounds(mapPolyline.getBounds(), { padding: [20, 20] });
     }
 
+    // 更新天氣卡（使用 n8n 已整理的 weather）
+    function updateWeatherCard(weather) {
+      const elLoc  = document.getElementById('weatherLocation');
+      const elDesc = document.getElementById('weatherDesc');
+      const elTemp = document.getElementById('weatherTemp');
+      const elMeta = document.getElementById('weatherMeta');
+
+      if (!weather) {
+        elLoc.textContent  = '天氣讀取失敗';
+        elDesc.textContent = '請稍後再試';
+        elTemp.textContent = '--°C';
+        elMeta.textContent = '--';
+        return;
+      }
+
+      const cur   = weather.current || {};
+      const today = weather.today || {};
+
+      elLoc.textContent  = weather.location || '目前天氣';
+      elDesc.textContent = cur.description || today.description || '';
+
+      if (typeof cur.temp === 'number') {
+        elTemp.textContent = `${Math.round(cur.temp)}°C`;
+      } else {
+        elTemp.textContent = '--°C';
+      }
+
+      const metaParts = [];
+      if (typeof cur.feels_like === 'number') {
+        metaParts.push(`體感 ${Math.round(cur.feels_like)}°C`);
+      }
+      if (typeof cur.humidity === 'number') {
+        metaParts.push(`濕度 ${cur.humidity}%`);
+      }
+      if (typeof cur.wind_speed === 'number') {
+        metaParts.push(`風速 ${cur.wind_speed.toFixed(1)} m/s`);
+      }
+      if (today.min != null && today.max != null) {
+        metaParts.push(`今日 ${Math.round(today.min)}–${Math.round(today.max)}°C`);
+      }
+      if (weather.last_updated) {
+        const t = new Date(weather.last_updated);
+        metaParts.push(`更新 ${t.toLocaleString('zh-TW')}`);
+      }
+
+      elMeta.textContent = metaParts.join(' · ') || '--';
+    }
+
     // 取得功率區間
     function getPowerZone(watts) {
       if (!watts) return '';
@@ -851,12 +902,19 @@
         
         const data = await response.json();
 
-        // 1) 讀取 segment 資訊
+        // 1) Segment
         if (data.segment) {
           updateSegmentSection(data.segment);
         }
 
-        // 2) 處理 leaderboard（相容舊格式）
+        // 1.5) Weather（由 n8n 每日更新一次）
+        if (data.weather) {
+          updateWeatherCard(data.weather);
+        } else {
+          updateWeatherCard(null);
+        }
+
+        // 2) Leaderboard（相容舊格式）
         if (data.leaderboard && data.leaderboard.leaderboard) {
           leaderboardData = data.leaderboard.leaderboard;
         } else if (Array.isArray(data.leaderboard)) {
@@ -864,8 +922,6 @@
         } else {
           leaderboardData = [];
         }
-
-        console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
 
         updateStatistics();
         populateTeamFilter();
@@ -875,6 +931,7 @@
       } catch (error) {
         console.error('載入排行榜失敗:', error);
         showEmptyState('載入資料失敗,請稍後再試');
+        updateWeatherCard(null);
       } finally {
         refreshBtn.disabled = false;
         refreshText.textContent = '🔄 重新整理';
