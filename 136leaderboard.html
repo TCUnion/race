@@ -586,15 +586,41 @@
           </div>
         </div>
 
-        <!-- 右：地圖 -->
-        <div
-          style="
-            background: white;
-            border-radius: 16px;
-            padding: 0.75rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-          "
-        >
+    <!-- 右：地圖 + 天氣 -->
+<div
+  style="
+    background: white;
+    border-radius: 16px;
+    padding: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  "
+>
+  <!-- 天氣資訊 -->
+  <div id="weatherCard"
+       style="padding:0.5rem 0.75rem 0.75rem;border-bottom:1px solid #f1f3f5;
+              margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem;">
+    <div style="flex:1;">
+      <div style="font-size:13px;color:#868e96;">目前天氣</div>
+      <div id="weatherLocation"
+           style="font-size:14px;font-weight:600;color:#343a40;">載入中…</div>
+      <div id="weatherDesc"
+           style="font-size:12px;color:#495057;margin-top:2px;">請稍候</div>
+    </div>
+    <div style="text-align:right;">
+      <div id="weatherTemp"
+           style="font-size:20px;font-weight:700;color:#333;">--°C</div>
+      <div id="weatherMeta"
+           style="font-size:11px;color:#868e96;">--</div>
+    </div>
+  </div>
+
+  <!-- 原本地圖 -->
+  <div
+    id="segmentMap"
+    style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden;"
+  ></div>
+</div>
+
           <div
             id="segmentMap"
             style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden;"
