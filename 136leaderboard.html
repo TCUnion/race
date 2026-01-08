@@ -428,92 +428,9 @@
     .power-zone.z4 { background: #FF9800; }
     .power-zone.z5 { background: #F44336; }
 
-    /* Segment Map + Weather Container */
-    .segment-map-weather-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      align-items: stretch;
-    }
-
-    .weather-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .weather-header {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .weather-icon {
-      font-size: 32px;
-    }
-
-    .weather-main {
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .weather-temp {
-      font-size: 42px;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .weather-description {
-      font-size: 14px;
-      opacity: 0.9;
-    }
-
-    .weather-details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      font-size: 13px;
-    }
-
-    .weather-detail-item {
-      background: rgba(255,255,255,0.15);
-      padding: 0.75rem;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .weather-detail-label {
-      opacity: 0.85;
-    }
-
-    .weather-detail-value {
-      font-weight: 600;
-    }
-
-    .weather-loading {
-      text-align: center;
-      padding: 2rem;
-      opacity: 0.7;
-    }
-
     @media (max-width: 1200px) {
       .table-container {
         overflow-x: scroll;
-      }
-      .segment-map-weather-container {
-        grid-template-columns: 1fr;
       }
     }
 
@@ -531,4 +448,620 @@
         margin-left: 0;
         width: 100%;
       }
-      .segment-map-weather-container
+    }
+  </style>
+
+  <!-- Leaflet CSS & JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <div class="tsu-banner">
+    <a href="https://www.tsu.com.tw/" target="_blank" rel="noopener noreferrer">
+      <img src="https://www.tsu.com.tw/images/logo.png" alt="TSU Logo">
+    </a>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h1>TCU 136檢定<span class="challenge-badge">排行榜</span></h1>
+      <p class="subtitle">
+        即時更新 Strava 活動數據 | 路段計時 | 功率分析<br>
+        挑戰目標:完成 136 公里騎乘
+      </p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">參賽人數</div>
+          <div class="stat-value" id="totalAthletes">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">完成人數</div>
+          <div class="stat-value" id="completedAthletes">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">最快時間</div>
+          <div class="stat-value" id="bestTime">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">平均時間</div>
+          <div class="stat-value" id="avgTime">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">最高功率</div>
+          <div class="stat-value" id="maxPower">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">平均速度</div>
+          <div class="stat-value" id="avgSpeed">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segment 資訊 + 地圖區塊 -->
+    <div class="segment-section" style="margin-bottom: 2rem;">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+          gap: 1.5rem;
+          align-items: stretch;
+        "
+      >
+        <!-- 左：文字資訊 -->
+        <div
+          style="
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          "
+        >
+          <h2
+            style="
+              font-size: 20px;
+              margin-bottom: 0.75rem;
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              color: #333;
+            "
+          >
+            路段資訊
+            <span
+              style="
+                font-size: 11px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: #f1f3f5;
+                color: #495057;
+              "
+              id="segmentActivityType"
+            >
+              Ride
+            </span>
+          </h2>
+          <div
+            id="segmentName"
+            style="font-size: 18px; font-weight: 700; margin-bottom: 1rem;"
+          >
+            136 正上
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 0.75rem;
+              font-size: 13px;
+              color: #495057;
+            "
+          >
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                距離
+              </div>
+              <div id="segmentDistance" style="font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                平均坡度
+              </div>
+              <div id="segmentAvgGrade" style="font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                最陡坡度
+              </div>
+              <div id="segmentMaxGrade" style="font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                海拔範圍
+              </div>
+              <div id="segmentElevation" style="font-weight: 600;">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右：地圖 -->
+        <div
+          style="
+            background: white;
+            border-radius: 16px;
+            padding: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          "
+        >
+          <div
+            id="segmentMap"
+            style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden;"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>排序方式:</label>
+          <select id="sortBy" onchange="applySorting()">
+            <option value="time">完成時間</option>
+            <option value="power">平均功率</option>
+            <option value="speed">平均速度</option>
+            <option value="hr">平均心率</option>
+            <option value="date">活動日期</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>車隊篩選:</label>
+          <select id="teamFilter" onchange="applyFilters()">
+            <option value="">全部車隊</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>搜尋:</label>
+          <input type="text" id="searchInput" placeholder="姓名或號碼" oninput="applyFilters()">
+        </div>
+        <button class="btn-refresh" onclick="loadLeaderboard()">
+          <span id="refreshText">🔄 重新整理</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="leaderboard">
+      <div class="table-header">
+        🏆 即時排行榜
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="center">排名</th>
+              <th>選手資訊</th>
+              <th class="center">號碼</th>
+              <th class="center">完成時間</th>
+              <th class="center">距離</th>
+              <th class="center">平均速度</th>
+              <th class="center">平均功率</th>
+              <th class="center">平均心率</th>
+              <th class="center">活動日期</th>
+              <th class="center">Strava</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr>
+              <td colspan="10">
+                <div class="loading">
+                  <div class="spinner"></div>
+                  <div>載入排行榜資料中...</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="last-updated">
+        最後更新時間: <span id="lastUpdated">-</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="powered-by-strava">
+    <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" 
+         alt="Powered by Strava" 
+         class="strava-logo">
+  </div>
+
+  <script>
+    const CONFIG = {
+      apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard',
+      refreshInterval: 60000, // 60秒自動刷新
+      stravaActivityBase: 'https://www.strava.com/activities/'
+    };
+
+    let leaderboardData = [];
+    let filteredData = [];
+    let autoRefreshTimer = null;
+
+    // Segment & Map 狀態
+    let segmentData = null;
+    let mapInstance = null;
+    let mapPolyline = null;
+
+    // 格式化時間 (秒 -> HH:MM:SS)
+    function formatTime(seconds) {
+      if (!seconds || seconds <= 0) return '-';
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // 格式化日期時間
+    function formatDateTime(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return date.toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // 格式化距離 (公尺 -> 公里)
+    function formatDistance(meters) {
+      if (!meters) return '-';
+      return (meters / 1000).toFixed(2) + ' km';
+    }
+
+    // 格式化速度 (公尺/秒 -> 公里/小時)
+    function formatSpeed(metersPerSec) {
+      if (!metersPerSec) return '-';
+      return (metersPerSec * 3.6).toFixed(1) + ' km/h';
+    }
+
+    // decode Google/Strava polyline 到 [lat, lng] 陣列
+    function decodePolyline(encoded) {
+      if (!encoded) return [];
+      let points = [];
+      let index = 0, len = encoded.length;
+      let lat = 0, lng = 0;
+
+      while (index < len) {
+        let b, shift = 0, result = 0;
+        do {
+          b = encoded.charCodeAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+        const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+        do {
+          b = encoded.charCodeAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+        const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+        lng += dlng;
+
+        points.push([lat / 1e5, lng / 1e5]);
+      }
+      return points;
+    }
+
+    // 更新 Segment 資訊 + 地圖
+    function updateSegmentSection(segment) {
+      if (!segment) return;
+
+      segmentData = segment;
+
+      document.getElementById('segmentName').textContent = segment.name || '136 正上';
+      document.getElementById('segmentActivityType').textContent =
+        segment.activity_type || 'Ride';
+
+      const distKm = segment.distance ? (segment.distance / 1000).toFixed(2) + ' km' : '-';
+      document.getElementById('segmentDistance').textContent = distKm;
+
+      const avgGrade =
+        segment.average_grade != null ? segment.average_grade.toFixed(1) + ' %' : '-';
+      const maxGrade =
+        segment.maximum_grade != null ? segment.maximum_grade.toFixed(1) + ' %' : '-';
+      document.getElementById('segmentAvgGrade').textContent = avgGrade;
+      document.getElementById('segmentMaxGrade').textContent = maxGrade;
+
+      const elevText =
+        segment.elevation_low != null && segment.elevation_high != null
+          ? `${segment.elevation_low.toFixed(0)} m → ${segment.elevation_high.toFixed(0)} m`
+          : '-';
+      document.getElementById('segmentElevation').textContent = elevText;
+
+      const polylineEncoded =
+        segment.map && (segment.map.polyline || segment.map.summary_polyline);
+
+      if (!polylineEncoded) return;
+
+      const latlngs = decodePolyline(polylineEncoded);
+      if (!latlngs.length) return;
+
+      if (!mapInstance) {
+        mapInstance = L.map('segmentMap');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap 貢獻者'
+        }).addTo(mapInstance);
+      }
+
+      if (mapPolyline) {
+        mapInstance.removeLayer(mapPolyline);
+      }
+
+      mapPolyline = L.polyline(latlngs, { color: '#FC5200', weight: 4 }).addTo(mapInstance);
+      mapInstance.fitBounds(mapPolyline.getBounds(), { padding: [20, 20] });
+    }
+
+    // 取得功率區間
+    function getPowerZone(watts) {
+      if (!watts) return '';
+      if (watts < 150) return 'z1';
+      if (watts < 200) return 'z2';
+      if (watts < 250) return 'z3';
+      if (watts < 300) return 'z4';
+      return 'z5';
+    }
+
+    // 載入排行榜資料
+    async function loadLeaderboard() {
+      const refreshBtn = document.querySelector('.btn-refresh');
+      const refreshText = document.getElementById('refreshText');
+      
+      refreshBtn.disabled = true;
+      refreshText.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px;"></span>載入中...';
+
+      try {
+        const response = await fetch(CONFIG.apiUrl);
+        if (!response.ok) throw new Error('載入失敗');
+        
+        const data = await response.json();
+
+        // 1) 讀取 segment 資訊
+        if (data.segment) {
+          updateSegmentSection(data.segment);
+        }
+
+        // 2) 處理 leaderboard（相容舊格式）
+        if (data.leaderboard && data.leaderboard.leaderboard) {
+          leaderboardData = data.leaderboard.leaderboard;
+        } else if (Array.isArray(data.leaderboard)) {
+          leaderboardData = data.leaderboard;
+        } else {
+          leaderboardData = [];
+        }
+
+        console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
+
+        updateStatistics();
+        populateTeamFilter();
+        applyFilters();
+        updateLastUpdated();
+        
+      } catch (error) {
+        console.error('載入排行榜失敗:', error);
+        showEmptyState('載入資料失敗,請稍後再試');
+      } finally {
+        refreshBtn.disabled = false;
+        refreshText.textContent = '🔄 重新整理';
+      }
+    }
+
+    // 更新統計資訊
+    function updateStatistics() {
+      const total = leaderboardData.length;
+      const completed = leaderboardData.filter(a => a.elapsed_time > 0).length;
+      const times = leaderboardData.map(a => a.elapsed_time).filter(t => t > 0);
+      const powers = leaderboardData.map(a => a.average_watts).filter(p => p > 0);
+      const speeds = leaderboardData.map(a => a.average_speed).filter(s => s > 0);
+
+      document.getElementById('totalAthletes').textContent = total;
+      document.getElementById('completedAthletes').textContent = completed;
+      document.getElementById('bestTime').textContent =
+        times.length > 0 ? formatTime(Math.min(...times)) : '-';
+      document.getElementById('avgTime').textContent =
+        times.length > 0
+          ? formatTime(Math.floor(times.reduce((a, b) => a + b, 0) / times.length))
+          : '-';
+      document.getElementById('maxPower').textContent =
+        powers.length > 0 ? Math.max(...powers) + ' W' : '-';
+      document.getElementById('avgSpeed').textContent =
+        speeds.length > 0
+          ? formatSpeed(speeds.reduce((a, b) => a + b, 0) / speeds.length)
+          : '-';
+    }
+
+    // 填充車隊篩選選項
+    function populateTeamFilter() {
+      const teams = [...new Set(leaderboardData.map(a => a.team).filter(t => t))];
+      const teamFilter = document.getElementById('teamFilter');
+      
+      teamFilter.innerHTML = '<option value="">全部車隊</option>';
+      teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team;
+        option.textContent = team;
+        teamFilter.appendChild(option);
+      });
+    }
+
+    // 套用篩選
+    function applyFilters() {
+      const teamFilter = document.getElementById('teamFilter').value;
+      const searchInput = document.getElementById('searchInput').value.toLowerCase();
+
+      filteredData = leaderboardData.filter(athlete => {
+        const matchTeam = !teamFilter || athlete.team === teamFilter;
+        const matchSearch =
+          !searchInput ||
+          (athlete.name && athlete.name.toLowerCase().includes(searchInput)) ||
+          (athlete.strava_username &&
+            athlete.strava_username.toLowerCase().includes(searchInput)) ||
+          (athlete.number && athlete.number.toString().includes(searchInput));
+        
+        return matchTeam && matchSearch;
+      });
+
+      applySorting();
+    }
+
+    // 套用排序
+    function applySorting() {
+      const sortBy = document.getElementById('sortBy').value;
+
+      filteredData.sort((a, b) => {
+        switch(sortBy) {
+          case 'time':
+            return (a.elapsed_time || Infinity) - (b.elapsed_time || Infinity);
+          case 'power':
+            return (b.average_watts || 0) - (a.average_watts || 0);
+          case 'speed':
+            return (b.average_speed || 0) - (a.average_speed || 0);
+          case 'hr':
+            return (b.average_heartrate || 0) - (a.average_heartrate || 0);
+          case 'date':
+            return new Date(b.start_date || 0) - new Date(a.start_date || 0);
+          default:
+            return 0;
+        }
+      });
+
+      renderLeaderboard();
+    }
+
+    // 渲染排行榜
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboardBody');
+      
+      if (filteredData.length === 0) {
+        showEmptyState('目前沒有符合條件的資料');
+        return;
+      }
+
+      let html = '';
+      filteredData.forEach((athlete, index) => {
+        const rank = index + 1;
+        const podiumClass = rank <= 3 ? `podium-${rank}` : '';
+        const rankClass = rank <= 3 ? `rank podium podium-${rank}` : 'rank';
+        const timeClass = rank === 1 ? 'time best' : 'time';
+        
+        const avatar =
+          athlete.profile || athlete.strava_profile || 'https://via.placeholder.com/40';
+        const stravaLink = athlete.activity_id
+          ? `${CONFIG.stravaActivityBase}${athlete.activity_id}`
+          : '#';
+        const powerZone = getPowerZone(athlete.average_watts);
+
+        html += `
+          <tr class="${podiumClass}">
+            <td class="center">
+              <span class="${rankClass}">${rank}</span>
+            </td>
+            <td>
+              <div class="athlete-info">
+                <img src="${avatar}" alt="${athlete.name}" class="athlete-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="athlete-details">
+                  <div class="athlete-name">${athlete.name}</div>
+                  <div class="athlete-meta">
+                    <span>@${athlete.strava_username || 'N/A'}</span>
+                    ${athlete.team ? `<span class="badge badge-team">${athlete.team}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="center">
+              <span class="badge badge-number">${athlete.number || '-'}</span>
+            </td>
+            <td class="center">
+              <span class="${timeClass}">${formatTime(athlete.elapsed_time)}</span>
+            </td>
+            <td class="center">${formatDistance(athlete.distance)}</td>
+            <td class="center">${formatSpeed(athlete.average_speed)}</td>
+            <td class="center">
+              <div class="metric">
+                <span class="metric-value">
+                  ${powerZone ? `<span class="power-zone ${powerZone}"></span>` : ''}
+                  ${athlete.average_watts || '-'} W
+                </span>
+              </div>
+            </td>
+            <td class="center">
+              <div class="metric">
+                <span class="metric-value">${athlete.average_heartrate || '-'} bpm</span>
+              </div>
+            </td>
+            <td class="center">${formatDateTime(athlete.start_date)}</td>
+            <td class="center">
+              ${athlete.activity_id ? `
+                <a href="${stravaLink}" target="_blank" rel="noopener noreferrer" class="activity-link">
+                  <svg class="strava-icon" viewBox="0 0 24 24" fill="#FC5200">
+                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
+                  </svg>
+                  查看
+                </a>
+              ` : '-'}
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // 顯示空狀態
+    function showEmptyState(message) {
+      const tbody = document.getElementById('leaderboardBody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="10">
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <div>${message}</div>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    // 更新最後更新時間
+    function updateLastUpdated() {
+      const now = new Date();
+      document.getElementById('lastUpdated').textContent =
+        now.toLocaleString('zh-TW');
+    }
+
+    // 啟動自動刷新
+    function startAutoRefresh() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(() => {
+        loadLeaderboard();
+      }, CONFIG.refreshInterval);
+    }
+
+    // 頁面載入時執行
+    window.addEventListener('DOMContentLoaded', function() {
+      loadLeaderboard();
+      startAutoRefresh();
+    });
+
+    // 頁面卸載時清除定時器
+    window.addEventListener('beforeunload', function() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+    });
+  </script>
+</body>
+</html>
