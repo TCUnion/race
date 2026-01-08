@@ -614,7 +614,21 @@
         if (!response.ok) throw new Error('載入失敗');
         
         const data = await response.json();
-        leaderboardData = data.leaderboard || [];
+        // 強制轉換成陣列
+if (Array.isArray(data.leaderboard)) {
+    leaderboardData = data.leaderboard;
+} else if (data.leaderboard && typeof data.leaderboard === 'object') {
+    leaderboardData = Object.values(data.leaderboard);
+} else if (Array.isArray(data)) {
+    leaderboardData = data;
+} else {
+    leaderboardData = [];
+}
+
+console.log('✅ 轉換後的 leaderboardData:', leaderboardData);
+console.log('✅ 是否為陣列:', Array.isArray(leaderboardData));
+console.log('✅ 資料筆數:', leaderboardData.length);
+
         
         updateStatistics();
         populateTeamFilter();
