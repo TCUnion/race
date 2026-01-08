@@ -13,18 +13,21 @@
       min-height: 100vh;
       padding: 2rem;
     }
-.powered-by-strava {
-  display: flex; /* 關鍵修改 */
-  align-items: center;
-  justify-content: center;
-  margin-top: 1rem;
-  padding-bottom: 2rem; /* 建議：因為是頁尾，加一點底部留白會比較好看 */
-}
-  .strava-logo {
-    height: 32px;
-    width: auto;
-    display: block;
-  }
+
+    .powered-by-strava {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1rem;
+      padding-bottom: 2rem;
+    }
+
+    .strava-logo {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+
     .tsu-banner {
       width: 100%;
       background: rgba(0,0,0,0.95);
@@ -447,6 +450,13 @@
       }
     }
   </style>
+
+  <!-- Leaflet CSS & JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <div class="tsu-banner">
@@ -487,6 +497,108 @@
         <div class="stat-card">
           <div class="stat-label">平均速度</div>
           <div class="stat-value" id="avgSpeed">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segment 資訊 + 地圖區塊 -->
+    <div class="segment-section" style="margin-bottom: 2rem;">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+          gap: 1.5rem;
+          align-items: stretch;
+        "
+      >
+        <!-- 左：文字資訊 -->
+        <div
+          style="
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          "
+        >
+          <h2
+            style="
+              font-size: 20px;
+              margin-bottom: 0.75rem;
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              color: #333;
+            "
+          >
+            路段資訊
+            <span
+              style="
+                font-size: 11px;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: #f1f3f5;
+                color: #495057;
+              "
+              id="segmentActivityType"
+            >
+              Ride
+            </span>
+          </h2>
+          <div
+            id="segmentName"
+            style="font-size: 18px; font-weight: 700; margin-bottom: 1rem;"
+          >
+            136 正上
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 0.75rem;
+              font-size: 13px;
+              color: #495057;
+            "
+          >
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                距離
+              </div>
+              <div id="segmentDistance" style="font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                平均坡度
+              </div>
+              <div id="segmentAvgGrade" style="font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                最陡坡度
+              </div>
+              <div id="segmentMaxGrade" style="font-weight: 600;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
+                海拔範圍
+              </div>
+              <div id="segmentElevation" style="font-weight: 600;">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右：地圖 -->
+        <div
+          style="
+            background: white;
+            border-radius: 16px;
+            padding: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          "
+        >
+          <div
+            id="segmentMap"
+            style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden;"
+          ></div>
         </div>
       </div>
     </div>
@@ -556,11 +668,13 @@
       </div>
     </div>
   </div>
-        <div class="powered-by-strava">
-          <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" 
-               alt="Powered by Strava" 
-               class="strava-logo">
-        </div>
+
+  <div class="powered-by-strava">
+    <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" 
+         alt="Powered by Strava" 
+         class="strava-logo">
+  </div>
+
   <script>
     const CONFIG = {
       apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard',
@@ -571,6 +685,11 @@
     let leaderboardData = [];
     let filteredData = [];
     let autoRefreshTimer = null;
+
+    // Segment & Map 狀態
+    let segmentData = null;
+    let mapInstance = null;
+    let mapPolyline = null;
 
     // 格式化時間 (秒 -> HH:MM:SS)
     function formatTime(seconds) {
@@ -606,6 +725,88 @@
       return (metersPerSec * 3.6).toFixed(1) + ' km/h';
     }
 
+    // decode Google/Strava polyline 到 [lat, lng] 陣列
+    function decodePolyline(encoded) {
+      if (!encoded) return [];
+      let points = [];
+      let index = 0, len = encoded.length;
+      let lat = 0, lng = 0;
+
+      while (index < len) {
+        let b, shift = 0, result = 0;
+        do {
+          b = encoded.charCodeAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+        const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+        do {
+          b = encoded.charCodeAt(index++) - 63;
+          result |= (b & 0x1f) << shift;
+          shift += 5;
+        } while (b >= 0x20);
+        const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+        lng += dlng;
+
+        points.push([lat / 1e5, lng / 1e5]);
+      }
+      return points;
+    }
+
+    // 更新 Segment 資訊 + 地圖
+    function updateSegmentSection(segment) {
+      if (!segment) return;
+
+      segmentData = segment;
+
+      document.getElementById('segmentName').textContent = segment.name || '136 正上';
+      document.getElementById('segmentActivityType').textContent =
+        segment.activity_type || 'Ride';
+
+      const distKm = segment.distance ? (segment.distance / 1000).toFixed(2) + ' km' : '-';
+      document.getElementById('segmentDistance').textContent = distKm;
+
+      const avgGrade =
+        segment.average_grade != null ? segment.average_grade.toFixed(1) + ' %' : '-';
+      const maxGrade =
+        segment.maximum_grade != null ? segment.maximum_grade.toFixed(1) + ' %' : '-';
+      document.getElementById('segmentAvgGrade').textContent = avgGrade;
+      document.getElementById('segmentMaxGrade').textContent = maxGrade;
+
+      const elevText =
+        segment.elevation_low != null && segment.elevation_high != null
+          ? `${segment.elevation_low.toFixed(0)} m → ${segment.elevation_high.toFixed(0)} m`
+          : '-';
+      document.getElementById('segmentElevation').textContent = elevText;
+
+      const polylineEncoded =
+        segment.map && (segment.map.polyline || segment.map.summary_polyline);
+
+      if (!polylineEncoded) return;
+
+      const latlngs = decodePolyline(polylineEncoded);
+      if (!latlngs.length) return;
+
+      if (!mapInstance) {
+        mapInstance = L.map('segmentMap');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap 貢獻者'
+        }).addTo(mapInstance);
+      }
+
+      if (mapPolyline) {
+        mapInstance.removeLayer(mapPolyline);
+      }
+
+      mapPolyline = L.polyline(latlngs, { color: '#FC5200', weight: 4 }).addTo(mapInstance);
+      mapInstance.fitBounds(mapPolyline.getBounds(), { padding: [20, 20] });
+    }
+
     // 取得功率區間
     function getPowerZone(watts) {
       if (!watts) return '';
@@ -629,20 +830,23 @@
         if (!response.ok) throw new Error('載入失敗');
         
         const data = await response.json();
-        
-        
-        // 處理巢狀的 leaderboard
-        if (data.leaderboard && data.leaderboard.leaderboard) {
-            leaderboardData = data.leaderboard.leaderboard;
-        } else if (Array.isArray(data.leaderboard)) {
-            leaderboardData = data.leaderboard;
-        } else {
-            leaderboardData = [];
+
+        // 1) 讀取 segment 資訊
+        if (data.segment) {
+          updateSegmentSection(data.segment);
         }
 
-console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
+        // 2) 處理 leaderboard（相容舊格式）
+        if (data.leaderboard && data.leaderboard.leaderboard) {
+          leaderboardData = data.leaderboard.leaderboard;
+        } else if (Array.isArray(data.leaderboard)) {
+          leaderboardData = data.leaderboard;
+        } else {
+          leaderboardData = [];
+        }
 
-        
+        console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
+
         updateStatistics();
         populateTeamFilter();
         applyFilters();
@@ -667,10 +871,18 @@ console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
 
       document.getElementById('totalAthletes').textContent = total;
       document.getElementById('completedAthletes').textContent = completed;
-      document.getElementById('bestTime').textContent = times.length > 0 ? formatTime(Math.min(...times)) : '-';
-      document.getElementById('avgTime').textContent = times.length > 0 ? formatTime(Math.floor(times.reduce((a, b) => a + b, 0) / times.length)) : '-';
-      document.getElementById('maxPower').textContent = powers.length > 0 ? Math.max(...powers) + ' W' : '-';
-      document.getElementById('avgSpeed').textContent = speeds.length > 0 ? formatSpeed(speeds.reduce((a, b) => a + b, 0) / speeds.length) : '-';
+      document.getElementById('bestTime').textContent =
+        times.length > 0 ? formatTime(Math.min(...times)) : '-';
+      document.getElementById('avgTime').textContent =
+        times.length > 0
+          ? formatTime(Math.floor(times.reduce((a, b) => a + b, 0) / times.length))
+          : '-';
+      document.getElementById('maxPower').textContent =
+        powers.length > 0 ? Math.max(...powers) + ' W' : '-';
+      document.getElementById('avgSpeed').textContent =
+        speeds.length > 0
+          ? formatSpeed(speeds.reduce((a, b) => a + b, 0) / speeds.length)
+          : '-';
     }
 
     // 填充車隊篩選選項
@@ -694,10 +906,12 @@ console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
 
       filteredData = leaderboardData.filter(athlete => {
         const matchTeam = !teamFilter || athlete.team === teamFilter;
-        const matchSearch = !searchInput || 
-          athlete.name.toLowerCase().includes(searchInput) ||
-          athlete.strava_username.toLowerCase().includes(searchInput) ||
-          athlete.number.toString().includes(searchInput);
+        const matchSearch =
+          !searchInput ||
+          (athlete.name && athlete.name.toLowerCase().includes(searchInput)) ||
+          (athlete.strava_username &&
+            athlete.strava_username.toLowerCase().includes(searchInput)) ||
+          (athlete.number && athlete.number.toString().includes(searchInput));
         
         return matchTeam && matchSearch;
       });
@@ -745,8 +959,11 @@ console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
         const rankClass = rank <= 3 ? `rank podium podium-${rank}` : 'rank';
         const timeClass = rank === 1 ? 'time best' : 'time';
         
-        const avatar = athlete.profile || athlete.strava_profile || 'https://via.placeholder.com/40';
-        const stravaLink = athlete.activity_id ? `${CONFIG.stravaActivityBase}${athlete.activity_id}` : '#';
+        const avatar =
+          athlete.profile || athlete.strava_profile || 'https://via.placeholder.com/40';
+        const stravaLink = athlete.activity_id
+          ? `${CONFIG.stravaActivityBase}${athlete.activity_id}`
+          : '#';
         const powerZone = getPowerZone(athlete.average_watts);
 
         html += `
@@ -767,7 +984,7 @@ console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
               </div>
             </td>
             <td class="center">
-              <span class="badge badge-number">${athlete.number}</span>
+              <span class="badge badge-number">${athlete.number || '-'}</span>
             </td>
             <td class="center">
               <span class="${timeClass}">${formatTime(athlete.elapsed_time)}</span>
@@ -823,7 +1040,8 @@ console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
     // 更新最後更新時間
     function updateLastUpdated() {
       const now = new Date();
-      document.getElementById('lastUpdated').textContent = now.toLocaleString('zh-TW');
+      document.getElementById('lastUpdated').textContent =
+        now.toLocaleString('zh-TW');
     }
 
     // 啟動自動刷新
@@ -844,68 +1062,6 @@ console.log('✅ 載入排行榜資料:', leaderboardData.length, '筆');
     window.addEventListener('beforeunload', function() {
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
     });
-
-    // 模擬資料 (開發測試用,正式環境請移除)
-    // 取消註解以下代碼進行本地測試
-    /*
-    function loadMockData() {
-      leaderboardData = [
-        {
-          name: '林谷薰',
-          strava_username: 'jason_lin',
-          strava_athlete_id: '2838277',
-          number: 11,
-          team: '蠻動工作室',
-          tcu_id: 'TCU-zvnrqonh9coqy4kq',
-          elapsed_time: 14520, // 4:02:00
-          distance: 136000,
-          average_speed: 9.37,
-          average_watts: 245,
-          average_heartrate: 155,
-          start_date: '2026-01-08T08:30:00Z',
-          activity_id: '13856277091',
-          profile: 'https://dgalywyr863hv.cloudfront.net/pictures/athletes/2838277/890969/1/large.jpg'
-        },
-        {
-          name: '王小明',
-          strava_username: 'wang_ming',
-          strava_athlete_id: '1234567',
-          number: 22,
-          team: '台中單車',
-          tcu_id: 'TCU-abc123',
-          elapsed_time: 15300,
-          distance: 136200,
-          average_speed: 8.9,
-          average_watts: 220,
-          average_heartrate: 148,
-          start_date: '2026-01-08T09:00:00Z',
-          activity_id: '13856277092',
-          profile: 'https://via.placeholder.com/40'
-        },
-        {
-          name: '李大華',
-          strava_username: 'lee_dahua',
-          strava_athlete_id: '7654321',
-          number: 33,
-          team: '蠻動工作室',
-          tcu_id: 'TCU-def456',
-          elapsed_time: 15900,
-          distance: 136100,
-          average_speed: 8.56,
-          average_watts: 210,
-          average_heartrate: 142,
-          start_date: '2026-01-08T09:30:00Z',
-          activity_id: '13856277093',
-          profile: 'https://via.placeholder.com/40'
-        }
-      ];
-      updateStatistics();
-      populateTeamFilter();
-      applyFilters();
-      updateLastUpdated();
-    }
-    // loadMockData();
-    */
   </script>
 </body>
 </html>
