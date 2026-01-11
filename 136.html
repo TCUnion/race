@@ -1,322 +1,400 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TCU 136檢定 - STRAVA大挑戰</title>
+  <title>TCU 136檢定</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
-  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
-  min-height: 100vh;
-  padding: 2rem;
-}
-.tsu-banner {
-  width: 100%;
-  background: rgba(0,0,0,0.95);
-  padding: 12px 24px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.1);
-  margin-bottom: 24px;
-}
-  .tsu-banner img {
-    height: 40px;
-    width: auto;
-  }
-  .container {
-    max-width: 700px;
-    margin: 0 auto;
-    background: white;
-    padding: 3rem;
-    border-radius: 20px;
-    box-shadow: 0 20px 80px rgba(0,0,0,0.3);
-  }
-  .header {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 2rem;
-    border-bottom: 2px solid #f0f0f0;
-  }
-  
-  h1 {
-    color: #333;
-    margin-bottom: 0.5rem;
-    font-size: 32px;
-    font-weight: 700;
-  }
-  
-  .subtitle {
-    color: #666;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-  .privacy-link {
-    color: #667eea;
-    text-decoration: underline;
-    font-weight: 600;
-  }
-  .privacy-link:hover {
-    color: #764ba2;
-  }
-  /* 修正: Strava 整合區塊 */
-  .strava-section {
-    background: #f8f9fa;
-    padding: 2rem;
-    border-radius: 16px;
-    margin-bottom: 2rem;
-    border: 2px solid #e9ecef;
-    text-align: center;
-  }
-  .strava-section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 0.5rem;
-  }
-  .strava-section-desc {
-    font-size: 14px;
-    color: #6c757d;
-    margin-bottom: 1.5rem;
-  }
-  .strava-status {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
-  .strava-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  .strava-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: 3px solid #FC5200;
-    object-fit: cover;
-  }
-  .strava-details {
-    text-align: left;
-  }
-  .strava-name {
-    font-weight: 700;
-    font-size: 18px;
-    margin-bottom: 4px;
-    color: #333;
-  }
-  .strava-id {
-    font-size: 13px;
-    color: #6c757d;
-  }
-  /* 修正: Connect with Strava 按鈕 - 使用官方圖片 */
-  .btn-connect-strava {
-    background: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: inline-block;
-    line-height: 0;
-  }
-  .btn-connect-strava img {
-    display: block;
-    height: 48px;
-    width: auto;
-  }
-  .btn-connect-strava:hover:not(:disabled) {
-    transform: translateY(-2px);
-    opacity: 0.9;
-  }
-  .btn-connect-strava:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  /* 修正: Powered by Strava 標誌 */
-  .powered-by-strava {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1rem;
-  }
-  .strava-logo {
-    height: 32px;
-    width: auto;
-    display: block;
-  }
-  .btn-disconnect {
-    background: transparent;
-    color: #6c757d;
-    border: 2px solid #e9ecef;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: 0.5rem;
-  }
-  .btn-disconnect:hover:not(:disabled) {
-    border-color: #dc3545;
-    color: #dc3545;
-    background: #fff5f5;
-  }
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-  label {
-    display: block;
-    color: #333;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 14px;
-  }
-  .required { color: #dc3545; }
-  input, textarea {
-    width: 100%;
-    padding: 14px;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    font-size: 15px;
-    font-family: inherit;
-    transition: all 0.3s;
-  }
-  input:focus, textarea:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-  input:disabled {
-    background: #f8f9fa;
-    color: #6c757d;
-    cursor: not-allowed;
-  }
-  .input-hint {
-    font-size: 12px;
-    color: #6c757d;
-    margin-top: 0.25rem;
-  }
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-  .btn {
-    flex: 1;
-    padding: 16px;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-  }
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-  }
-  .btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  .btn-secondary {
-    background: #6c757d;
-    color: white;
-  }
-  .btn-secondary:hover:not(:disabled) {
-    background: #5a6268;
-    transform: translateY(-2px);
-  }
-  .message {
-    padding: 16px 20px;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    display: none;
-    font-size: 15px;
-    font-weight: 600;
-    animation: slideDown 0.3s ease;
-  }
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+      min-height: 100vh;
+      padding: 2rem;
     }
-  }
-  .message.show { display: block; }
-  .success-message {
-    background: #d4edda;
-    border-left: 4px solid #28a745;
-    color: #155724;
-  }
-  .error-message {
-    background: #f8d7da;
-    border-left: 4px solid #dc3545;
-    color: #721c24;
-  }
-  .spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top: 2px solid white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  .info-block {
-    background: #f8f9fa;
-    border-left: 4px solid #667eea;
-    border-radius: 8px;
-    padding: 16px;
-    font-size: 14px;
-    color: #495057;
-    margin-bottom: 2rem;
-    line-height: 1.6;
-  }
-  .challenge-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-left: 8px;
-  }
-  .view-on-strava {
-    color: #FC5200;
-    text-decoration: underline;
-    font-weight: 700;
-    font-size: 14px;
-  }
-  .view-on-strava:hover {
-    color: #E04700;
-  }
-  @media (max-width: 768px) {
-    body { padding: 1rem; }
-    .container { padding: 2rem 1.5rem; }
-    h1 { font-size: 26px; }
-    .form-actions { flex-direction: column; }
-  }
+
+    .tsu-banner {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .tsu-banner img {
+      height: 40px;
+      width: auto;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      padding: 3rem;
+      border-radius: 20px;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.3);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 0.5rem;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .privacy-link {
+      color: #667eea;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    .privacy-link:hover {
+      color: #764ba2;
+    }
+
+    /* 修正: Strava 整合區塊 */
+    .strava-section {
+      background: #f8f9fa;
+      padding: 2rem;
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      border: 2px solid #e9ecef;
+      text-align: center;
+    }
+
+    .strava-section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .strava-section-desc {
+      font-size: 14px;
+      color: #6c757d;
+      margin-bottom: 1.5rem;
+    }
+
+    .strava-status {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .strava-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .strava-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #FC5200;
+      object-fit: cover;
+    }
+
+    .strava-details {
+      text-align: left;
+    }
+
+    .strava-name {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .strava-id {
+      font-size: 13px;
+      color: #6c757d;
+    }
+
+    /* 修正: Connect with Strava 按鈕 - 使用官方圖片 */
+    .btn-connect-strava {
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-block;
+      line-height: 0;
+    }
+
+    .btn-connect-strava img {
+      display: block;
+      height: 48px;
+      width: auto;
+    }
+
+    .btn-connect-strava:hover:not(:disabled) {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
+
+    .btn-connect-strava:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 修正: Powered by Strava 標誌 */
+    .powered-by-strava {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    .strava-logo {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+
+    .btn-disconnect {
+      background: transparent;
+      color: #6c757d;
+      border: 2px solid #e9ecef;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-disconnect:hover:not(:disabled) {
+      border-color: #dc3545;
+      color: #dc3545;
+      background: #fff5f5;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 14px;
+    }
+
+    .required {
+      color: #dc3545;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.3s;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input:disabled {
+      background: #f8f9fa;
+      color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .input-hint {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #5a6268;
+      transform: translateY(-2px);
+    }
+
+    .message {
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      display: none;
+      font-size: 15px;
+      font-weight: 600;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .success-message {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      color: #155724;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .info-block {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+      color: #495057;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .challenge-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .view-on-strava {
+      color: #FC5200;
+      text-decoration: underline;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .view-on-strava:hover {
+      color: #E04700;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      .container {
+        padding: 2rem 1.5rem;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .form-actions {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
+
 <body>
   <div class="tsu-banner">
     <a href="https://www.tsu.com.tw/" target="_blank" rel="noopener noreferrer">
@@ -329,10 +407,8 @@ body {
       <h1>TCU 136檢定<span class="challenge-badge">大挑戰</span></h1>
       <p class="subtitle">
         授權資料僅供TCU內部使用,並保證不對外使用<br>
-        <a href="https://status.criterium.tw/privacy-policy.html" 
-           class="privacy-link" 
-           target="_blank" 
-           rel="noopener noreferrer">
+        <a href="https://status.criterium.tw/privacy-policy.html" class="privacy-link" target="_blank"
+          rel="noopener noreferrer">
           查看完整隱私政策與資料使用說明
         </a>
       </p>
@@ -344,19 +420,17 @@ body {
     <!-- 修正: Strava 整合區塊 -->
     <div class="strava-section">
       <div class="strava-section-title">🚴 運動數據整合</div>
-      <div class="strava-section-desc">授權後可自動同步您的 Strava 運動數據</div>
-      
+      <div class="strava-section-desc">授權後可自動同步您的 Strava 運動數據 (Powered by Strava)</div>
+
       <div id="stravaStatus" class="strava-status">
         <button class="btn-connect-strava" type="button" onclick="connectStrava()">
-          <img src="https://status.criterium.tw/btn_strava_connect_with_orange_x2.png" 
-               alt="Connect with Strava" 
-               height="48">
+          <img src="https://status.criterium.tw/btn_strava_connect_with_orange_x2.png" alt="Connect with Strava"
+            height="48">
         </button>
-        
+
         <div class="powered-by-strava">
-          <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" 
-               alt="Powered by Strava" 
-               class="strava-logo">
+          <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" alt="Powered by Strava"
+            class="strava-logo">
         </div>
       </div>
     </div>
@@ -374,47 +448,26 @@ body {
 
       <div class="form-group">
         <label>TCU-ID / 個人身份證ID </label>
-        <input 
-          type="text" 
-          id="tcu_id" 
-          name="tcu_id" 
-          placeholder="TCU-zvnrqonh9coqy4kp 或身份證 A123456789"
+        <input type="text" id="tcu_id" name="tcu_id" placeholder="TCU-zvnrqonh9coqy4kp 或身份證 A123456789"
           autocomplete="off">
         <div class="input-hint">請輸入您的TCU會員ID或身份證字號後可同步TCU個人資料。若不同步,填寫姓名跟號碼即可</div>
       </div>
 
       <div class="form-group">
         <label>姓名 <span class="required">*</span></label>
-        <input 
-          type="text" 
-          id="name" 
-          name="name" 
-          placeholder="授權 Strava 或同步 TCU 後自動帶入"
-          autocomplete="name"
-          required>
+        <input type="text" id="name" name="name" placeholder="授權 Strava 或同步 TCU 後自動帶入" autocomplete="name" required>
         <div class="input-hint">授權 Strava 或同步 TCU 後將自動填入您的姓名</div>
       </div>
 
       <div class="form-group">
         <label>車隊</label>
-        <input 
-          type="text" 
-          id="team" 
-          name="team" 
-          placeholder="同步TCU後自動帶入"
-          autocomplete="team">
+        <input type="text" id="team" name="team" placeholder="同步TCU後自動帶入" autocomplete="team">
         <div class="input-hint">選填:您所屬的車隊或俱樂部</div>
       </div>
 
       <div class="form-group">
         <label>號碼 <span class="required">*</span></label>
-        <input 
-          type="text" 
-          id="number" 
-          name="number" 
-          placeholder="請輸入您的號碼"
-          autocomplete="off"
-          required>
+        <input type="text" id="number" name="number" placeholder="請輸入您的號碼" autocomplete="off" required>
         <div class="input-hint">必填:您的參賽號碼</div>
       </div>
 
@@ -452,7 +505,7 @@ body {
     function showMessage(type, message) {
       const messageEl = document.getElementById(type === 'success' ? 'successMessage' : 'errorMessage');
       const otherEl = document.getElementById(type === 'success' ? 'errorMessage' : 'successMessage');
-      
+
       if (otherEl) {
         otherEl.classList.remove('show');
         otherEl.textContent = '';
@@ -498,22 +551,22 @@ body {
 
     function fillFormWithStravaData(athlete) {
       if (!athlete || !athlete.id) return;
-      
+
       document.getElementById('strava_athlete_id').value = athlete.id || '';
       document.getElementById('strava_username').value = athlete.username || '';
       document.getElementById('strava_profile').value = athlete.profile || athlete.profile_medium || '';
-      
+
       const firstName = athlete.firstname || athlete.firstName || '';
       const lastName = athlete.lastname || athlete.lastName || '';
       const fullName = (firstName + ' ' + lastName).trim();
-      
+
       const nameInput = document.getElementById('name');
       if (fullName && nameInput && !nameInput.value) {
         nameInput.value = fullName;
       }
-      
+
       updateStravaStatus(athlete);
-      
+
       // ✅ 儲存完整的 athlete 資料,包含 access_token
       try {
         const athleteData = {
@@ -605,7 +658,7 @@ body {
       saveFormState();
       if (pollingTimer) clearInterval(pollingTimer);
       updateStravaStatusLoading();
-      
+
       try {
         localStorage.removeItem(CONFIG.storageKey + '_temp');
       } catch (e) {
@@ -628,7 +681,7 @@ body {
         window.location.href = url;
         return;
       }
-      
+
       startPolling();
     }
 
@@ -641,7 +694,7 @@ body {
           updateStravaStatus(null);
           return;
         }
-        
+
         if (authWindow && authWindow.closed) {
           stopPolling();
           const athlete = checkStoredData();
@@ -651,7 +704,7 @@ body {
           }
           return;
         }
-        
+
         checkStoredData();
       }, CONFIG.pollingInterval);
     }
@@ -692,57 +745,57 @@ body {
 
     // ✅ 修正: 加入發送取消授權請求到 webhook
     async function disconnectStrava() {
-  if (!confirm('確定要取消 Strava 授權嗎?')) return;
-  
-  // 取得儲存的 access_token 和 athlete_id
-  let accessToken = '';
-  let athleteId = '';
-  try {
-    const savedData = localStorage.getItem(CONFIG.storageKey);
-    if (savedData) {
-      const athlete = JSON.parse(savedData);
-      accessToken = athlete.access_token || '';
-      athleteId = athlete.id || '';
+      if (!confirm('確定要取消 Strava 授權嗎?')) return;
+
+      // 取得儲存的 access_token 和 athlete_id
+      let accessToken = '';
+      let athleteId = '';
+      try {
+        const savedData = localStorage.getItem(CONFIG.storageKey);
+        if (savedData) {
+          const athlete = JSON.parse(savedData);
+          accessToken = athlete.access_token || '';
+          athleteId = athlete.id || '';
+        }
+      } catch (e) {
+        console.warn('讀取 access_token 失敗:', e);
+      }
+
+      // ✅ 移除 if 判斷,直接發送請求
+      try {
+        const response = await fetch(CONFIG.stravaCancelUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            access_token: accessToken,
+            athlete_id: athleteId
+          })
+        });
+        console.log('已發送取消授權請求到 webhook, Status:', response.status);
+      } catch (e) {
+        console.error('發送取消授權請求失敗:', e);
+      }
+
+      // 清除前端資料
+      document.getElementById('strava_athlete_id').value = '';
+      document.getElementById('strava_username').value = '';
+      document.getElementById('strava_profile').value = '';
+
+      try {
+        localStorage.removeItem(CONFIG.storageKey);
+        localStorage.removeItem(CONFIG.storageKey + '_temp');
+      } catch (e) {
+        console.warn('清除 localStorage 失敗:', e);
+      }
+
+      updateStravaStatus(null);
+      showMessage('success', '已取消 Strava 授權');
     }
-  } catch (e) {
-    console.warn('讀取 access_token 失敗:', e);
-  }
-  
-  // ✅ 移除 if 判斷,直接發送請求
-  try {
-    const response = await fetch(CONFIG.stravaCancelUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        access_token: accessToken,
-        athlete_id: athleteId
-      })
-    });
-    console.log('已發送取消授權請求到 webhook, Status:', response.status);
-  } catch (e) {
-    console.error('發送取消授權請求失敗:', e);
-  }
-  
-  // 清除前端資料
-  document.getElementById('strava_athlete_id').value = '';
-  document.getElementById('strava_username').value = '';
-  document.getElementById('strava_profile').value = '';
-  
-  try {
-    localStorage.removeItem(CONFIG.storageKey);
-    localStorage.removeItem(CONFIG.storageKey + '_temp');
-  } catch (e) {
-    console.warn('清除 localStorage 失敗:', e);
-  }
-  
-  updateStravaStatus(null);
-  showMessage('success', '已取消 Strava 授權');
-}
 
 
-    window.addEventListener('message', function(event) {
+    window.addEventListener('message', function (event) {
       const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
       const isNullOriginSafeSuccess =
         event.origin === "null" &&
@@ -768,7 +821,7 @@ body {
     function loadStravaDataFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
       const dataStr = urlParams.get('data');
-      
+
       if (dataStr) {
         try {
           const data = JSON.parse(decodeURIComponent(dataStr));
@@ -848,7 +901,7 @@ body {
         } else {
           const errorText = await response.text();
           let errorMessage = '提交失敗';
-          
+
           try {
             const errorData = JSON.parse(errorText);
             errorMessage = errorData.message || errorData.error || errorMessage;
@@ -920,16 +973,16 @@ body {
       }
     }
 
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
       loadStravaDataFromURL();
       loadFormState();
-      
+
       // 從 localStorage 恢復完整的 Strava 資料
       try {
         const savedData = localStorage.getItem(CONFIG.storageKey);
         if (savedData && !document.getElementById('strava_athlete_id').value) {
           const athlete = JSON.parse(savedData);
-          
+
           if (athlete?.id) {
             fillFormWithStravaData(athlete);
           }
@@ -940,10 +993,11 @@ body {
       }
     });
 
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
       if (pollingTimer) clearInterval(pollingTimer);
       if (authWindow && !authWindow.closed) authWindow.close();
     });
   </script>
 </body>
+
 </html>
