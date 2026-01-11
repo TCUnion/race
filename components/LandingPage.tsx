@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { MOCK_LEADERBOARD } from '../constants';
+import StravaConnect from './StravaConnect';
 
 interface LandingPageProps {
   onRegister: () => void;
@@ -12,8 +13,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
       {/* Hero Section */}
       <div className="w-full max-w-[1200px] px-4 py-8">
         <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl">
-          <div 
-            className="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative" 
+          <div
+            className="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative"
             style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")` }}
           >
             <div className="flex flex-col gap-4 max-w-3xl">
@@ -26,7 +27,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <button 
+              <button
                 onClick={onRegister}
                 className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-tsu-blue text-white text-lg font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-tsu-blue/30 active:scale-95"
               >
@@ -66,9 +67,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               </div>
               <div className="p-6">
                 <div className="w-full bg-slate-200 dark:bg-background-dark aspect-video rounded-xl overflow-hidden relative shadow-inner group">
-                  <img 
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=2070" 
-                    className="w-full h-full object-cover grayscale transition-transform duration-700 group-hover:scale-110" 
+                  <img
+                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=2070"
+                    className="w-full h-full object-cover grayscale transition-transform duration-700 group-hover:scale-110"
                     alt="Map"
                   />
                   <div className="absolute inset-0 bg-black/30 hover:bg-black/10 transition-colors cursor-pointer flex items-center justify-center">
@@ -130,19 +131,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
               </p>
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-center gap-3 bg-strava-orange text-white py-4 px-6 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all">
-                  <span className="material-symbols-outlined">sync</span>
-                  <span className="text-sm font-black uppercase tracking-wider">Connect with Strava</span>
-                </button>
-                <div className="flex justify-center py-2">
-                  <div className="flex items-center gap-2 opacity-60">
-                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Powered by</span>
-                    <span className="text-strava-orange font-black italic text-sm">STRAVA</span>
-                  </div>
+                <div className="mt-8">
+                  <StravaConnect />
+                  <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
+                    點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="#">服務條款</a>
+                  </p>
                 </div>
-                <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold">
-                  點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="#">服務條款</a>
-                </p>
               </div>
             </section>
 
