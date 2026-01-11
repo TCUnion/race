@@ -5,6 +5,12 @@ export enum ViewType {
   LEADERBOARD = 'LEADERBOARD',
 }
 
+export enum RaceStatus {
+  AWAITING = 'AWAITING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  FINISHED = 'FINISHED',
+}
+
 export interface Participant {
   id: number;
   rank: number;
@@ -13,6 +19,10 @@ export interface Participant {
   bike: string;
   time: string;
   speed: string;
+  avg_power?: string;
+  heart_rate?: string;
+  cadence?: string;
+  distance_completed?: string;
   date: string;
 }
 
