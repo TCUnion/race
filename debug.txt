@@ -1,3 +1,0 @@
-Cloudflare Diagnosis: Site is serving from root of main branch.
-Time: 2026-01-11 18:15 Taipei
-SHA: 199344c or newer
