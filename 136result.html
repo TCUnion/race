@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>TCU Criterium - 報名結果</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      max-width: 520px;
+      width: 100%;
+      background: #fff;
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .title { font-size: 24px; margin-bottom: 1rem; }
+    .title.success { color: #28a745; }
+    .title.error { color: #dc3545; }
+    .message { margin-bottom: 1.5rem; font-size: 16px; }
+    .info {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 14px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .label { color: #666; }
+    .value { color: #333; font-weight: 600; text-align: right; }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      text-align: center;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #5568d3; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="title" class="title">報名結果</h1>
+    <p id="message" class="message"></p>
+
+    <div id="info" class="info" style="display:none;">
+      <div class="info-row">
+        <span class="label">報名編號</span>
+        <span class="value" id="regId">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">姓名</span>
+        <span class="value" id="name">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">TCU-ID</span>
+        <span class="value" id="tcuId">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">號碼</span>
+        <span class="value" id="number">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">車隊</span>
+        <span class="value" id="team">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Strava ID</span>
+        <span class="value" id="stravaId">-</span>
+      </div>
+      <div class="info-row">
+        <span class="label">提交時間</span>
+        <span class="value" id="submittedAt">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="categoryRow">
+        <span class="label">組別</span>
+        <span class="value" id="category">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="emailRow">
+        <span class="label">Email</span>
+        <span class="value" id="email">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="phoneRow">
+        <span class="label">手機</span>
+        <span class="value" id="phone">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="genderRow">
+        <span class="label">性別</span>
+        <span class="value" id="gender">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="cityRow">
+        <span class="label">城市</span>
+        <span class="value" id="city">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="emergencyContactRow">
+        <span class="label">緊急聯絡人</span>
+        <span class="value" id="emergencyContact">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="emergencyPhoneRow">
+        <span class="label">緊急聯絡電話</span>
+        <span class="value" id="emergencyPhone">-</span>
+      </div>
+      <div class="info-row" style="display:none;" id="notesRow">
+        <span class="label">備註</span>
+        <span class="value" id="notes">-</span>
+      </div>
+    </div>
+
+     <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+    <a href="https://status.criterium.tw/136.html" class="btn btn-primary">返回報名頁</a>
+     <a href="https://status.criterium.tw/136leaderboard.html" class="btn btn-primary">查看排行榜</a>
+        </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success') === 'true';
+    const message = params.get('message') || (success ? '報名成功！' : '報名失敗');
+
+    const titleEl = document.getElementById('title');
+    const msgEl = document.getElementById('message');
+    const infoEl = document.getElementById('info');
+
+    msgEl.textContent = message;
+
+    const get = (key) => params.get(key) || '-';
+
+    // 顯示/隱藏有值的欄位
+    function showRowIfHasValue(rowId, elementId, key) {
+      const value = params.get(key);
+      if (value && value !== '-') {
+        document.getElementById(rowId).style.display = 'flex';
+        document.getElementById(elementId).textContent = value;
+      }
+    }
+
+    if (success) {
+      titleEl.textContent = '報名成功';
+      titleEl.classList.add('success');
+      infoEl.style.display = 'block';
+
+      document.getElementById('regId').textContent = get('registration_id');
+      document.getElementById('name').textContent = get('name');
+      document.getElementById('tcuId').textContent = get('tcu_id');
+      document.getElementById('number').textContent = get('number');
+      document.getElementById('team').textContent = get('team');
+      document.getElementById('stravaId').textContent = get('strava_athlete_id');
+      document.getElementById('submittedAt').textContent = get('submitted_at');
+
+      // 顯示選填欄位（如果有值）
+      showRowIfHasValue('categoryRow', 'category', 'category');
+      showRowIfHasValue('emailRow', 'email', 'email');
+      showRowIfHasValue('phoneRow', 'phone', 'phone');
+      showRowIfHasValue('genderRow', 'gender', 'gender');
+      showRowIfHasValue('cityRow', 'city', 'city');
+      showRowIfHasValue('emergencyContactRow', 'emergencyContact', 'emergency_contact');
+      showRowIfHasValue('emergencyPhoneRow', 'emergencyPhone', 'emergency_phone');
+      showRowIfHasValue('notesRow', 'notes', 'notes');
+    } else {
+      titleEl.textContent = '報名失敗';
+      titleEl.classList.add('error');
+      const missing = params.get('missing_fields');
+      if (missing) {
+        msgEl.textContent += `（缺少欄位：${missing}）`;
+      }
+    }
+  </script>
+</body>
+</html>
+127
