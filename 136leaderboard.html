@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TCU 136檢定 - 賽事排行榜</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
       background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
@@ -30,10 +35,10 @@
 
     .tsu-banner {
       width: 100%;
-      background: rgba(0,0,0,0.95);
+      background: rgba(0, 0, 0, 0.95);
       padding: 12px 24px;
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       margin-bottom: 24px;
     }
 
@@ -52,7 +57,7 @@
       padding: 2rem;
       border-radius: 20px;
       margin-bottom: 2rem;
-      box-shadow: 0 20px 80px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.3);
       text-align: center;
     }
 
@@ -114,7 +119,7 @@
       padding: 1.5rem;
       border-radius: 16px;
       margin-bottom: 2rem;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     }
 
     .filter-group {
@@ -173,7 +178,7 @@
       background: white;
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     }
 
     .table-header {
@@ -211,11 +216,13 @@
       border-bottom: 2px solid #e9ecef;
     }
 
-    th.center, td.center {
+    th.center,
+    td.center {
       text-align: center;
     }
 
-    th.right, td.right {
+    th.right,
+    td.right {
       text-align: right;
     }
 
@@ -229,15 +236,15 @@
     }
 
     tbody tr.podium-1 {
-      background: linear-gradient(90deg, rgba(255,215,0,0.1) 0%, transparent 100%);
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
     }
 
     tbody tr.podium-2 {
-      background: linear-gradient(90deg, rgba(192,192,192,0.1) 0%, transparent 100%);
+      background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, transparent 100%);
     }
 
     tbody tr.podium-3 {
-      background: linear-gradient(90deg, rgba(205,127,50,0.1) 0%, transparent 100%);
+      background: linear-gradient(90deg, rgba(205, 127, 50, 0.1) 0%, transparent 100%);
     }
 
     td {
@@ -391,8 +398,13 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .empty-state {
@@ -422,11 +434,25 @@
       margin-right: 4px;
     }
 
-    .power-zone.z1 { background: #4CAF50; }
-    .power-zone.z2 { background: #8BC34A; }
-    .power-zone.z3 { background: #FFC107; }
-    .power-zone.z4 { background: #FF9800; }
-    .power-zone.z5 { background: #F44336; }
+    .power-zone.z1 {
+      background: #4CAF50;
+    }
+
+    .power-zone.z2 {
+      background: #8BC34A;
+    }
+
+    .power-zone.z3 {
+      background: #FFC107;
+    }
+
+    .power-zone.z4 {
+      background: #FF9800;
+    }
+
+    .power-zone.z5 {
+      background: #F44336;
+    }
 
     @media (max-width: 1200px) {
       .table-container {
@@ -435,15 +461,23 @@
     }
 
     @media (max-width: 768px) {
-      body { padding: 1rem; }
-      h1 { font-size: 24px; }
+      body {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
       }
+
       .filter-group {
         flex-direction: column;
         align-items: stretch;
       }
+
       .btn-refresh {
         margin-left: 0;
         width: 100%;
@@ -452,12 +486,10 @@
   </style>
 
   <!-- Leaflet CSS & JS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
+
 <body>
   <div class="tsu-banner">
     <a href="https://www.tsu.com.tw/" target="_blank" rel="noopener noreferrer">
@@ -469,7 +501,7 @@
     <div class="header">
       <h1>TCU 136檢定<span class="challenge-badge">排行榜</span></h1>
       <p class="subtitle">
-        即時更新 Strava 活動數據 | 路段計時 | 功率分析<br>
+        即時更新 Strava 活動數據 | 路段計時 | 功率分析 (Powered by Strava)<br>
         挑戰目標:完成 136 公里騎乘
       </p>
 
@@ -503,62 +535,48 @@
 
     <!-- Segment 資訊 + 地圖區塊 -->
     <div class="segment-section" style="margin-bottom: 2rem;">
-      <div
-        style="
+      <div style="
           display: grid;
           grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
           gap: 1.5rem;
           align-items: stretch;
-        "
-      >
+        ">
         <!-- 左：文字資訊 -->
-        <div
-          style="
+        <div style="
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-          "
-        >
-          <h2
-            style="
+          ">
+          <h2 style="
               font-size: 20px;
               margin-bottom: 0.75rem;
               display: flex;
               align-items: center;
               gap: 0.5rem;
               color: #333;
-            "
-          >
+            ">
             路段資訊
-            <span
-              style="
+            <span style="
                 font-size: 11px;
                 padding: 2px 8px;
                 border-radius: 999px;
                 background: #f1f3f5;
                 color: #495057;
-              "
-              id="segmentActivityType"
-            >
+              " id="segmentActivityType">
               Ride
             </span>
           </h2>
-          <div
-            id="segmentName"
-            style="font-size: 18px; font-weight: 700; margin-bottom: 1rem;"
-          >
+          <div id="segmentName" style="font-size: 18px; font-weight: 700; margin-bottom: 1rem;">
             136 正上
           </div>
-          <div
-            style="
+          <div style="
               display: grid;
               grid-template-columns: repeat(2, minmax(0, 1fr));
               gap: 0.75rem;
               font-size: 13px;
               color: #495057;
-            "
-          >
+            ">
             <div>
               <div style="font-size: 11px; text-transform: uppercase; color: #868e96;">
                 距離
@@ -587,17 +605,14 @@
         </div>
 
         <!-- 右：地圖 + 天氣 -->
-        <div
-          style="
+        <div style="
             background: white;
             border-radius: 16px;
             padding: 0.75rem;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-          "
-        >
+          ">
           <!-- 天氣資訊 -->
-          <div id="weatherCard"
-               style="padding:0.5rem 0.75rem 0.75rem;
+          <div id="weatherCard" style="padding:0.5rem 0.75rem 0.75rem;
                       border-bottom:1px solid #f1f3f5;
                       margin-bottom:0.75rem;
                       display:flex;
@@ -605,23 +620,16 @@
                       gap:0.75rem;">
             <div style="flex:1;">
               <div style="font-size:13px;color:#868e96;">目前天氣</div>
-              <div id="weatherLocation"
-                   style="font-size:14px;font-weight:600;color:#343a40;">載入中…</div>
-              <div id="weatherDesc"
-                   style="font-size:12px;color:#495057;margin-top:2px;">請稍候</div>
+              <div id="weatherLocation" style="font-size:14px;font-weight:600;color:#343a40;">載入中…</div>
+              <div id="weatherDesc" style="font-size:12px;color:#495057;margin-top:2px;">請稍候</div>
             </div>
             <div style="text-align:right;">
-              <div id="weatherTemp"
-                   style="font-size:20px;font-weight:700;color:#333;">--°C</div>
-              <div id="weatherMeta"
-                   style="font-size:11px;color:#868e96;">--</div>
+              <div id="weatherTemp" style="font-size:20px;font-weight:700;color:#333;">--°C</div>
+              <div id="weatherMeta" style="font-size:11px;color:#868e96;">--</div>
             </div>
           </div>
 
-          <div
-            id="segmentMap"
-            style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden;"
-          ></div>
+          <div id="segmentMap" style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden;"></div>
         </div>
       </div>
     </div>
@@ -693,9 +701,8 @@
   </div>
 
   <div class="powered-by-strava">
-    <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" 
-         alt="Powered by Strava" 
-         class="strava-logo">
+    <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" alt="Powered by Strava"
+      class="strava-logo">
   </div>
 
   <script>
@@ -835,23 +842,23 @@
     }
 
     function updateWeatherCard(weather) {
-      const elLoc  = document.getElementById('weatherLocation');
+      const elLoc = document.getElementById('weatherLocation');
       const elDesc = document.getElementById('weatherDesc');
       const elTemp = document.getElementById('weatherTemp');
       const elMeta = document.getElementById('weatherMeta');
 
       if (!weather) {
-        elLoc.textContent  = '天氣讀取失敗';
+        elLoc.textContent = '天氣讀取失敗';
         elDesc.textContent = '請稍後再試';
         elTemp.textContent = '--°C';
         elMeta.textContent = '--';
         return;
       }
 
-      const cur   = weather.current || {};
+      const cur = weather.current || {};
       const today = weather.today || {};
 
-      elLoc.textContent  = weather.location || '目前天氣';
+      elLoc.textContent = weather.location || '目前天氣';
       elDesc.textContent = cur.description || today.description || '';
 
       if (typeof cur.temp === 'number') {
@@ -893,7 +900,7 @@
     async function loadLeaderboard() {
       const refreshBtn = document.querySelector('.btn-refresh');
       const refreshText = document.getElementById('refreshText');
-      
+
       refreshBtn.disabled = true;
       refreshText.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px;"></span>載入中...';
 
@@ -928,7 +935,7 @@
         populateTeamFilter();
         applyFilters();
         updateLastUpdated();
-        
+
       } catch (error) {
         console.error('載入排行榜失敗:', error);
         showEmptyState('載入資料失敗,請稍後再試');
@@ -966,7 +973,7 @@
     function populateTeamFilter() {
       const teams = [...new Set(leaderboardData.map(a => a.team).filter(t => t))];
       const teamFilter = document.getElementById('teamFilter');
-      
+
       teamFilter.innerHTML = '<option value="">全部車隊</option>';
       teams.forEach(team => {
         const option = document.createElement('option');
@@ -988,7 +995,7 @@
           (athlete.strava_username &&
             athlete.strava_username.toLowerCase().includes(searchInput)) ||
           (athlete.number && athlete.number.toString().includes(searchInput));
-        
+
         return matchTeam && matchSearch;
       });
 
@@ -999,7 +1006,7 @@
       const sortBy = document.getElementById('sortBy').value;
 
       filteredData.sort((a, b) => {
-        switch(sortBy) {
+        switch (sortBy) {
           case 'time':
             return (a.elapsed_time || Infinity) - (b.elapsed_time || Infinity);
           case 'power':
@@ -1020,7 +1027,7 @@
 
     function renderLeaderboard() {
       const tbody = document.getElementById('leaderboardBody');
-      
+
       if (filteredData.length === 0) {
         showEmptyState('目前沒有符合條件的資料');
         return;
@@ -1032,7 +1039,7 @@
         const podiumClass = rank <= 3 ? `podium-${rank}` : '';
         const rankClass = rank <= 3 ? `rank podium podium-${rank}` : 'rank';
         const timeClass = rank === 1 ? 'time best' : 'time';
-        
+
         const avatar =
           athlete.profile || athlete.strava_profile || 'https://via.placeholder.com/40';
         const stravaLink = athlete.activity_id
@@ -1123,14 +1130,15 @@
       }, CONFIG.refreshInterval);
     }
 
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
       loadLeaderboard();
       startAutoRefresh();
     });
 
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
     });
   </script>
 </body>
+
 </html>
