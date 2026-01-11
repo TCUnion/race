@@ -5,6 +5,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TCU Segment Challenge</title>
+    <script>
+      window.addEventListener('error', function(event) {
+        var errorDisplay = document.getElementById('error-display');
+        if (!errorDisplay) {
+            errorDisplay = document.createElement('div');
+            errorDisplay.id = 'error-display';
+            errorDisplay.style.position = 'fixed';
+            errorDisplay.style.top = '0';
+            errorDisplay.style.left = '0';
+            errorDisplay.style.width = '100%';
+            errorDisplay.style.background = '#ffcccc';
+            errorDisplay.style.color = 'black';
+            errorDisplay.style.padding = '10px';
+            errorDisplay.style.zIndex = '9999';
+            errorDisplay.style.borderBottom = '1px solid red';
+            errorDisplay.style.fontFamily = 'monospace';
+            errorDisplay.style.whiteSpace = 'pre-wrap';
+            document.body.prepend(errorDisplay);
+        }
+        errorDisplay.textContent += 'Error: ' + event.message + '\n';
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        var errorDisplay = document.getElementById('error-display');
+         if (!errorDisplay) {
+            errorDisplay = document.createElement('div');
+            errorDisplay.id = 'error-display';
+            errorDisplay.style.position = 'fixed';
+            errorDisplay.style.top = '0';
+            errorDisplay.style.left = '0';
+            errorDisplay.style.width = '100%';
+            errorDisplay.style.background = '#ffcccc';
+            errorDisplay.style.color = 'black';
+            errorDisplay.style.padding = '10px';
+            errorDisplay.style.zIndex = '9999';
+            errorDisplay.style.borderBottom = '1px solid red';
+            errorDisplay.style.fontFamily = 'monospace';
+            errorDisplay.style.whiteSpace = 'pre-wrap';
+            document.body.prepend(errorDisplay);
+        }
+        errorDisplay.textContent += 'Unhandled Rejection: ' + event.reason + '\n';
+      });
+    </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap"
