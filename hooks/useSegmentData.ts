@@ -137,7 +137,19 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             // 處理 Segment 資料（使用 API 回傳或 fallback）
             if (data.segment && data.segment.id) {
-                setSegment(data.segment);
+                // 正規化 polyline 位置：API 可能在 segment.map 或 segment.polyline
+                const segmentData = { ...data.segment };
+
+                // 如果 polyline 在 map 欄位（字串格式）
+                if (typeof segmentData.map === 'string' && !segmentData.polyline) {
+                    segmentData.polyline = segmentData.map;
+                }
+                // 如果 polyline 在 map.polyline 物件格式
+                else if (segmentData.map?.polyline && !segmentData.polyline) {
+                    segmentData.polyline = segmentData.map.polyline;
+                }
+
+                setSegment(segmentData);
             } else {
                 // API 未回傳 segment，使用 fallback
                 setSegment(FALLBACK_SEGMENT);
