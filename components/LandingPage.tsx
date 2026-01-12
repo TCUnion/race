@@ -9,7 +9,7 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
-  const { segment, leaderboard, stats, isLoading } = useSegmentData();
+  const { segment, leaderboard, stats, weather, isLoading } = useSegmentData();
 
   // 動態統計數據
   const dynamicStats = [
@@ -197,7 +197,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   { label: '路段名稱', value: segment?.name || '-' },
                   { label: '平均坡度', value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
                   { label: '最陡坡度', value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
-                  { label: '類型', value: segment?.activity_type || 'Ride' },
+                  { label: '挑戰人數', value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
                   { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
                 ].map((item, i) => (
                   <li key={i} className="flex justify-between items-center text-[11px] font-bold">
@@ -206,7 +206,71 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   </li>
                 ))}
               </ul>
+              {segment?.link && (
+                <a
+                  href={segment.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all"
+                >
+                  <span>🔗</span>
+                  <span>在 Strava 查看路段</span>
+                </a>
+              )}
             </section>
+
+            {/* KOM / QOM 紀錄 */}
+            {(segment?.KOM || segment?.QOM) && (
+              <section className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 rounded-2xl p-6 border border-amber-500/30">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
+                  <span>🏆</span> 紀錄保持者
+                </h3>
+                <div className="space-y-3">
+                  {segment?.KOM && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">KOM (男子紀錄)</span>
+                      <span className="text-lg font-black text-strava-orange italic">{segment.KOM}</span>
+                    </div>
+                  )}
+                  {segment?.QOM && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">QOM (女子紀錄)</span>
+                      <span className="text-lg font-black text-pink-500 italic">{segment.QOM}</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* 天氣資訊 */}
+            {weather && (
+              <section className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 dark:from-sky-500/20 dark:to-blue-500/20 rounded-2xl p-6 border border-sky-500/30">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
+                  <span>🌤️</span> {weather.location || '路段'} 天氣
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-4xl font-black text-slate-900 dark:text-white">
+                      {weather.current?.temp ? `${Math.round(weather.current.temp)}°C` : '-'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize mt-1">
+                      {weather.current?.description || weather.today?.description || '-'}
+                    </p>
+                  </div>
+                  <div className="text-right text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                    {weather.today && (
+                      <>
+                        <p>最高 {Math.round(weather.today.max)}°C</p>
+                        <p>最低 {Math.round(weather.today.min)}°C</p>
+                      </>
+                    )}
+                    {weather.current?.humidity && (
+                      <p>濕度 {weather.current.humidity}%</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
 
             <div className="rounded-2xl overflow-hidden aspect-[4/3] relative group border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer">
               <img className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" src="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=2070" />

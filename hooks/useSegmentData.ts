@@ -11,6 +11,25 @@ export interface StravaSegment {
     total_elevation_gain: number;
     activity_type: string;
     polyline?: string;
+    KOM?: string;
+    QOM?: string;
+    link?: string;
+    athlete_count?: number;
+}
+
+export interface WeatherData {
+    location: string;
+    current?: {
+        temp: number;
+        description: string;
+        humidity: number;
+        wind_speed: number;
+    };
+    today?: {
+        min: number;
+        max: number;
+        description: string;
+    };
 }
 
 export interface LeaderboardEntry {
@@ -46,6 +65,7 @@ interface UseSegmentDataReturn {
     segment: StravaSegment | null;
     leaderboard: LeaderboardEntry[];
     stats: SegmentStats;
+    weather: WeatherData | null;
     isLoading: boolean;
     error: string | null;
     refresh: () => void;
@@ -106,6 +126,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [weather, setWeather] = useState<WeatherData | null>(null);
 
     const calculateStats = (data: LeaderboardEntry[]): SegmentStats => {
         const completed = data.filter(e => e.elapsed_time > 0);
@@ -173,6 +194,11 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 setLeaderboard(ranked);
                 setStats(calculateStats(ranked));
             }
+
+            // 處理天氣資料
+            if (data.weather) {
+                setWeather(data.weather);
+            }
         } catch (err) {
             console.error('載入 Segment 資料失敗:', err);
             setError(err instanceof Error ? err.message : '載入失敗');
@@ -196,6 +222,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
         segment,
         leaderboard,
         stats,
+        weather,
         isLoading,
         error,
         refresh: fetchData,
