@@ -1,276 +1,488 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TCU 會員能力管理系統</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        tcu: {
+                            prime: '#1E293B',    // 深藍灰
+                            accent: '#3B82F6',   // 明亮藍
+                            success: '#10B981',  // 成功綠
+                            error: '#EF4444',    // 失敗紅
+                            warning: '#F59E0B'    // 警告黃
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
         .ability-select {
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .ability-select:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
+
+        .ability-select:active {
+            transform: translateY(-1px);
+        }
+
         .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top: 4px solid #3B82F6;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s cubic-bezier(0.6, 0.2, 0, 0.8) infinite;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         .fade-in {
-            animation: fadeIn 0.5s ease-in;
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .grade-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.35rem 1rem;
             border-radius: 9999px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.875rem;
+            letter-spacing: 0.025em;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .grade-A { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .grade-B { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-        .grade-C { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-        .grade-D { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
-        .grade-E { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
-        .grade-\- { background: #e5e7eb; color: #6b7280; }
+
+        .grade-A {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            color: white;
+        }
+
+        .grade-B {
+            background: linear-gradient(135deg, #f472b6 0%, #ef4444 100%);
+            color: white;
+        }
+
+        .grade-C {
+            background: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
+            color: white;
+        }
+
+        .grade-D {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .grade-E {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .grade-\- {
+            background: #f3f4f6;
+            color: #9ca3af;
+            box-shadow: none;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 玻璃擬態效果 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- 黑色 Banner -->
-    <div class="bg-black py-4 px-6 shadow-lg">
+
+<body class="bg-[#F8FAFC] text-slate-800 antialiased">
+    <!-- 現代化頂部 Banner -->
+    <nav class="bg-slate-900 border-b border-slate-800 py-4 px-6 sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex items-center justify-between">
-            <img src="https://www.tsu.com.tw/images/logo.png" alt="TCU Logo" class="h-12">
-            <h1 class="text-white text-xl font-bold hidden md:block">會員能力管理系統</h1>
+            <div class="flex items-center gap-4">
+                <img src="https://www.tsu.com.tw/images/logo.png" alt="TCU Logo"
+                    class="h-10 hover:opacity-80 transition-opacity">
+                <div class="h-8 w-[1px] bg-slate-700 mx-2"></div>
+                <h1 class="text-white text-xl font-bold tracking-tight">會員能力管理</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Admin Panel
+                </span>
+            </div>
         </div>
-    </div>
+    </nav>
 
     <!-- 主要內容 -->
-    <div class="max-w-4xl mx-auto p-6">
-        <!-- 會員查詢區 -->
-        <div id="querySection" class="bg-white rounded-2xl shadow-xl p-8 mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">會員資料查詢</h2>
+    <div class="max-w-4xl mx-auto p-8 relative">
+        <div class="absolute top-0 right-0 -z-10 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+        <div class="absolute bottom-0 left-0 -z-10 w-64 h-64 bg-purple-100 rounded-full blur-3xl opacity-50"></div>
 
-            <div class="space-y-4">
+        <!-- 會員查詢區 -->
+        <div id="querySection"
+            class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-10 mb-8 border border-white fade-in">
+            <div class="flex items-center gap-4 mb-8">
+                <div
+                    class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        會員身分證字號 *
+                    <h2 class="text-2xl font-bold text-slate-900">會員資料查詢</h2>
+                    <p class="text-slate-500 text-sm">請輸入身分證字號以管理能力組別</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2 ml-1">
+                        會員身分證字號 <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        id="memberIdCard"
-                        class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-lg"
-                        placeholder="請輸入身分證字號（例如：A123456789）"
-                        maxlength="10"
-                    />
-                    <p class="text-sm text-gray-500 mt-2">請輸入完整的身分證字號或居留證號碼（含英文字母）</p>
+                    <input type="text" id="memberIdCard"
+                        class="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-lg placeholder:text-slate-400 font-medium"
+                        placeholder="例如：A123456789" maxlength="10" />
+                    <div class="flex items-center gap-2 mt-3 ml-1 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-xs">請輸入完整的身分證字號或居留證號碼（含大寫英文字母）</p>
+                    </div>
                 </div>
 
-                <button
-                    id="queryBtn"
-                    onclick="queryMember()"
-                    class="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-[1.02] shadow-lg text-lg"
-                >
-                    查詢會員資料
+                <button id="queryBtn" onclick="queryMember()"
+                    class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-xl shadow-slate-200 text-lg flex items-center justify-center gap-2">
+                    <span>開始查詢</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
                 </button>
             </div>
         </div>
 
         <!-- 載入中 -->
-        <div id="loadingSection" class="hidden bg-white rounded-2xl shadow-xl p-12 mb-6">
+        <div id="loadingSection"
+            class="hidden bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-16 mb-8 text-center fade-in">
             <div class="flex flex-col items-center justify-center">
-                <div class="loading-spinner mb-4"></div>
-                <p class="text-gray-600 text-lg">查詢中，請稍候...</p>
+                <div class="loading-spinner mb-6"></div>
+                <p class="text-slate-600 font-semibold text-xl">正在同步資料庫...</p>
+                <p class="text-slate-400 text-sm mt-2">這只需要幾秒鐘的時間</p>
             </div>
         </div>
 
         <!-- 錯誤訊息 -->
-        <div id="errorSection" class="hidden bg-red-50 border-2 border-red-200 rounded-2xl p-6 mb-6">
-            <div class="flex items-start gap-3">
-                <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <div class="flex-1">
-                    <h3 class="font-semibold text-red-800 mb-1">查詢失敗</h3>
-                    <p id="errorMessage" class="text-red-600 text-sm leading-relaxed"></p>
+        <div id="errorSection" class="hidden bg-red-50 border border-red-100 rounded-2xl p-6 mb-8 fade-in">
+            <div class="flex items-start gap-4">
+                <div
+                    class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-600 flex-shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
                 </div>
-                <button onclick="closeError()" class="text-red-400 hover:text-red-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                <div class="flex-1">
+                    <h3 class="font-bold text-red-900 text-lg">操作發生錯誤</h3>
+                    <p id="errorMessage" class="text-red-700 leading-relaxed mt-1"></p>
+                </div>
+                <button onclick="closeError()" class="text-red-300 hover:text-red-500 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
         </div>
 
         <!-- 會員資料顯示 -->
-        <div id="memberSection" class="hidden fade-in">
+        <div id="memberSection" class="hidden space-y-8 fade-in">
             <!-- 會員基本資訊 -->
-            <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">會員資料</h2>
+            <div class="bg-white rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.04)] p-8 border border-slate-50">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-slate-900">會員基本資訊</h2>
+                    <span
+                        class="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-lg border border-green-100 uppercase tracking-wider">Verified
+                        Identity</span>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
-                        <p class="text-sm text-gray-600 mb-2">身分證字號</p>
-                        <p id="displayIdCard" class="text-2xl font-bold text-gray-800"></p>
+                    <div
+                        class="group p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all duration-300">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">ID Card Number / 證號
+                        </p>
+                        <div class="flex items-baseline gap-2">
+                            <p id="displayIdCard" class="text-3xl font-bold text-slate-800 tabular-nums"></p>
+                        </div>
                     </div>
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6">
-                        <p class="text-sm text-gray-600 mb-2">會員姓名</p>
-                        <p id="displayName" class="text-2xl font-bold text-gray-800"></p>
+                    <div
+                        class="group p-6 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all duration-300">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Full Member Name / 姓名
+                        </p>
+                        <p id="displayName" class="text-3xl font-bold text-slate-800"></p>
                     </div>
                 </div>
             </div>
 
             <!-- 目前能力組別 -->
-            <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">目前能力組別</h2>
-                <div id="currentAbilities" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- 動態生成 -->
+            <div class="bg-slate-900 rounded-3xl shadow-2xl p-8 text-white relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold">當前能力評等</h2>
+                    </div>
+                    <div id="currentAbilities" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- 動態生成 -->
+                    </div>
                 </div>
             </div>
 
-            <!-- 能力組別修正 -->
-            <div class="bg-white rounded-2xl shadow-xl p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">能力組別修正</h2>
-                <p class="text-gray-600 mb-6">請為每個能力項目選擇組別（A-最強 到 E-最弱）</p>
 
-                <div class="space-y-6">
+            <!-- 能力組別修正 -->
+            <div
+                class="bg-white rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.04)] p-8 border border-slate-50 relative overflow-hidden">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900">組別權限修正</h2>
+                </div>
+                <p class="text-slate-500 mb-8 ml-1">針對不同賽制手動調整您的能力等級評等（A-頂尖 ... E-新手）</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- 公路賽 -->
-                    <div class="border-2 border-gray-200 rounded-xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="text-3xl">🚴</div>
-                                <h3 class="text-lg font-bold text-gray-800">公路賽</h3>
+                    <div
+                        class="group bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:border-slate-200 transition-all">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-3xl">🚴</span>
+                                <h3 class="text-lg font-bold text-slate-800">公路賽</h3>
                             </div>
-                            <span id="roadGrade" class="grade-badge grade-A">未設定</span>
+                            <span id="roadGrade" class="grade-badge grade-\-">未設定</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="setGrade('公路賽', 'A')" data-ability="公路賽" data-grade="A" class="ability-select flex-1 py-3 border-2 border-purple-300 rounded-lg font-semibold text-purple-700 hover:bg-purple-50">A</button>
-                            <button onclick="setGrade('公路賽', 'B')" data-ability="公路賽" data-grade="B" class="ability-select flex-1 py-3 border-2 border-pink-300 rounded-lg font-semibold text-pink-700 hover:bg-pink-50">B</button>
-                            <button onclick="setGrade('公路賽', 'C')" data-ability="公路賽" data-grade="C" class="ability-select flex-1 py-3 border-2 border-blue-300 rounded-lg font-semibold text-blue-700 hover:bg-blue-50">C</button>
-                            <button onclick="setGrade('公路賽', 'D')" data-ability="公路賽" data-grade="D" class="ability-select flex-1 py-3 border-2 border-green-300 rounded-lg font-semibold text-green-700 hover:bg-green-50">D</button>
-                            <button onclick="setGrade('公路賽', 'E')" data-ability="公路賽" data-grade="E" class="ability-select flex-1 py-3 border-2 border-yellow-300 rounded-lg font-semibold text-yellow-700 hover:bg-yellow-50">E</button>
+                            <button onclick="setGrade('公路賽', 'A')" data-ability="公路賽" data-grade="A"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all">A</button>
+                            <button onclick="setGrade('公路賽', 'B')" data-ability="公路賽" data-grade="B"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition-all">B</button>
+                            <button onclick="setGrade('公路賽', 'C')" data-ability="公路賽" data-grade="C"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all">C</button>
+                            <button onclick="setGrade('公路賽', 'D')" data-ability="公路賽" data-grade="D"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-emerald-600 hover:border-emerald-200 transition-all">D</button>
+                            <button onclick="setGrade('公路賽', 'E')" data-ability="公路賽" data-grade="E"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-amber-600 hover:border-amber-200 transition-all">E</button>
                         </div>
                     </div>
 
                     <!-- 公路登山 -->
-                    <div class="border-2 border-gray-200 rounded-xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="text-3xl">⛰️</div>
-                                <h3 class="text-lg font-bold text-gray-800">公路登山</h3>
+                    <div
+                        class="group bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:border-slate-200 transition-all">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-3xl">⛰️</span>
+                                <h3 class="text-lg font-bold text-slate-800">公路登山</h3>
                             </div>
-                            <span id="climbingGrade" class="grade-badge grade-A">未設定</span>
+                            <span id="climbingGrade" class="grade-badge grade-\-">未設定</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="setGrade('公路登山', 'A')" data-ability="公路登山" data-grade="A" class="ability-select flex-1 py-3 border-2 border-purple-300 rounded-lg font-semibold text-purple-700 hover:bg-purple-50">A</button>
-                            <button onclick="setGrade('公路登山', 'B')" data-ability="公路登山" data-grade="B" class="ability-select flex-1 py-3 border-2 border-pink-300 rounded-lg font-semibold text-pink-700 hover:bg-pink-50">B</button>
-                            <button onclick="setGrade('公路登山', 'C')" data-ability="公路登山" data-grade="C" class="ability-select flex-1 py-3 border-2 border-blue-300 rounded-lg font-semibold text-blue-700 hover:bg-blue-50">C</button>
-                            <button onclick="setGrade('公路登山', 'D')" data-ability="公路登山" data-grade="D" class="ability-select flex-1 py-3 border-2 border-green-300 rounded-lg font-semibold text-green-700 hover:bg-green-50">D</button>
-                            <button onclick="setGrade('公路登山', 'E')" data-ability="公路登山" data-grade="E" class="ability-select flex-1 py-3 border-2 border-yellow-300 rounded-lg font-semibold text-yellow-700 hover:bg-yellow-50">E</button>
+                            <button onclick="setGrade('公路登山', 'A')" data-ability="公路登山" data-grade="A"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all">A</button>
+                            <button onclick="setGrade('公路登山', 'B')" data-ability="公路登山" data-grade="B"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition-all">B</button>
+                            <button onclick="setGrade('公路登山', 'C')" data-ability="公路登山" data-grade="C"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all">C</button>
+                            <button onclick="setGrade('公路登山', 'D')" data-ability="公路登山" data-grade="D"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-emerald-600 hover:border-emerald-200 transition-all">D</button>
+                            <button onclick="setGrade('公路登山', 'E')" data-ability="公路登山" data-grade="E"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-amber-600 hover:border-amber-200 transition-all">E</button>
                         </div>
                     </div>
 
                     <!-- 公路繞圈 -->
-                    <div class="border-2 border-gray-200 rounded-xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="text-3xl">🔄</div>
-                                <h3 class="text-lg font-bold text-gray-800">公路繞圈</h3>
+                    <div
+                        class="group bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:border-slate-200 transition-all">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-3xl">🔄</span>
+                                <h3 class="text-lg font-bold text-slate-800">公路繞圈</h3>
                             </div>
-                            <span id="circuitGrade" class="grade-badge grade-A">未設定</span>
+                            <span id="circuitGrade" class="grade-badge grade-\-">未設定</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="setGrade('公路繞圈', 'A')" data-ability="公路繞圈" data-grade="A" class="ability-select flex-1 py-3 border-2 border-purple-300 rounded-lg font-semibold text-purple-700 hover:bg-purple-50">A</button>
-                            <button onclick="setGrade('公路繞圈', 'B')" data-ability="公路繞圈" data-grade="B" class="ability-select flex-1 py-3 border-2 border-pink-300 rounded-lg font-semibold text-pink-700 hover:bg-pink-50">B</button>
-                            <button onclick="setGrade('公路繞圈', 'C')" data-ability="公路繞圈" data-grade="C" class="ability-select flex-1 py-3 border-2 border-blue-300 rounded-lg font-semibold text-blue-700 hover:bg-blue-50">C</button>
-                            <button onclick="setGrade('公路繞圈', 'D')" data-ability="公路繞圈" data-grade="D" class="ability-select flex-1 py-3 border-2 border-green-300 rounded-lg font-semibold text-green-700 hover:bg-green-50">D</button>
-                            <button onclick="setGrade('公路繞圈', 'E')" data-ability="公路繞圈" data-grade="E" class="ability-select flex-1 py-3 border-2 border-yellow-300 rounded-lg font-semibold text-yellow-700 hover:bg-yellow-50">E</button>
+                            <button onclick="setGrade('公路繞圈', 'A')" data-ability="公路繞圈" data-grade="A"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all">A</button>
+                            <button onclick="setGrade('公路繞圈', 'B')" data-ability="公路繞圈" data-grade="B"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition-all">B</button>
+                            <button onclick="setGrade('公路繞圈', 'C')" data-ability="公路繞圈" data-grade="C"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all">C</button>
+                            <button onclick="setGrade('公路繞圈', 'D')" data-ability="公路繞圈" data-grade="D"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-emerald-600 hover:border-emerald-200 transition-all">D</button>
+                            <button onclick="setGrade('公路繞圈', 'E')" data-ability="公路繞圈" data-grade="E"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-amber-600 hover:border-amber-200 transition-all">E</button>
                         </div>
                     </div>
 
                     <!-- 計時賽TT -->
-                    <div class="border-2 border-gray-200 rounded-xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="text-3xl">⏱️</div>
-                                <h3 class="text-lg font-bold text-gray-800">計時賽TT</h3>
+                    <div
+                        class="group bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:border-slate-200 transition-all">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <span class="text-3xl">⏱️</span>
+                                <h3 class="text-lg font-bold text-slate-800">計時賽TT</h3>
                             </div>
-                            <span id="ttGrade" class="grade-badge grade-A">未設定</span>
+                            <span id="ttGrade" class="grade-badge grade-\-">未設定</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="setGrade('計時賽TT', 'A')" data-ability="計時賽TT" data-grade="A" class="ability-select flex-1 py-3 border-2 border-purple-300 rounded-lg font-semibold text-purple-700 hover:bg-purple-50">A</button>
-                            <button onclick="setGrade('計時賽TT', 'B')" data-ability="計時賽TT" data-grade="B" class="ability-select flex-1 py-3 border-2 border-pink-300 rounded-lg font-semibold text-pink-700 hover:bg-pink-50">B</button>
-                            <button onclick="setGrade('計時賽TT', 'C')" data-ability="計時賽TT" data-grade="C" class="ability-select flex-1 py-3 border-2 border-blue-300 rounded-lg font-semibold text-blue-700 hover:bg-blue-50">C</button>
-                            <button onclick="setGrade('計時賽TT', 'D')" data-ability="計時賽TT" data-grade="D" class="ability-select flex-1 py-3 border-2 border-green-300 rounded-lg font-semibold text-green-700 hover:bg-green-50">D</button>
-                            <button onclick="setGrade('計時賽TT', 'E')" data-ability="計時賽TT" data-grade="E" class="ability-select flex-1 py-3 border-2 border-yellow-300 rounded-lg font-semibold text-yellow-700 hover:bg-yellow-50">E</button>
+                            <button onclick="setGrade('計時賽TT', 'A')" data-ability="計時賽TT" data-grade="A"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all">A</button>
+                            <button onclick="setGrade('計時賽TT', 'B')" data-ability="計時賽TT" data-grade="B"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition-all">B</button>
+                            <button onclick="setGrade('計時賽TT', 'C')" data-ability="計時賽TT" data-grade="C"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-all">C</button>
+                            <button onclick="setGrade('計時賽TT', 'D')" data-ability="計時賽TT" data-grade="D"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-emerald-600 hover:border-emerald-200 transition-all">D</button>
+                            <button onclick="setGrade('計時賽TT', 'E')" data-ability="計時賽TT" data-grade="E"
+                                class="ability-select flex-1 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 hover:text-amber-600 hover:border-amber-200 transition-all">E</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 修正原因（新增即時字數顯示） -->
-                <div class="border-2 border-gray-200 rounded-xl p-6 bg-yellow-50 mt-6">
-                    <label class="block text-lg font-bold text-gray-800 mb-2">
-                        <span class="text-red-500">*</span> 修正原因（<span id="charCount">0</span>/10+ 字）
-                    </label>
-                    <p class="text-sm text-gray-600 mb-3">請說明為何需要修正能力組別（必填，至少10字）</p>
-                    <textarea
-                        id="correctionReason"
-                        rows="4"
-                        class="w-full px-4 py-3 border-2 border-red-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none"
-                        placeholder="例如：近期Strava成績進步明顯、比賽經驗累積、訓練強度提升等（至少10字）"
-                    ></textarea>
-                    <div class="mt-2 text-sm flex items-center gap-2">
-                        <div class="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div id="charProgress" class="h-full bg-gradient-to-r from-red-400 to-green-500 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                        <span id="charStatus" class="text-xs font-semibold text-red-600">請輸入至少10字</span>
+                <!-- 修正原因 -->
+                <div class="mt-10 p-8 bg-slate-50 rounded-3xl border border-slate-100 group">
+                    <div class="flex items-center justify-between mb-6">
+                        <label class="block text-lg font-bold text-slate-900">
+                            <span class="text-rose-500">*</span> 修正原因說明
+                        </label>
+                        <span
+                            class="text-slate-400 text-xs font-bold bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm"><span
+                                id="charCount" class="text-slate-900">0</span> / 10+ 字</span>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">此資訊將協助管理員審核您的申請</p>
+                    <textarea id="correctionReason" rows="4"
+                        class="w-full px-6 py-5 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none text-slate-700 placeholder:text-slate-300 font-medium"
+                        placeholder="請詳細說明為何需要修正等級（例如：近期賽事表現、Strava 紀錄數據提升等...）"></textarea>
+
+                    <div class="mt-6 flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <span id="charStatus"
+                                class="text-xs font-bold text-rose-500 flex items-center gap-1.5 uppercase tracking-wider">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                Requires 10 characters
+                            </span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                            <div id="charProgress" class="h-full bg-slate-300 transition-all duration-500 ease-out"
+                                style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex gap-4 mt-8">
-                    <button
-                        id="submitBtn"
-                        onclick="submitAbilities()"
-                        disabled
-                        class="flex-1 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg opacity-60 cursor-not-allowed transition-all text-lg shadow-lg"
-                    >
-                        提交能力修正
+                <div class="flex flex-col sm:flex-row gap-4 mt-10">
+                    <button id="submitBtn" onclick="submitAbilities()" disabled
+                        class="flex-[2] py-5 bg-slate-900 text-white font-black rounded-2xl opacity-40 cursor-not-allowed transition-all text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98]">
+                        <span>確認並提交審核</span>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
                     </button>
-                    <button
-                        onclick="resetForm()"
-                        class="px-8 py-4 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-all"
-                    >
-                        重新查詢
+                    <button onclick="resetForm()"
+                        class="flex-1 py-5 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-200 hover:text-slate-700 transition-all text-lg active:scale-[0.98]">
+                        返回重新查詢
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- 提交成功 -->
-        <div id="successSection" class="hidden bg-green-50 border-2 border-green-200 rounded-2xl p-8 mb-6 fade-in">
-            <div class="flex flex-col items-center justify-center text-center">
-                <svg class="w-16 h-16 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h3 class="text-2xl font-bold text-green-800 mb-2">提交成功！</h3>
-                <p class="text-green-600 mb-2">能力修正資料已送出</p>
-                <p class="text-gray-600 text-sm mb-6">確認郵件已寄送至您的信箱，請查收並確認</p>
-                <button
-                    onclick="resetForm()"
-                    class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
-                >
-                    查詢其他會員
+        <div id="successSection"
+            class="hidden bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-20 mb-10 border border-white fade-in relative overflow-hidden text-center">
+            <div class="absolute -top-32 -left-32 w-80 h-80 bg-green-400/10 rounded-full blur-[80px]"></div>
+            <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-blue-400/10 rounded-full blur-[80px]"></div>
+
+            <div class="relative z-10 flex flex-col items-center">
+                <div
+                    class="w-24 h-24 bg-green-500 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-green-200 mb-10 transform hover:rotate-12 transition-transform duration-500">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+
+                <h3 class="text-4xl font-black text-slate-900 mb-4 tracking-tight">提交成功！</h3>
+                <p class="text-xl text-slate-500 font-medium mb-12 max-w-md mx-auto">
+                    您的能力修正申請已正式送出，待管理員核實後將會立即生效並通知。
+                </p>
+
+                <div
+                    class="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-12 w-full max-w-sm flex items-center gap-4 text-left">
+                    <div
+                        class="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-500 border border-slate-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Confirmation Sent</p>
+                        <p class="text-slate-600 text-sm font-semibold">請檢查您的電子郵件信箱</p>
+                    </div>
+                </div>
+
+                <button onclick="resetForm()"
+                    class="px-12 py-5 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all text-xl shadow-xl shadow-slate-200 active:scale-[0.98]">
+                    完成並返回首頁
                 </button>
             </div>
         </div>
@@ -295,33 +507,36 @@
         };
 
         // ✅ 新增：即時字數顯示 + 視覺反饋
-        document.getElementById('correctionReason').addEventListener('input', function() {
+        document.getElementById('correctionReason').addEventListener('input', function () {
             const count = this.value.trim().length;
-            const maxDisplay = 20; // 進度條最大顯示20字
-            
+            const maxDisplay = 10; // 達到10字即算完成
+
             // 更新字數顯示
             document.getElementById('charCount').textContent = count;
-            
+
             // 更新進度條
             const progress = Math.min((count / maxDisplay) * 100, 100);
-            document.getElementById('charProgress').style.width = progress + '%';
-            
+            const progressEl = document.getElementById('charProgress');
+            progressEl.style.width = progress + '%';
+
             // 更新狀態文字 + 顏色
             const statusEl = document.getElementById('charStatus');
             const submitBtn = document.getElementById('submitBtn');
-            
+
             if (count >= 10) {
-                statusEl.textContent = '✅ 字數充足';
-                statusEl.className = 'text-xs font-semibold text-green-600';
+                statusEl.innerHTML = '<span class="flex items-center gap-1">✅ Ready to submit</span>';
+                statusEl.className = 'text-xs font-bold text-emerald-500 uppercase tracking-wider';
+                progressEl.className = 'h-full bg-emerald-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]';
                 this.style.borderColor = '#10b981';
                 submitBtn.disabled = false;
-                submitBtn.className = 'flex-1 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-[1.02] shadow-lg text-lg opacity-100 cursor-pointer';
+                submitBtn.className = 'flex-[2] py-5 bg-slate-900 text-white font-black rounded-2xl transition-all text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98] hover:bg-slate-800 hover:-translate-y-1';
             } else {
-                statusEl.textContent = `請輸入至少10字（目前${count}字）`;
-                statusEl.className = 'text-xs font-semibold text-red-600';
-                this.style.borderColor = '#ef4444';
+                statusEl.innerHTML = `<span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Needs ${10 - count} more characters</span>`;
+                statusEl.className = 'text-xs font-bold text-rose-500 uppercase tracking-wider';
+                progressEl.className = 'h-full bg-slate-300 transition-all duration-500 ease-out';
+                this.style.borderColor = '#e2e8f0';
                 submitBtn.disabled = true;
-                submitBtn.className = 'flex-1 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg opacity-60 cursor-not-allowed transition-all text-lg shadow-lg';
+                submitBtn.className = 'flex-[2] py-5 bg-slate-900 text-white font-black rounded-2xl opacity-40 cursor-not-allowed transition-all text-xl shadow-2xl flex items-center justify-center gap-3';
             }
         });
 
@@ -392,10 +607,10 @@
             allAbilities.forEach(ability => {
                 const grade = abilities[ability.name] || '-';
                 const div = document.createElement('div');
-                div.className = 'bg-gray-50 rounded-lg p-4 text-center border-2 border-gray-200';
+                div.className = 'group bg-white/5 border border-white/10 rounded-2xl p-6 text-center hover:bg-white/10 transition-all duration-300';
                 div.innerHTML = `
-                    <div class="text-3xl mb-2">${ability.icon}</div>
-                    <div class="font-semibold text-gray-700 mb-2">${ability.name}</div>
+                    <div class="text-4xl mb-4 transform group-hover:scale-110 transition-transform">${ability.icon}</div>
+                    <div class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">${ability.name}</div>
                     <span class="grade-badge grade-${grade}">${grade}</span>
                 `;
                 currentAbilitiesDiv.appendChild(div);
@@ -419,18 +634,21 @@
 
             // 更新按鈕樣式
             document.querySelectorAll(`[data-ability="${ability}"]`).forEach(btn => {
-                btn.classList.remove('ring-4', 'ring-offset-2', 'ring-purple-400', 'ring-pink-400', 'ring-blue-400', 'ring-green-400', 'ring-yellow-400');
-                if (btn.getAttribute('data-grade') === grade) {
-                    btn.classList.add('ring-4', 'ring-offset-2');
+                btn.classList.remove('ring-4', 'ring-blue-500/30', 'border-indigo-500', 'border-rose-500', 'border-blue-500', 'border-emerald-500', 'border-amber-500', 'bg-slate-900', 'text-white');
+                btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
 
-                    const ringColors = {
-                        'A': 'ring-purple-400',
-                        'B': 'ring-pink-400',
-                        'C': 'ring-blue-400',
-                        'D': 'ring-green-400',
-                        'E': 'ring-yellow-400'
+                if (btn.getAttribute('data-grade') === grade) {
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+                    btn.classList.add('bg-slate-900', 'text-white', 'ring-4', 'ring-blue-500/30');
+
+                    const borderColors = {
+                        'A': 'border-indigo-500',
+                        'B': 'border-rose-500',
+                        'C': 'border-blue-500',
+                        'D': 'border-emerald-500',
+                        'E': 'border-amber-500'
                     };
-                    btn.classList.add(ringColors[grade]);
+                    btn.classList.add(borderColors[grade]);
                 }
             });
         }
@@ -534,11 +752,12 @@
             // 重置字數顯示
             document.getElementById('charCount').textContent = '0';
             document.getElementById('charProgress').style.width = '0%';
-            document.getElementById('charStatus').textContent = '請輸入至少10字';
-            document.getElementById('charStatus').className = 'text-xs font-semibold text-red-600';
-            document.getElementById('correctionReason').style.borderColor = '#ef4444';
+            document.getElementById('charProgress').className = 'h-full bg-slate-300 transition-all duration-500 ease-out';
+            document.getElementById('charStatus').innerHTML = '<span class="flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Requires 10 characters</span>';
+            document.getElementById('charStatus').className = 'text-xs font-bold text-rose-500 uppercase tracking-wider';
+            document.getElementById('correctionReason').style.borderColor = '#e2e8f0';
             document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').className = 'flex-1 py-4 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-lg opacity-60 cursor-not-allowed transition-all text-lg shadow-lg';
+            document.getElementById('submitBtn').className = 'flex-[2] py-5 bg-slate-900 text-white font-black rounded-2xl opacity-40 cursor-not-allowed transition-all text-xl shadow-2xl flex items-center justify-center gap-3';
 
             document.getElementById('querySection').classList.remove('hidden');
             document.getElementById('memberSection').classList.add('hidden');
@@ -570,11 +789,12 @@
         }
 
         // Enter 鍵提交
-        document.getElementById('memberIdCard').addEventListener('keypress', function(e) {
+        document.getElementById('memberIdCard').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 queryMember();
             }
         });
     </script>
 </body>
+
 </html>
