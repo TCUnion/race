@@ -1,105 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ViewType } from '../types';
-
-interface StravaAthlete {
-  id: string | number;
-  firstname?: string;
-  lastname?: string;
-  profile_medium?: string;
-}
 
 interface NavbarProps {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
 }
 
-const CONFIG = {
-  stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
-  storageKey: 'strava_athlete_meta',
-};
-
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
-  const [athlete, setAthlete] = useState<StravaAthlete | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // 初始化時從 localStorage 讀取
-  useEffect(() => {
-    const loadAthlete = () => {
-      const savedData = localStorage.getItem(CONFIG.storageKey);
-      if (savedData) {
-        try {
-          setAthlete(JSON.parse(savedData));
-        } catch (e) {
-          console.error('解析 Strava 資料失敗', e);
-        }
-      } else {
-        setAthlete(null);
-      }
-    };
-
-    loadAthlete();
-
-    // 監聽來自 StravaConnect 的狀態變更事件
-    window.addEventListener('strava-auth-changed', loadAthlete);
-    // 監聽 localStorage 變更（來自其他分頁）
-    window.addEventListener('storage', loadAthlete);
-
-    return () => {
-      window.removeEventListener('strava-auth-changed', loadAthlete);
-      window.removeEventListener('storage', loadAthlete);
-    };
-  }, []);
-
-  const handleConnect = () => {
-    setIsLoading(true);
-
-    const width = 600;
-    const height = 700;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
-    const returnUrl = encodeURIComponent(window.location.href);
-    const url = `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
-
-    const authWindow = window.open(
-      url,
-      'strava_auth',
-      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
-    );
-
-    if (!authWindow) {
-      window.location.href = url;
-      return;
-    }
-
-    // 簡易輪詢檢查授權狀態
-    const pollInterval = setInterval(() => {
-      const savedData = localStorage.getItem(CONFIG.storageKey);
-      if (savedData) {
-        try {
-          const data = JSON.parse(savedData);
-          setAthlete(data);
-          setIsLoading(false);
-          clearInterval(pollInterval);
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      // 視窗關閉時停止輪詢
-      if (authWindow.closed) {
-        setIsLoading(false);
-        clearInterval(pollInterval);
-      }
-    }, 1000);
-
-    // 2 分鐘超時
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      setIsLoading(false);
-    }, 120000);
-  };
-
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-solid border-slate-200 dark:border-slate-800 px-6 md:px-20 py-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
       <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate(ViewType.LANDING)}>
@@ -129,31 +37,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </button>
         </nav>
 
-        {athlete ? (
-          <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
-            <div className="text-right">
-              <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">{athlete.firstname}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connected</p>
-            </div>
-            <img
-              src={athlete.profile_medium || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-              alt={athlete.firstname}
-              className="w-10 h-10 rounded-full border-2 border-strava-orange"
-            />
-          </div>
-        ) : (
-          <button
-            onClick={handleConnect}
-            disabled={isLoading}
-            className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-strava-orange text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-strava-orange/20 disabled:opacity-70 disabled:cursor-wait"
-          >
-            {isLoading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            ) : (
-              <span>Connect Strava</span>
-            )}
-          </button>
-        )}
+        <button className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-tsu-blue text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-tsu-blue/20">
+          <span>立即登入</span>
+        </button>
       </div>
 
       <div className="md:hidden">

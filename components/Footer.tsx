@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
             2026 TCU Taiwan Cycling Union 此網站由 Strava API 技術支持，與其官方無隸屬關係。
           </p>
           <div className="flex gap-6">
-            <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="/privacy-policy.html">Privacy</a>
+            <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Privacy</a>
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Terms</a>
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Cookie Policy</a>
           </div>
