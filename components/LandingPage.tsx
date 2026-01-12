@@ -20,7 +20,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <div className="flex flex-col gap-4 max-w-3xl">
               <span className="inline-block px-4 py-1 rounded bg-tsu-blue text-white text-[10px] font-black self-center uppercase tracking-[0.2em] shadow-lg">Limited Time Challenge</span>
               <h1 className="text-white text-4xl md:text-6xl font-black leading-tight tracking-tight uppercase italic drop-shadow-md">
-                巔峰挑戰：陽明山 P 字山道
+                136檢定
               </h1>
               <p className="text-slate-300 text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto">
                 連結你的 Strava，挑戰經典路段，與全台頂尖好手一決高下。

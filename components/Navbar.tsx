@@ -37,7 +37,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </button>
         </nav>
 
-        <button className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-tsu-blue text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-tsu-blue/20">
+        <button
+          onClick={() => window.location.href = 'https://liff.line.me/2007868576-nFBbL6tp'}
+          className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-tsu-blue text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-tsu-blue/20"
+        >
           <span>立即登入</span>
         </button>
       </div>
