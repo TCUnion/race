@@ -64,6 +64,10 @@ const StravaConnect: React.FC = () => {
 
                 setAthlete(fullData);
                 stopPolling();
+
+                // 通知其他元件狀態已更新
+                window.dispatchEvent(new Event('strava-auth-changed'));
+
                 return true;
             } catch (e) {
                 console.error('處理授權暫存資料失敗', e);
@@ -129,6 +133,9 @@ const StravaConnect: React.FC = () => {
         localStorage.removeItem(CONFIG.storageKey);
         localStorage.removeItem(CONFIG.storageKey + '_temp');
         setAthlete(null);
+
+        // 通知其他元件狀態已更新
+        window.dispatchEvent(new Event('strava-auth-changed'));
     };
 
     if (athlete) {

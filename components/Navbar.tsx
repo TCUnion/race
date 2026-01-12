@@ -1,13 +1,145 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ViewType } from '../types';
+
+interface StravaAthlete {
+  id: string | number;
+  firstname?: string;
+  lastname?: string;
+  profile?: string;
+  profile_medium?: string;
+}
 
 interface NavbarProps {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
 }
 
+const CONFIG = {
+  stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
+  storageKey: 'strava_athlete_meta',
+  pollingInterval: 1000,
+  pollingTimeout: 120000,
+};
+
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
+  const [athlete, setAthlete] = useState<StravaAthlete | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const authWindowRef = useRef<Window | null>(null);
+
+  // 初始化時從 localStorage 讀取，並監聽變更事件
+  useEffect(() => {
+    const loadAthlete = () => {
+      const savedData = localStorage.getItem(CONFIG.storageKey);
+      if (savedData) {
+        try {
+          setAthlete(JSON.parse(savedData));
+        } catch (e) {
+          console.error('解析 Strava 資料失敗', e);
+          setAthlete(null);
+        }
+      } else {
+        setAthlete(null);
+      }
+    };
+
+    loadAthlete();
+
+    // 監聯來自 StravaConnect 的狀態變更事件
+    window.addEventListener('strava-auth-changed', loadAthlete);
+    // 監聽 storage 事件（來自其他分頁）
+    window.addEventListener('storage', loadAthlete);
+
+    return () => {
+      window.removeEventListener('strava-auth-changed', loadAthlete);
+      window.removeEventListener('storage', loadAthlete);
+    };
+  }, []);
+
+  const stopPolling = () => {
+    if (pollingTimerRef.current) {
+      clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+    }
+    if (authWindowRef.current && !authWindowRef.current.closed) {
+      authWindowRef.current.close();
+    }
+    authWindowRef.current = null;
+    setIsLoading(false);
+  };
+
+  const checkStoredData = () => {
+    const tempData = localStorage.getItem(CONFIG.storageKey + '_temp');
+    if (tempData) {
+      try {
+        const athleteData = JSON.parse(tempData);
+        localStorage.removeItem(CONFIG.storageKey + '_temp');
+
+        const fullData = {
+          ...athleteData,
+          ts: Date.now()
+        };
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
+
+        setAthlete(fullData);
+        stopPolling();
+
+        // 通知其他元件
+        window.dispatchEvent(new Event('strava-auth-changed'));
+
+        return true;
+      } catch (e) {
+        console.error('處理授權暫存資料失敗', e);
+      }
+    }
+    return false;
+  };
+
+  const startPolling = () => {
+    const startTime = Date.now();
+    pollingTimerRef.current = setInterval(() => {
+      if (Date.now() - startTime > CONFIG.pollingTimeout) {
+        stopPolling();
+        return;
+      }
+
+      if (authWindowRef.current && authWindowRef.current.closed) {
+        checkStoredData();
+        stopPolling();
+        return;
+      }
+
+      checkStoredData();
+    }, CONFIG.pollingInterval);
+  };
+
+  const handleConnect = () => {
+    setIsLoading(true);
+
+    localStorage.removeItem(CONFIG.storageKey + '_temp');
+
+    const width = 600;
+    const height = 700;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    const returnUrl = encodeURIComponent(window.location.href);
+    const url = `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
+
+    authWindowRef.current = window.open(
+      url,
+      'strava_auth',
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+    );
+
+    if (!authWindowRef.current) {
+      window.location.href = url;
+      return;
+    }
+
+    startPolling();
+  };
+
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-solid border-slate-200 dark:border-slate-800 px-6 md:px-20 py-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
       <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate(ViewType.LANDING)}>
@@ -37,9 +169,31 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </button>
         </nav>
 
-        <button className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-tsu-blue text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-tsu-blue/20">
-          <span>立即登入</span>
-        </button>
+        {athlete ? (
+          <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
+            <div className="text-right">
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">{athlete.firstname}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connected</p>
+            </div>
+            <img
+              src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+              alt={athlete.firstname || 'Profile'}
+              className="w-10 h-10 rounded-full border-2 border-strava-orange"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={handleConnect}
+            disabled={isLoading}
+            className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-strava-orange text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-strava-orange/20 disabled:opacity-70 disabled:cursor-wait"
+          >
+            {isLoading ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            ) : (
+              <span>Connect Strava</span>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="md:hidden">
