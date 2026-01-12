@@ -57,9 +57,10 @@ const CONFIG = {
 };
 
 // 136 路段 fallback 資料（當 API 未回傳 segment 時使用）
+// NOTE: polyline 需從 n8n API 取得，目前先不提供以避免顯示錯誤路線
 const FALLBACK_SEGMENT: StravaSegment = {
-    id: 10034836,
-    name: '136 正上',
+    id: 628514, // Strava Segment ID for 136 正上
+    name: '136 正上 (一江橋→赤崁頂)',
     distance: 14460,
     average_grade: 3.7,
     maximum_grade: 19.8,
@@ -67,8 +68,7 @@ const FALLBACK_SEGMENT: StravaSegment = {
     elevation_high: 667,
     total_elevation_gain: 532,
     activity_type: 'Ride',
-    // 136 路線 polyline（從 Strava 取得）
-    polyline: 'qxqwCgdxdVo@iBGQq@gBe@sAc@gAm@eBe@qAc@gAa@gAWs@Sq@Sq@Qs@Os@Mo@Ms@Ks@Iq@Gs@Gs@Es@Cs@Cs@As@As@@s@Bu@Ds@Fs@Hs@Js@Ls@Ns@Ps@Rs@Ts@Vu@Xs@Zs@\\s@^s@`@s@b@q@d@q@f@q@h@o@j@o@l@o@n@m@p@m@r@k@t@k@v@i@x@i@z@g@|@g@~@e@`Ae@bAc@dAc@fAa@hA_@jA_@lA]nA]pA[rAYtAYvAWxAUzAU|ASbBQ`BQbBOdBMfBMhBKjBIlBInBGpBEpBErBCrBAtB@tB@vBBvBDxBDxBFzBH|BH|BJ~BL~BLbCN`CNbCPdCPdCRfCRhCThCTjCVjCVlCXnCXnCZpC\\pC\\rC^tC^tC`@vC`@xCb@xCb@zCd@zCd@|Cf@~Cf@~Ch@bDh@`Dj@bDj@dDl@dDl@fDn@fDn@hDp@jDp@jDr@lDr@lDt@nDt@pDv@pDv@rDx@rDx@tDz@vDz@vD|@xD|@xD~@zD~@|DbA|DbA~D'
+    // polyline 暫不提供，等待 n8n API 回傳正確資料
 };
 
 // 格式化時間（秒 → 時:分:秒）
