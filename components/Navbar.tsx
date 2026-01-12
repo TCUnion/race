@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useStravaAuth } from '../hooks/useStravaAuth';
 import { ViewType } from '../types';
 
 interface NavbarProps {
@@ -8,6 +9,8 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
+  const { athlete, isLoading, handleConnect } = useStravaAuth();
+
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-solid border-slate-200 dark:border-slate-800 px-6 md:px-20 py-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
       <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate(ViewType.LANDING)}>
@@ -37,12 +40,31 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </button>
         </nav>
 
-        <button
-          onClick={() => window.location.href = 'https://liff.line.me/2007868576-nFBbL6tp'}
-          className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-tsu-blue text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-tsu-blue/20"
-        >
-          <span>立即登入</span>
-        </button>
+        {athlete ? (
+          <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
+            <div className="text-right">
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">{athlete.firstname}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connected</p>
+            </div>
+            <img
+              src={athlete.profile_medium || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+              alt={athlete.firstname}
+              className="w-10 h-10 rounded-full border-2 border-strava-orange"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={handleConnect}
+            disabled={isLoading}
+            className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-strava-orange text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-strava-orange/20 disabled:opacity-70 disabled:cursor-wait"
+          >
+            {isLoading ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            ) : (
+              <span>Connect Strava</span>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="md:hidden">
