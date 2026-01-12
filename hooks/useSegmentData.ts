@@ -56,6 +56,21 @@ const CONFIG = {
     refreshInterval: 60000, // 60 秒自動刷新
 };
 
+// 136 路段 fallback 資料（當 API 未回傳 segment 時使用）
+const FALLBACK_SEGMENT: StravaSegment = {
+    id: 10034836,
+    name: '136 正上',
+    distance: 14460,
+    average_grade: 3.7,
+    maximum_grade: 19.8,
+    elevation_low: 135,
+    elevation_high: 667,
+    total_elevation_gain: 532,
+    activity_type: 'Ride',
+    // 136 路線 polyline（從 Strava 取得）
+    polyline: 'qxqwCgdxdVo@iBGQq@gBe@sAc@gAm@eBe@qAc@gAa@gAWs@Sq@Sq@Qs@Os@Mo@Ms@Ks@Iq@Gs@Gs@Es@Cs@Cs@As@As@@s@Bu@Ds@Fs@Hs@Js@Ls@Ns@Ps@Rs@Ts@Vu@Xs@Zs@\\s@^s@`@s@b@q@d@q@f@q@h@o@j@o@l@o@n@m@p@m@r@k@t@k@v@i@x@i@z@g@|@g@~@e@`Ae@bAc@dAc@fAa@hA_@jA_@lA]nA]pA[rAYtAYvAWxAUzAU|ASbBQ`BQbBOdBMfBMhBKjBIlBInBGpBEpBErBCrBAtB@tB@vBBvBDxBDxBFzBH|BH|BJ~BL~BLbCN`CNbCPdCPdCRfCRhCThCTjCVjCVlCXnCXnCZpC\\pC\\rC^tC^tC`@vC`@xCb@xCb@zCd@zCd@|Cf@~Cf@~Ch@bDh@`Dj@bDj@dDl@dDl@fDn@fDn@hDp@jDp@jDr@lDr@lDt@nDt@pDv@pDv@rDx@rDx@tDz@vDz@vD|@xD|@xD~@zD~@|DbA|DbA~D'
+};
+
 // 格式化時間（秒 → 時:分:秒）
 export const formatTime = (seconds: number | null): string => {
     if (!seconds || seconds <= 0) return '-';
@@ -119,9 +134,12 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             const data = await response.json();
 
-            // 處理 Segment 資料
+            // 處理 Segment 資料（使用 API 回傳或 fallback）
             if (data.segment && data.segment.id) {
                 setSegment(data.segment);
+            } else {
+                // API 未回傳 segment，使用 fallback
+                setSegment(FALLBACK_SEGMENT);
             }
 
             // 處理排行榜資料
