@@ -1,13 +1,40 @@
 
 import React from 'react';
-import { MOCK_LEADERBOARD } from '../constants';
 import StravaConnect from './StravaConnect';
+import SegmentMap from './SegmentMap';
+import { useSegmentData, formatTime, formatDistance, formatSpeed } from '../hooks/useSegmentData';
 
 interface LandingPageProps {
   onRegister: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
+  const { segment, leaderboard, stats, isLoading } = useSegmentData();
+
+  // 動態統計數據
+  const dynamicStats = [
+    {
+      label: '總爬升高度',
+      value: segment ? `${Math.round(segment.total_elevation_gain || (segment.elevation_high - segment.elevation_low))} M` : '-',
+      footer: segment ? `${segment.average_grade?.toFixed(1)}% Avg Grade` : 'Loading...'
+    },
+    {
+      label: '路段距離',
+      value: segment ? `${(segment.distance / 1000).toFixed(1)} KM` : '-',
+      footer: segment?.name || 'Loading...'
+    },
+    {
+      label: '參賽人數',
+      value: stats.totalAthletes > 0 ? `${stats.totalAthletes}+` : '-',
+      footer: stats.completedAthletes > 0 ? `${stats.completedAthletes} 已完成` : 'Growing Fast'
+    },
+    {
+      label: '最快時間',
+      value: stats.bestTime ? formatTime(stats.bestTime) : '-',
+      footer: stats.avgSpeed ? `Avg ${formatSpeed(stats.avgSpeed)}` : 'Challenge Now'
+    }
+  ];
+
   return (
     <div className="flex flex-col items-center w-full pb-20">
       {/* Hero Section */}
@@ -40,18 +67,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
           </div>
         </div>
 
-        {/* Highlight Stats */}
+        {/* Dynamic Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
-          {[
-            { label: '總爬升高度', value: '1,250 M', footer: 'HC Category' },
-            { label: '路段距離', value: '15.2 KM', footer: 'Taipei, Taiwan' },
-            { label: '參賽人數', value: '2,480+', footer: 'Growing Fast' },
-            { label: '活動期限', value: '12 DAYS', footer: 'Ends Soon' }
-          ].map((stat, i) => (
+          {dynamicStats.map((stat, i) => (
             <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 transition-colors">
               <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
-              <p className="text-slate-900 dark:text-white text-3xl font-black italic">{stat.value}</p>
-              <p className="text-tsu-blue text-xs font-bold uppercase mt-2">{stat.footer}</p>
+              <p className={`text-slate-900 dark:text-white text-3xl font-black italic ${isLoading ? 'animate-pulse' : ''}`}>{stat.value}</p>
+              <p className="text-tsu-blue text-xs font-bold uppercase mt-2 truncate">{stat.footer}</p>
             </div>
           ))}
         </div>
@@ -63,27 +85,29 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Segment #123456</span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+                  {segment ? `Segment #${segment.id}` : 'Loading...'}
+                </span>
               </div>
               <div className="p-6">
-                <div className="w-full bg-slate-200 dark:bg-background-dark aspect-video rounded-xl overflow-hidden relative shadow-inner group">
-                  <img
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=2070"
-                    className="w-full h-full object-cover grayscale transition-transform duration-700 group-hover:scale-110"
-                    alt="Map"
-                  />
-                  <div className="absolute inset-0 bg-black/30 hover:bg-black/10 transition-colors cursor-pointer flex items-center justify-center">
-                    <div className="bg-white dark:bg-slate-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
-                      <span className="material-symbols-outlined text-tsu-blue">map</span>
-                      <span className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">查看路線圖</span>
-                    </div>
-                  </div>
+                <div className="w-full aspect-video rounded-xl overflow-hidden relative shadow-inner">
+                  <SegmentMap polyline={segment?.polyline} />
                 </div>
                 <div className="flex justify-between items-center mt-4">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-tsu-blue text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all active:scale-95">
-                    <span className="material-symbols-outlined text-sm">filter_list</span>
-                    篩選條件
-                  </button>
+                  <div className="flex items-center gap-4 text-sm">
+                    {segment && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                          <span className="text-slate-600 dark:text-slate-400 text-xs">起點 {segment.elevation_low}m</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                          <span className="text-slate-600 dark:text-slate-400 text-xs">終點 {segment.elevation_high}m</span>
+                        </span>
+                      </>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-all">
                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Powered by</span>
                     <span className="text-strava-orange font-black italic text-lg">STRAVA</span>
@@ -96,29 +120,55 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">目前排行榜</h2>
-                <button className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
+                <a
+                  href="https://status.criterium.tw/136leaderboard.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
+                >
                   查看完整榜單
-                </button>
+                </a>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {MOCK_LEADERBOARD.map((rider) => (
-                  <div key={rider.id} className="flex items-center gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
-                    <span className={`w-8 text-center font-black text-2xl italic ${rider.rank === 1 ? 'text-tsu-blue' : 'text-slate-400'}`}>
-                      {rider.rank.toString().padStart(2, '0')}
-                    </span>
-                    <div className="size-10 rounded-full overflow-hidden border-2 border-transparent group-hover:border-tsu-blue transition-all">
-                      <img alt={rider.name} className="w-full h-full object-cover" src={rider.avatar} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-tight">{rider.name}</h4>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">{rider.bike}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-black text-lg italic text-slate-900 dark:text-white">{rider.time}</p>
-                      <p className="text-[10px] text-slate-400 font-bold">{rider.speed}</p>
-                    </div>
+                {isLoading ? (
+                  <div className="p-8 text-center">
+                    <div className="w-8 h-8 border-4 border-tsu-blue/20 border-t-tsu-blue rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500 text-sm">載入排行榜...</p>
                   </div>
-                ))}
+                ) : leaderboard.length > 0 ? (
+                  leaderboard.slice(0, 5).map((rider) => (
+                    <div key={rider.athlete_id} className="flex items-center gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+                      <span className={`w-8 text-center font-black text-2xl italic ${rider.rank === 1 ? 'text-tsu-blue' : 'text-slate-400'}`}>
+                        {rider.rank.toString().padStart(2, '0')}
+                      </span>
+                      <div className="size-10 rounded-full overflow-hidden border-2 border-transparent group-hover:border-tsu-blue transition-all bg-slate-200">
+                        {rider.profile_medium || rider.profile ? (
+                          <img alt={rider.name} className="w-full h-full object-cover" src={rider.profile_medium || rider.profile} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-300 text-slate-600 font-bold text-sm">
+                            {rider.name?.charAt(0) || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-tight">{rider.name}</h4>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase">
+                          {rider.team || `#${rider.number || rider.athlete_id}`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-lg italic text-slate-900 dark:text-white">{formatTime(rider.elapsed_time)}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">
+                          {rider.average_speed ? formatSpeed(rider.average_speed) : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-slate-500">
+                    <p className="text-sm">尚無排行資料</p>
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -134,23 +184,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 <div className="mt-8">
                   <StravaConnect />
                   <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
-                    點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="#">服務條款</a>
+                    點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">服務條款</a>
                   </p>
                 </div>
               </div>
             </section>
 
             <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic">活動詳情</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic">路段詳情</h3>
               <ul className="space-y-3">
                 {[
-                  { label: 'Entry Fee', value: 'FREE', color: 'text-tsu-blue' },
-                  { label: 'Type', value: 'Cycling Segment', color: 'text-slate-900 dark:text-slate-200' },
-                  { label: 'Organizer', value: 'TSU', color: 'text-slate-900 dark:text-slate-200' }
+                  { label: '路段名稱', value: segment?.name || '-' },
+                  { label: '平均坡度', value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
+                  { label: '最陡坡度', value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
+                  { label: '類型', value: segment?.activity_type || 'Ride' },
+                  { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
                 ].map((item, i) => (
                   <li key={i} className="flex justify-between items-center text-[11px] font-bold">
                     <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest">{item.label}</span>
-                    <span className={`${item.color} uppercase`}>{item.value}</span>
+                    <span className={`${item.color || 'text-slate-900 dark:text-slate-200'} uppercase truncate max-w-[120px]`}>{item.value}</span>
                   </li>
                 ))}
               </ul>
