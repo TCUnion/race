@@ -1,15 +1,104 @@
 
-import React from 'react';
-import { useStravaAuth } from '../hooks/useStravaAuth';
+import React, { useState, useEffect } from 'react';
 import { ViewType } from '../types';
+
+interface StravaAthlete {
+  id: string | number;
+  firstname?: string;
+  lastname?: string;
+  profile_medium?: string;
+}
 
 interface NavbarProps {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
 }
 
+const CONFIG = {
+  stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
+  storageKey: 'strava_athlete_meta',
+};
+
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
-  const { athlete, isLoading, handleConnect } = useStravaAuth();
+  const [athlete, setAthlete] = useState<StravaAthlete | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 初始化時從 localStorage 讀取
+  useEffect(() => {
+    const loadAthlete = () => {
+      const savedData = localStorage.getItem(CONFIG.storageKey);
+      if (savedData) {
+        try {
+          setAthlete(JSON.parse(savedData));
+        } catch (e) {
+          console.error('解析 Strava 資料失敗', e);
+        }
+      } else {
+        setAthlete(null);
+      }
+    };
+
+    loadAthlete();
+
+    // 監聽來自 StravaConnect 的狀態變更事件
+    window.addEventListener('strava-auth-changed', loadAthlete);
+    // 監聽 localStorage 變更（來自其他分頁）
+    window.addEventListener('storage', loadAthlete);
+
+    return () => {
+      window.removeEventListener('strava-auth-changed', loadAthlete);
+      window.removeEventListener('storage', loadAthlete);
+    };
+  }, []);
+
+  const handleConnect = () => {
+    setIsLoading(true);
+
+    const width = 600;
+    const height = 700;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    const returnUrl = encodeURIComponent(window.location.href);
+    const url = `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
+
+    const authWindow = window.open(
+      url,
+      'strava_auth',
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+    );
+
+    if (!authWindow) {
+      window.location.href = url;
+      return;
+    }
+
+    // 簡易輪詢檢查授權狀態
+    const pollInterval = setInterval(() => {
+      const savedData = localStorage.getItem(CONFIG.storageKey);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          setAthlete(data);
+          setIsLoading(false);
+          clearInterval(pollInterval);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // 視窗關閉時停止輪詢
+      if (authWindow.closed) {
+        setIsLoading(false);
+        clearInterval(pollInterval);
+      }
+    }, 1000);
+
+    // 2 分鐘超時
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      setIsLoading(false);
+    }, 120000);
+  };
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-solid border-slate-200 dark:border-slate-800 px-6 md:px-20 py-4 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
