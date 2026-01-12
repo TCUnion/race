@@ -16,6 +16,11 @@ const CONFIG = {
     storageKey: 'strava_athlete_meta',
     pollingInterval: 1000,
     pollingTimeout: 120000,
+    allowedOrigins: [
+        'https://n8n.criterium.tw',
+        'https://status.criterium.tw',
+        'https://criterium.tw'
+    ]
 };
 
 const StravaConnect: React.FC = () => {
@@ -36,6 +41,65 @@ const StravaConnect: React.FC = () => {
         }
     }, []);
 
+    // 監聽 postMessage（與 136.html 相同）
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
+            const isNullOriginSafeSuccess =
+                event.origin === "null" &&
+                event.data?.type === "STRAVA_AUTH_SUCCESS" &&
+                event.data?.athlete?.id;
+
+            if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
+                return;
+            }
+
+            if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+                stopPolling();
+                saveAndSetAthlete(event.data.athlete);
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
+    // 監聽來自其他元件的狀態變更
+    useEffect(() => {
+        const handleAuthChange = () => {
+            const savedData = localStorage.getItem(CONFIG.storageKey);
+            if (savedData) {
+                try {
+                    setAthlete(JSON.parse(savedData));
+                } catch (e) {
+                    setAthlete(null);
+                }
+            } else {
+                setAthlete(null);
+            }
+        };
+
+        window.addEventListener('strava-auth-changed', handleAuthChange);
+        window.addEventListener('storage', handleAuthChange);
+        return () => {
+            window.removeEventListener('strava-auth-changed', handleAuthChange);
+            window.removeEventListener('storage', handleAuthChange);
+        };
+    }, []);
+
+    const saveAndSetAthlete = (athleteData: StravaAthlete) => {
+        const fullData = {
+            ...athleteData,
+            ts: Date.now()
+        };
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
+        setAthlete(fullData);
+        setIsLoading(false);
+
+        // 通知其他元件狀態已更新
+        window.dispatchEvent(new Event('strava-auth-changed'));
+    };
+
     const stopPolling = () => {
         if (pollingTimerRef.current) {
             clearInterval(pollingTimerRef.current);
@@ -54,20 +118,8 @@ const StravaConnect: React.FC = () => {
             try {
                 const athleteData = JSON.parse(tempData);
                 localStorage.removeItem(CONFIG.storageKey + '_temp');
-
-                // 儲存正式資料
-                const fullData = {
-                    ...athleteData,
-                    ts: Date.now()
-                };
-                localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
-
-                setAthlete(fullData);
+                saveAndSetAthlete(athleteData);
                 stopPolling();
-
-                // 通知其他元件狀態已更新
-                window.dispatchEvent(new Event('strava-auth-changed'));
-
                 return true;
             } catch (e) {
                 console.error('處理授權暫存資料失敗', e);
@@ -91,7 +143,7 @@ const StravaConnect: React.FC = () => {
                 const found = checkStoredData();
                 if (!found) {
                     stopPolling();
-                    alert('授權已取消或未完成');
+                    // 不顯示錯誤，可能是透過 postMessage 接收
                 }
                 return;
             }

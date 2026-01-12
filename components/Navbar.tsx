@@ -20,6 +20,11 @@ const CONFIG = {
   storageKey: 'strava_athlete_meta',
   pollingInterval: 1000,
   pollingTimeout: 120000,
+  allowedOrigins: [
+    'https://n8n.criterium.tw',
+    'https://status.criterium.tw',
+    'https://criterium.tw'
+  ]
 };
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
@@ -28,7 +33,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
 
-  // 初始化時從 localStorage 讀取，並監聽變更事件
+  // 初始化時從 localStorage 讀取
   useEffect(() => {
     const loadAthlete = () => {
       const savedData = localStorage.getItem(CONFIG.storageKey);
@@ -46,9 +51,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
     loadAthlete();
 
-    // 監聯來自 StravaConnect 的狀態變更事件
+    // 監聽來自 StravaConnect 的狀態變更事件
     window.addEventListener('strava-auth-changed', loadAthlete);
-    // 監聽 storage 事件（來自其他分頁）
     window.addEventListener('storage', loadAthlete);
 
     return () => {
@@ -56,6 +60,41 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       window.removeEventListener('storage', loadAthlete);
     };
   }, []);
+
+  // 監聽 postMessage（與 136.html 相同）
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
+      const isNullOriginSafeSuccess =
+        event.origin === "null" &&
+        event.data?.type === "STRAVA_AUTH_SUCCESS" &&
+        event.data?.athlete?.id;
+
+      if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
+        return;
+      }
+
+      if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+        stopPolling();
+        saveAndSetAthlete(event.data.athlete);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const saveAndSetAthlete = (athleteData: StravaAthlete) => {
+    const fullData = {
+      ...athleteData,
+      ts: Date.now()
+    };
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
+    setAthlete(fullData);
+    setIsLoading(false);
+
+    window.dispatchEvent(new Event('strava-auth-changed'));
+  };
 
   const stopPolling = () => {
     if (pollingTimerRef.current) {
@@ -75,19 +114,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       try {
         const athleteData = JSON.parse(tempData);
         localStorage.removeItem(CONFIG.storageKey + '_temp');
-
-        const fullData = {
-          ...athleteData,
-          ts: Date.now()
-        };
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
-
-        setAthlete(fullData);
+        saveAndSetAthlete(athleteData);
         stopPolling();
-
-        // 通知其他元件
-        window.dispatchEvent(new Event('strava-auth-changed'));
-
         return true;
       } catch (e) {
         console.error('處理授權暫存資料失敗', e);
