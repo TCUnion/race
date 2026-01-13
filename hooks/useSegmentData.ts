@@ -14,6 +14,7 @@ export interface StravaSegment {
     KOM?: string;
     QOM?: string;
     link?: string;
+    description?: string;
     athlete_count?: number;
 }
 
