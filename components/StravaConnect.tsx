@@ -19,7 +19,11 @@ const CONFIG = {
     allowedOrigins: [
         'https://n8n.criterium.tw',
         'https://status.criterium.tw',
-        'https://criterium.tw'
+        'https://criterium.tw',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001'
     ]
 };
 
