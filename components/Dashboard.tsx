@@ -39,6 +39,7 @@ const Dashboard: React.FC = () => {
   const [athlete, setAthlete] = useState<any>(null);
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [registrationError, setRegistrationError] = useState(false);
 
   useEffect(() => {
     // 檢查 Strava 連結狀態
@@ -61,6 +62,8 @@ const Dashboard: React.FC = () => {
     if (isRegistered === null) {
       setIsLoading(true);
     }
+    setRegistrationError(false);
+
     try {
       const { data, error } = await supabase
         .from('registrations')
@@ -77,14 +80,16 @@ const Dashboard: React.FC = () => {
       setIsRegistered(!!data);
     } catch (err) {
       console.error('檢查報名狀態失敗:', err);
-      // 如果查詢失敗，可能 RLS 沒設好，我們預設為未報名以便使用者能看到表單（或報錯）
-      setIsRegistered(false);
+      // 發生錯誤時不應預設為未報名，而是顯示重試
+      setRegistrationError(true);
+      if (isRegistered === null) setIsRegistered(null); 
     } finally {
       setIsLoading(false);
     }
   };
 
   if (!athlete) {
+    // ... (unchanged)
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
@@ -106,6 +111,20 @@ const Dashboard: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
+      </div>
+    );
+  }
+
+  if (registrationError && isRegistered === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="text-red-400 font-bold">無法載入報名資訊</div>
+        <button 
+          onClick={() => athlete && checkRegistration(athlete.id)}
+          className="px-6 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition"
+        >
+          重試
+        </button>
       </div>
     );
   }
