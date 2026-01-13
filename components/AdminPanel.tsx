@@ -1,0 +1,158 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
+const AdminPanel: React.FC = () => {
+    const [session, setSession] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [segments, setSegments] = useState<any[]>([]);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setLoading(false);
+            if (session) fetchSegments();
+        });
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            if (session) fetchSegments();
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
+    }, []);
+
+    const fetchSegments = async () => {
+        const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
+        if (!error && data) setSegments(data);
+    };
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            setError(error.message);
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setSession(null);
+        setSegments([]);
+    };
+
+    if (loading && !session) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
+            </div>
+        );
+    }
+
+    if (!session) {
+        return (
+            <div className="max-w-md mx-auto my-20 p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800">
+                <h2 className="text-2xl font-black italic mb-6 uppercase tracking-tight">管理員登入</h2>
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tsu-blue"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">密碼</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tsu-blue"
+                            required
+                        />
+                    </div>
+                    {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-tsu-blue hover:bg-tsu-blue-light text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-tsu-blue/20"
+                    >
+                        {loading ? '登入中...' : '立即登入'}
+                    </button>
+                </form>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="flex justify-between items-center mb-10">
+                <div>
+                    <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+                        管理後台 <span className="text-tsu-blue text-lg not-italic opacity-50 ml-2">Admin Dashboard</span>
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-bold mt-1">
+                        目前登入身份: {session.user.email}
+                    </p>
+                </div>
+                <button
+                    onClick={handleLogout}
+                    className="px-6 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all"
+                >
+                    登出
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* 路段管理 */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black">路段管理</h3>
+                        <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">{segments.length} 個路段</span>
+                    </div>
+                    <div className="space-y-4">
+                        {segments.map((seg) => (
+                            <div key={seg.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center group hover:border-tsu-blue border border-transparent transition-all">
+                                <div>
+                                    <p className="font-bold">{seg.name}</p>
+                                    <p className="text-xs text-slate-500">Strava ID: {seg.strava_id}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <span className={`px-2 py-1 ${seg.is_active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-600'} text-[10px] font-bold rounded-full`}>
+                                        {seg.is_active ? '啟用中' : '已停用'}
+                                    </span>
+                                    <button className="material-symbols-outlined text-slate-400 hover:text-tsu-blue text-sm transition-colors">edit</button>
+                                </div>
+                            </div>
+                        ))}
+                        <button className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all">
+                            + 新增挑戰路段
+                        </button>
+                    </div>
+                </div>
+
+                {/* 報名審核預覽 */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 className="text-xl font-black mb-4">報名審核</h3>
+                    <p className="text-slate-500 mb-6">審核選手報名資料與完賽紀錄。</p>
+                    <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+                        <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
+                        <p className="text-slate-400 font-bold">目前無待處理報名</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AdminPanel;

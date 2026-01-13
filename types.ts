@@ -3,6 +3,7 @@ export enum ViewType {
   LANDING = 'LANDING',
   DASHBOARD = 'DASHBOARD',
   LEADERBOARD = 'LEADERBOARD',
+  ADMIN = 'ADMIN',
 }
 
 export enum RaceStatus {

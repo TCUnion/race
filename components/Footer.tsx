@@ -1,7 +1,11 @@
-
 import React from 'react';
+import { ViewType } from '../types';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate?: (view: ViewType) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="py-12 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/50">
       <div className="max-w-[1200px] mx-auto px-6 md:px-10 lg:px-20">
@@ -34,7 +38,14 @@ const Footer: React.FC = () => {
           <div className="flex gap-6">
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Privacy</a>
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Terms</a>
-            <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Cookie Policy</a>
+            <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="/privacy-policy.html">Privacy</a>
+            <span className="text-slate-300 dark:text-slate-800">•</span>
+            <button
+              onClick={() => onNavigate?.(ViewType.ADMIN)}
+              className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors"
+            >
+              Admin
+            </button>
           </div>
         </div>
       </div>
