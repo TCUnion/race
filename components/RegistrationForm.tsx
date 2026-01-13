@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Segment {
-    id: number;
+    id: number; // Supabase PK
+    strava_id: number; // Strava ID
     name: string;
-    internal_id?: number;
 }
 
 interface RegistrationFormProps {
@@ -45,11 +45,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 if (regError) throw regError;
                 setExistingRegistrations(data || []);
 
-                // 初始化選中的路段 (使用 Strava ID)
+                // 初始化選中的路段 (使用 Supabase PK)
                 if (data && data.length > 0) {
-                    const existingIds = data
-                        .map(r => segments.find(s => s.internal_id === r.segment_id)?.id)
-                        .filter((id): id is number => id !== undefined);
+                    const existingIds = data.map(r => r.segment_id);
                     setSelectedSegmentIds(existingIds);
                 }
             } catch (err) {
@@ -161,13 +159,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
             }
 
             // 3. 更新現有資料的備註或團隊資訊 (如果需要的話)
-            // 這裡簡單處理：只要有勾選，就更新所有選中路段的姓名、團隊、TCU ID
-            if (currentInternalIds.length > 0) {
+            if (currentSegmentIds.length > 0) {
                 const { error: upsertError } = await supabase
                     .from('registrations')
                     .upsert(
-                        currentInternalIds.map(internalId => ({
-                            segment_id: internalId,
+                        currentSegmentIds.map(id => ({
+                            segment_id: id,
                             strava_athlete_id: athlete.id,
                             athlete_name: name,
                             athlete_profile: athlete.profile,
@@ -253,7 +250,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-white font-bold">{seg.name}</p>
-                                        <p className="text-slate-500 text-xs">Strava ID: {seg.id}</p>
+                                        <p className="text-slate-500 text-xs">Strava ID: {seg.strava_id}</p>
                                     </div>
                                 </label>
                             ))}

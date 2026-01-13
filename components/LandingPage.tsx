@@ -103,7 +103,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
-                  {segment ? `Segment #${segment.id}` : 'Loading...'}
+                  {segment ? `Segment #${segment.strava_id}` : 'Loading...'}
                 </span>
               </div>
               <div className="p-6">

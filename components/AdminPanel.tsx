@@ -73,14 +73,10 @@ const AdminPanel: React.FC = () => {
         let error;
         if (editingSegment.id === 'new') {
             const { error: insertError } = await supabase.from('segments').insert({
-                id: editingSegment.strava_id, // 使用 Strava ID 作為主鍵
+                strava_id: editingSegment.strava_id, // 存入專門的 Strava ID 欄位
                 name: editingSegment.name,
                 description: editingSegment.description,
                 link: editingSegment.link,
-                distance: editingSegment.distance,
-                polyline: editingSegment.polyline,
-                average_grade: editingSegment.average_grade,
-                total_elevation_gain: editingSegment.total_elevation_gain,
                 is_active: editingSegment.is_active
             });
             error = insertError;
@@ -88,13 +84,10 @@ const AdminPanel: React.FC = () => {
             const { error: updateError } = await supabase
                 .from('segments')
                 .update({
+                    strava_id: editingSegment.strava_id,
                     name: editingSegment.name,
                     description: editingSegment.description,
                     link: editingSegment.link,
-                    distance: editingSegment.distance,
-                    polyline: editingSegment.polyline,
-                    average_grade: editingSegment.average_grade,
-                    total_elevation_gain: editingSegment.total_elevation_gain,
                     is_active: editingSegment.is_active
                 })
                 .eq('id', editingSegment.id);
@@ -409,14 +402,10 @@ const AdminPanel: React.FC = () => {
 
                                         // 寫入 Supabase
                                         const { error } = await supabase.from('segments').insert({
-                                            id: segment.id,
+                                            strava_id: segment.id,
                                             name: segment.name,
                                             description: segment.name,
                                             link: segment.link || `https://www.strava.com/segments/${segment.id}`,
-                                            distance: segment.distance,
-                                            polyline: segment.polyline,
-                                            average_grade: segment.average_grade,
-                                            total_elevation_gain: segment.total_elevation_gain,
                                             is_active: true
                                         });
 

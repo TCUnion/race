@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         .from('registrations')
         .select('*')
         .eq('strava_athlete_id', athleteId)
-        .eq('segment_id', segment.internal_id || segment.id)
+        .eq('segment_id', segment.id)
         .maybeSingle();
 
       if (error) {
@@ -192,6 +192,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="material-symbols-outlined text-sm">mountain_flag</span>
               <span className="text-[10px] font-bold uppercase tracking-widest">TSU Challenge Series</span>
             </div>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              {segment ? `Segment #${segment.strava_id}` : 'Loading...'}
+            </span>
             <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">
               {segment ? `Segment: ${segment.name}` : '載入路段中...'}
             </h1>

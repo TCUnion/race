@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface StravaSegment {
-    id: number;
+    id: number; // Supabase PK
+    strava_id: number; // Strava ID
     name: string;
     distance: number;
     average_grade: number;
@@ -16,7 +17,6 @@ export interface StravaSegment {
     QOM?: string;
     link?: string;
     description?: string;
-    athlete_count?: number;
     athlete_count?: number;
 }
 
@@ -86,7 +86,8 @@ const CONFIG = {
 // 136 路段 fallback 資料（當 API 未回傳 segment 時使用）
 // 資料來源：Strava Segment ID 4928093
 const FALLBACK_SEGMENT: StravaSegment = {
-    id: 4928093,
+    id: 1,
+    strava_id: 4928093,
     name: '136 正上',
     distance: 14459.6,
     average_grade: 3.7,
@@ -164,7 +165,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             if (data && data.length > 0) {
                 const mappedSegments: StravaSegment[] = data.map(s => ({
-                    id: s.strava_id,
+                    id: s.id, // Supabase PK
+                    strava_id: s.strava_id || s.id, // Fallback if strava_id is null
                     name: s.name,
                     distance: s.distance || 0,
                     average_grade: s.average_grade || 0,
@@ -176,7 +178,6 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     polyline: s.polyline,
                     link: s.link,
                     description: s.description,
-                    internal_id: s.id,
                 }));
                 setSegments(mappedSegments);
                 segmentsRef.current = mappedSegments;
@@ -208,7 +209,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             // 為所有路段進行並發請求
             const results = await Promise.all(activeSegments.map(async (seg) => {
                 try {
-                    const url = `${CONFIG.apiUrl}?segment_id=${seg.id}`;
+                    const sid = seg.strava_id || seg.id;
+                    const url = `${CONFIG.apiUrl}?segment_id=${sid}`;
                     const response = await fetch(url);
                     if (!response.ok) return { id: seg.id, error: true };
                     const data = await response.json();
