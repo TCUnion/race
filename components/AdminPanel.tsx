@@ -303,13 +303,11 @@ const AdminPanel: React.FC = () => {
                                             throw new Error('無法取得路段資料');
                                         }
 
-                                        const data = await response.json();
+                                        const segment = await response.json();
 
-                                        if (!data || !data.segment) {
+                                        if (!segment || !segment.id) {
                                             throw new Error('路段資料格式錯誤');
                                         }
-
-                                        const segment = data.segment;
 
                                         // 顯示預覽並確認
                                         const confirmMsg = `確認新增此路段？\n\n路段名稱: ${segment.name}\nStrava ID: ${segment.id}\n距離: ${(segment.distance / 1000).toFixed(2)} km\n平均坡度: ${segment.average_grade}%\n總爬升: ${segment.total_elevation_gain} m`;
@@ -327,7 +325,7 @@ const AdminPanel: React.FC = () => {
                                             elevation_high: segment.elevation_high,
                                             total_elevation_gain: segment.total_elevation_gain,
                                             polyline: segment.map,
-                                            link: `https://www.strava.com/segments/${segment.id}`,
+                                            link: segment.link || `https://www.strava.com/segments/${segment.id}`,
                                             is_active: true
                                         });
 
