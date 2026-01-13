@@ -356,6 +356,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
         </section>
+        {/* Debug Info (Temporary) */}
+        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-green-400 text-xs p-2 font-mono z-50 opacity-70 hover:opacity-100 pointer-events-none">
+          DEBUG: 
+          Registered: {isRegistered === null ? 'Checking...' : isRegistered ? 'YES' : 'NO'} | 
+          Loading: {isLoading ? 'YES' : 'NO'} | 
+          Error: {registrationError ? 'YES' : 'NO'} |
+          Segment: {segment ? `${segment.id} (${segment.name})` : 'NULL'} |
+          Athlete: {athlete ? athlete.id : 'NULL'}
+        </div>
       </div>
     </div>
   );
