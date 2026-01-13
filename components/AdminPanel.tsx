@@ -10,13 +10,21 @@ const findPolyline = (obj: any): string => {
     if (typeof obj.summary_polyline === 'string' && obj.summary_polyline.length > 10) return obj.summary_polyline;
     if (typeof obj.map_polyline === 'string' && obj.map_polyline.length > 10) return obj.map_polyline;
 
-    // 2. map 物件內部 (Strava 標準)
+    // 2. map 欄位處理 (支援物件或直接字串)
     if (obj.map) {
-        if (typeof obj.map.polyline === 'string' && obj.map.polyline.length > 10) return obj.map.polyline;
-        if (typeof obj.map.summary_polyline === 'string' && obj.map.summary_polyline.length > 10) return obj.map.summary_polyline;
+        // 如果 map 直接就是 polyline 字串 (n8n 格式)
+        if (typeof obj.map === 'string' && obj.map.length > 10) return obj.map;
+        // 如果 map 是物件 (Strava 標準格式)
+        if (typeof obj.map === 'object') {
+            if (typeof obj.map.polyline === 'string' && obj.map.polyline.length > 10) return obj.map.polyline;
+            if (typeof obj.map.summary_polyline === 'string' && obj.map.summary_polyline.length > 10) return obj.map.summary_polyline;
+        }
     }
 
-    // 3. 遞迴搜索 (限深二層以防循環)
+    // 3. map_id 欄位 (有時候會是 s + segment_id 格式，需要忽略)
+    // 不處理 map_id，因為它不是 polyline
+
+    // 4. 遞迴搜索 (限深二層以防循環)
     for (const key in obj) {
         if (obj[key] && typeof obj[key] === 'object' && key !== 'map') {
             const found = findPolyline(obj[key]);
