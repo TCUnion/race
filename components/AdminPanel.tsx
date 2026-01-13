@@ -271,7 +271,10 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black">報名列表</h3>
-                        <button onClick={fetchRegistrations} className="text-sm text-tsu-blue hover:underline">重新整理</button>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 font-mono">Count: {registrations.length}</span>
+                            <button onClick={fetchRegistrations} className="text-sm text-tsu-blue hover:underline">重新整理</button>
+                        </div>
                     </div>
 
                     {registrations.length === 0 ? (
