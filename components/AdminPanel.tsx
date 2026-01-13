@@ -1,5 +1,29 @@
-import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+
+// 🚀 深度搜索 Polyline 函式 (地毯式搜尋)
+const findPolyline = (obj: any): string => {
+    if (!obj || typeof obj !== 'object') return "";
+
+    // 1. 常見直接欄位
+    if (typeof obj.polyline === 'string' && obj.polyline.length > 10) return obj.polyline;
+    if (typeof obj.summary_polyline === 'string' && obj.summary_polyline.length > 10) return obj.summary_polyline;
+    if (typeof obj.map_polyline === 'string' && obj.map_polyline.length > 10) return obj.map_polyline;
+
+    // 2. map 物件內部 (Strava 標準)
+    if (obj.map) {
+        if (typeof obj.map.polyline === 'string' && obj.map.polyline.length > 10) return obj.map.polyline;
+        if (typeof obj.map.summary_polyline === 'string' && obj.map.summary_polyline.length > 10) return obj.map.summary_polyline;
+    }
+
+    // 3. 遞迴搜索 (限深二層以防循環)
+    for (const key in obj) {
+        if (obj[key] && typeof obj[key] === 'object' && key !== 'map') {
+            const found = findPolyline(obj[key]);
+            if (found && found.length > 10) return found;
+        }
+    }
+    return "";
+};
 
 const AdminPanel: React.FC = () => {
     const [session, setSession] = useState<any>(null);
@@ -44,6 +68,54 @@ const AdminPanel: React.FC = () => {
             setError('讀取路段失敗: ' + error.message);
         } else if (data) {
             setSegments(data);
+        }
+    };
+
+    const handleRefreshSegment = async (seg: any) => {
+        if (!confirm(`確定要重新整理「${seg.name}」的資料與地圖嗎？`)) return;
+
+        try {
+            const sid = seg.strava_id;
+            if (!sid) {
+                alert('缺少 Strava ID，無法重新整理');
+                return;
+            }
+
+            const response = await fetch('https://n8n.criterium.tw/webhook/segment_set', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ segment_id: sid })
+            });
+
+            const responseText = await response.text();
+            if (!responseText || responseText.trim() === "") throw new Error("伺服器回傳了空內容");
+
+            let segmentData = JSON.parse(responseText);
+            const targetData = Array.isArray(segmentData) ? segmentData[0] : segmentData;
+
+            const newPolyline = findPolyline(targetData);
+
+            if (!newPolyline) {
+                alert('警告：雖然成功取得資料，進地圖路線 (Polyline) 仍然缺失。');
+            }
+
+            const { error } = await supabase
+                .from('segments')
+                .update({
+                    name: targetData.name || seg.name,
+                    distance: targetData.distance || seg.distance,
+                    average_grade: targetData.average_grade || seg.average_grade,
+                    maximum_grade: targetData.maximum_grade || seg.maximum_grade,
+                    elevation_gain: targetData.total_elevation_gain || targetData.elevation_gain || seg.elevation_gain,
+                    polyline: newPolyline || seg.polyline
+                })
+                .eq('id', seg.id);
+
+            if (error) throw error;
+            alert('路段資料更新成功！');
+            fetchSegments();
+        } catch (err: any) {
+            alert('更新失敗: ' + err.message);
         }
     };
 
@@ -436,6 +508,13 @@ const AdminPanel: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <button
+                                            onClick={() => handleRefreshSegment(seg)}
+                                            className="material-symbols-outlined text-slate-400 hover:text-tsu-blue text-lg transition-colors"
+                                            title="重新整理路段資料與地圖"
+                                        >
+                                            sync
+                                        </button>
+                                        <button
                                             onClick={async () => {
                                                 try {
                                                     const { error } = await supabase
@@ -535,9 +614,15 @@ const AdminPanel: React.FC = () => {
                                             throw new Error('路段資料格式錯誤或找不到該路段');
                                         }
 
-                                        // 強化 Polyline 提取偵錯
-                                        const polyline = segment.polyline || (segment.map && (segment.map.polyline || segment.map.summary_polyline));
-                                        console.log('Extracted Polyline:', polyline ? polyline.substring(0, 20) + '...' : 'MISSING');
+                                        // 使用全局 Polyline 提取邏輯
+                                        const polyline = findPolyline(segment);
+                                        console.log('Extracted Polyline:', polyline ? `${polyline.substring(0, 30)}...` : '❌ MISSING');
+
+                                        if (!polyline) {
+                                            if (!confirm('警告：無法從 Strava 取得路線資訊 (Polyline)。\n這將導致排行榜地圖無法顯示。\n\n是否仍要強行新增該路段？')) {
+                                                return;
+                                            }
+                                        }
 
                                         // 顯示預覽並確認
                                         const confirmMsg = `確認新增此路段？\n\n路段名稱: ${segment.name}\nStrava ID: ${segment.id}\n距離: ${(segment.distance / 1000).toFixed(2)} km\n平均坡度: ${segment.average_grade}%\n總爬升: ${segment.total_elevation_gain} m`;

@@ -94,7 +94,14 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
           weight: 4,
           opacity: 0.8
         }).addTo(mapRef.current);
-        mapRef.current.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+
+        // 確保地圖尺寸正確計算
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+            mapRef.current.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+          }
+        }, 100);
       }
     }
   }, [segment]);
