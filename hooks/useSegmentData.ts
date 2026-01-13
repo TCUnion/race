@@ -73,7 +73,8 @@ interface UseSegmentDataReturn {
 }
 
 const CONFIG = {
-    apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard-cached',
+    // apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard-cached',
+    apiUrl: '/api/leaderboard/4928093', // 使用 FastAPI 代理或直接呼叫後端
     refreshInterval: 60000, // 60 秒自動刷新
 };
 

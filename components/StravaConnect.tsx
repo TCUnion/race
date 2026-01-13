@@ -87,7 +87,7 @@ const StravaConnect: React.FC = () => {
         };
     }, []);
 
-    const saveAndSetAthlete = (athleteData: StravaAthlete) => {
+    const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
         const fullData = {
             ...athleteData,
             ts: Date.now()
@@ -95,6 +95,25 @@ const StravaConnect: React.FC = () => {
         localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
         setAthlete(fullData);
         setIsLoading(false);
+
+        // 同步 Token 到後端
+        if (athleteData.access_token) {
+            try {
+                // FIXME: 確保後端 URL 正確，這裡先假定在同個 domain 或使用相對路徑
+                await fetch('/api/auth/strava-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        athlete_id: Number(athleteData.id),
+                        access_token: athleteData.access_token,
+                        refresh_token: (athleteData as any).refresh_token || '', // 如果 OAuth 回傳有包含
+                        expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600
+                    })
+                });
+            } catch (e) {
+                console.error('儲存 Token 到後端失敗', e);
+            }
+        }
 
         // 通知其他元件狀態已更新
         window.dispatchEvent(new Event('strava-auth-changed'));

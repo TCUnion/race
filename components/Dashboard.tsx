@@ -31,32 +31,87 @@ const ActivitySkeleton = () => (
   </div>
 );
 
+import RegistrationForm from './RegistrationForm';
+import { supabase } from '../lib/supabase';
+import { useSegmentData } from '../hooks/useSegmentData';
+
 const Dashboard: React.FC = () => {
+  const { segment } = useSegmentData();
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [athlete, setAthlete] = useState<any>(null);
+  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 模擬 API 延遲
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // FIXME: 替換為實際的 n8n Webhook URL
-        // const response = await fetch('YOUR_N8N_WEBHOOK_URL');
-        // const data = await response.json();
-        // setActivities(data);
+    // 檢查 Strava 連結狀態
+    const savedData = localStorage.getItem('strava_athlete_meta');
+    if (savedData) {
+      const athleteData = JSON.parse(savedData);
+      setAthlete(athleteData);
+      checkRegistration(athleteData.id);
+    } else {
+      setIsLoading(false);
+    }
+  }, [segment]);
 
-        // 暫時使用 MOCK 資料模擬
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setActivities(MOCK_ACTIVITIES);
-      } catch (err) {
-        console.error('Error fetching activities:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const checkRegistration = async (athleteId: string | number) => {
+    if (!segment) return;
 
-    fetchData();
-  }, []);
+    try {
+      const { data, error } = await supabase
+        .from('registrations')
+        .select('*')
+        .eq('strava_athlete_id', athleteId)
+        .eq('segment_id', segment.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      setIsRegistered(!!data);
+    } catch (err) {
+      console.error('檢查報名狀態失敗:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!athlete) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
+          <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">link_off</span>
+          <h2 className="text-xl font-black uppercase italic mb-2">尚未連結 Strava</h2>
+          <p className="text-slate-500 text-sm mb-6">請先返回首頁連結您的 Strava 帳號，以便取得您的活動數據並進行報名。</p>
+          <button
+            onClick={() => window.location.hash = ''}
+            className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all"
+          >
+            返回首頁
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
+      </div>
+    );
+  }
+
+  if (isRegistered === false && segment) {
+    return (
+      <div className="py-20 px-4">
+        <RegistrationForm
+          athlete={athlete}
+          segmentId={segment.id}
+          onSuccess={() => setIsRegistered(true)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center w-full pb-20">
