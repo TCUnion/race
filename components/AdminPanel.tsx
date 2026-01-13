@@ -269,9 +269,23 @@ const AdminPanel: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className={`px-2 py-0.5 ${seg.is_active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-600'} text-[10px] font-bold rounded-full`}>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const { error } = await supabase
+                                                        .from('segments')
+                                                        .update({ is_active: !seg.is_active })
+                                                        .eq('id', seg.id);
+                                                    if (error) throw error;
+                                                    fetchSegments();
+                                                } catch (err: any) {
+                                                    alert('更新失敗: ' + err.message);
+                                                }
+                                            }}
+                                            className={`px-2 py-0.5 ${seg.is_active ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'} text-[10px] font-bold rounded-full transition-colors cursor-pointer`}
+                                        >
                                             {seg.is_active ? '啟用' : '停用'}
-                                        </span>
+                                        </button>
                                         <button
                                             onClick={() => setEditingSegment(seg)}
                                             className="material-symbols-outlined text-slate-400 hover:text-tsu-blue text-lg transition-colors"
