@@ -196,168 +196,169 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     </div>
 
                     {/* 路段選擇 */}
-                    <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em]">
-                        選擇挑戰路段 <span className="text-tsu-blue-light">(單選)</span>
-                    </label>
+                    <div className="group/field">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em]">
+                            選擇挑戰路段 <span className="text-tsu-blue-light">(單選)</span>
+                        </label>
 
-                    {existingRegistrations.length > 0 && (
-                        <div className="mb-4 p-4 bg-tsu-blue/10 border border-tsu-blue/30 rounded-2xl">
-                            <p className="text-tsu-blue-light text-xs font-bold leading-relaxed">
-                                <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
-                                您已報名過：{existingRegistrations.map(r => r.segments?.name).join(', ')}。
-                                <br />
-                                根據規則，一個 Strava 帳號僅能報名一個主要路段，如需變更請聯絡管理員。
+                        {existingRegistrations.length > 0 && (
+                            <div className="mb-4 p-4 bg-tsu-blue/10 border border-tsu-blue/30 rounded-2xl">
+                                <p className="text-tsu-blue-light text-xs font-bold leading-relaxed">
+                                    <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                                    您已報名過：{existingRegistrations.map(r => r.segments?.name).join(', ')}。
+                                    <br />
+                                    根據規則，一個 Strava 帳號僅能報名一個主要路段，如需變更請聯絡管理員。
+                                </p>
+                            </div>
+                        )}
+                        <div className="grid gap-3">
+                            {segments.map(seg => (
+                                <label
+                                    key={seg.id}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentId === seg.id
+                                        ? 'bg-tsu-blue/20 border-tsu-blue/50'
+                                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                                        } ${existingRegistrations.length > 0 && selectedSegmentId !== seg.id ? 'opacity-50 grayscale' : ''}`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="segment"
+                                        checked={selectedSegmentId === seg.id}
+                                        onChange={() => handleSegmentChange(seg.id)}
+                                        disabled={existingRegistrations.length > 0}
+                                        className="sr-only"
+                                    />
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedSegmentId === seg.id
+                                        ? 'bg-tsu-blue border-tsu-blue'
+                                        : 'border-white/30'
+                                        }`}>
+                                        {selectedSegmentId === seg.id && (
+                                            <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-white font-bold">{seg.name}</p>
+                                        <p className="text-slate-500 text-xs">Strava ID: {seg.id}</p>
+                                    </div>
+                                </label>
+                            ))}
+                            {segments.length === 0 && (
+                                <div className="text-center py-6 text-slate-500">
+                                    <p>目前無可報名的路段</p>
+                                </div>
+                            )}
+                        </div>
+                        <p className="mt-3 text-[10px] text-slate-500 italic ml-1">* 請慎重選擇您的挑戰路段，報名後不可自行修改。</p>
+                    </div>
+
+                    <div className="grid gap-6">
+                        {/* TCU-ID with Sync Button */}
+                        <div className="group/field">
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">TCU-ID / 個人身份證ID (選填)</label>
+                            <div className="flex gap-3">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        value={tcuId}
+                                        onChange={(e) => setTcuId(e.target.value)}
+                                        className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
+                                        placeholder="例如：TCU-zvnrqonh..."
+                                    />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">fingerprint</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleSyncTCU}
+                                    disabled={isSyncing || !tcuId.trim()}
+                                    className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                                >
+                                    {isSyncing ? (
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <span className="material-symbols-outlined text-lg">sync</span>
+                                    )}
+                                    <span className="hidden sm:inline">同步</span>
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-slate-600 mt-2 ml-1">輸入後點擊「同步」可自動帶入會員姓名與車隊</p>
+                        </div>
+
+                        {/* Name */}
+                        <div className="group/field">
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">選手姓名 (顯示於排行榜)</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
+                                    placeholder="三義 劉德華"
+                                    required
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">person</span>
+                            </div>
+                        </div>
+
+                        {/* Team */}
+                        <div className="group/field">
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 (選填)</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={team}
+                                    onChange={(e) => setTeam(e.target.value)}
+                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
+                                    placeholder="例如：TCU Taiwan"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">group</span>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                            <p className="text-emerald-400 text-xs font-bold flex items-center gap-2">
+                                <span className="material-symbols-outlined text-sm">check_circle</span>
+                                {successMessage}
                             </p>
                         </div>
                     )}
-                    <div className="grid gap-3">
-                        {segments.map(seg => (
-                            <label
-                                key={seg.id}
-                                className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentId === seg.id
-                                    ? 'bg-tsu-blue/20 border-tsu-blue/50'
-                                    : 'bg-white/5 border-white/10 hover:border-white/20'
-                                    } ${existingRegistrations.length > 0 && selectedSegmentId !== seg.id ? 'opacity-50 grayscale' : ''}`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="segment"
-                                    checked={selectedSegmentId === seg.id}
-                                    onChange={() => handleSegmentChange(seg.id)}
-                                    disabled={existingRegistrations.length > 0}
-                                    className="sr-only"
-                                />
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedSegmentId === seg.id
-                                    ? 'bg-tsu-blue border-tsu-blue'
-                                    : 'border-white/30'
-                                    }`}>
-                                    {selectedSegmentId === seg.id && (
-                                        <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-white font-bold">{seg.name}</p>
-                                    <p className="text-slate-500 text-xs">Strava ID: {seg.id}</p>
-                                </div>
-                            </label>
-                        ))}
-                        {segments.length === 0 && (
-                            <div className="text-center py-6 text-slate-500">
-                                <p>目前無可報名的路段</p>
-                            </div>
-                        )}
-                    </div>
-                    <p className="mt-3 text-[10px] text-slate-500 italic ml-1">* 請慎重選擇您的挑戰路段，報名後不可自行修改。</p>
-            </div>
 
-            <div className="grid gap-6">
-                {/* TCU-ID with Sync Button */}
-                <div className="group/field">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">TCU-ID / 個人身份證ID (選填)</label>
-                    <div className="flex gap-3">
-                        <div className="relative flex-1">
-                            <input
-                                type="text"
-                                value={tcuId}
-                                onChange={(e) => setTcuId(e.target.value)}
-                                className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                                placeholder="例如：TCU-zvnrqonh..."
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">fingerprint</span>
+                    {/* Error Message */}
+                    {error && (
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                            <p className="text-red-400 text-xs font-bold flex items-center gap-2">
+                                <span className="material-symbols-outlined text-sm">error</span>
+                                {error}
+                            </p>
                         </div>
-                        <button
-                            type="button"
-                            onClick={handleSyncTCU}
-                            disabled={isSyncing || !tcuId.trim()}
-                            className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
-                        >
-                            {isSyncing ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            ) : (
-                                <span className="material-symbols-outlined text-lg">sync</span>
-                            )}
-                            <span className="hidden sm:inline">同步</span>
-                        </button>
-                    </div>
-                    <p className="text-[10px] text-slate-600 mt-2 ml-1">輸入後點擊「同步」可自動帶入會員姓名與車隊</p>
-                </div>
+                    )}
 
-                {/* Name */}
-                <div className="group/field">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">選手姓名 (顯示於排行榜)</label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                            placeholder="三義 劉德華"
-                            required
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">person</span>
-                    </div>
-                </div>
-
-                {/* Team */}
-                <div className="group/field">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 (選填)</label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={team}
-                            onChange={(e) => setTeam(e.target.value)}
-                            className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                            placeholder="例如：TCU Taiwan"
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">group</span>
-                    </div>
-                </div>
-
-
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || existingRegistrations.length > 0}
+                        className="w-full bg-tsu-blue-light hover:bg-tsu-blue text-white font-black py-5 rounded-2xl transition-all shadow-2xl shadow-tsu-blue/30 flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-sm disabled:opacity-50 active:scale-95 group/btn"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                <span>傳送中...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
+                                    {existingRegistrations.length > 0 ? 'lock' : 'how_to_reg'}
+                                </span>
+                                <span>{existingRegistrations.length > 0 ? '您已報名完成' : '送出報名'}</span>
+                            </>
+                        )}
+                    </button>
+                </form>
             </div>
-
-            {/* Success Message */}
-            {successMessage && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
-                    <p className="text-emerald-400 text-xs font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm">check_circle</span>
-                        {successMessage}
-                    </p>
-                </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
-                    <p className="text-red-400 text-xs font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm">error</span>
-                        {error}
-                    </p>
-                </div>
-            )}
-
-            <button
-                type="submit"
-                disabled={isSubmitting || existingRegistrations.length > 0}
-                className="w-full bg-tsu-blue-light hover:bg-tsu-blue text-white font-black py-5 rounded-2xl transition-all shadow-2xl shadow-tsu-blue/30 flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-sm disabled:opacity-50 active:scale-95 group/btn"
-            >
-                {isSubmitting ? (
-                    <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>傳送中...</span>
-                    </>
-                ) : (
-                    <>
-                        <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
-                            {existingRegistrations.length > 0 ? 'lock' : 'how_to_reg'}
-                        </span>
-                        <span>{existingRegistrations.length > 0 ? '您已報名完成' : '送出報名'}</span>
-                    </>
-                )}
-            </button>
-        </form>
-            </div >
-        </div >
+        </div>
     );
 };
 
