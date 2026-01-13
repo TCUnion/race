@@ -50,15 +50,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   }
 
   // 轉換 segments 格式以符合 RegistrationForm props
-  const formSegments = segments.map(s => ({ id: s.id, name: s.name }));
+  const formSegments = segments.map(s => ({
+    id: s.id,
+    name: s.name,
+    internal_id: s.internal_id
+  }));
 
   return (
     <div className="min-h-screen bg-slate-950 py-20 px-4">
-        <RegistrationForm
-            athlete={athlete}
-            segments={formSegments}
-            onSuccess={() => onNavigate(ViewType.DASHBOARD)}
-        />
+      <RegistrationForm
+        athlete={athlete}
+        segments={formSegments}
+        onSuccess={() => onNavigate(ViewType.DASHBOARD)}
+      />
     </div>
   );
 };

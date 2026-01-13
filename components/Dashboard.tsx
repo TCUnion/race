@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         .from('registrations')
         .select('*')
         .eq('strava_athlete_id', athleteId)
-        .eq('segment_id', segment.id)
+        .eq('segment_id', segment.internal_id || segment.id)
         .maybeSingle();
 
       if (error) {

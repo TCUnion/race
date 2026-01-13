@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 interface Segment {
     id: number;
     name: string;
+    internal_id?: number;
 }
 
 interface RegistrationFormProps {
@@ -104,16 +105,20 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
         try {
             // 批次新增報名記錄（每個路段一筆）
-            const registrations = selectedSegmentIds.map(segId => ({
-                segment_id: segId,
-                strava_athlete_id: athlete.id,
-                athlete_name: name,
-                athlete_profile: athlete.profile,
-                team: team,
-                // number 由資料庫 Trigger 自動派發
-                tcu_id: tcuId,
-                status: 'approved'
-            }));
+            // 需要將 strava_id (segId) 轉回 internal_id
+            const registrations = selectedSegmentIds.map(segId => {
+                const seg = segments.find(s => s.id === segId);
+                return {
+                    segment_id: seg?.internal_id || segId, // 優先使用內部 ID，若無則 fallback (預防萬一)
+                    strava_athlete_id: athlete.id,
+                    athlete_name: name,
+                    athlete_profile: athlete.profile,
+                    team: team,
+                    // number 由資料庫 Trigger 自動派發
+                    tcu_id: tcuId,
+                    status: 'approved'
+                };
+            });
 
             const { error: insertError } = await supabase
                 .from('registrations')
@@ -173,8 +178,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                 <label
                                     key={seg.id}
                                     className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentIds.includes(seg.id)
-                                            ? 'bg-tsu-blue/20 border-tsu-blue/50'
-                                            : 'bg-white/5 border-white/10 hover:border-white/20'
+                                        ? 'bg-tsu-blue/20 border-tsu-blue/50'
+                                        : 'bg-white/5 border-white/10 hover:border-white/20'
                                         }`}
                                 >
                                     <input
@@ -184,8 +189,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         className="sr-only"
                                     />
                                     <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedSegmentIds.includes(seg.id)
-                                            ? 'bg-tsu-blue border-tsu-blue'
-                                            : 'border-white/30'
+                                        ? 'bg-tsu-blue border-tsu-blue'
+                                        : 'border-white/30'
                                         }`}>
                                         {selectedSegmentIds.includes(seg.id) && (
                                             <span className="material-symbols-outlined text-white text-sm">check</span>

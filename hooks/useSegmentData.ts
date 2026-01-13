@@ -17,6 +17,7 @@ export interface StravaSegment {
     link?: string;
     description?: string;
     athlete_count?: number;
+    internal_id?: number;
 }
 
 export interface WeatherData {
@@ -162,6 +163,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     polyline: s.polyline,
                     link: s.link,
                     description: s.description,
+                    internal_id: s.id,
                 }));
                 setSegments(mappedSegments);
                 // 只在首次載入且沒有 segment 時設定
