@@ -128,6 +128,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [weather, setWeather] = useState<WeatherData | null>(null);
+    const segmentsRef = useRef<StravaSegment[]>([]);
+    const isFetching = useRef(false);
 
     // 計算統計數據的輔助函數
     const calculateStats = (data: LeaderboardEntry[]): SegmentStats => {
@@ -177,6 +179,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     internal_id: s.id,
                 }));
                 setSegments(mappedSegments);
+                segmentsRef.current = mappedSegments;
                 setSegment(prev => prev || mappedSegments[0]);
                 return mappedSegments;
             }
@@ -188,12 +191,19 @@ export const useSegmentData = (): UseSegmentDataReturn => {
     }, []);
 
     const fetchData = useCallback(async (isInitialLoad = false, specificSegments: StravaSegment[] | null = null) => {
+        if (isFetching.current && !isInitialLoad) return;
+
         try {
             if (isInitialLoad) setIsLoading(true);
+            isFetching.current = true;
             setError(null);
 
-            const activeSegments = specificSegments || segments;
-            if (activeSegments.length === 0) return;
+            const activeSegments = specificSegments || segmentsRef.current;
+            if (activeSegments.length === 0) {
+                if (isInitialLoad) setIsLoading(false);
+                isFetching.current = false;
+                return;
+            }
 
             // 為所有路段進行並發請求
             const results = await Promise.all(activeSegments.map(async (seg) => {
@@ -244,9 +254,10 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             console.error('載入資料失敗:', err);
             setError(err instanceof Error ? err.message : '載入失敗');
         } finally {
-            setIsLoading(false);
+            if (isInitialLoad) setIsLoading(false);
+            isFetching.current = false;
         }
-    }, [segments]);
+    }, []);
 
     // 初始載入：先拿 segments 再拿排行榜
     useEffect(() => {
@@ -259,7 +270,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             }
         };
         init();
-    }, [fetchSegmentsFromSupabase, fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // 自動刷新
     useEffect(() => {
