@@ -428,14 +428,21 @@ const AdminPanel: React.FC = () => {
                                             body: JSON.stringify({ segment_id: parseInt(strava_id) })
                                         });
 
-                                        if (!response.ok) {
-                                            throw new Error('無法取得路段資料');
+                                        const responseText = await response.text();
+                                        if (!responseText || responseText.trim() === "") {
+                                            throw new Error("伺服器回傳了空內容，請稍後再試或檢查 Strava ID 是否正確。");
                                         }
 
-                                        const segment = await response.json();
+                                        let segment;
+                                        try {
+                                            segment = JSON.parse(responseText);
+                                        } catch (e) {
+                                            console.error("JSON Parse Error:", e, "Raw response:", responseText);
+                                            throw new Error("伺服器回傳格式錯誤 (非有效 JSON)。");
+                                        }
 
-                                        if (!segment || !segment.id) {
-                                            throw new Error('路段資料格式錯誤');
+                                        if (!segment || (!segment.id && !segment.strava_id)) {
+                                            throw new Error('路段資料格式錯誤或找不到該路段');
                                         }
 
                                         // 顯示預覽並確認
