@@ -141,12 +141,12 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 .select('*')
                 .eq('is_active', true)
                 .order('created_at', { ascending: true });
-            
+
             if (error) {
                 console.error('Fetch segments error:', error);
                 return;
             }
-            
+
             if (data && data.length > 0) {
                 // 轉換 Supabase 格式為 StravaSegment 格式
                 const mappedSegments: StravaSegment[] = data.map(s => ({
@@ -205,30 +205,19 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             const data = await response.json();
 
-            // 處理 Segment 資料（使用 API 回傳或 fallback）
-            if (data.segment && data.segment.id) {
-                // 正規化 polyline 位置：API 可能在 segment.map 或 segment.polyline
-                const segmentData = { ...data.segment };
-
-                // 如果 polyline 在 map 欄位（字串格式）
-                if (typeof segmentData.map === 'string' && !segmentData.polyline) {
-                    segmentData.polyline = segmentData.map;
-                }
-                // 如果 polyline 在 map.polyline 物件格式
-                else if (segmentData.map?.polyline && !segmentData.polyline) {
-                    segmentData.polyline = segmentData.map.polyline;
-                }
-
-                // 只有在 ID 真的變更或資料有顯著差異時才更新 segment
-                setSegment(prev => {
-                    if (prev && prev.id === segmentData.id && prev.name === segmentData.name) {
-                        return prev;
+            // 只在沒有 Supabase segment 時使用 fallback
+            if (!segment) {
+                if (data.segment && data.segment.id) {
+                    const segmentData = { ...data.segment };
+                    if (typeof segmentData.map === 'string' && !segmentData.polyline) {
+                        segmentData.polyline = segmentData.map;
+                    } else if (segmentData.map?.polyline && !segmentData.polyline) {
+                        segmentData.polyline = segmentData.map.polyline;
                     }
-                    return segmentData;
-                });
-            } else {
-                // API 未回傳 segment，使用 fallback
-                setSegment(prev => prev === FALLBACK_SEGMENT ? prev : FALLBACK_SEGMENT);
+                    setSegment(segmentData);
+                } else {
+                    setSegment(FALLBACK_SEGMENT);
+                }
             }
 
             // 處理排行榜資料
