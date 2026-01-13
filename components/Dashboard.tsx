@@ -132,10 +132,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           重試
         </button>
       </div>
-    );
-  }
-
-    );
+      );
   }
 
   // Redirect to registration page if not registered
