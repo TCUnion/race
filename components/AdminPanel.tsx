@@ -77,6 +77,12 @@ const AdminPanel: React.FC = () => {
                 name: editingSegment.name,
                 description: editingSegment.description,
                 link: editingSegment.link,
+                distance: editingSegment.distance,
+                polyline: editingSegment.polyline,
+                average_grade: editingSegment.average_grade,
+                total_elevation_gain: editingSegment.total_elevation_gain,
+                elevation_low: editingSegment.elevation_low,
+                elevation_high: editingSegment.elevation_high,
                 is_active: editingSegment.is_active
             });
             error = insertError;
@@ -87,6 +93,12 @@ const AdminPanel: React.FC = () => {
                     name: editingSegment.name,
                     description: editingSegment.description,
                     link: editingSegment.link,
+                    distance: editingSegment.distance,
+                    polyline: editingSegment.polyline,
+                    average_grade: editingSegment.average_grade,
+                    total_elevation_gain: editingSegment.total_elevation_gain,
+                    elevation_low: editingSegment.elevation_low,
+                    elevation_high: editingSegment.elevation_high,
                     is_active: editingSegment.is_active
                 })
                 .eq('id', editingSegment.id);
@@ -232,13 +244,62 @@ const AdminPanel: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">詳情連結 (對應首頁查看詳情)</label>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">詳情連結</label>
                                 <input
                                     type="text"
                                     value={editingSegment.link || ''}
                                     onChange={(e) => setEditingSegment({ ...editingSegment, link: e.target.value })}
                                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
                                     placeholder="https://..."
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">距離 (公尺)</label>
+                                    <input
+                                        type="number"
+                                        value={editingSegment.distance || ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, distance: parseFloat(e.target.value) })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">平均坡度 (%)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={editingSegment.average_grade || ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, average_grade: parseFloat(e.target.value) })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">總爬升 (公尺)</label>
+                                    <input
+                                        type="number"
+                                        value={editingSegment.total_elevation_gain || ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, total_elevation_gain: parseFloat(e.target.value) })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">最低海拔 (公尺)</label>
+                                    <input
+                                        type="number"
+                                        value={editingSegment.elevation_low || ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, elevation_low: parseFloat(e.target.value) })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Polyline (路線編碼)</label>
+                                <textarea
+                                    value={editingSegment.polyline || ''}
+                                    onChange={(e) => setEditingSegment({ ...editingSegment, polyline: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm h-16 font-mono"
                                 />
                             </div>
                             <div className="flex gap-2 pt-2">
@@ -365,6 +426,12 @@ const AdminPanel: React.FC = () => {
                                             name: segment.name,
                                             description: segment.name,
                                             link: segment.link || `https://www.strava.com/segments/${segment.id}`,
+                                            distance: segment.distance,
+                                            polyline: segment.polyline,
+                                            average_grade: segment.average_grade,
+                                            total_elevation_gain: segment.total_elevation_gain,
+                                            elevation_low: segment.elevation_low,
+                                            elevation_high: segment.elevation_high,
                                             is_active: true
                                         });
 
