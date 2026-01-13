@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 // 🚀 深度搜索 Polyline 函式 (地毯式搜尋)
@@ -125,7 +126,7 @@ const AdminPanel: React.FC = () => {
         let query = supabase
             .from('registrations')
             .select('*, segments(name, strava_id)')
-            .order('registered_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (filterSegmentId) {
             query = query.eq('segment_id', filterSegmentId);
@@ -363,7 +364,7 @@ const AdminPanel: React.FC = () => {
                                 <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between">
                                     {setting.key.replace(/_/g, ' ')}
                                     <span className="text-slate-300 font-normal normal-case">
-                                        Last updated: {new Date(setting.updated_at).toLocaleString()}
+                                        Last updated: {setting.updated_at ? new Date(setting.updated_at).toLocaleString() : '剛剛'}
                                     </span>
                                 </label>
                                 {setting.key.includes('description') || setting.key.includes('keywords') ? (
@@ -793,7 +794,7 @@ const AdminPanel: React.FC = () => {
                                 <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between">
                                     {setting.key.replace(/_/g, ' ')}
                                     <span className="text-slate-300 font-normal normal-case">
-                                        Last updated: {new Date(setting.updated_at).toLocaleString()}
+                                        Last updated: {setting.updated_at ? new Date(setting.updated_at).toLocaleString() : '剛剛'}
                                     </span>
                                 </label>
                                 {setting.key.includes('description') || setting.key.includes('keywords') ? (
