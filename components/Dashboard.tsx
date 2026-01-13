@@ -363,7 +363,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           Loading: {isLoading ? 'YES' : 'NO'} | 
           Error: {registrationError ? 'YES' : 'NO'} |
           Segment: {segment ? `${segment.id} (${segment.name})` : 'NULL'} |
-          Athlete: {athlete ? athlete.id : 'NULL'}
+          Athlete: {athlete ? athlete.id : 'NULL'} | 
+          <button 
+            onClick={async () => {
+              if(!athlete || !segment) return;
+              if(!confirm('確認清除報名狀態？這將刪除後的資料庫紀錄 (測試用)')) return;
+              try {
+                await supabase.from('registrations').delete().eq('strava_athlete_id', athlete.id).eq('segment_id', segment.id);
+                setIsRegistered(false);
+                window.location.reload();
+              } catch(e) { alert('清除失敗'); console.error(e); }
+            }}
+            className="ml-2 underline hover:text-white cursor-pointer"
+          >
+            [重置報名狀態]
+          </button>
         </div>
       </div>
     </div>
