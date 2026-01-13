@@ -30,7 +30,12 @@ const AdminPanel: React.FC = () => {
 
     const fetchSegments = async () => {
         const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
-        if (!error && data) setSegments(data);
+        if (error) {
+            console.error('Fetch error:', error);
+            setError('讀取路段失敗: ' + error.message);
+        } else if (data) {
+            setSegments(data);
+        }
     };
 
     const handleUpdateSegment = async (e: React.FormEvent) => {
@@ -63,6 +68,9 @@ const AdminPanel: React.FC = () => {
         if (error) {
             setError(error.message);
             setLoading(false);
+        } else {
+            // 登入後重整資料
+            fetchSegments();
         }
     };
 
@@ -218,7 +226,26 @@ const AdminPanel: React.FC = () => {
                                     </div>
                                 </div>
                             ))}
-                            <button className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all">
+                            {segments.length === 0 && !loading && (
+                                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-200">
+                                    <p className="text-slate-400 font-bold">目前無路段資料</p>
+                                </div>
+                            )}
+                            <button 
+                                onClick={() => {
+                                    const strava_id = prompt('請輸入 Strava 路段 ID (數字):');
+                                    if (strava_id) {
+                                        const name = prompt('請輸入路段名稱:');
+                                        if (name) {
+                                            supabase.from('segments').insert({ strava_id: parseInt(strava_id), name }).then(({ error }) => {
+                                                if (error) alert('新增失敗: ' + error.message);
+                                                else fetchSegments();
+                                            });
+                                        }
+                                    }
+                                }}
+                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
+                            >
                                 + 新增挑戰路段
                             </button>
                         </div>

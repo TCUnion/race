@@ -73,8 +73,8 @@ interface UseSegmentDataReturn {
 }
 
 const CONFIG = {
-    // apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard-cached',
-    apiUrl: '/api/leaderboard/4928093', // 使用 FastAPI 代理或直接呼叫後端
+    // 使用 n8n webhook 作為排行榜 API（支援 GitHub Pages 靜態網站）
+    apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard-cached',
     refreshInterval: 60000, // 60 秒自動刷新
 };
 
@@ -202,12 +202,16 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 setWeather(data.weather);
             }
         } catch (err) {
-            console.error('載入 Segment 資料失敗:', err);
+            console.error('載入 Segment 資料失敗，使用 Fallback:', err);
             setError(err instanceof Error ? err.message : '載入失敗');
+            // 發生錯誤時也確保有基本資料
+            if (!segment) setSegment(FALLBACK_SEGMENT);
         } finally {
             setIsLoading(false);
+            // 確保 isLoading 結束後一定有 segment
+            setSegment(prev => prev || FALLBACK_SEGMENT);
         }
-    }, []);
+    }, [segment]);
 
     // 初始載入
     useEffect(() => {

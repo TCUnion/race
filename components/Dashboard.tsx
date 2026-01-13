@@ -1,5 +1,6 @@
-
-import React, { useState, useEffect } from 'react';
+import RegistrationForm from './RegistrationForm';
+import { supabase } from '../lib/supabase';
+import { useSegmentData } from '../hooks/useSegmentData';
 import { MOCK_SEGMENT_STATS, MOCK_ACTIVITIES } from '../constants';
 import { Activity } from '../types';
 
@@ -29,11 +30,6 @@ const ActivitySkeleton = () => (
       <Skeleton className="h-10 w-10" />
     </div>
   </div>
-);
-
-import RegistrationForm from './RegistrationForm';
-import { supabase } from '../lib/supabase';
-import { useSegmentData } from '../hooks/useSegmentData';
 
 const Dashboard: React.FC = () => {
   const { segment } = useSegmentData();
@@ -48,7 +44,9 @@ const Dashboard: React.FC = () => {
     if (savedData) {
       const athleteData = JSON.parse(savedData);
       setAthlete(athleteData);
-      checkRegistration(athleteData.id);
+      if (segment) {
+        checkRegistration(athleteData.id);
+      }
     } else {
       setIsLoading(false);
     }
@@ -57,6 +55,7 @@ const Dashboard: React.FC = () => {
   const checkRegistration = async (athleteId: string | number) => {
     if (!segment) return;
 
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('registrations')
@@ -65,11 +64,16 @@ const Dashboard: React.FC = () => {
         .eq('segment_id', segment.id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('Supabase 查詢錯誤:', error);
+        throw error;
+      }
 
       setIsRegistered(!!data);
     } catch (err) {
       console.error('檢查報名狀態失敗:', err);
+      // 如果查詢失敗，可能 RLS 沒設好，我們預設為未報名以便使用者能看到表單（或報錯）
+      setIsRegistered(false);
     } finally {
       setIsLoading(false);
     }
