@@ -21,7 +21,7 @@ interface RegistrationFormProps {
 const TCU_SYNC_URL = 'https://n8n.criterium.tw/webhook/tcu-sync';
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess }) => {
-    const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
+    const [selectedSegmentIds, setSelectedSegmentIds] = useState<number[]>([]);
     const [existingRegistrations, setExistingRegistrations] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -39,19 +39,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
             try {
                 const { data, error: regError } = await supabase
                     .from('registrations')
-                    .select('*, segments(name)')
+                    .select('*, segments(name, strava_id)')
                     .eq('strava_athlete_id', athlete.id);
 
                 if (regError) throw regError;
                 setExistingRegistrations(data || []);
 
-                // 如果已有報名，預設選中已報名的路段 (若路段還在啟用清單中)
+                // 初始化選中的路段 (使用 Strava ID)
                 if (data && data.length > 0) {
-                    const existingInternalId = data[0].segment_id;
-                    const match = segments.find(s => s.internal_id === existingInternalId);
-                    if (match) {
-                        setSelectedSegmentId(match.id);
-                    }
+                    const existingIds = data
+                        .map(r => segments.find(s => s.internal_id === r.segment_id)?.id)
+                        .filter((id): id is number => id !== undefined);
+                    setSelectedSegmentIds(existingIds);
                 }
             } catch (err) {
                 console.error('檢查現有報名失敗:', err);
@@ -63,15 +62,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         checkExisting();
     }, [athlete.id, segments]);
 
-    // 預設勾選第一個路段 (若無現有報名)
-    useEffect(() => {
-        if (segments.length > 0 && selectedSegmentId === null && existingRegistrations.length === 0) {
-            setSelectedSegmentId(segments[0].id);
-        }
-    }, [segments, selectedSegmentId, existingRegistrations]);
-
-    const handleSegmentChange = (segmentId: number) => {
-        setSelectedSegmentId(segmentId);
+    const toggleSegment = (segmentId: number) => {
+        setSelectedSegmentIds(prev =>
+            prev.includes(segmentId)
+                ? prev.filter(id => id !== segmentId)
+                : [...prev, segmentId]
+        );
     };
 
 
@@ -123,43 +119,74 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (selectedSegmentId === null) {
-            setError('請選擇一個挑戰路段');
-            return;
-        }
-
-        if (existingRegistrations.length > 0) {
-            setError('您已經報名過路段，如需變更請洽管理員。同步資料請使用上方同步按鈕。');
-            return;
-        }
-
         setIsSubmitting(true);
         setError(null);
         setSuccessMessage(null);
 
         try {
-            // 新增報名記錄
-            const seg = segments.find(s => s.id === selectedSegmentId);
-            const registration = {
-                segment_id: seg?.internal_id || selectedSegmentId,
-                strava_athlete_id: athlete.id,
-                athlete_name: name,
-                athlete_profile: athlete.profile,
-                team: team,
-                tcu_id: tcuId,
-                status: 'approved'
-            };
+            const existingInternalIds = existingRegistrations.map(r => r.segment_id);
+            const currentInternalIds = selectedSegmentIds.map(sid =>
+                segments.find(s => s.id === sid)?.internal_id
+            ).filter((id): id is number => id !== undefined);
 
-            const { error: insertError } = await supabase
-                .from('registrations')
-                .insert([registration]);
+            // 需要新增的
+            const toAdd = currentInternalIds.filter(id => !existingInternalIds.includes(id));
+            // 需要刪除的
+            const toDelete = existingInternalIds.filter(id => !currentInternalIds.includes(id));
 
-            if (insertError) throw insertError;
+            // 1. 執行刪除
+            if (toDelete.length > 0) {
+                const { error: delError } = await supabase
+                    .from('registrations')
+                    .delete()
+                    .eq('strava_athlete_id', athlete.id)
+                    .in('segment_id', toDelete);
+                if (delError) throw delError;
+            }
 
+            // 2. 執行新增
+            if (toAdd.length > 0) {
+                const registrationsToAdd = toAdd.map(internalId => ({
+                    segment_id: internalId,
+                    strava_athlete_id: athlete.id,
+                    athlete_name: name,
+                    athlete_profile: athlete.profile,
+                    team: team,
+                    tcu_id: tcuId,
+                    status: 'approved'
+                }));
+
+                const { error: insError } = await supabase
+                    .from('registrations')
+                    .insert(registrationsToAdd);
+                if (insError) throw insError;
+            }
+
+            // 3. 更新現有資料的備註或團隊資訊 (如果需要的話)
+            // 這裡簡單處理：只要有勾選，就更新所有選中路段的姓名、團隊、TCU ID
+            if (currentInternalIds.length > 0) {
+                const { error: upsertError } = await supabase
+                    .from('registrations')
+                    .upsert(
+                        currentInternalIds.map(internalId => ({
+                            segment_id: internalId,
+                            strava_athlete_id: athlete.id,
+                            athlete_name: name,
+                            athlete_profile: athlete.profile,
+                            team: team,
+                            tcu_id: tcuId,
+                            status: 'approved'
+                        })),
+                        { onConflict: 'strava_athlete_id,segment_id' }
+                    );
+                if (upsertError) throw upsertError;
+            }
+
+            setSuccessMessage('報名設定已更新');
             onSuccess();
         } catch (err: any) {
-            console.error('報名失敗:', err);
-            setError(err.message || '報名失敗，請稍後再試');
+            console.error('更新失敗:', err);
+            setError(err.message || '更新失敗，請稍後再試');
         } finally {
             setIsSubmitting(false);
         }
@@ -201,42 +228,29 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     {/* 路段選擇 */}
                     <div className="group/field">
                         <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em]">
-                            選擇挑戰路段 <span className="text-tsu-blue-light">(單選)</span>
+                            選擇挑戰路段 <span className="text-tsu-blue-light">(勾選報名)</span>
                         </label>
-
-                        {existingRegistrations.length > 0 && (
-                            <div className="mb-4 p-4 bg-tsu-blue/10 border border-tsu-blue/30 rounded-2xl">
-                                <p className="text-tsu-blue-light text-xs font-bold leading-relaxed">
-                                    <span className="material-symbols-outlined text-sm align-middle mr-1">info</span>
-                                    您已報名過：{existingRegistrations.map(r => r.segments?.name).join(', ')}。
-                                    <br />
-                                    根據規則，一個 Strava 帳號僅能報名一個主要路段，如需變更請聯絡管理員。
-                                </p>
-                            </div>
-                        )}
                         <div className="grid gap-3">
                             {segments.map(seg => (
                                 <label
                                     key={seg.id}
-                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentId === seg.id
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentIds.includes(seg.id)
                                         ? 'bg-tsu-blue/20 border-tsu-blue/50'
                                         : 'bg-white/5 border-white/10 hover:border-white/20'
-                                        } ${existingRegistrations.length > 0 && selectedSegmentId !== seg.id ? 'opacity-50 grayscale' : ''}`}
+                                        }`}
                                 >
                                     <input
-                                        type="radio"
-                                        name="segment"
-                                        checked={selectedSegmentId === seg.id}
-                                        onChange={() => handleSegmentChange(seg.id)}
-                                        disabled={existingRegistrations.length > 0}
+                                        type="checkbox"
+                                        checked={selectedSegmentIds.includes(seg.id)}
+                                        onChange={() => toggleSegment(seg.id)}
                                         className="sr-only"
                                     />
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedSegmentId === seg.id
+                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedSegmentIds.includes(seg.id)
                                         ? 'bg-tsu-blue border-tsu-blue'
                                         : 'border-white/30'
                                         }`}>
-                                        {selectedSegmentId === seg.id && (
-                                            <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+                                        {selectedSegmentIds.includes(seg.id) && (
+                                            <span className="material-symbols-outlined text-white text-sm">check</span>
                                         )}
                                     </div>
                                     <div className="flex-1">
@@ -251,7 +265,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                 </div>
                             )}
                         </div>
-                        <p className="mt-3 text-[10px] text-slate-500 italic ml-1">* 請慎重選擇您的挑戰路段，報名後不可自行修改。</p>
+                        <p className="mt-3 text-[10px] text-slate-500 italic ml-1">* 您可以隨時調整報道路段，勾選即代表報名，取消勾選則移除紀錄。</p>
                     </div>
 
                     <div className="grid gap-6">
@@ -342,7 +356,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
                     <button
                         type="submit"
-                        disabled={isSubmitting || existingRegistrations.length > 0}
+                        disabled={isSubmitting}
                         className="w-full bg-tsu-blue-light hover:bg-tsu-blue text-white font-black py-5 rounded-2xl transition-all shadow-2xl shadow-tsu-blue/30 flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-sm disabled:opacity-50 active:scale-95 group/btn"
                     >
                         {isSubmitting ? (
@@ -353,9 +367,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                         ) : (
                             <>
                                 <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
-                                    {existingRegistrations.length > 0 ? 'lock' : 'how_to_reg'}
+                                    save
                                 </span>
-                                <span>{existingRegistrations.length > 0 ? '您已報名完成' : '送出報名'}</span>
+                                <span>確認報名內容</span>
                             </>
                         )}
                     </button>
