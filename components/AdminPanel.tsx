@@ -122,6 +122,31 @@ const AdminPanel: React.FC = () => {
         setSegments([]);
     };
 
+    const handleClearAllData = async () => {
+        if (!confirm('！！！極度危險！！！\n\n您確定要清空所有路段與報名資料嗎？\n此操作將刪除資料庫中的所有紀錄且無法復原！')) {
+            if (!confirm('請再次確認：您真的要刪除所有資料嗎？')) return;
+        }
+
+        try {
+            setLoading(true);
+            // 由於 RLS 限制，客戶端可能無法執行 TRUNCATE，我們改用循環刪除或透過 SQL Webhook
+            // 這裡嘗試直接刪除所有
+            const { error: regError } = await supabase.from('registrations').delete().neq('id', 0);
+            if (regError) throw regError;
+
+            const { error: segError } = await supabase.from('segments').delete().neq('id', 0);
+            if (segError) throw segError;
+
+            alert('所有數據已清空');
+            fetchSegments();
+            fetchRegistrations();
+        } catch (err: any) {
+            alert('清理失敗: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading && !session) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -179,12 +204,20 @@ const AdminPanel: React.FC = () => {
                         目前登入身份: {session.user.email}
                     </p>
                 </div>
-                <button
-                    onClick={handleLogout}
-                    className="px-6 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all"
-                >
-                    登出
-                </button>
+                <div className="flex gap-4">
+                    <button
+                        onClick={handleClearAllData}
+                        className="px-6 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold rounded-xl border border-red-200 dark:border-red-800 hover:bg-red-600 hover:text-white transition-all text-xs"
+                    >
+                        清空所有數據
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="px-6 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all"
+                    >
+                        登出
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
