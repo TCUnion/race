@@ -169,6 +169,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             >
               前往報名頁面
             </button>
+            <button
+              onClick={() => window.location.hash = ''}
+              className="bg-white/10 text-white/50 px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-white/20 transition-all w-full"
+            >
+              返回首頁
+            </button>
           </div>
         </div>
       </div>
@@ -186,14 +192,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="material-symbols-outlined text-sm">mountain_flag</span>
               <span className="text-[10px] font-bold uppercase tracking-widest">TSU Challenge Series</span>
             </div>
-            <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">Segment: Alpe du Zwift</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-normal">持續超越極限，爭奪榮耀排位。</p>
+            <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">
+              {segment ? `Segment: ${segment.name}` : '載入路段中...'}
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-normal">
+              {segment?.description || '持續超越極限，爭奪榮耀排位。'}
+            </p>
           </div>
           <div className="flex flex-col gap-3 w-full md:w-auto">
-            <button className="flex w-full md:min-w-[180px] cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-tsu-blue hover:bg-tsu-blue-light text-white text-base md:text-sm font-bold transition-all shadow-lg shadow-tsu-blue/20 active:scale-95 group">
-              <span className="material-symbols-outlined text-xl group-hover:rotate-180 transition-transform duration-500">sync</span>
-              <span>立即同步數據</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => onNavigate(ViewType.REGISTER)}
+                className="flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-white/5 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-tsu-blue-light text-slate-900 dark:text-white text-base md:text-sm font-bold transition-all active:scale-95 group"
+              >
+                <span className="material-symbols-outlined text-xl text-tsu-blue-light">how_to_reg</span>
+                <span>管理報名 / 報名新路段</span>
+              </button>
+              <button className="flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-tsu-blue hover:bg-tsu-blue-light text-white text-base md:text-sm font-bold transition-all shadow-lg shadow-tsu-blue/20 active:scale-95 group">
+                <span className="material-symbols-outlined text-xl group-hover:rotate-180 transition-transform duration-500">sync</span>
+                <span>立即同步數據</span>
+              </button>
+            </div>
             <div className="text-center md:text-right">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-widest font-bold">資料每小時自動更新</p>
             </div>
@@ -332,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
             <div className="absolute bottom-6 left-6 flex flex-col gap-1">
               <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest">Route Profile</p>
-              <h4 className="text-white text-xl font-black">Alpe du Zwift</h4>
+              <h4 className="text-white text-xl font-black">{segment?.name || '路線概況'}</h4>
             </div>
           </div>
           <div className="rounded-2xl p-8 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex flex-col justify-center shadow-sm backdrop-blur-sm">
@@ -342,9 +361,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
             <div className="space-y-4">
               {[
-                { label: '距離', value: MOCK_SEGMENT_STATS.distance, icon: 'straighten' },
-                { label: '平均坡度', value: MOCK_SEGMENT_STATS.grade, icon: 'trending_up' },
-                { label: '垂直爬升', value: MOCK_SEGMENT_STATS.ascent, icon: 'elevation' }
+                { label: '距離', value: segment ? `${(segment.distance / 1000).toFixed(2)} km` : MOCK_SEGMENT_STATS.distance, icon: 'straighten' },
+                { label: '平均坡度', value: segment ? `${segment.average_grade}%` : MOCK_SEGMENT_STATS.grade, icon: 'trending_up' },
+                { label: '垂直爬升', value: segment ? `${segment.total_elevation_gain} m` : MOCK_SEGMENT_STATS.ascent, icon: 'elevation' }
               ].map((row, i) => (
                 <div key={i} className={`flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 ${i === 2 ? 'border-none pb-0' : ''}`}>
                   <div className="flex items-center gap-2">
