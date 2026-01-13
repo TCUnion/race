@@ -104,8 +104,10 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
     if (!leaderboard) return [];
 
     let result = leaderboard.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.number && p.number.includes(searchQuery));
+      const pName = p.name || '';
+      const pNumber = p.number || '';
+      const matchesSearch = pName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pNumber.includes(searchQuery);
       const matchesTeam = !teamFilter || p.team === teamFilter;
       return matchesSearch && matchesTeam;
     });
@@ -200,8 +202,8 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                     <tr key={`${p.athlete_id}-${p.activity_id}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
                       <td className="py-4 text-center">
                         <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-black text-xs italic ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                            p.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                              p.rank === 3 ? 'bg-amber-700 text-amber-100' : 'text-slate-300 dark:text-slate-700'
+                          p.rank === 2 ? 'bg-slate-300 text-slate-700' :
+                            p.rank === 3 ? 'bg-amber-700 text-amber-100' : 'text-slate-300 dark:text-slate-700'
                           }`}>
                           {p.rank}
                         </span>
@@ -240,8 +242,8 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                   <div className="flex items-center gap-3 justify-between">
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] italic ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                          p.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                            p.rank === 3 ? 'bg-amber-700 text-amber-100' : 'text-slate-300 dark:text-slate-700'
+                        p.rank === 2 ? 'bg-slate-300 text-slate-700' :
+                          p.rank === 3 ? 'bg-amber-700 text-amber-100' : 'text-slate-300 dark:text-slate-700'
                         }`}>
                         {p.rank}
                       </span>
