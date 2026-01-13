@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
 export interface StravaSegment {
     id: number;
@@ -64,6 +65,7 @@ export interface SegmentStats {
 
 interface UseSegmentDataReturn {
     segment: StravaSegment | null;
+    segments: StravaSegment[];
     leaderboard: LeaderboardEntry[];
     stats: SegmentStats;
     weather: WeatherData | null;
@@ -117,6 +119,7 @@ export const formatSpeed = (metersPerSec: number | null): string => {
 
 export const useSegmentData = (): UseSegmentDataReturn => {
     const [segment, setSegment] = useState<StravaSegment | null>(FALLBACK_SEGMENT);
+    const [segments, setSegments] = useState<StravaSegment[]>([]);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [stats, setStats] = useState<SegmentStats>({
         totalAthletes: 0,
@@ -129,6 +132,47 @@ export const useSegmentData = (): UseSegmentDataReturn => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [weather, setWeather] = useState<WeatherData | null>(null);
+
+    // 從 Supabase 載入啟用中的路段
+    const fetchSegmentsFromSupabase = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('segments')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: true });
+            
+            if (error) {
+                console.error('Fetch segments error:', error);
+                return;
+            }
+            
+            if (data && data.length > 0) {
+                // 轉換 Supabase 格式為 StravaSegment 格式
+                const mappedSegments: StravaSegment[] = data.map(s => ({
+                    id: s.strava_id,
+                    name: s.name,
+                    distance: s.distance || 0,
+                    average_grade: s.average_grade || 0,
+                    maximum_grade: s.maximum_grade || 0,
+                    elevation_low: s.elevation_low || 0,
+                    elevation_high: s.elevation_high || 0,
+                    total_elevation_gain: s.total_elevation_gain || 0,
+                    activity_type: 'Ride',
+                    polyline: s.polyline,
+                    link: s.link,
+                    description: s.description,
+                }));
+                setSegments(mappedSegments);
+                // 設定主要路段為第一個啟用的路段
+                if (mappedSegments.length > 0 && (!segment || segment.id === FALLBACK_SEGMENT.id)) {
+                    setSegment(mappedSegments[0]);
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching segments from Supabase:', e);
+        }
+    }, [segment]);
 
     const calculateStats = (data: LeaderboardEntry[]): SegmentStats => {
         const completed = data.filter(e => e.elapsed_time > 0);
@@ -224,8 +268,9 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
     // 初始載入
     useEffect(() => {
+        fetchSegmentsFromSupabase();
         fetchData(true);
-    }, [fetchData]);
+    }, [fetchData, fetchSegmentsFromSupabase]);
 
     // 自動刷新
     useEffect(() => {
@@ -235,6 +280,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
     return {
         segment,
+        segments,
         leaderboard,
         stats,
         weather,

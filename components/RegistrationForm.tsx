@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+
+interface Segment {
+    id: number;
+    name: string;
+}
 
 interface RegistrationFormProps {
     athlete: {
@@ -8,21 +13,37 @@ interface RegistrationFormProps {
         lastname?: string;
         profile?: string;
     };
-    segmentId: number;
+    segments: Segment[];
     onSuccess: () => void;
 }
 
 const TCU_SYNC_URL = 'https://n8n.criterium.tw/webhook/tcu-sync';
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segmentId, onSuccess }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess }) => {
     const [tcuId, setTcuId] = useState('');
     const [name, setName] = useState(`${athlete.firstname || ''} ${athlete.lastname || ''}`.trim());
     const [team, setTeam] = useState('');
-    const [number, setNumber] = useState('');
+    const [selectedSegmentIds, setSelectedSegmentIds] = useState<number[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // 預設勾選第一個路段
+    useEffect(() => {
+        if (segments.length > 0 && selectedSegmentIds.length === 0) {
+            setSelectedSegmentIds([segments[0].id]);
+        }
+    }, [segments, selectedSegmentIds.length]);
+
+    const toggleSegment = (segmentId: number) => {
+        setSelectedSegmentIds(prev => 
+            prev.includes(segmentId) 
+                ? prev.filter(id => id !== segmentId)
+                : [...prev, segmentId]
+        );
+    };
+
 
     // 同步 TCU 資料
     const handleSyncTCU = async () => {
@@ -71,25 +92,32 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segmentId,
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (selectedSegmentIds.length === 0) {
+            setError('請至少選擇一個挑戰路段');
+            return;
+        }
+
         setIsSubmitting(true);
         setError(null);
         setSuccessMessage(null);
 
         try {
+            // 批次新增報名記錄（每個路段一筆）
+            const registrations = selectedSegmentIds.map(segId => ({
+                segment_id: segId,
+                strava_athlete_id: athlete.id,
+                athlete_name: name,
+                athlete_profile: athlete.profile,
+                team: team,
+                // number 由資料庫 Trigger 自動派發
+                tcu_id: tcuId,
+                status: 'approved'
+            }));
+
             const { error: insertError } = await supabase
                 .from('registrations')
-                .insert([
-                    {
-                        segment_id: segmentId,
-                        strava_athlete_id: athlete.id,
-                        athlete_name: name,
-                        athlete_profile: athlete.profile,
-                        team: team,
-                        number: number,
-                        tcu_id: tcuId,
-                        status: 'approved'
-                    }
-                ]);
+                .insert(registrations);
 
             if (insertError) throw insertError;
 
@@ -132,6 +160,50 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segmentId,
                         <div>
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">已連結 Strava</p>
                             <p className="text-white font-black text-xl italic tracking-tight uppercase">ID: {athlete.id}</p>
+                        </div>
+                    </div>
+
+                    {/* 路段選擇 */}
+                    <div className="group/field">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-3 ml-1 tracking-[0.2em]">
+                            選擇挑戰路段 <span className="text-tsu-blue-light">(可複選)</span>
+                        </label>
+                        <div className="grid gap-3">
+                            {segments.map(seg => (
+                                <label 
+                                    key={seg.id}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${
+                                        selectedSegmentIds.includes(seg.id)
+                                            ? 'bg-tsu-blue/20 border-tsu-blue/50'
+                                            : 'bg-white/5 border-white/10 hover:border-white/20'
+                                    }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedSegmentIds.includes(seg.id)}
+                                        onChange={() => toggleSegment(seg.id)}
+                                        className="sr-only"
+                                    />
+                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                                        selectedSegmentIds.includes(seg.id)
+                                            ? 'bg-tsu-blue border-tsu-blue'
+                                            : 'border-white/30'
+                                    }`}>
+                                        {selectedSegmentIds.includes(seg.id) && (
+                                            <span className="material-symbols-outlined text-white text-sm">check</span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-white font-bold">{seg.name}</p>
+                                        <p className="text-slate-500 text-xs">Strava ID: {seg.id}</p>
+                                    </div>
+                                </label>
+                            ))}
+                            {segments.length === 0 && (
+                                <div className="text-center py-6 text-slate-500">
+                                    <p>目前無可報名的路段</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

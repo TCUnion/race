@@ -9,9 +9,8 @@ interface RegisterPageProps {
 }
 
 const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
-  const { segment } = useSegmentData();
+  const { segments } = useSegmentData();
   const [athlete, setAthlete] = useState<any>(null);
-  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -20,49 +19,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     if (savedData) {
       const athleteData = JSON.parse(savedData);
       setAthlete(athleteData);
-      if (segment) {
-        checkRegistration(athleteData.id);
-      }
-    } else {
-      setIsLoading(false);
     }
-  }, [segment]);
+    setIsLoading(false);
+  }, []);
 
-  const checkRegistration = async (athleteId: string | number) => {
-    if (!segment) return;
-    
-    // Only show loading on initial check
-    if (isRegistered === null) {
-      setIsLoading(true);
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('registrations')
-        .select('*')
-        .eq('strava_athlete_id', athleteId)
-        .eq('segment_id', segment.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      const registered = !!data;
-      setIsRegistered(registered);
-      
-      // If already registered, redirect to dashboard
-      if (registered) {
-        onNavigate(ViewType.DASHBOARD);
-      }
-    } catch (err) {
-      console.error('Registration check failed:', err);
-      // In case of error, assume not registered to allow retry, or handle error UI
-      setIsRegistered(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading && isRegistered === null) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
@@ -88,15 +49,16 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     );
   }
 
+  // 轉換 segments 格式以符合 RegistrationForm props
+  const formSegments = segments.map(s => ({ id: s.id, name: s.name }));
+
   return (
     <div className="min-h-screen bg-slate-950 py-20 px-4">
-        {segment && (
-            <RegistrationForm
-                athlete={athlete}
-                segmentId={segment.id}
-                onSuccess={() => onNavigate(ViewType.DASHBOARD)}
-            />
-        )}
+        <RegistrationForm
+            athlete={athlete}
+            segments={formSegments}
+            onSuccess={() => onNavigate(ViewType.DASHBOARD)}
+        />
     </div>
   );
 };

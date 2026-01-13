@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import RegistrationForm from './RegistrationForm';
 import { supabase } from '../lib/supabase';
 import { useSegmentData } from '../hooks/useSegmentData';
 import { MOCK_SEGMENT_STATS, MOCK_ACTIVITIES } from '../constants';

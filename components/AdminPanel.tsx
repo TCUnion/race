@@ -39,9 +39,20 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    const fetchRegistrations = async () => {
-        console.log('Fetching registrations... Session:', session);
-        const { data, error } = await supabase.from('registrations').select('*').order('registered_at', { ascending: false });
+    const fetchRegistrations = async (filterSegmentId: string | null = null) => {
+        console.log('Fetching registrations... Session:', session, 'Filter:', filterSegmentId);
+
+        let query = supabase
+            .from('registrations')
+            .select('*, segments(name, strava_id)')
+            .order('registered_at', { ascending: false });
+
+        if (filterSegmentId) {
+            query = query.eq('segment_id', filterSegmentId);
+        }
+
+        const { data, error } = await query;
+
         console.log('Fetch result:', { data, error });
         if (error) {
             console.error('Fetch registrations error:', error);
@@ -275,93 +286,133 @@ const AdminPanel: React.FC = () => {
                                     <p className="text-slate-400 font-bold">目前無路段資料</p>
                                 </div>
                             )}
-                            <button 
+                            <button
                                 onClick={() => {
                                     const strava_id = prompt('請輸入 Strava 路段 ID (數字):');
                                     if (strava_id) {
-                                    const name = prompt('請輸入路段名稱:');
-                                    if (name) {
-                                        supabase.from('segments').insert({ strava_id: parseInt(strava_id), name }).then(({ error }) => {
-                                            if (error) alert('新增失敗: ' + error.message);
-                                            else fetchSegments();
-                                        });
+                                        const name = prompt('請輸入路段名稱:');
+                                        if (name) {
+                                            supabase.from('segments').insert({ strava_id: parseInt(strava_id), name }).then(({ error }) => {
+                                                if (error) alert('新增失敗: ' + error.message);
+                                                else fetchSegments();
+                                            });
+                                        }
                                     }
-                                }
-                            }}
-                            className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
-                        >
-                            + 新增挑戰路段
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* 報名審核列表 */}
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-black">報名列表</h3>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400 font-mono">Count: {registrations.length}</span>
-                        <button onClick={fetchRegistrations} className="text-sm text-tsu-blue hover:underline">重新整理</button>
-                    </div>
+                                }}
+                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
+                            >
+                                + 新增挑戰路段
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {registrations.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
-                        <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
-                        <p className="text-slate-400 font-bold">目前無待處理報名</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
-                                <tr>
-                                    <th className="px-4 py-3 rounded-l-lg">選手</th>
-                                    <th className="px-4 py-3">號碼</th>
-                                    <th className="px-4 py-3">車隊</th>
-                                    <th className="px-4 py-3">TCU ID</th>
-                                    <th className="px-4 py-3">狀態</th>
-                                    <th className="px-4 py-3 rounded-r-lg">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {registrations.map((reg) => (
-                                    <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="px-4 py-3 font-bold">{reg.athlete_name}</td>
-                                        <td className="px-4 py-3 font-mono">{reg.number}</td>
-                                        <td className="px-4 py-3 text-slate-500">{reg.team || '-'}</td>
-                                        <td className="px-4 py-3 text-slate-500 font-mono text-xs">{reg.tcu_id || '-'}</td>
-                                        <td className="px-4 py-3">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                reg.status === 'approved' ? 'bg-green-100 text-green-700' : 
-                                                reg.status === 'rejected' ? 'bg-red-100 text-red-700' : 
-                                                'bg-yellow-100 text-yellow-700'
-                                            }`}>
-                                                {reg.status || 'Pending'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <button 
-                                                onClick={() => {
-                                                    if(confirm('刪除報名紀錄？')) {
-                                                        supabase.from('registrations').delete().eq('id', reg.id).then(() => fetchRegistrations());
-                                                    }
-                                                }}
-                                                className="text-red-400 hover:text-red-500 font-bold text-xs"
-                                            >
-                                                刪除
-                                            </button>
-                                        </td>
-                                    </tr>
+                {/* 報名審核列表 */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h3 className="text-xl font-black">報名列表</h3>
+                        <div className="flex items-center gap-4">
+                            <select
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setRegistrations(prev => {
+                                        // 這裡僅做前端篩選展示稍微複雜，通常我們在 fetch 時篩選
+                                        // 為了簡單起見，我們這裡重新 fetch 並帶入 filter
+                                        // 但因為 fetchRegistrations 是無參數的，我們改用 state
+                                        return prev;
+                                    });
+                                    // 重新 fetch 會比較好，從資料庫撈
+                                    fetchRegistrations(val);
+                                }}
+                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg focus:ring-tsu-blue focus:border-tsu-blue block p-2.5 font-bold"
+                            >
+                                <option value="">全部路段</option>
+                                {segments.map(seg => (
+                                    <option key={seg.id} value={seg.id}>{seg.name}</option>
                                 ))}
-                            </tbody>
-                        </table>
+                            </select>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-400 font-mono">Count: {registrations.length}</span>
+                                <button onClick={() => fetchRegistrations()} className="text-sm text-tsu-blue hover:underline">重新整理</button>
+                            </div>
+                        </div>
                     </div>
-                )}
+
+                    {registrations.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+                            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
+                            <p className="text-slate-400 font-bold">目前無待處理報名</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
+                                    <tr>
+                                        <th className="px-4 py-3 rounded-l-lg">選手</th>
+                                        <th className="px-4 py-3">路段</th>
+                                        <th className="px-4 py-3">號碼</th>
+                                        <th className="px-4 py-3">車隊</th>
+                                        <th className="px-4 py-3">TCU ID</th>
+                                        <th className="px-4 py-3">狀態</th>
+                                        <th className="px-4 py-3 rounded-r-lg">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {registrations.map((reg) => (
+                                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-4 py-3 font-bold">{reg.athlete_name}</td>
+                                            <td className="px-4 py-3 text-slate-500 text-xs">{reg.segments?.name || reg.segment_id}</td>
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    onClick={() => {
+                                                        const newNum = prompt('修改選手號碼:', reg.number);
+                                                        if (newNum !== null) {
+                                                            supabase.from('registrations')
+                                                                .update({ number: newNum })
+                                                                .eq('id', reg.id)
+                                                                .then(({ error }) => {
+                                                                    if (error) alert('更新失敗:' + error.message);
+                                                                    else fetchRegistrations();
+                                                                });
+                                                        }
+                                                    }}
+                                                    className="font-mono text-tsu-blue hover:underline font-bold"
+                                                >
+                                                    {reg.number || '派發'}
+                                                </button>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-500">{reg.team || '-'}</td>
+                                            <td className="px-4 py-3 text-slate-500 font-mono text-xs">{reg.tcu_id || '-'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${reg.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                    reg.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                    {reg.status || 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('刪除報名紀錄？')) {
+                                                            supabase.from('registrations').delete().eq('id', reg.id).then(() => fetchRegistrations());
+                                                        }
+                                                    }}
+                                                    className="text-red-400 hover:text-red-500 font-bold text-xs"
+                                                >
+                                                    刪除
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
 };
 
 export default AdminPanel;
