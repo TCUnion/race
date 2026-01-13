@@ -77,6 +77,11 @@ const AdminPanel: React.FC = () => {
                 name: editingSegment.name,
                 description: editingSegment.description,
                 link: editingSegment.link,
+                distance: editingSegment.distance,
+                average_grade: editingSegment.average_grade,
+                maximum_grade: editingSegment.maximum_grade,
+                elevation_gain: editingSegment.elevation_gain,
+                polyline: editingSegment.polyline,
                 is_active: editingSegment.is_active
             });
             error = insertError;
@@ -88,6 +93,11 @@ const AdminPanel: React.FC = () => {
                     name: editingSegment.name,
                     description: editingSegment.description,
                     link: editingSegment.link,
+                    distance: editingSegment.distance,
+                    average_grade: editingSegment.average_grade,
+                    maximum_grade: editingSegment.maximum_grade,
+                    elevation_gain: editingSegment.elevation_gain,
+                    polyline: editingSegment.polyline,
                     is_active: editingSegment.is_active
                 })
                 .eq('id', editingSegment.id);
@@ -301,8 +311,8 @@ const AdminPanel: React.FC = () => {
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">總爬升 (公尺)</label>
                                     <input
                                         type="number"
-                                        value={editingSegment.total_elevation_gain || ''}
-                                        onChange={(e) => setEditingSegment({ ...editingSegment, total_elevation_gain: parseFloat(e.target.value) })}
+                                        value={editingSegment.elevation_gain || ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, elevation_gain: parseFloat(e.target.value) })}
                                         className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
                                     />
                                 </div>
@@ -439,6 +449,11 @@ const AdminPanel: React.FC = () => {
                                             name: segment.name,
                                             description: segment.name,
                                             link: segment.link || `https://www.strava.com/segments/${segment.id}`,
+                                            distance: segment.distance,
+                                            average_grade: segment.average_grade,
+                                            maximum_grade: segment.maximum_grade,
+                                            elevation_gain: segment.total_elevation_gain || segment.elevation_gain,
+                                            polyline: segment.polyline,
                                             is_active: true
                                         });
 
