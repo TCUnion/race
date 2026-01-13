@@ -357,7 +357,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </section>
         {/* Debug Info (Temporary) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-green-400 text-xs p-2 font-mono z-50 opacity-70 hover:opacity-100 pointer-events-none">
+        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-green-400 text-xs p-2 font-mono z-50 opacity-70 hover:opacity-100 transition-opacity">
           DEBUG: 
           Registered: {isRegistered === null ? 'Checking...' : isRegistered ? 'YES' : 'NO'} | 
           Loading: {isLoading ? 'YES' : 'NO'} | 

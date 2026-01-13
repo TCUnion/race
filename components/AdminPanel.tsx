@@ -27,6 +27,7 @@ const AdminPanel: React.FC = () => {
     }, []);
 
     const [editingSegment, setEditingSegment] = useState<any>(null);
+    const [registrations, setRegistrations] = useState<any[]>([]);
 
     const fetchSegments = async () => {
         const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
@@ -37,6 +38,15 @@ const AdminPanel: React.FC = () => {
             setSegments(data);
         }
     };
+
+    const fetchRegistrations = async () => {
+        const { data, error } = await supabase.from('registrations').select('*').order('created_at', { ascending: false });
+        if (data) setRegistrations(data);
+    };
+
+    useEffect(() => {
+        if (session) fetchRegistrations();
+    }, [session]);
 
     const handleUpdateSegment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -252,14 +262,65 @@ const AdminPanel: React.FC = () => {
                     )}
                 </div>
 
-                {/* 報名審核預覽 */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <h3 className="text-xl font-black mb-4">報名審核</h3>
-                    <p className="text-slate-500 mb-6">審核選手報名資料與完賽紀錄。</p>
-                    <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
-                        <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
-                        <p className="text-slate-400 font-bold">目前無待處理報名</p>
+                {/* 報名審核列表 */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black">報名列表</h3>
+                        <button onClick={fetchRegistrations} className="text-sm text-tsu-blue hover:underline">重新整理</button>
                     </div>
+
+                    {registrations.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+                            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
+                            <p className="text-slate-400 font-bold">目前無待處理報名</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
+                                    <tr>
+                                        <th className="px-4 py-3 rounded-l-lg">選手</th>
+                                        <th className="px-4 py-3">號碼</th>
+                                        <th className="px-4 py-3">車隊</th>
+                                        <th className="px-4 py-3">TCU ID</th>
+                                        <th className="px-4 py-3">狀態</th>
+                                        <th className="px-4 py-3 rounded-r-lg">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {registrations.map((reg) => (
+                                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-4 py-3 font-bold">{reg.name}</td>
+                                            <td className="px-4 py-3 font-mono">{reg.number}</td>
+                                            <td className="px-4 py-3 text-slate-500">{reg.team || '-'}</td>
+                                            <td className="px-4 py-3 text-slate-500 font-mono text-xs">{reg.tcu_id || '-'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                    reg.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                                                    reg.status === 'rejected' ? 'bg-red-100 text-red-700' : 
+                                                    'bg-yellow-100 text-yellow-700'
+                                                }`}>
+                                                    {reg.status || 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                 <button 
+                                                    onClick={() => {
+                                                        if(confirm('刪除報名紀錄？')) {
+                                                            supabase.from('registrations').delete().eq('id', reg.id).then(() => fetchRegistrations());
+                                                        }
+                                                    }}
+                                                    className="text-red-400 hover:text-red-500 font-bold text-xs"
+                                                 >
+                                                    刪除
+                                                 </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
