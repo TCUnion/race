@@ -13,12 +13,18 @@ const AdminPanel: React.FC = () => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setLoading(false);
-            if (session) fetchSegments();
+            if (session) {
+                fetchSegments();
+                fetchSiteSettings();
+            }
         });
 
         const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            if (session) fetchSegments();
+            if (session) {
+                fetchSegments();
+                fetchSiteSettings();
+            }
         });
 
         return () => {
@@ -28,6 +34,8 @@ const AdminPanel: React.FC = () => {
 
     const [editingSegment, setEditingSegment] = useState<any>(null);
     const [registrations, setRegistrations] = useState<any[]>([]);
+    const [siteSettings, setSiteSettings] = useState<any[]>([]);
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
 
     const fetchSegments = async () => {
         const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
@@ -130,6 +138,36 @@ const AdminPanel: React.FC = () => {
         await supabase.auth.signOut();
         setSession(null);
         setSegments([]);
+    };
+
+    const fetchSiteSettings = async () => {
+        const { data, error } = await supabase.from('site_settings').select('*');
+        if (!error && data) {
+            setSiteSettings(data);
+        }
+    };
+
+    const handleUpdateSetting = (key: string, value: string) => {
+        setSiteSettings(prev => prev.map(s => s.key === key ? { ...s, value } : s));
+    };
+
+    const handleSaveAllSettings = async () => {
+        setIsSavingSettings(true);
+        try {
+            const { error } = await supabase.from('site_settings').upsert(
+                siteSettings.map(s => ({
+                    key: s.key,
+                    value: s.value,
+                    updated_at: new Date().toISOString()
+                }))
+            );
+            if (error) throw error;
+            alert('SEO 設定已儲存');
+        } catch (err: any) {
+            alert('儲存失敗: ' + err.message);
+        } finally {
+            setIsSavingSettings(false);
+        }
     };
 
     const handleClearAllData = async () => {
@@ -420,12 +458,18 @@ const AdminPanel: React.FC = () => {
                                     const strava_id = prompt('請輸入 Strava 路段 ID (數字):');
                                     if (!strava_id) return;
 
+                                    const parsedId = parseInt(strava_id);
+                                    if (isNaN(parsedId)) {
+                                        alert('請輸入有效的數字 ID');
+                                        return;
+                                    }
+
                                     try {
                                         // 呼叫 n8n webhook 取得路段資料
                                         const response = await fetch('https://n8n.criterium.tw/webhook/segment_set', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ segment_id: parseInt(strava_id) })
+                                            body: JSON.stringify({ segment_id: parsedId })
                                         });
 
                                         const responseText = await response.text();
@@ -585,6 +629,50 @@ const AdminPanel: React.FC = () => {
                             </table>
                         </div>
                     )}
+                </div>
+
+                {/* SEO 設定區塊 */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black uppercase italic italic flex items-center gap-2">
+                            <span className="material-symbols-outlined text-tsu-blue">language</span>
+                            SEO & 站點設定
+                        </h3>
+                        <button
+                            onClick={handleSaveAllSettings}
+                            disabled={isSavingSettings}
+                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
+                        >
+                            {isSavingSettings ? '儲存中...' : '儲存所有設定'}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {siteSettings.map((setting) => (
+                            <div key={setting.key} className="flex flex-col gap-2">
+                                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between">
+                                    {setting.key.replace(/_/g, ' ')}
+                                    <span className="text-slate-300 font-normal normal-case">
+                                        Last updated: {new Date(setting.updated_at).toLocaleString()}
+                                    </span>
+                                </label>
+                                {setting.key.includes('description') || setting.key.includes('keywords') ? (
+                                    <textarea
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tsu-blue min-h-[100px]"
+                                    />
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div >

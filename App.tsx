@@ -8,8 +8,10 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import RegisterPage from './components/RegisterPage';
+import { useSEO } from './hooks/useSEO';
 
 const App: React.FC = () => {
+  useSEO();
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.LANDING);
 
   const renderView = () => {
