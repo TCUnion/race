@@ -57,7 +57,10 @@ const Dashboard: React.FC = () => {
   const checkRegistration = async (athleteId: string | number) => {
     if (!segment) return;
 
-    setIsLoading(true);
+    // 只有在還不知道是否報名時才顯示初始載入狀態
+    if (isRegistered === null) {
+      setIsLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from('registrations')

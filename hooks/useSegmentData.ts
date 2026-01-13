@@ -175,10 +175,16 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     segmentData.polyline = segmentData.map.polyline;
                 }
 
-                setSegment(segmentData);
+                // 只有在 ID 真的變更或資料有顯著差異時才更新 segment
+                setSegment(prev => {
+                    if (prev && prev.id === segmentData.id && prev.name === segmentData.name) {
+                        return prev;
+                    }
+                    return segmentData;
+                });
             } else {
                 // API 未回傳 segment，使用 fallback
-                setSegment(FALLBACK_SEGMENT);
+                setSegment(prev => prev === FALLBACK_SEGMENT ? prev : FALLBACK_SEGMENT);
             }
 
             // 處理排行榜資料
@@ -214,7 +220,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             // 確保 isLoading 結束後一定有 segment
             setSegment(prev => prev || FALLBACK_SEGMENT);
         }
-    }, [segment]);
+    }, [leaderboard.length]);
 
     // 初始載入
     useEffect(() => {
