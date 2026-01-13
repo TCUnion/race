@@ -1,6 +1,6 @@
 
-import React, { useEffect, useRef, useMemo } from 'react';
-import { useSegmentData, formatTime } from '../hooks/useSegmentData';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { useSegmentData, formatTime, LeaderboardEntry, StravaSegment, SegmentStats } from '../hooks/useSegmentData';
 
 declare global {
   interface Window {
@@ -44,20 +44,27 @@ function decodePolyline(encoded: string): [number, number][] {
   return points;
 }
 
-const Leaderboard: React.FC = () => {
-  const {
-    segment,
-    leaderboard: rawLeaderboard,
-    stats,
-    isLoading: isGlobalLoading,
-    refresh
-  } = useSegmentData();
+// 子元件：單一路段排行榜
+interface SegmentLeaderboardProps {
+  segment: StravaSegment;
+  leaderboard: LeaderboardEntry[];
+  stats: SegmentStats;
+  sortBy: string;
+  searchQuery: string;
+  teamFilter: string;
+}
 
-  const [sortBy, setSortBy] = React.useState('time');
-  const [teamFilter, setTeamFilter] = React.useState('');
-  const [searchQuery, setSearchQuery] = React.useState('');
+const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
+  segment,
+  leaderboard,
+  stats,
+  sortBy,
+  searchQuery,
+  teamFilter
+}) => {
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [isTableExpanded, setIsTableExpanded] = useState(true);
 
   // 地圖初始化邏輯
   useEffect(() => {
@@ -90,13 +97,13 @@ const Leaderboard: React.FC = () => {
         mapRef.current.fitBounds(polyline.getBounds(), { padding: [20, 20] });
       }
     }
-  }, [segment, mapContainerRef]);
+  }, [segment]);
 
   // 過濾與排序邏輯
-  const filteredAndSortedData = useMemo(() => {
-    if (!rawLeaderboard) return [];
+  const processedData = useMemo(() => {
+    if (!leaderboard) return [];
 
-    let result = rawLeaderboard.filter(p => {
+    let result = leaderboard.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.number && p.number.includes(searchQuery));
       const matchesTeam = !teamFilter || p.team === teamFilter;
@@ -115,94 +122,204 @@ const Leaderboard: React.FC = () => {
     });
 
     return result.map((p, index) => ({ ...p, rank: index + 1 }));
-  }, [rawLeaderboard, searchQuery, teamFilter, sortBy]);
-
-  const teams = useMemo(() => {
-    if (!rawLeaderboard) return [];
-    const t = new Set(rawLeaderboard.map(p => p.team).filter(Boolean));
-    return Array.from(t).sort() as string[];
-  }, [rawLeaderboard]);
-
-  if (isGlobalLoading && !segment) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
-        <div className="w-12 h-12 border-4 border-tsu-blue/20 border-t-tsu-blue rounded-full animate-spin"></div>
-        <p className="text-slate-500 font-bold animate-pulse">正在載入排行榜資料...</p>
-      </div>
-    );
-  }
+  }, [leaderboard, searchQuery, teamFilter, sortBy]);
 
   return (
-    <div className="flex flex-col items-center w-full pb-20 px-4 md:px-6 lg:px-8 max-w-[1400px] mx-auto">
+    <div className="w-full mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* 標題與統計 */}
-      <div className="w-full py-8 md:py-12 bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 mb-8 p-6 md:p-10">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-3 italic uppercase tracking-tight">
-            {segment?.name || 'Loading'} <span className="text-tsu-blue">排行榜</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-            即時更新 Strava 活動數據 | 路段計時 | 功率分析 (Powered by Strava)
-          </p>
+      <div className="w-full py-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 mb-6 p-6 md:p-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 border-l-8 border-tsu-blue pl-6">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">
+                {segment.name}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                  {segment.activity_type}
+                </span>
+                <span className="text-slate-400 text-xs font-bold">
+                  {(segment.distance / 1000).toFixed(2)}km · {segment.average_grade}% Avg
+                </span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsTableExpanded(!isTableExpanded)}
+            className="text-slate-400 hover:text-tsu-blue transition-colors md:hidden"
+          >
+            <span className="material-symbols-outlined text-3xl">
+              {isTableExpanded ? 'expand_less' : 'expand_more'}
+            </span>
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
           {[
-            { label: '參賽人數', value: stats.total_athletes || stats.totalAthletes || '-', color: 'text-slate-900' },
-            { label: '完成人數', value: stats.completed_athletes || stats.completedAthletes || '-', color: 'text-tsu-blue' },
+            { label: '參賽人數', value: stats.totalAthletes || '-', color: 'text-slate-900' },
+            { label: '完成人數', value: stats.completedAthletes || '-', color: 'text-tsu-blue' },
             { label: '最快時間', value: formatTime(stats.bestTime), color: 'text-red-500' },
             { label: '平均時間', value: formatTime(stats.avgTime), color: 'text-slate-900' },
             { label: '最高功率', value: stats.maxPower ? `${stats.maxPower} W` : '-', color: 'text-orange-500' },
             { label: '平均速度', value: stats.avgSpeed ? `${(stats.avgSpeed * 3.6).toFixed(1)} km/h` : '-', color: 'text-slate-900' },
           ].map((stat, i) => (
-            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center min-h-[100px]">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</span>
-              <div className="h-8 flex items-center justify-center">
-                <span className={`text-xl font-black italic ${stat.color} dark:text-white`}>
-                  {stat.value}
-                </span>
-              </div>
+            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</span>
+              <span className={`text-base font-black italic ${stat.color} dark:text-white`}>
+                {stat.value}
+              </span>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* 賽段資訊與地圖 */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none">
-          <div className="flex items-center gap-2 mb-6">
-            <h2 className="text-xl font-black text-slate-900 dark:text-white italic uppercase">路段資訊</h2>
-            <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-              {segment?.activity_type || 'Ride'}
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white mb-8 border-l-4 border-tsu-blue pl-4">
-            {segment?.name || '-'}
-          </div>
-          <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-            {[
-              { label: '距離', value: segment ? `${(segment.distance / 1000).toFixed(2)} km` : '-' },
-              { label: '平均坡度', value: segment ? `${segment.average_grade}%` : '-' },
-              { label: '最陡坡度', value: segment ? `${segment.maximum_grade}%` : '-' },
-              { label: '海拔範圍', value: segment ? `${segment.elevation_low}m → ${segment.elevation_high}m` : '-' },
-            ].map((item, i) => (
-              <div key={i}>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{item.value}</p>
+        {/* 地圖區域 */}
+        <div className="w-full h-[200px] mb-8 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800">
+          <div ref={mapContainerRef} className="w-full h-full z-0"></div>
+        </div>
+
+        {/* 表格區塊 */}
+        {isTableExpanded && (
+          <div className="w-full border-t border-slate-50 dark:border-slate-800 pt-6">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                    <th className="pb-4">排名</th>
+                    <th className="pb-4 text-left">選手資訊</th>
+                    <th className="pb-4">號碼</th>
+                    <th className="pb-4">完成時間</th>
+                    <th className="pb-4">平均速度</th>
+                    <th className="pb-4">平均功率</th>
+                    <th className="pb-4">日期</th>
+                    <th className="pb-4">Strava</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                  {processedData.map((p) => (
+                    <tr key={`${p.athlete_id}-${p.activity_id}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+                      <td className="py-4 text-center">
+                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-black text-xs italic ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
+                            p.rank === 2 ? 'bg-slate-300 text-slate-700' :
+                              p.rank === 3 ? 'bg-amber-700 text-amber-100' : 'text-slate-300 dark:text-slate-700'
+                          }`}>
+                          {p.rank}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <img src={p.profile_medium || p.profile} alt={p.name} className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm" />
+                          <div>
+                            <div className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</div>
+                            {p.team && <span className="text-[9px] font-black text-tsu-blue/70 dark:text-tsu-blue uppercase">{p.team}</span>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 text-center font-bold text-slate-500 text-xs">#{p.number || '-'}</td>
+                      <td className="py-4 text-center font-black italic text-sm text-green-600 dark:text-green-400">{formatTime(p.elapsed_time)}</td>
+                      <td className="py-4 text-center font-bold text-slate-700 dark:text-slate-300 text-xs">{(p.average_speed * 3.6).toFixed(1)} km/h</td>
+                      <td className="py-4 text-center font-bold text-slate-700 dark:text-slate-300 text-xs">{Math.round(p.average_watts || 0)}W</td>
+                      <td className="py-4 text-center text-[10px] font-bold text-slate-500">{new Date(p.start_date || 0).toLocaleDateString()}</td>
+                      <td className="py-4 text-center">
+                        {p.activity_id && (
+                          <a href={`${CONFIG.stravaActivityBase}${p.activity_id}`} target="_blank" rel="noreferrer" className="text-tsu-blue hover:text-tsu-blue/80">
+                            <span className="material-symbols-outlined text-lg">open_in_new</span>
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {processedData.map((p) => (
+                <div key={`${p.athlete_id}-${p.activity_id}`} className="py-4">
+                  <div className="flex items-center gap-3 justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] italic ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
+                          p.rank === 2 ? 'bg-slate-300 text-slate-700' :
+                            p.rank === 3 ? 'bg-amber-700 text-amber-100' : 'text-slate-300 dark:text-slate-700'
+                        }`}>
+                        {p.rank}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</h4>
+                        <p className="text-[9px] font-bold text-slate-400">#{p.number || '-'} · {Math.round(p.average_watts || 0)}W</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-base font-black italic text-green-600 dark:text-green-400">{formatTime(p.elapsed_time)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {processedData.length === 0 && (
+              <div className="py-10 text-center">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">無符合條件的數據</p>
               </div>
-            ))}
+            )}
           </div>
-        </div>
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-2 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-lg shadow-slate-200/20 dark:shadow-none flex flex-col min-h-[300px]">
-          <div ref={mapContainerRef} className="flex-1 w-full rounded-2xl overflow-hidden z-0"></div>
-        </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Leaderboard: React.FC = () => {
+  const {
+    segments,
+    leaderboardsMap,
+    statsMap,
+    isLoading: isGlobalLoading,
+    refresh
+  } = useSegmentData();
+
+  const [sortBy, setSortBy] = useState('time');
+  const [teamFilter, setTeamFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const teams = useMemo(() => {
+    const allTeams = new Set<string>();
+    Object.values(leaderboardsMap).forEach(lb => {
+      lb.forEach(p => {
+        if (p.team) allTeams.add(p.team);
+      });
+    });
+    return Array.from(allTeams).sort();
+  }, [leaderboardsMap]);
+
+  if (isGlobalLoading && segments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
+        <div className="w-12 h-12 border-4 border-tsu-blue/20 border-t-tsu-blue rounded-full animate-spin"></div>
+        <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">正在載入排行榜資料...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center w-full pb-20 px-4 md:px-6 lg:px-8 max-w-[1200px] mx-auto">
+      {/* 頁面標題 */}
+      <div className="w-full py-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 italic uppercase tracking-tighter">
+          賽事<span className="text-tsu-blue">排行榜</span>
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">
+          即時路段計時數據 · 多段同步更新 (Powered by Strava)
+        </p>
       </div>
 
-      {/* 篩選與排序 */}
-      <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-md mb-8">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
+      {/* 全局篩選與排序 */}
+      <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl mb-12">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">排序方式</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">排序依據</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -216,7 +333,7 @@ const Leaderboard: React.FC = () => {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">車隊篩選</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">車隊過濾</label>
               <select
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
@@ -227,7 +344,7 @@ const Leaderboard: React.FC = () => {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">選手搜尋</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-1">搜尋選手</label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
                 <input
@@ -242,167 +359,38 @@ const Leaderboard: React.FC = () => {
           </div>
           <button
             onClick={() => refresh()}
-            className="w-full md:w-auto self-end bg-tsu-blue hover:brightness-110 text-white font-black uppercase text-xs tracking-widest py-4 px-8 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-tsu-blue/30"
+            className="w-full md:w-auto bg-tsu-blue hover:brightness-110 text-white font-black uppercase text-xs tracking-widest py-4 px-8 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-tsu-blue/30"
           >
             <span className="material-symbols-outlined text-sm">refresh</span>
-            重新整理
+            刷更新
           </button>
         </div>
       </div>
 
-      {/* 排行榜表格 */}
-      <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden">
-        <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="text-lg font-black text-slate-900 dark:text-white italic uppercase">🏆 即時排行榜</h3>
-          <span className="text-[10px] font-bold text-slate-400 uppercase">
-            最後更新: {new Date().toLocaleTimeString()}
-          </span>
-        </div>
+      {/* 路段排行榜列表 */}
+      <div className="w-full space-y-4">
+        {segments.map(seg => (
+          <SegmentLeaderboard
+            key={seg.id}
+            segment={seg}
+            leaderboard={leaderboardsMap[seg.id] || []}
+            stats={statsMap[seg.id] || { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null }}
+            sortBy={sortBy}
+            searchQuery={searchQuery}
+            teamFilter={teamFilter}
+          />
+        ))}
 
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-50/30 dark:bg-slate-800/30">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">排名</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">選手資訊</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">號碼</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">完成時間</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">平均速度</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">平均功率</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">平均心率</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">日期</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Strava</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {filteredAndSortedData.map((p) => (
-                <tr key={`${p.athlete_id}-${p.activity_id}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
-                  <td className="px-6 py-5 text-center">
-                    <div className="flex justify-center">
-                      {p.rank <= 3 ? (
-                        <span className={`flex items-center justify-center w-8 h-8 rounded-full font-black text-sm italic ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                          p.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                            'bg-amber-700 text-amber-100'
-                          }`}>
-                          {p.rank}
-                        </span>
-                      ) : (
-                        <span className="font-black text-lg italic text-slate-300 dark:text-slate-700 group-hover:text-tsu-blue transition-colors">
-                          {p.rank < 10 ? `0${p.rank}` : p.rank}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <img src={p.profile_medium || p.profile} alt={p.name} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" />
-                      <div>
-                        <div className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</div>
-                        {p.team && (
-                          <span className="text-[10px] font-black text-tsu-blue/70 dark:text-tsu-blue uppercase">{p.team}</span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-500 text-xs">#{p.number || '-'}</td>
-                  <td className="px-6 py-5 text-center font-black italic text-base text-green-600 dark:text-green-400">{formatTime(p.elapsed_time)}</td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300 text-sm">{(p.average_speed * 3.6).toFixed(1)} km/h</td>
-                  <td className="px-6 py-5 text-center">
-                    <div className="flex flex-col items-center">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">{Math.round(p.average_watts || 0) || '-'}</span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase">Watts</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300 text-sm">{Math.round(p.average_heartrate || 0) || '-'} bpm</td>
-                  <td className="px-6 py-5 text-center text-[10px] font-bold text-slate-500">{new Date(p.start_date || 0).toLocaleDateString()}</td>
-                  <td className="px-6 py-5 text-center">
-                    {p.activity_id && (
-                      <a
-                        href={`${CONFIG.stravaActivityBase}${p.activity_id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center p-2 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-strava-orange hover:bg-strava-orange hover:text-white transition-all shadow-sm"
-                      >
-                        <span className="material-symbols-outlined text-base">open_in_new</span>
-                      </a>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile View */}
-        <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
-          {filteredAndSortedData.map((p) => (
-            <div key={`${p.athlete_id}-${p.activity_id}`} className="p-4 bg-white dark:bg-slate-900">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  {p.rank <= 3 && (
-                    <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center z-10 shadow-lg ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                      p.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                        'bg-amber-700 text-amber-100'
-                      }`}>
-                      <span className="text-[10px] font-black">{p.rank}</span>
-                    </div>
-                  )}
-                  <img src={p.profile_medium || p.profile} alt={p.name} className="w-14 h-14 rounded-full border-2 border-slate-100 dark:border-slate-800 shadow-sm" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-black text-slate-900 dark:text-white text-base truncate">{p.name}</h4>
-                      {p.team && <p className="text-[10px] font-black text-tsu-blue uppercase">{p.team}</p>}
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400">#{p.number || '-'}</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-black italic text-green-600 dark:text-green-400 leading-none mb-1">{formatTime(p.elapsed_time)}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{(p.average_speed * 3.6).toFixed(1)} km/h</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl mb-3">
-                <div className="text-center">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Power</p>
-                  <p className="text-sm font-black text-slate-900 dark:text-white italic">{Math.round(p.average_watts || 0) || '-'}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">H-Rate</p>
-                  <p className="text-sm font-black text-slate-900 dark:text-white italic">{Math.round(p.average_heartrate || 0) || '-'}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Date</p>
-                  <p className="text-[10px] font-bold text-slate-500">{new Date(p.start_date || 0).toLocaleDateString()}</p>
-                </div>
-              </div>
-              {p.activity_id && (
-                <a
-                  href={`${CONFIG.stravaActivityBase}${p.activity_id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full h-12 flex items-center justify-center gap-2 bg-orange-50 dark:bg-orange-500/10 text-strava-orange rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
-                >
-                  <span className="text-strava-orange font-black italic">STRAVA</span>
-                  查看活動詳情
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {filteredAndSortedData.length === 0 && (
-          <div className="p-20 text-center">
-            <span className="material-symbols-outlined text-6xl text-slate-200 dark:text-slate-800 mb-4">person_search</span>
-            <p className="text-slate-400 font-bold uppercase tracking-widest">找不到符合條件的選手</p>
+        {segments.length === 0 && (
+          <div className="py-20 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+            <span className="material-symbols-outlined text-6xl text-slate-200 dark:text-slate-800 mb-4">route</span>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">目前無任何活動中路段</p>
           </div>
         )}
       </div>
 
-      <div className="mt-8 flex justify-center">
-        <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" alt="Powered by Strava" className="h-10 opacity-60 dark:opacity-40 invert dark:invert-0" />
+      <div className="mt-12 flex justify-center">
+        <img src="https://status.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" alt="Powered by Strava" className="h-8 opacity-40 dark:opacity-30 invert dark:invert-0" />
       </div>
     </div>
   );

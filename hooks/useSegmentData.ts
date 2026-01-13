@@ -69,6 +69,8 @@ interface UseSegmentDataReturn {
     segments: StravaSegment[];
     leaderboard: LeaderboardEntry[];
     stats: SegmentStats;
+    leaderboardsMap: Record<number, LeaderboardEntry[]>;
+    statsMap: Record<number, SegmentStats>;
     weather: WeatherData | null;
     isLoading: boolean;
     error: string | null;
@@ -121,64 +123,13 @@ export const formatSpeed = (metersPerSec: number | null): string => {
 export const useSegmentData = (): UseSegmentDataReturn => {
     const [segment, setSegment] = useState<StravaSegment | null>(FALLBACK_SEGMENT);
     const [segments, setSegments] = useState<StravaSegment[]>([]);
-    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-    const [stats, setStats] = useState<SegmentStats>({
-        totalAthletes: 0,
-        completedAthletes: 0,
-        bestTime: null,
-        avgTime: null,
-        maxPower: null,
-        avgSpeed: null,
-    });
+    const [leaderboardsMap, setLeaderboardsMap] = useState<Record<number, LeaderboardEntry[]>>({});
+    const [statsMap, setStatsMap] = useState<Record<number, SegmentStats>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [weather, setWeather] = useState<WeatherData | null>(null);
 
-    // 從 Supabase 載入啟用中的路段
-    const fetchSegmentsFromSupabase = useCallback(async () => {
-        try {
-            const { data, error } = await supabase
-                .from('segments')
-                .select('*')
-                .eq('is_active', true)
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                console.error('Fetch segments error:', error);
-                return;
-            }
-
-            if (data && data.length > 0) {
-                // 轉換 Supabase 格式為 StravaSegment 格式
-                const mappedSegments: StravaSegment[] = data.map(s => ({
-                    id: s.strava_id,
-                    name: s.name,
-                    distance: s.distance || 0,
-                    average_grade: s.average_grade || 0,
-                    maximum_grade: s.maximum_grade || 0,
-                    elevation_low: s.elevation_low || 0,
-                    elevation_high: s.elevation_high || 0,
-                    total_elevation_gain: s.total_elevation_gain || 0,
-                    activity_type: 'Ride',
-                    polyline: s.polyline,
-                    link: s.link,
-                    description: s.description,
-                    internal_id: s.id,
-                }));
-                setSegments(mappedSegments);
-                // 只在首次載入且沒有 segment 時設定
-                setSegment(prev => {
-                    if (!prev || prev.id === FALLBACK_SEGMENT.id) {
-                        return mappedSegments[0];
-                    }
-                    return prev;
-                });
-            }
-        } catch (e) {
-            console.error('Error fetching segments from Supabase:', e);
-        }
-    }, []); // 移除 segment 依賴
-
+    // 計算統計數據的輔助函數
     const calculateStats = (data: LeaderboardEntry[]): SegmentStats => {
         const completed = data.filter(e => e.elapsed_time > 0);
         const times = completed.map(e => e.elapsed_time).filter(t => t > 0);
@@ -195,91 +146,156 @@ export const useSegmentData = (): UseSegmentDataReturn => {
         };
     };
 
-    const fetchData = useCallback(async (isInitialLoad = false) => {
+    // 從 Supabase 載入啟用中的路段
+    const fetchSegmentsFromSupabase = useCallback(async () => {
         try {
-            // 只有在完全沒有資料且是首次載入時才顯示讀取狀態
-            if (isInitialLoad && !leaderboard.length) {
-                setIsLoading(true);
+            const { data, error } = await supabase
+                .from('segments')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Fetch segments error:', error);
+                return [];
             }
+
+            if (data && data.length > 0) {
+                const mappedSegments: StravaSegment[] = data.map(s => ({
+                    id: s.strava_id,
+                    name: s.name,
+                    distance: s.distance || 0,
+                    average_grade: s.average_grade || 0,
+                    maximum_grade: s.maximum_grade || 0,
+                    elevation_low: s.elevation_low || 0,
+                    elevation_high: s.elevation_high || 0,
+                    total_elevation_gain: s.total_elevation_gain || 0,
+                    activity_type: 'Ride',
+                    polyline: s.polyline,
+                    link: s.link,
+                    description: s.description,
+                    internal_id: s.id,
+                }));
+                setSegments(mappedSegments);
+                setSegment(prev => prev || mappedSegments[0]);
+                return mappedSegments;
+            }
+            return [];
+        } catch (e) {
+            console.error('Error fetching segments from Supabase:', e);
+            return [];
+        }
+    }, []);
+
+    const fetchData = useCallback(async (isInitialLoad = false, specificSegments: StravaSegment[] | null = null) => {
+        try {
+            if (isInitialLoad) setIsLoading(true);
             setError(null);
 
-            const response = await fetch(CONFIG.apiUrl);
-            if (!response.ok) {
-                throw new Error(`API 錯誤: ${response.status}`);
-            }
+            const activeSegments = specificSegments || segments;
+            if (activeSegments.length === 0) return;
 
-            const data = await response.json();
-
-            // 只在沒有 Supabase segment 時使用 fallback
-            if (!segment) {
-                if (data.segment && data.segment.id) {
-                    const segmentData = { ...data.segment };
-                    if (typeof segmentData.map === 'string' && !segmentData.polyline) {
-                        segmentData.polyline = segmentData.map;
-                    } else if (segmentData.map?.polyline && !segmentData.polyline) {
-                        segmentData.polyline = segmentData.map.polyline;
-                    }
-                    setSegment(segmentData);
-                } else {
-                    setSegment(FALLBACK_SEGMENT);
+            // 為所有路段進行並發請求
+            const results = await Promise.all(activeSegments.map(async (seg) => {
+                try {
+                    const url = `${CONFIG.apiUrl}?segment_id=${seg.id}`;
+                    const response = await fetch(url);
+                    if (!response.ok) return { id: seg.id, error: true };
+                    const data = await response.json();
+                    return { id: seg.id, data };
+                } catch (e) {
+                    return { id: seg.id, error: true };
                 }
-            }
+            }));
 
-            // 處理排行榜資料
-            if (Array.isArray(data.leaderboard)) {
-                // 依完成時間排序
-                const sorted = [...data.leaderboard].sort((a, b) => {
-                    if (!a.elapsed_time) return 1;
-                    if (!b.elapsed_time) return -1;
-                    return a.elapsed_time - b.elapsed_time;
-                });
+            const newLeaderboardsMap: Record<number, LeaderboardEntry[]> = {};
+            const newStatsMap: Record<number, SegmentStats> = {};
+            let firstWeather: WeatherData | null = null;
 
-                // 加入排名
-                const ranked = sorted.map((entry, index) => ({
-                    ...entry,
-                    rank: index + 1,
-                }));
+            results.forEach((res) => {
+                if ('data' in res && res.data) {
+                    const data = res.data;
+                    // 處理排行榜
+                    if (Array.isArray(data.leaderboard)) {
+                        const sorted = [...data.leaderboard].sort((a, b) => {
+                            if (!a.elapsed_time) return 1;
+                            if (!b.elapsed_time) return -1;
+                            return a.elapsed_time - b.elapsed_time;
+                        });
+                        const ranked = sorted.map((entry, index) => ({
+                            ...entry,
+                            rank: index + 1,
+                        }));
+                        newLeaderboardsMap[res.id] = ranked;
+                        newStatsMap[res.id] = calculateStats(ranked);
+                    }
+                    // 取得氣象（通常各個路段氣象差異不大，取第一個成功的）
+                    if (data.weather && !firstWeather) {
+                        firstWeather = data.weather;
+                    }
+                }
+            });
 
-                setLeaderboard(ranked);
-                setStats(calculateStats(ranked));
-            }
+            setLeaderboardsMap(newLeaderboardsMap);
+            setStatsMap(newStatsMap);
+            if (firstWeather) setWeather(firstWeather);
 
-            // 處理天氣資料
-            if (data.weather) {
-                setWeather(data.weather);
-            }
         } catch (err) {
-            console.error('載入 Segment 資料失敗，使用 Fallback:', err);
+            console.error('載入資料失敗:', err);
             setError(err instanceof Error ? err.message : '載入失敗');
-            // 發生錯誤時也確保有基本資料
-            if (!segment) setSegment(FALLBACK_SEGMENT);
         } finally {
             setIsLoading(false);
-            // 確保 isLoading 結束後一定有 segment
-            setSegment(prev => prev || FALLBACK_SEGMENT);
         }
-    }, [leaderboard.length]);
+    }, [segments]);
 
-    // 初始載入
+    // 初始載入：先拿 segments 再拿排行榜
     useEffect(() => {
-        fetchSegmentsFromSupabase();
-        fetchData(true);
-    }, [fetchData, fetchSegmentsFromSupabase]);
+        const init = async () => {
+            const loadedSegments = await fetchSegmentsFromSupabase();
+            if (loadedSegments.length > 0) {
+                await fetchData(true, loadedSegments);
+            } else {
+                setIsLoading(false);
+            }
+        };
+        init();
+    }, [fetchSegmentsFromSupabase, fetchData]);
 
     // 自動刷新
     useEffect(() => {
-        const timer = setInterval(fetchData, CONFIG.refreshInterval);
+        const timer = setInterval(() => fetchData(), CONFIG.refreshInterval);
         return () => clearInterval(timer);
     }, [fetchData]);
 
+    // 為了舊程式碼相容性，提供第一個路段的資料
+    const firstSegmentId = segments[0]?.id;
+    const currentLeaderboard = firstSegmentId ? leaderboardsMap[firstSegmentId] || [] : [];
+    const currentStats = firstSegmentId ? statsMap[firstSegmentId] || {
+        totalAthletes: 0,
+        completedAthletes: 0,
+        bestTime: null,
+        avgTime: null,
+        maxPower: null,
+        avgSpeed: null,
+    } : {
+        totalAthletes: 0,
+        completedAthletes: 0,
+        bestTime: null,
+        avgTime: null,
+        maxPower: null,
+        avgSpeed: null,
+    };
+
     return {
-        segment,
+        segment, // 這裡的 segment 為了相容性保持目前的狀態，Dashboard 可能會切換它
         segments,
-        leaderboard,
-        stats,
+        leaderboard: currentLeaderboard,
+        stats: currentStats,
+        leaderboardsMap,
+        statsMap,
         weather,
         isLoading,
         error,
-        refresh: fetchData,
+        refresh: () => fetchData(),
     };
 };
