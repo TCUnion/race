@@ -146,9 +146,10 @@ export const useSegmentData = (): UseSegmentDataReturn => {
         };
     };
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (isInitialLoad = false) => {
         try {
-            setIsLoading(true);
+            // 僅在首次載入時顯示 loading 狀態，避免自動刷新時閃爍
+            if (isInitialLoad) setIsLoading(true);
             setError(null);
 
             const response = await fetch(CONFIG.apiUrl);
@@ -215,7 +216,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
     // 初始載入
     useEffect(() => {
-        fetchData();
+        fetchData(true);
     }, [fetchData]);
 
     // 自動刷新
