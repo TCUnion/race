@@ -28,6 +28,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     const [isLoadingExisting, setIsLoadingExisting] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [name, setName] = useState(athlete.firstname && athlete.lastname ? `${athlete.firstname} ${athlete.lastname}` : '');
+    const [team, setTeam] = useState('');
+    const [tcuId, setTcuId] = useState('');
 
     // 檢查現有報名
     useEffect(() => {
