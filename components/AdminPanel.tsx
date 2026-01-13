@@ -269,6 +269,50 @@ const AdminPanel: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* SEO 設定區塊 - 移至最上方並設為寬版 */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black uppercase italic italic flex items-center gap-2">
+                            <span className="material-symbols-outlined text-tsu-blue">language</span>
+                            SEO & 站點設定
+                        </h3>
+                        <button
+                            onClick={handleSaveAllSettings}
+                            disabled={isSavingSettings}
+                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
+                        >
+                            {isSavingSettings ? '儲存中...' : '儲存所有設定'}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {siteSettings.map((setting) => (
+                            <div key={setting.key} className="flex flex-col gap-2">
+                                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between">
+                                    {setting.key.replace(/_/g, ' ')}
+                                    <span className="text-slate-300 font-normal normal-case">
+                                        Last updated: {new Date(setting.updated_at).toLocaleString()}
+                                    </span>
+                                </label>
+                                {setting.key.includes('description') || setting.key.includes('keywords') ? (
+                                    <textarea
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tsu-blue min-h-[100px]"
+                                    />
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* 路段管理 */}
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
@@ -473,6 +517,8 @@ const AdminPanel: React.FC = () => {
                                         });
 
                                         const responseText = await response.text();
+                                        console.log('n8n Webhook Raw Response:', responseText); // 強化偵錯
+
                                         if (!responseText || responseText.trim() === "") {
                                             throw new Error("伺服器回傳了空內容，請稍後再試或檢查 Strava ID 是否正確。");
                                         }
@@ -489,6 +535,10 @@ const AdminPanel: React.FC = () => {
                                             throw new Error('路段資料格式錯誤或找不到該路段');
                                         }
 
+                                        // 強化 Polyline 提取偵錯
+                                        const polyline = segment.polyline || (segment.map && (segment.map.polyline || segment.map.summary_polyline));
+                                        console.log('Extracted Polyline:', polyline ? polyline.substring(0, 20) + '...' : 'MISSING');
+
                                         // 顯示預覽並確認
                                         const confirmMsg = `確認新增此路段？\n\n路段名稱: ${segment.name}\nStrava ID: ${segment.id}\n距離: ${(segment.distance / 1000).toFixed(2)} km\n平均坡度: ${segment.average_grade}%\n總爬升: ${segment.total_elevation_gain} m`;
 
@@ -504,12 +554,17 @@ const AdminPanel: React.FC = () => {
                                             average_grade: segment.average_grade,
                                             maximum_grade: segment.maximum_grade,
                                             elevation_gain: segment.total_elevation_gain || segment.elevation_gain,
-                                            polyline: segment.polyline || segment.map?.polyline || segment.map?.summary_polyline,
+                                            polyline: polyline,
                                             is_active: true
                                         });
 
                                         if (error) {
-                                            alert('新增失敗: ' + error.message);
+                                            // 錯誤中文化
+                                            if (error.code === '23505') {
+                                                alert('新增失敗: 此路段 ID 已存在於系統中，請勿重複新增。');
+                                            } else {
+                                                alert('新增失敗: ' + error.message);
+                                            }
                                         } else {
                                             alert('路段新增成功！');
                                             fetchSegments();
