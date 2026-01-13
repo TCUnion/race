@@ -30,6 +30,7 @@ const ActivitySkeleton = () => (
       <Skeleton className="h-10 w-10" />
     </div>
   </div>
+);
 
 const Dashboard: React.FC = () => {
   const { segment } = useSegmentData();
