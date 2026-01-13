@@ -154,20 +154,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     );
   }
 
-  // Redirect to registration page if not registered
+  // Show warning if not registered but allow navigating
   if (isRegistered === false && segment) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
           <span className="material-symbols-outlined text-6xl text-tsu-blue mb-4">how_to_reg</span>
           <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未完成報名</h2>
-          <p className="text-slate-400 text-sm mb-6">您需要先完成報名程序才能查看個人儀表板與排名。</p>
-          <button
-            onClick={() => onNavigate(ViewType.REGISTER)}
-            className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all shadow-lg shadow-tsu-blue/20"
-          >
-            前往報名頁面
-          </button>
+          <p className="text-slate-400 text-sm mb-6">您需要先完成報名程序才能查看個人儀表板與排名。若您已報名，請確認您的 Strava 帳號是否正確。</p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => onNavigate(ViewType.REGISTER)}
+              className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all shadow-lg shadow-tsu-blue/20 w-full"
+            >
+              前往報名頁面
+            </button>
+          </div>
         </div>
       </div>
     );
