@@ -15,22 +15,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   const dynamicStats = [
     {
       label: '總爬升高度',
-      value: segment ? `${Math.round(segment.total_elevation_gain || (segment.elevation_high - segment.elevation_low))} M` : '-',
-      footer: segment ? `${segment.average_grade?.toFixed(1)}% Avg Grade` : 'Loading...'
+      value: segment ? `${Math.round(segment.total_elevation_gain || (segment.elevation_high - segment.elevation_low))} M` : (isLoading ? '...' : '-'),
+      footer: segment ? `${segment.average_grade?.toFixed(1)}% Avg Grade` : (isLoading ? 'Loading...' : '-')
     },
     {
       label: '路段距離',
-      value: segment ? `${(segment.distance / 1000).toFixed(1)} KM` : '-',
-      footer: segment?.name || 'Loading...'
+      value: segment ? `${(segment.distance / 1000).toFixed(1)} KM` : (isLoading ? '...' : '-'),
+      footer: segment?.name || (isLoading ? 'Loading...' : '-')
     },
     {
       label: '參賽人數',
-      value: stats.totalAthletes > 0 ? `${stats.totalAthletes}+` : '-',
+      value: stats.totalAthletes > 0 ? `${stats.totalAthletes}+` : (isLoading ? '...' : '-'),
       footer: stats.completedAthletes > 0 ? `${stats.completedAthletes} 已完成` : 'Growing Fast'
     },
     {
       label: '最快時間',
-      value: stats.bestTime ? formatTime(stats.bestTime) : '-',
+      value: stats.bestTime ? formatTime(stats.bestTime) : (isLoading ? '...' : '-'),
       footer: stats.avgSpeed ? `Avg ${formatSpeed(stats.avgSpeed)}` : 'Challenge Now'
     }
   ];
@@ -81,10 +81,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
         {/* Dynamic Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
           {dynamicStats.map((stat, i) => (
-            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 transition-colors">
+            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 transition-colors min-h-[140px]">
               <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
-              <p className={`text-slate-900 dark:text-white text-3xl font-black italic ${isLoading ? 'animate-pulse' : ''}`}>{stat.value}</p>
-              <p className="text-tsu-blue text-xs font-bold uppercase mt-2 truncate">{stat.footer}</p>
+              <div className="h-10 flex items-center">
+                <p className={`text-slate-900 dark:text-white text-3xl font-black italic ${isLoading ? 'animate-pulse' : ''}`}>
+                  {stat.value === '-' && isLoading ? '\u00A0' : stat.value}
+                </p>
+              </div>
+              <p className={`text-tsu-blue text-xs font-bold uppercase mt-2 truncate ${isLoading ? 'animate-pulse' : ''}`}>
+                {stat.footer}
+              </p>
             </div>
           ))}
         </div>

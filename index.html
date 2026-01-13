@@ -92,6 +92,11 @@
         }
     </script>
     <style>
+        /* 預防深色模式閃爍 (CSS Blocking) */
+        html.dark {
+            background-color: #0f172a;
+        }
+
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
@@ -121,7 +126,7 @@
 
 </head>
 
-<body class="bg-slate-50 dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+<body class="bg-background-dark text-slate-900 dark:text-slate-100">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

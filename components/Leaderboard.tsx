@@ -168,12 +168,16 @@ const Leaderboard: React.FC = () => {
             { label: '完成人數', value: data?.stats.completed_athletes || '-', color: 'text-tsu-blue' },
             { label: '最快時間', value: data?.stats.best_time || '-', color: 'text-red-500' },
             { label: '平均時間', value: data?.stats.avg_time || '-', color: 'text-slate-900' },
-            { label: '最高功率', value: `${data?.stats.max_power || '-'} W`, color: 'text-orange-500' },
-            { label: '平均速度', value: `${data?.stats.avg_speed || '-'} km/h`, color: 'text-slate-900' },
+            { label: '最高功率', value: data?.stats.max_power ? `${data.stats.max_power} W` : '-', color: 'text-orange-500' },
+            { label: '平均速度', value: data?.stats.avg_speed ? `${data.stats.avg_speed} km/h` : '-', color: 'text-slate-900' },
           ].map((stat, i) => (
-            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center min-h-[100px]">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</span>
-              <span className={`text-xl font-black italic ${stat.color} dark:text-white`}>{stat.value}</span>
+              <div className="h-8 flex items-center justify-center">
+                <span className={`text-xl font-black italic ${stat.color} dark:text-white ${isLoading ? 'animate-pulse' : ''}`}>
+                  {stat.value === '-' && isLoading ? '\u00A0' : stat.value}
+                </span>
+              </div>
             </div>
           ))}
         </div>

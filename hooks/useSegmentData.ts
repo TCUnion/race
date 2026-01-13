@@ -116,7 +116,7 @@ export const formatSpeed = (metersPerSec: number | null): string => {
 };
 
 export const useSegmentData = (): UseSegmentDataReturn => {
-    const [segment, setSegment] = useState<StravaSegment | null>(null);
+    const [segment, setSegment] = useState<StravaSegment | null>(FALLBACK_SEGMENT);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [stats, setStats] = useState<SegmentStats>({
         totalAthletes: 0,
@@ -148,8 +148,10 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
     const fetchData = useCallback(async (isInitialLoad = false) => {
         try {
-            // 僅在首次載入時顯示 loading 狀態，避免自動刷新時閃爍
-            if (isInitialLoad) setIsLoading(true);
+            // 只有在完全沒有資料且是首次載入時才顯示讀取狀態
+            if (isInitialLoad && !leaderboard.length) {
+                setIsLoading(true);
+            }
             setError(null);
 
             const response = await fetch(CONFIG.apiUrl);
