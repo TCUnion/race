@@ -278,6 +278,37 @@ const AdminPanel: React.FC = () => {
                                         >
                                             edit
                                         </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm(`確定要刪除路段「${seg.name}」？\n\n此操作將同時刪除所有相關的報名資料，且無法復原！`)) return;
+                                                try {
+                                                    // 先刪除相關報名資料
+                                                    const { error: regError } = await supabase
+                                                        .from('registrations')
+                                                        .delete()
+                                                        .eq('segment_id', seg.id);
+
+                                                    if (regError) throw regError;
+
+                                                    // 再刪除路段
+                                                    const { error: segError } = await supabase
+                                                        .from('segments')
+                                                        .delete()
+                                                        .eq('id', seg.id);
+
+                                                    if (segError) throw segError;
+
+                                                    alert('路段已刪除');
+                                                    fetchSegments();
+                                                    fetchRegistrations();
+                                                } catch (err: any) {
+                                                    alert('刪除失敗: ' + err.message);
+                                                }
+                                            }}
+                                            className="material-symbols-outlined text-slate-400 hover:text-red-500 text-lg transition-colors"
+                                        >
+                                            delete
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -314,14 +345,11 @@ const AdminPanel: React.FC = () => {
 
                                         if (!confirm(confirmMsg)) return;
 
-                                        // 寫入 Supabase
+                                        // 寫入 Supabase（只保留基本欄位）
                                         const { error } = await supabase.from('segments').insert({
                                             strava_id: segment.id,
                                             name: segment.name,
-                                            distance: segment.distance,
-                                            average_grade: segment.average_grade,
-                                            total_elevation_gain: segment.total_elevation_gain,
-                                            polyline: segment.map,
+                                            description: segment.name,
                                             link: segment.link || `https://www.strava.com/segments/${segment.id}`,
                                             is_active: true
                                         });
