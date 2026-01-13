@@ -41,7 +41,12 @@ const AdminPanel: React.FC = () => {
 
     const fetchRegistrations = async () => {
         const { data, error } = await supabase.from('registrations').select('*').order('created_at', { ascending: false });
-        if (data) setRegistrations(data);
+        if (error) {
+            console.error('Fetch registrations error:', error);
+            setError('讀取報名資料失敗: ' + error.message);
+        } else if (data) {
+            setRegistrations(data);
+        }
     };
 
     useEffect(() => {
