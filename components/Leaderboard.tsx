@@ -1,11 +1,6 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  Participant,
-  SegmentData,
-  LeaderboardStats,
-  LeaderboardResponse
-} from '../types';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { useSegmentData, formatTime } from '../hooks/useSegmentData';
 
 declare global {
   interface Window {
@@ -14,7 +9,6 @@ declare global {
 }
 
 const CONFIG = {
-  apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard',
   stravaActivityBase: 'https://www.strava.com/activities/'
 };
 
@@ -51,34 +45,23 @@ function decodePolyline(encoded: string): [number, number][] {
 }
 
 const Leaderboard: React.FC = () => {
-  const [data, setData] = useState<LeaderboardResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('time');
-  const [teamFilter, setTeamFilter] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    segment,
+    leaderboard: rawLeaderboard,
+    stats,
+    isLoading: isGlobalLoading,
+    refresh
+  } = useSegmentData();
+
+  const [sortBy, setSortBy] = React.useState('time');
+  const [teamFilter, setTeamFilter] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState('');
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  const fetchLeaderboard = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(CONFIG.apiUrl);
-      const json: LeaderboardResponse = await response.json();
-      setData(json);
-    } catch (err) {
-      console.error('Error fetching leaderboard:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
   // 地圖初始化邏輯
   useEffect(() => {
-    if (!data?.segment || !mapContainerRef.current || !window.L) return;
+    if (!segment || !mapContainerRef.current || !window.L) return;
 
     if (!mapRef.current) {
       mapRef.current = window.L.map(mapContainerRef.current, {
@@ -89,10 +72,10 @@ const Leaderboard: React.FC = () => {
       }).addTo(mapRef.current);
     }
 
-    if (data.segment.map?.polyline) {
-      const points = decodePolyline(data.segment.map.polyline);
+    if (segment.polyline) {
+      const points = decodePolyline(segment.polyline);
       if (points.length > 0) {
-        // 清除舊的線條 (如果有的話)
+        // 清除舊的線條
         mapRef.current.eachLayer((layer: any) => {
           if (layer instanceof window.L.Polyline && !(layer instanceof window.L.TileLayer)) {
             mapRef.current.removeLayer(layer);
@@ -107,13 +90,13 @@ const Leaderboard: React.FC = () => {
         mapRef.current.fitBounds(polyline.getBounds(), { padding: [20, 20] });
       }
     }
-  }, [data, mapContainerRef]);
+  }, [segment, mapContainerRef]);
 
   // 過濾與排序邏輯
   const filteredAndSortedData = useMemo(() => {
-    if (!data?.leaderboard) return [];
+    if (!rawLeaderboard) return [];
 
-    let result = data.leaderboard.filter(p => {
+    let result = rawLeaderboard.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.number && p.number.includes(searchQuery));
       const matchesTeam = !teamFilter || p.team === teamFilter;
@@ -122,25 +105,25 @@ const Leaderboard: React.FC = () => {
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'time': return (a.time_seconds || 0) - (b.time_seconds || 0);
-        case 'power': return (b.avg_power_value || 0) - (a.avg_power_value || 0);
-        case 'speed': return (b.speed_kmh || 0) - (a.speed_kmh || 0);
-        case 'hr': return (a.heart_rate_avg || 0) - (b.heart_rate_avg || 0);
-        case 'date': return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'time': return (a.elapsed_time || 0) - (b.elapsed_time || 0);
+        case 'power': return (b.average_watts || 0) - (a.average_watts || 0);
+        case 'speed': return (b.average_speed || 0) - (a.average_speed || 0);
+        case 'hr': return (a.average_heartrate || 0) - (b.average_heartrate || 0);
+        case 'date': return new Date(b.start_date || 0).getTime() - new Date(a.start_date || 0).getTime();
         default: return 0;
       }
     });
 
     return result.map((p, index) => ({ ...p, rank: index + 1 }));
-  }, [data, searchQuery, teamFilter, sortBy]);
+  }, [rawLeaderboard, searchQuery, teamFilter, sortBy]);
 
   const teams = useMemo(() => {
-    if (!data?.leaderboard) return [];
-    const t = new Set(data.leaderboard.map(p => p.team).filter(Boolean));
-    return Array.from(t);
-  }, [data]);
+    if (!rawLeaderboard) return [];
+    const t = new Set(rawLeaderboard.map(p => p.team).filter(Boolean));
+    return Array.from(t).sort() as string[];
+  }, [rawLeaderboard]);
 
-  if (isLoading && !data) {
+  if (isGlobalLoading && !segment) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
         <div className="w-12 h-12 border-4 border-tsu-blue/20 border-t-tsu-blue rounded-full animate-spin"></div>
@@ -155,7 +138,7 @@ const Leaderboard: React.FC = () => {
       <div className="w-full py-8 md:py-12 bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 mb-8 p-6 md:p-10">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-3 italic uppercase tracking-tight">
-            TCU 136檢定 <span className="text-tsu-blue">排行榜</span>
+            {segment?.name || 'Loading'} <span className="text-tsu-blue">排行榜</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
             即時更新 Strava 活動數據 | 路段計時 | 功率分析 (Powered by Strava)
@@ -164,18 +147,18 @@ const Leaderboard: React.FC = () => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
-            { label: '參賽人數', value: data?.stats.total_athletes || '-', color: 'text-slate-900' },
-            { label: '完成人數', value: data?.stats.completed_athletes || '-', color: 'text-tsu-blue' },
-            { label: '最快時間', value: data?.stats.best_time || '-', color: 'text-red-500' },
-            { label: '平均時間', value: data?.stats.avg_time || '-', color: 'text-slate-900' },
-            { label: '最高功率', value: data?.stats.max_power ? `${data.stats.max_power} W` : '-', color: 'text-orange-500' },
-            { label: '平均速度', value: data?.stats.avg_speed ? `${data.stats.avg_speed} km/h` : '-', color: 'text-slate-900' },
+            { label: '參賽人數', value: stats.total_athletes || stats.totalAthletes || '-', color: 'text-slate-900' },
+            { label: '完成人數', value: stats.completed_athletes || stats.completedAthletes || '-', color: 'text-tsu-blue' },
+            { label: '最快時間', value: formatTime(stats.bestTime), color: 'text-red-500' },
+            { label: '平均時間', value: formatTime(stats.avgTime), color: 'text-slate-900' },
+            { label: '最高功率', value: stats.maxPower ? `${stats.maxPower} W` : '-', color: 'text-orange-500' },
+            { label: '平均速度', value: stats.avgSpeed ? `${(stats.avgSpeed * 3.6).toFixed(1)} km/h` : '-', color: 'text-slate-900' },
           ].map((stat, i) => (
             <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center min-h-[100px]">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</span>
               <div className="h-8 flex items-center justify-center">
-                <span className={`text-xl font-black italic ${stat.color} dark:text-white ${isLoading ? 'animate-pulse' : ''}`}>
-                  {stat.value === '-' && isLoading ? '\u00A0' : stat.value}
+                <span className={`text-xl font-black italic ${stat.color} dark:text-white`}>
+                  {stat.value}
                 </span>
               </div>
             </div>
@@ -189,18 +172,18 @@ const Leaderboard: React.FC = () => {
           <div className="flex items-center gap-2 mb-6">
             <h2 className="text-xl font-black text-slate-900 dark:text-white italic uppercase">路段資訊</h2>
             <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-              {data?.segment.activity_type || 'Ride'}
+              {segment?.activity_type || 'Ride'}
             </span>
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white mb-8 border-l-4 border-tsu-blue pl-4">
-            {data?.segment.name || '136 正上'}
+            {segment?.name || '-'}
           </div>
           <div className="grid grid-cols-2 gap-y-6 gap-x-4">
             {[
-              { label: '距離', value: `${(data?.segment.distance || 0) / 1000} km` },
-              { label: '平均坡度', value: `${data?.segment.average_grade}%` },
-              { label: '最陡坡度', value: `${data?.segment.maximum_grade}%` },
-              { label: '海拔範圍', value: `${data?.segment.elevation_low}m → ${data?.segment.elevation_high}m` },
+              { label: '距離', value: segment ? `${(segment.distance / 1000).toFixed(2)} km` : '-' },
+              { label: '平均坡度', value: segment ? `${segment.average_grade}%` : '-' },
+              { label: '最陡坡度', value: segment ? `${segment.maximum_grade}%` : '-' },
+              { label: '海拔範圍', value: segment ? `${segment.elevation_low}m → ${segment.elevation_high}m` : '-' },
             ].map((item, i) => (
               <div key={i}>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
@@ -258,7 +241,7 @@ const Leaderboard: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={fetchLeaderboard}
+            onClick={() => refresh()}
             className="w-full md:w-auto self-end bg-tsu-blue hover:brightness-110 text-white font-black uppercase text-xs tracking-widest py-4 px-8 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-tsu-blue/30"
           >
             <span className="material-symbols-outlined text-sm">refresh</span>
@@ -272,7 +255,7 @@ const Leaderboard: React.FC = () => {
         <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
           <h3 className="text-lg font-black text-slate-900 dark:text-white italic uppercase">🏆 即時排行榜</h3>
           <span className="text-[10px] font-bold text-slate-400 uppercase">
-            最後更新: {data?.last_updated || '-'}
+            最後更新: {new Date().toLocaleTimeString()}
           </span>
         </div>
 
@@ -294,13 +277,13 @@ const Leaderboard: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
               {filteredAndSortedData.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+                <tr key={`${p.athlete_id}-${p.activity_id}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
                   <td className="px-6 py-5 text-center">
                     <div className="flex justify-center">
                       {p.rank <= 3 ? (
                         <span className={`flex items-center justify-center w-8 h-8 rounded-full font-black text-sm italic ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                            p.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                              'bg-amber-700 text-amber-100'
+                          p.rank === 2 ? 'bg-slate-300 text-slate-700' :
+                            'bg-amber-700 text-amber-100'
                           }`}>
                           {p.rank}
                         </span>
@@ -313,7 +296,7 @@ const Leaderboard: React.FC = () => {
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
-                      <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" />
+                      <img src={p.profile_medium || p.profile} alt={p.name} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" />
                       <div>
                         <div className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</div>
                         {p.team && (
@@ -323,20 +306,20 @@ const Leaderboard: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-5 text-center font-bold text-slate-500 text-xs">#{p.number || '-'}</td>
-                  <td className="px-6 py-5 text-center font-black italic text-base text-green-600 dark:text-green-400">{p.time}</td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300 text-sm">{p.speed}</td>
+                  <td className="px-6 py-5 text-center font-black italic text-base text-green-600 dark:text-green-400">{formatTime(p.elapsed_time)}</td>
+                  <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300 text-sm">{(p.average_speed * 3.6).toFixed(1)} km/h</td>
                   <td className="px-6 py-5 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">{p.avg_power || '-'}</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{Math.round(p.average_watts || 0) || '-'}</span>
                       <span className="text-[9px] font-black text-slate-400 uppercase">Watts</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300 text-sm">{p.heart_rate || '-'} bpm</td>
-                  <td className="px-6 py-5 text-center text-[10px] font-bold text-slate-500">{p.date}</td>
+                  <td className="px-6 py-5 text-center font-bold text-slate-700 dark:text-slate-300 text-sm">{Math.round(p.average_heartrate || 0) || '-'} bpm</td>
+                  <td className="px-6 py-5 text-center text-[10px] font-bold text-slate-500">{new Date(p.start_date || 0).toLocaleDateString()}</td>
                   <td className="px-6 py-5 text-center">
-                    {p.strava_activity_id && (
+                    {p.activity_id && (
                       <a
-                        href={`${CONFIG.stravaActivityBase}${p.strava_activity_id}`}
+                        href={`${CONFIG.stravaActivityBase}${p.activity_id}`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center justify-center p-2 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-strava-orange hover:bg-strava-orange hover:text-white transition-all shadow-sm"
@@ -354,18 +337,18 @@ const Leaderboard: React.FC = () => {
         {/* Mobile View */}
         <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
           {filteredAndSortedData.map((p) => (
-            <div key={p.id} className="p-4 bg-white dark:bg-slate-900">
+            <div key={`${p.athlete_id}-${p.activity_id}`} className="p-4 bg-white dark:bg-slate-900">
               <div className="flex items-center gap-4 mb-4">
                 <div className="relative">
                   {p.rank <= 3 && (
                     <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center z-10 shadow-lg ${p.rank === 1 ? 'bg-amber-400 text-amber-900' :
-                        p.rank === 2 ? 'bg-slate-300 text-slate-700' :
-                          'bg-amber-700 text-amber-100'
+                      p.rank === 2 ? 'bg-slate-300 text-slate-700' :
+                        'bg-amber-700 text-amber-100'
                       }`}>
                       <span className="text-[10px] font-black">{p.rank}</span>
                     </div>
                   )}
-                  <img src={p.avatar} alt={p.name} className="w-14 h-14 rounded-full border-2 border-slate-100 dark:border-slate-800 shadow-sm" />
+                  <img src={p.profile_medium || p.profile} alt={p.name} className="w-14 h-14 rounded-full border-2 border-slate-100 dark:border-slate-800 shadow-sm" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
@@ -377,27 +360,27 @@ const Leaderboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-black italic text-green-600 dark:text-green-400 leading-none mb-1">{p.time}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{p.speed}</p>
+                  <p className="text-xl font-black italic text-green-600 dark:text-green-400 leading-none mb-1">{formatTime(p.elapsed_time)}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{(p.average_speed * 3.6).toFixed(1)} km/h</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl mb-3">
                 <div className="text-center">
                   <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Power</p>
-                  <p className="text-sm font-black text-slate-900 dark:text-white italic">{p.avg_power || '-'}</p>
+                  <p className="text-sm font-black text-slate-900 dark:text-white italic">{Math.round(p.average_watts || 0) || '-'}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">H-Rate</p>
-                  <p className="text-sm font-black text-slate-900 dark:text-white italic">{p.heart_rate || '-'}</p>
+                  <p className="text-sm font-black text-slate-900 dark:text-white italic">{Math.round(p.average_heartrate || 0) || '-'}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Date</p>
-                  <p className="text-[10px] font-bold text-slate-500">{p.date.split(' ')[0]}</p>
+                  <p className="text-[10px] font-bold text-slate-500">{new Date(p.start_date || 0).toLocaleDateString()}</p>
                 </div>
               </div>
-              {p.strava_activity_id && (
+              {p.activity_id && (
                 <a
-                  href={`${CONFIG.stravaActivityBase}${p.strava_activity_id}`}
+                  href={`${CONFIG.stravaActivityBase}${p.activity_id}`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full h-12 flex items-center justify-center gap-2 bg-orange-50 dark:bg-orange-500/10 text-strava-orange rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
