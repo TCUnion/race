@@ -371,12 +371,19 @@ const Leaderboard: React.FC = () => {
 
       {/* 路段排行榜列表 */}
       <div className="w-full space-y-4">
-        {segments.map(seg => (
+        {segments.map((seg) => (
           <SegmentLeaderboard
             key={seg.id}
             segment={seg}
             leaderboard={leaderboardsMap[seg.id] || []}
-            stats={statsMap[seg.id] || { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null }}
+            stats={statsMap[seg.id] || {
+              totalAthletes: 0,
+              completedAthletes: 0,
+              bestTime: null,
+              avgTime: null,
+              maxPower: null,
+              avgSpeed: null,
+            }}
             sortBy={sortBy}
             searchQuery={searchQuery}
             teamFilter={teamFilter}

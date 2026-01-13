@@ -17,7 +17,7 @@ export interface StravaSegment {
     link?: string;
     description?: string;
     athlete_count?: number;
-    internal_id?: number;
+    athlete_count?: number;
 }
 
 export interface WeatherData {
@@ -68,7 +68,6 @@ interface UseSegmentDataReturn {
     segment: StravaSegment | null;
     segments: StravaSegment[];
     leaderboard: LeaderboardEntry[];
-    stats: SegmentStats;
     stats: SegmentStats;
     leaderboardsMap: Record<number, LeaderboardEntry[]>;
     statsMap: Record<number, SegmentStats>;
@@ -211,11 +210,11 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 try {
                     const url = `${CONFIG.apiUrl}?segment_id=${seg.id}`;
                     const response = await fetch(url);
-                    if (!response.ok) return { id: seg.id, internalId: seg.internal_id, error: true };
+                    if (!response.ok) return { id: seg.id, error: true };
                     const data = await response.json();
-                    return { id: seg.id, internalId: seg.internal_id, data };
+                    return { id: seg.id, data };
                 } catch (e) {
-                    return { id: seg.id, internalId: seg.internal_id, error: true };
+                    return { id: seg.id, error: true };
                 }
             }));
 
@@ -237,9 +236,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                             ...entry,
                             rank: index + 1,
                         }));
-                        const key = res.internalId || res.id;
-                        newLeaderboardsMap[key] = ranked;
-                        newStatsMap[key] = calculateStats(ranked);
+                        newLeaderboardsMap[res.id] = ranked;
+                        newStatsMap[res.id] = calculateStats(ranked);
                     }
                     // 取得氣象（通常各個路段氣象差異不大，取第一個成功的）
                     if (data.weather && !firstWeather) {
@@ -282,10 +280,9 @@ export const useSegmentData = (): UseSegmentDataReturn => {
     }, [fetchData]);
 
     // 為了舊程式碼相容性，提供第一個路段的資料
-    const firstSegment = segments[0];
-    const firstKey = firstSegment?.internal_id || firstSegment?.id;
-    const currentLeaderboard = firstKey ? leaderboardsMap[firstKey] || [] : [];
-    const currentStats = firstKey ? statsMap[firstKey] || {
+    const firstSegmentId = segments[0]?.id;
+    const currentLeaderboard = firstSegmentId ? leaderboardsMap[firstSegmentId] || [] : [];
+    const currentStats = firstSegmentId ? statsMap[firstSegmentId] || {
         totalAthletes: 0,
         completedAthletes: 0,
         bestTime: null,

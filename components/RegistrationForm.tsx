@@ -124,15 +124,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         setSuccessMessage(null);
 
         try {
-            const existingInternalIds = existingRegistrations.map(r => r.segment_id);
-            const currentInternalIds = selectedSegmentIds.map(sid =>
-                segments.find(s => s.id === sid)?.internal_id
-            ).filter((id): id is number => id !== undefined);
+            const existingSegmentIds = existingRegistrations.map(r => r.segment_id);
+            const currentSegmentIds = selectedSegmentIds;
 
             // 需要新增的
-            const toAdd = currentInternalIds.filter(id => !existingInternalIds.includes(id));
+            const toAdd = currentSegmentIds.filter(id => !existingSegmentIds.includes(id));
             // 需要刪除的
-            const toDelete = existingInternalIds.filter(id => !currentInternalIds.includes(id));
+            const toDelete = existingSegmentIds.filter(id => !currentSegmentIds.includes(id));
 
             // 1. 執行刪除
             if (toDelete.length > 0) {
@@ -146,8 +144,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
             // 2. 執行新增
             if (toAdd.length > 0) {
-                const registrationsToAdd = toAdd.map(internalId => ({
-                    segment_id: internalId,
+                const registrationsToAdd = toAdd.map(sid => ({
+                    segment_id: sid,
                     strava_athlete_id: athlete.id,
                     athlete_name: name,
                     athlete_profile: athlete.profile,

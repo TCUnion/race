@@ -73,7 +73,7 @@ const AdminPanel: React.FC = () => {
         let error;
         if (editingSegment.id === 'new') {
             const { error: insertError } = await supabase.from('segments').insert({
-                strava_id: editingSegment.strava_id,
+                id: editingSegment.strava_id, // 使用 Strava ID 作為主鍵
                 name: editingSegment.name,
                 description: editingSegment.description,
                 link: editingSegment.link,
@@ -311,7 +311,7 @@ const AdminPanel: React.FC = () => {
                                 <div key={seg.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center group hover:border-tsu-blue border border-transparent transition-all">
                                     <div className="flex-1">
                                         <p className="font-bold">{seg.name}</p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Strava ID: {seg.strava_id}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">ID: {seg.id}</p>
                                         {seg.description && (
                                             <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{seg.description}</p>
                                         )}
@@ -407,9 +407,9 @@ const AdminPanel: React.FC = () => {
 
                                         if (!confirm(confirmMsg)) return;
 
-                                        // 寫入 Supabase（只保留基本欄位）
+                                        // 寫入 Supabase
                                         const { error } = await supabase.from('segments').insert({
-                                            strava_id: segment.id,
+                                            id: segment.id,
                                             name: segment.name,
                                             description: segment.name,
                                             link: segment.link || `https://www.strava.com/segments/${segment.id}`,
@@ -543,7 +543,7 @@ const AdminPanel: React.FC = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
