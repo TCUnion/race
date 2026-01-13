@@ -33,7 +33,13 @@ const ActivitySkeleton = () => (
   </div>
 );
 
-const Dashboard: React.FC = () => {
+import { ViewType } from '../types';
+
+interface DashboardProps {
+  onNavigate: (view: ViewType) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { segment } = useSegmentData();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [athlete, setAthlete] = useState<any>(null);
@@ -129,14 +135,24 @@ const Dashboard: React.FC = () => {
     );
   }
 
+    );
+  }
+
+  // Redirect to registration page if not registered
   if (isRegistered === false && segment) {
     return (
-      <div className="py-20 px-4">
-        <RegistrationForm
-          athlete={athlete}
-          segmentId={segment.id}
-          onSuccess={() => setIsRegistered(true)}
-        />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
+        <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
+            <span className="material-symbols-outlined text-6xl text-tsu-blue mb-4">how_to_reg</span>
+            <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未完成報名</h2>
+            <p className="text-slate-400 text-sm mb-6">您需要先完成報名程序才能查看個人儀表板與排名。</p>
+            <button
+                onClick={() => onNavigate(ViewType.REGISTER)}
+                className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all shadow-lg shadow-tsu-blue/20"
+            >
+                前往報名頁面
+            </button>
+        </div>
       </div>
     );
   }

@@ -7,6 +7,7 @@ import Leaderboard from './components/Leaderboard';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
+import RegisterPage from './components/RegisterPage';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.LANDING);
@@ -16,11 +17,13 @@ const App: React.FC = () => {
       case ViewType.LANDING:
         return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
       case ViewType.DASHBOARD:
-        return <Dashboard />;
+        return <Dashboard onNavigate={setCurrentView} />;
       case ViewType.LEADERBOARD:
         return <Leaderboard />;
       case ViewType.ADMIN:
         return <AdminPanel />;
+      case ViewType.REGISTER:
+        return <RegisterPage onNavigate={setCurrentView} />;
       default:
         return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
     }

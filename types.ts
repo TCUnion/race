@@ -4,6 +4,7 @@ export enum ViewType {
   DASHBOARD = 'DASHBOARD',
   LEADERBOARD = 'LEADERBOARD',
   ADMIN = 'ADMIN',
+  REGISTER = 'REGISTER',
 }
 
 export enum RaceStatus {
