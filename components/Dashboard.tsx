@@ -369,10 +369,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               if(!athlete || !segment) return;
               if(!confirm('確認清除報名狀態？這將刪除後的資料庫紀錄 (測試用)')) return;
               try {
-                await supabase.from('registrations').delete().eq('strava_athlete_id', athlete.id).eq('segment_id', segment.id);
-                setIsRegistered(false);
-                window.location.reload();
-              } catch(e) { alert('清除失敗'); console.error(e); }
+                const { error, count } = await supabase.from('registrations').delete({ count: 'exact' }).eq('strava_athlete_id', athlete.id).eq('segment_id', segment.id);
+                if (error) {
+                    alert('清除失敗: ' + error.message);
+                } else if (count === 0) {
+                    alert('找不到對應的報名紀錄 (Segment ID: ' + segment.id + ', Athlete ID: ' + athlete.id + ')');
+                } else {
+                    alert('已清除報名狀態');
+                    setIsRegistered(false);
+                    window.location.reload();
+                }
+              } catch(e) { alert('清除失敗: 未知錯誤'); console.error(e); }
             }}
             className="ml-2 underline hover:text-white cursor-pointer"
           >

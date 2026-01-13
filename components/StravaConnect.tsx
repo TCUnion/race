@@ -202,8 +202,23 @@ const StravaConnect: React.FC = () => {
         startPolling();
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = async () => {
         if (!window.confirm('確定要中斷與 Strava 的連結嗎？')) return;
+
+        if (athlete) {
+             try {
+                // 發送 Webhook 通知的邏輯
+                await fetch('https://n8n.criterium.tw/webhook/strava/auth/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        athlete_id: athlete.id
+                    })
+                });
+            } catch (e) {
+                console.error('發送取消連結 Webhook 失敗', e);
+            }
+        }
 
         localStorage.removeItem(CONFIG.storageKey);
         localStorage.removeItem(CONFIG.storageKey + '_temp');
