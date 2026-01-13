@@ -59,18 +59,31 @@ const AdminPanel: React.FC = () => {
         e.preventDefault();
         if (!editingSegment) return;
 
-        const { error } = await supabase
-            .from('segments')
-            .update({
+        let error;
+        if (editingSegment.id === 'new') {
+            const { error: insertError } = await supabase.from('segments').insert({
+                strava_id: editingSegment.strava_id,
                 name: editingSegment.name,
                 description: editingSegment.description,
                 link: editingSegment.link,
                 is_active: editingSegment.is_active
-            })
-            .eq('id', editingSegment.id);
+            });
+            error = insertError;
+        } else {
+            const { error: updateError } = await supabase
+                .from('segments')
+                .update({
+                    name: editingSegment.name,
+                    description: editingSegment.description,
+                    link: editingSegment.link,
+                    is_active: editingSegment.is_active
+                })
+                .eq('id', editingSegment.id);
+            error = updateError;
+        }
 
         if (error) {
-            alert('更新失敗: ' + error.message);
+            alert((editingSegment.id === 'new' ? '新增' : '更新') + '失敗: ' + error.message);
         } else {
             setEditingSegment(null);
             fetchSegments();
@@ -172,7 +185,21 @@ const AdminPanel: React.FC = () => {
 
                     {editingSegment ? (
                         <form onSubmit={handleUpdateSegment} className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-tsu-blue">
-                            <h4 className="font-bold text-tsu-blue uppercase text-sm">編輯路段: {editingSegment.strava_id}</h4>
+                            <h4 className="font-bold text-tsu-blue uppercase text-sm">
+                                {editingSegment.id === 'new' ? '新增路段' : `編輯路段: ${editingSegment.strava_id}`}
+                            </h4>
+                            {editingSegment.id === 'new' && (
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Strava ID</label>
+                                    <input
+                                        type="number"
+                                        value={editingSegment.strava_id}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, strava_id: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                        required
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">路段名稱</label>
                                 <input
@@ -252,55 +279,30 @@ const AdminPanel: React.FC = () => {
                                 onClick={() => {
                                     const strava_id = prompt('請輸入 Strava 路段 ID (數字):');
                                     if (strava_id) {
-                                        const name = prompt('請輸入路段名稱:');
-                                        if (name) {
-                                            supabase.from('segments').insert({ strava_id: parseInt(strava_id), name }).then(({ error }) => {
-                                                if (error) alert('新增失敗: ' + error.message);
-                                                else fetchSegments();
-                                            });
-                                        }
+                                    const name = prompt('請輸入路段名稱:');
+                                    if (name) {
+                                        supabase.from('segments').insert({ strava_id: parseInt(strava_id), name }).then(({ error }) => {
+                                            if (error) alert('新增失敗: ' + error.message);
+                                            else fetchSegments();
+                                        });
                                     }
-                                }}
-                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
-                            >
-                                + 新增挑戰路段
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* 報名審核列表 */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-black">報名列表</h3>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 font-mono">Count: {registrations.length}</span>
-                            <button onClick={fetchRegistrations} className="text-sm text-tsu-blue hover:underline">重新整理</button>
-                        </div>
+                                }
+                            }}
+                            className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
+                        >
+                            + 新增挑戰路段
+                        </button>
                     </div>
+                )}
+            </div>
 
-                    {registrations.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
-                            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
-                            <p className="text-slate-400 font-bold">目前無待處理報名</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
-                                    <tr>
-                                        <th className="px-4 py-3 rounded-l-lg">選手</th>
-                                        <th className="px-4 py-3">號碼</th>
-                                        <th className="px-4 py-3">車隊</th>
-                                        <th className="px-4 py-3">TCU ID</th>
-                                        <th className="px-4 py-3">狀態</th>
-                                        <th className="px-4 py-3 rounded-r-lg">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                    {registrations.map((reg) => (
-                                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-4 py-3 font-bold">{reg.name}</td>
+            {/* 報名審核列表 */}
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                {/* ... */}
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {registrations.map((reg) => (
+                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td className="px-4 py-3 font-bold">{reg.athlete_name}</td>
                                             <td className="px-4 py-3 font-mono">{reg.number}</td>
                                             <td className="px-4 py-3 text-slate-500">{reg.team || '-'}</td>
                                             <td className="px-4 py-3 text-slate-500 font-mono text-xs">{reg.tcu_id || '-'}</td>
