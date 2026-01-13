@@ -164,15 +164,18 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     description: s.description,
                 }));
                 setSegments(mappedSegments);
-                // 設定主要路段為第一個啟用的路段
-                if (mappedSegments.length > 0 && (!segment || segment.id === FALLBACK_SEGMENT.id)) {
-                    setSegment(mappedSegments[0]);
-                }
+                // 只在首次載入且沒有 segment 時設定
+                setSegment(prev => {
+                    if (!prev || prev.id === FALLBACK_SEGMENT.id) {
+                        return mappedSegments[0];
+                    }
+                    return prev;
+                });
             }
         } catch (e) {
             console.error('Error fetching segments from Supabase:', e);
         }
-    }, [segment]);
+    }, []); // 移除 segment 依賴
 
     const calculateStats = (data: LeaderboardEntry[]): SegmentStats => {
         const completed = data.filter(e => e.elapsed_time > 0);
