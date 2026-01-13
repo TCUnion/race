@@ -67,7 +67,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         if (segment) {
           checkRegistration(athleteData.id);
         } else {
-             console.log('Dashboard: Segment not ready yet, waiting...');
+          console.log('Dashboard: Segment not ready yet, waiting...');
         }
       } catch (e) {
         console.error('Dashboard: Access token parse error', e);
@@ -107,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       console.error('檢查報名狀態失敗:', err);
       // 發生錯誤時不應預設為未報名，而是顯示重試
       setRegistrationError(true);
-      if (isRegistered === null) setIsRegistered(null); 
+      if (isRegistered === null) setIsRegistered(null);
     } finally {
       setIsLoading(false);
     }
@@ -144,14 +144,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="text-red-400 font-bold">無法載入報名資訊</div>
-        <button 
+        <button
           onClick={() => athlete && checkRegistration(athlete.id)}
           className="px-6 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition"
         >
           重試
         </button>
       </div>
-      );
+    );
   }
 
   // Redirect to registration page if not registered
@@ -159,15 +159,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
-            <span className="material-symbols-outlined text-6xl text-tsu-blue mb-4">how_to_reg</span>
-            <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未完成報名</h2>
-            <p className="text-slate-400 text-sm mb-6">您需要先完成報名程序才能查看個人儀表板與排名。</p>
-            <button
-                onClick={() => onNavigate(ViewType.REGISTER)}
-                className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all shadow-lg shadow-tsu-blue/20"
-            >
-                前往報名頁面
-            </button>
+          <span className="material-symbols-outlined text-6xl text-tsu-blue mb-4">how_to_reg</span>
+          <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未完成報名</h2>
+          <p className="text-slate-400 text-sm mb-6">您需要先完成報名程序才能查看個人儀表板與排名。</p>
+          <button
+            onClick={() => onNavigate(ViewType.REGISTER)}
+            className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all shadow-lg shadow-tsu-blue/20"
+          >
+            前往報名頁面
+          </button>
         </div>
       </div>
     );
@@ -355,36 +355,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
         </section>
-        {/* Debug Info (Temporary) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-green-400 text-xs p-2 font-mono z-50 opacity-70 hover:opacity-100 transition-opacity">
-          DEBUG: 
-          Registered: {isRegistered === null ? 'Checking...' : isRegistered ? 'YES' : 'NO'} | 
-          Loading: {isLoading ? 'YES' : 'NO'} | 
-          Error: {registrationError ? 'YES' : 'NO'} |
-          Segment: {segment ? `${segment.id} (${segment.name})` : 'NULL'} |
-          Athlete: {athlete ? athlete.id : 'NULL'} | 
-          <button 
-            onClick={async () => {
-              if(!athlete || !segment) return;
-              if(!confirm('確認清除報名狀態？這將刪除後的資料庫紀錄 (測試用)')) return;
-              try {
-                const { error, count } = await supabase.from('registrations').delete({ count: 'exact' }).eq('strava_athlete_id', athlete.id).eq('segment_id', segment.id);
-                if (error) {
-                    alert('清除失敗: ' + error.message);
-                } else if (count === 0) {
-                    alert('找不到對應的報名紀錄 (Segment ID: ' + segment.id + ', Athlete ID: ' + athlete.id + ')');
-                } else {
-                    alert('已清除報名狀態');
-                    setIsRegistered(false);
-                    window.location.reload();
-                }
-              } catch(e) { alert('清除失敗: 未知錯誤'); console.error(e); }
-            }}
-            className="ml-2 underline hover:text-white cursor-pointer"
-          >
-            [重置報名狀態]
-          </button>
-        </div>
+
       </div>
     </div>
   );

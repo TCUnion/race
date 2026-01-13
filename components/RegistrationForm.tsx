@@ -37,8 +37,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     }, [segments, selectedSegmentIds.length]);
 
     const toggleSegment = (segmentId: number) => {
-        setSelectedSegmentIds(prev => 
-            prev.includes(segmentId) 
+        setSelectedSegmentIds(prev =>
+            prev.includes(segmentId)
                 ? prev.filter(id => id !== segmentId)
                 : [...prev, segmentId]
         );
@@ -92,7 +92,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (selectedSegmentIds.length === 0) {
             setError('請至少選擇一個挑戰路段');
             return;
@@ -170,13 +170,12 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                         </label>
                         <div className="grid gap-3">
                             {segments.map(seg => (
-                                <label 
+                                <label
                                     key={seg.id}
-                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${
-                                        selectedSegmentIds.includes(seg.id)
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentIds.includes(seg.id)
                                             ? 'bg-tsu-blue/20 border-tsu-blue/50'
                                             : 'bg-white/5 border-white/10 hover:border-white/20'
-                                    }`}
+                                        }`}
                                 >
                                     <input
                                         type="checkbox"
@@ -184,11 +183,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         onChange={() => toggleSegment(seg.id)}
                                         className="sr-only"
                                     />
-                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                                        selectedSegmentIds.includes(seg.id)
+                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedSegmentIds.includes(seg.id)
                                             ? 'bg-tsu-blue border-tsu-blue'
                                             : 'border-white/30'
-                                    }`}>
+                                        }`}>
                                         {selectedSegmentIds.includes(seg.id) && (
                                             <span className="material-symbols-outlined text-white text-sm">check</span>
                                         )}
@@ -270,20 +268,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                             </div>
                         </div>
 
-                        {/* Number */}
-                        <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">號碼牌 (選填)</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={number}
-                                    onChange={(e) => setNumber(e.target.value)}
-                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                                    placeholder="例如：001"
-                                />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">tag</span>
-                            </div>
-                        </div>
+
                     </div>
 
                     {/* Success Message */}
