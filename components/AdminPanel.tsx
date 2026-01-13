@@ -453,7 +453,7 @@ const AdminPanel: React.FC = () => {
                                             average_grade: segment.average_grade,
                                             maximum_grade: segment.maximum_grade,
                                             elevation_gain: segment.total_elevation_gain || segment.elevation_gain,
-                                            polyline: segment.polyline,
+                                            polyline: segment.polyline || segment.map?.polyline || segment.map?.summary_polyline,
                                             is_active: true
                                         });
 
