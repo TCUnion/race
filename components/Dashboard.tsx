@@ -47,14 +47,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [registrationError, setRegistrationError] = useState(false);
 
+  // Failsafe: Prevent infinite loading
   useEffect(() => {
-    // 檢查 Strava 連結狀態
+    const timer = setTimeout(() => {
+      if (isLoading && isRegistered === null) {
+        console.warn('Dashboard: Loading timed out');
+        setIsLoading(false);
+        setRegistrationError(true);
+      }
+    }, 8000); // 8 seconds timeout
+    return () => clearTimeout(timer);
+  }, [isLoading, isRegistered]);
+
+  useEffect(() => {
     const savedData = localStorage.getItem('strava_athlete_meta');
     if (savedData) {
-      const athleteData = JSON.parse(savedData);
-      setAthlete(athleteData);
-      if (segment) {
-        checkRegistration(athleteData.id);
+      try {
+        const athleteData = JSON.parse(savedData);
+        setAthlete(athleteData);
+        if (segment) {
+          checkRegistration(athleteData.id);
+        } else {
+             console.log('Dashboard: Segment not ready yet, waiting...');
+        }
+      } catch (e) {
+        console.error('Dashboard: Access token parse error', e);
+        localStorage.removeItem('strava_athlete_meta');
+        setAthlete(null);
+        setIsLoading(false);
       }
     } else {
       setIsLoading(false);
