@@ -81,8 +81,6 @@ const AdminPanel: React.FC = () => {
                 polyline: editingSegment.polyline,
                 average_grade: editingSegment.average_grade,
                 total_elevation_gain: editingSegment.total_elevation_gain,
-                elevation_low: editingSegment.elevation_low,
-                elevation_high: editingSegment.elevation_high,
                 is_active: editingSegment.is_active
             });
             error = insertError;
@@ -97,8 +95,6 @@ const AdminPanel: React.FC = () => {
                     polyline: editingSegment.polyline,
                     average_grade: editingSegment.average_grade,
                     total_elevation_gain: editingSegment.total_elevation_gain,
-                    elevation_low: editingSegment.elevation_low,
-                    elevation_high: editingSegment.elevation_high,
                     is_active: editingSegment.is_active
                 })
                 .eq('id', editingSegment.id);
@@ -284,15 +280,6 @@ const AdminPanel: React.FC = () => {
                                         className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">最低海拔 (公尺)</label>
-                                    <input
-                                        type="number"
-                                        value={editingSegment.elevation_low || ''}
-                                        onChange={(e) => setEditingSegment({ ...editingSegment, elevation_low: parseFloat(e.target.value) })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
-                                    />
-                                </div>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Polyline (路線編碼)</label>
@@ -430,8 +417,6 @@ const AdminPanel: React.FC = () => {
                                             polyline: segment.polyline,
                                             average_grade: segment.average_grade,
                                             total_elevation_gain: segment.total_elevation_gain,
-                                            elevation_low: segment.elevation_low,
-                                            elevation_high: segment.elevation_high,
                                             is_active: true
                                         });
 
