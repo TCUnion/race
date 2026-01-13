@@ -287,16 +287,59 @@ const AdminPanel: React.FC = () => {
                                 </div>
                             )}
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     const strava_id = prompt('請輸入 Strava 路段 ID (數字):');
-                                    if (strava_id) {
-                                        const name = prompt('請輸入路段名稱:');
-                                        if (name) {
-                                            supabase.from('segments').insert({ strava_id: parseInt(strava_id), name }).then(({ error }) => {
-                                                if (error) alert('新增失敗: ' + error.message);
-                                                else fetchSegments();
-                                            });
+                                    if (!strava_id) return;
+
+                                    try {
+                                        // 呼叫 n8n webhook 取得路段資料
+                                        const response = await fetch('https://n8n.criterium.tw/webhook/segment_set', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ segment_id: parseInt(strava_id) })
+                                        });
+
+                                        if (!response.ok) {
+                                            throw new Error('無法取得路段資料');
                                         }
+
+                                        const data = await response.json();
+
+                                        if (!data || !data.segment) {
+                                            throw new Error('路段資料格式錯誤');
+                                        }
+
+                                        const segment = data.segment;
+
+                                        // 顯示預覽並確認
+                                        const confirmMsg = `確認新增此路段？\n\n路段名稱: ${segment.name}\nStrava ID: ${segment.id}\n距離: ${(segment.distance / 1000).toFixed(2)} km\n平均坡度: ${segment.average_grade}%\n總爬升: ${segment.total_elevation_gain} m`;
+
+                                        if (!confirm(confirmMsg)) return;
+
+                                        // 寫入 Supabase
+                                        const { error } = await supabase.from('segments').insert({
+                                            strava_id: segment.id,
+                                            name: segment.name,
+                                            distance: segment.distance,
+                                            average_grade: segment.average_grade,
+                                            maximum_grade: segment.maximum_grade,
+                                            elevation_low: segment.elevation_low,
+                                            elevation_high: segment.elevation_high,
+                                            total_elevation_gain: segment.total_elevation_gain,
+                                            polyline: segment.map,
+                                            link: `https://www.strava.com/segments/${segment.id}`,
+                                            is_active: true
+                                        });
+
+                                        if (error) {
+                                            alert('新增失敗: ' + error.message);
+                                        } else {
+                                            alert('路段新增成功！');
+                                            fetchSegments();
+                                        }
+                                    } catch (err: any) {
+                                        alert('取得路段資料失敗: ' + (err.message || '請檢查 Strava ID 是否正確'));
+                                        console.error('Segment fetch error:', err);
                                     }
                                 }}
                                 className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
