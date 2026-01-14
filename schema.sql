@@ -47,7 +47,29 @@ CREATE TABLE IF NOT EXISTS public.strava_tokens (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 4. 路段成績紀錄表 (Segment Efforts)
+-- 4. 選手個人資料表 (Athletes)
+CREATE TABLE IF NOT EXISTS public.athletes (
+    id BIGINT PRIMARY KEY, -- Strava Athlete ID
+    username TEXT,
+    firstname TEXT,
+    lastname TEXT,
+    bio TEXT,
+    city TEXT,
+    state TEXT,
+    country TEXT,
+    sex TEXT,
+    premium BOOLEAN,
+    summit BOOLEAN,
+    created_at TIMESTAMP WITH TIME ZONE,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    badge_type_id INTEGER,
+    weight FLOAT,
+    profile_medium TEXT,
+    profile TEXT,
+    updated_at_db TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 5. 路段成績紀錄表 (Segment Efforts)
 CREATE TABLE IF NOT EXISTS public.segment_efforts (
     id BIGINT PRIMARY KEY, -- Strava Effort ID
     segment_id BIGINT NOT NULL,
@@ -72,6 +94,7 @@ CREATE TABLE IF NOT EXISTS public.segment_efforts (
 ALTER TABLE public.segments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.strava_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.athletes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.segment_efforts ENABLE ROW LEVEL SECURITY;
 
 -- Segments 策略: 所有人可讀，僅管理者可寫
@@ -86,6 +109,10 @@ CREATE POLICY "Admin full access registrations" ON public.registrations FOR ALL 
 
 -- Strava Tokens 策略: 僅限管理者操作 (後端 Service Role 或 Admin)
 CREATE POLICY "Admin only strava_tokens" ON public.strava_tokens FOR ALL TO authenticated USING (true);
+
+-- Athletes 策略: 所有人可讀，管理者可寫
+CREATE POLICY "Public read athletes" ON public.athletes FOR SELECT USING (true);
+CREATE POLICY "Admin full access athletes" ON public.athletes FOR ALL TO authenticated USING (true);
 
 -- Segment Efforts 策略: 所有人可讀，內部同步系統 (authenticated) 可寫
 CREATE POLICY "Public read efforts" ON public.segment_efforts FOR SELECT USING (true);
