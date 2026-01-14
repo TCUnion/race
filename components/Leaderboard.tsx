@@ -133,23 +133,45 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
     return result.map((p, index) => ({ ...p, rank: index + 1 }));
   }, [leaderboard, searchQuery, teamFilter, sortBy]);
 
+  // 定義主題色
+  const barColors = [
+    'border-tsu-blue',     // 藍
+    'border-strava-orange', // 橘
+    'border-emerald-500',   // 綠
+    'border-purple-500',   // 紫
+    'border-rose-500',     // 紅
+  ];
+  const barColor = barColors[segment.id % barColors.length];
+
+  // 日期格式化
+  const formatDate = (date?: string) => {
+    if (!date) return '未設定';
+    return new Date(date).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  };
+
   return (
     <div className="w-full mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* 標題與統計 */}
       <div className="w-full py-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 mb-6 p-6 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-          <div className="flex items-center gap-4 border-l-8 border-tsu-blue pl-6">
+          <div className={`flex items-center gap-4 border-l-8 ${barColor} pl-6`}>
             <div>
               <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">
                 {segment.name}
               </h2>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1">
                 <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                   {segment.activity_type}
                 </span>
                 <span className="text-slate-400 text-xs font-bold">
                   {(segment.distance / 1000).toFixed(2)}km · {segment.average_grade}% Avg
                 </span>
+                {segment.start_date && (
+                  <span className="text-amber-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                    {formatDate(segment.start_date)} - {formatDate(segment.end_date)}
+                  </span>
+                )}
               </div>
             </div>
           </div>
