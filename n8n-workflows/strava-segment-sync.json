@@ -1,5 +1,5 @@
 {
-    "name": "Strava-路段成績同步系統",
+    "name": "Strava-路段成績同步系統-修正版",
     "nodes": [
         {
             "parameters": {
@@ -48,8 +48,8 @@
             ],
             "credentials": {
                 "supabaseApi": {
-                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
-                    "name": "Zeabur Supabase"
+                    "id": "EUkgZj6J4zKucp2d",
+                    "name": "zeabur"
                 }
             }
         },
@@ -76,8 +76,8 @@
             ],
             "credentials": {
                 "supabaseApi": {
-                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
-                    "name": "Zeabur Supabase"
+                    "id": "EUkgZj6J4zKucp2d",
+                    "name": "zeabur"
                 }
             }
         },
@@ -104,8 +104,8 @@
             ],
             "credentials": {
                 "supabaseApi": {
-                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
-                    "name": "Zeabur Supabase"
+                    "id": "EUkgZj6J4zKucp2d",
+                    "name": "zeabur"
                 }
             }
         },
@@ -146,7 +146,7 @@
         },
         {
             "parameters": {
-                "jsCode": "return items.map(item => {\n  const effort = item.json;\n  return {\n    json: {\n      id: effort.id,\n      segment_id: effort.segment.id,\n      athlete_id: effort.athlete.id,\n      athlete_name: effort.athlete.firstname + \" \" + (effort.athlete.lastname || \"\"),\n      elapsed_time: effort.elapsed_time,\n      moving_time: effort.moving_time,\n      start_date: effort.start_date_local,\n      average_watts: effort.average_watts,\n      device_watts: effort.device_watts\n    }\n  };\n});"
+                "jsCode": "return items.map(item => {\n  const effort = item.json;\n  // 只有當回傳是陣列或正確格式時才處理\n  if (Array.isArray(effort)) {\n      return effort.map(e => ({ json: mapEffort(e) }));\n  }\n  return { json: mapEffort(effort) };\n});\n\nfunction mapEffort(e) {\n  return {\n      id: e.id,\n      segment_id: e.segment.id,\n      athlete_id: e.athlete.id,\n      athlete_name: e.athlete.firstname + \" \" + (e.athlete.lastname || \"\"),\n      elapsed_time: e.elapsed_time,\n      moving_time: e.moving_time,\n      start_date: e.start_date_local,\n      average_watts: e.average_watts,\n      device_watts: e.device_watts\n    };\n}"
             },
             "id": "transform-data",
             "name": "資料結構轉換",
@@ -183,8 +183,8 @@
             ],
             "credentials": {
                 "supabaseApi": {
-                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
-                    "name": "Zeabur Supabase"
+                    "id": "EUkgZj6J4zKucp2d",
+                    "name": "zeabur"
                 }
             }
         }
