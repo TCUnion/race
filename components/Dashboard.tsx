@@ -39,7 +39,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { segment } = useSegmentData();
+  const { segment, segments } = useSegmentData();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [athlete, setAthlete] = useState<any>(null);
   const [registeredSegments, setRegisteredSegments] = useState<any[]>([]);
@@ -50,14 +50,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   // Failsafe: Prevent infinite loading
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (isLoading && isRegistered === null) {
+      if (isLoading && registeredSegments.length === 0) {
         console.warn('Dashboard: Loading timed out');
         setIsLoading(false);
         setRegistrationError(true);
       }
     }, 8000); // 8 seconds timeout
     return () => clearTimeout(timer);
-  }, [isLoading, isRegistered]);
+  }, [isLoading, registeredSegments.length]);
 
   useEffect(() => {
     const savedData = localStorage.getItem('strava_athlete_meta');
