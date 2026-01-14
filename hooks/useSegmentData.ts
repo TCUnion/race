@@ -224,104 +224,107 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             const newStatsMap: Record<number, SegmentStats> = {};
             let firstWeather: WeatherData | null = null;
 
-            // 取得氣象（通常各個路段氣象差異不大，取第一個成功的）
-            if (data.weather && !firstWeather) {
-                firstWeather = data.weather;
-            }
-
-            // 🚀 整合來自 Supabase 的選手號碼 (Number) 與車隊 (Team)
-            // 排行榜 Webhook 回傳的是 Strava 即時數據，不包含我們自定義的號碼
-            if (Array.isArray(data.leaderboard)) {
-                (async () => {
-                    const { data: regData } = await supabase
-                        .from('registrations')
-                        .select('strava_athlete_id, number, team')
-                        .eq('segment_id', res.id);
-
-                    if (regData) {
-                        const regMap = new Map(regData.map(r => [Number(r.strava_athlete_id), r]));
-                        const enrichedLeaderboard = data.leaderboard.map((entry: any) => {
-                            const reg = regMap.get(Number(entry.athlete_id));
-                            return {
-                                ...entry,
-                                number: reg?.number || entry.number,
-                                team: reg?.team || entry.team
-                            };
-                        });
-                        // 重新排序並更新地圖
-                        const sorted = enrichedLeaderboard.sort((a: any, b: any) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999));
-                        const ranked = sorted.map((entry: any, index: number) => ({ ...entry, rank: index + 1 }));
-
-                        setLeaderboardsMap(prev => ({ ...prev, [res.id]: ranked }));
-                        setStatsMap(prev => ({ ...prev, [res.id]: calculateStats(ranked) }));
+            results.forEach((res) => {
+                if ('data' in res && res.data) {
+                    const data = res.data;
+                    // 取得氣象（通常各個路段氣象差異不大，取第一個成功的）
+                    if (data.weather && !firstWeather) {
+                        firstWeather = data.weather;
                     }
-                })();
-            }
-        }
+
+                    // 🚀 整合來自 Supabase 的選手號碼 (Number) 與車隊 (Team)
+                    // 排行榜 Webhook 回傳的是 Strava 即時數據，不包含我們自定義的號碼
+                    if (Array.isArray(data.leaderboard)) {
+                        (async () => {
+                            const { data: regData } = await supabase
+                                .from('registrations')
+                                .select('strava_athlete_id, number, team')
+                                .eq('segment_id', res.id);
+
+                            if (regData) {
+                                const regMap = new Map(regData.map(r => [Number(r.strava_athlete_id), r]));
+                                const enrichedLeaderboard = data.leaderboard.map((entry: any) => {
+                                    const reg = regMap.get(Number(entry.athlete_id));
+                                    return {
+                                        ...entry,
+                                        number: reg?.number || entry.number,
+                                        team: reg?.team || entry.team
+                                    };
+                                });
+                                // 重新排序並更新地圖
+                                const sorted = enrichedLeaderboard.sort((a: any, b: any) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999));
+                                const ranked = sorted.map((entry: any, index: number) => ({ ...entry, rank: index + 1 }));
+
+                                setLeaderboardsMap(prev => ({ ...prev, [res.id]: ranked }));
+                                setStatsMap(prev => ({ ...prev, [res.id]: calculateStats(ranked) }));
+                            }
+                        })();
+                    }
+                }
             });
 
-    setLeaderboardsMap(newLeaderboardsMap);
-    setStatsMap(newStatsMap);
-    if (firstWeather) setWeather(firstWeather);
+            setLeaderboardsMap(newLeaderboardsMap);
+            setStatsMap(newStatsMap);
+            if (firstWeather) setWeather(firstWeather);
 
-} catch (err) {
-    console.error('載入資料失敗:', err);
-    setError(err instanceof Error ? err.message : '載入失敗');
-} finally {
-    if (isInitialLoad) setIsLoading(false);
-    isFetching.current = false;
-}
+        } catch (err) {
+            console.error('載入資料失敗:', err);
+            setError(err instanceof Error ? err.message : '載入失敗');
+        } finally {
+            if (isInitialLoad) setIsLoading(false);
+            isFetching.current = false;
+        }
     }, []);
 
-// 初始載入：先拿 segments 再拿排行榜
-useEffect(() => {
-    const init = async () => {
-        const loadedSegments = await fetchSegmentsFromSupabase();
-        if (loadedSegments.length > 0) {
-            await fetchData(true, loadedSegments);
-        } else {
-            setIsLoading(false);
-        }
+    // 初始載入：先拿 segments 再拿排行榜
+    useEffect(() => {
+        const init = async () => {
+            const loadedSegments = await fetchSegmentsFromSupabase();
+            if (loadedSegments.length > 0) {
+                await fetchData(true, loadedSegments);
+            } else {
+                setIsLoading(false);
+            }
+        };
+        init();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // 自動刷新
+    useEffect(() => {
+        const timer = setInterval(() => fetchData(), CONFIG.refreshInterval);
+        return () => clearInterval(timer);
+    }, [fetchData]);
+
+    // 為了舊程式碼相容性，提供第一個路段的資料
+    const firstSegmentId = segments[0]?.id;
+    const currentLeaderboard = firstSegmentId ? leaderboardsMap[firstSegmentId] || [] : [];
+    const currentStats = firstSegmentId ? statsMap[firstSegmentId] || {
+        totalAthletes: 0,
+        completedAthletes: 0,
+        bestTime: null,
+        avgTime: null,
+        maxPower: null,
+        avgSpeed: null,
+    } : {
+        totalAthletes: 0,
+        completedAthletes: 0,
+        bestTime: null,
+        avgTime: null,
+        maxPower: null,
+        avgSpeed: null,
     };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
 
-// 自動刷新
-useEffect(() => {
-    const timer = setInterval(() => fetchData(), CONFIG.refreshInterval);
-    return () => clearInterval(timer);
-}, [fetchData]);
-
-// 為了舊程式碼相容性，提供第一個路段的資料
-const firstSegmentId = segments[0]?.id;
-const currentLeaderboard = firstSegmentId ? leaderboardsMap[firstSegmentId] || [] : [];
-const currentStats = firstSegmentId ? statsMap[firstSegmentId] || {
-    totalAthletes: 0,
-    completedAthletes: 0,
-    bestTime: null,
-    avgTime: null,
-    maxPower: null,
-    avgSpeed: null,
-} : {
-    totalAthletes: 0,
-    completedAthletes: 0,
-    bestTime: null,
-    avgTime: null,
-    maxPower: null,
-    avgSpeed: null,
-};
-
-return {
-    segment, // 這裡的 segment 為了相容性保持目前的狀態，Dashboard 可能會切換它
-    segments,
-    leaderboard: currentLeaderboard,
-    stats: currentStats,
-    leaderboardsMap,
-    statsMap,
-    weather,
-    isLoading,
-    error,
-    refresh: () => fetchData(),
-};
+    return {
+        segment, // 這裡的 segment 為了相容性保持目前的狀態，Dashboard 可能會切換它
+        segments,
+        leaderboard: currentLeaderboard,
+        stats: currentStats,
+        leaderboardsMap,
+        statsMap,
+        weather,
+        isLoading,
+        error,
+        refresh: () => fetchData(),
+    };
 };
