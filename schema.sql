@@ -69,7 +69,35 @@ CREATE TABLE IF NOT EXISTS public.athletes (
     updated_at_db TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 5. 路段成績紀錄表 (Segment Efforts)
+-- 5. 單車設備表 (Bikes)
+CREATE TABLE IF NOT EXISTS public.bikes (
+    id TEXT PRIMARY KEY, -- Strava Gear ID (e.g. b2318099)
+    athlete_id BIGINT REFERENCES public.athletes(id),
+    primary_gear BOOLEAN,
+    name TEXT,
+    nickname TEXT,
+    resource_state INTEGER,
+    retired BOOLEAN,
+    distance FLOAT, -- In meters
+    converted_distance FLOAT, -- In km
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. 跑鞋設備表 (Shoes)
+CREATE TABLE IF NOT EXISTS public.shoes (
+    id TEXT PRIMARY KEY, -- Strava Gear ID (e.g. g345866)
+    athlete_id BIGINT REFERENCES public.athletes(id),
+    primary_gear BOOLEAN,
+    name TEXT,
+    nickname TEXT,
+    resource_state INTEGER,
+    retired BOOLEAN,
+    distance FLOAT, -- In meters
+    converted_distance FLOAT, -- In km
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 7. 路段成績紀錄表 (Segment Efforts)
 CREATE TABLE IF NOT EXISTS public.segment_efforts (
     id BIGINT PRIMARY KEY, -- Strava Effort ID
     segment_id BIGINT NOT NULL,
@@ -95,6 +123,8 @@ ALTER TABLE public.segments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.strava_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.athletes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bikes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.segment_efforts ENABLE ROW LEVEL SECURITY;
 
 -- Segments 策略: 所有人可讀，僅管理者可寫
@@ -113,6 +143,14 @@ CREATE POLICY "Admin only strava_tokens" ON public.strava_tokens FOR ALL TO auth
 -- Athletes 策略: 所有人可讀，管理者可寫
 CREATE POLICY "Public read athletes" ON public.athletes FOR SELECT USING (true);
 CREATE POLICY "Admin full access athletes" ON public.athletes FOR ALL TO authenticated USING (true);
+
+-- Bikes 策略: 所有人可讀，管理者可寫
+CREATE POLICY "Public read bikes" ON public.bikes FOR SELECT USING (true);
+CREATE POLICY "Admin full access bikes" ON public.bikes FOR ALL TO authenticated USING (true);
+
+-- Shoes 策略: 所有人可讀，管理者可寫
+CREATE POLICY "Public read shoes" ON public.shoes FOR SELECT USING (true);
+CREATE POLICY "Admin full access shoes" ON public.shoes FOR ALL TO authenticated USING (true);
 
 -- Segment Efforts 策略: 所有人可讀，內部同步系統 (authenticated) 可寫
 CREATE POLICY "Public read efforts" ON public.segment_efforts FOR SELECT USING (true);
