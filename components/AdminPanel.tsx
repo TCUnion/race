@@ -641,6 +641,7 @@ const AdminPanel: React.FC = () => {
 
                                         // 寫入 Supabase
                                         const { error } = await supabase.from('segments').insert({
+                                            id: segment.id, // 顯式傳遞 Strava ID 作為主鍵
                                             strava_id: segment.id,
                                             name: segment.name,
                                             description: segment.name,
