@@ -181,7 +181,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 }));
                 setSegments(mappedSegments);
                 segmentsRef.current = mappedSegments;
-                setSegment(prev => prev || mappedSegments[0]);
+                // 如果目前的路段是預設的 fallback (id: 1) 或者還沒設定，就換成第一個抓到的路段
+                setSegment(prev => (!prev || prev.id === 1) ? mappedSegments[0] : prev);
                 return mappedSegments;
             }
             return [];

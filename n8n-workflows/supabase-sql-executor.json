@@ -1,0 +1,201 @@
+{
+    "name": "TCU-Supabase-SQL-執行器",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "supabase-sql",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "接收 SQL 請求",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                220,
+                300
+            ],
+            "webhookId": "supabase-sql"
+        },
+        {
+            "parameters": {
+                "content": "## TCU Supabase SQL 執行器\n\n### 用途\n透過 MCP 或 HTTP 請求執行 Zeabur Supabase 的 SQL 查詢\n\n### 輸入格式\n```json\n{\n  \"query\": \"SELECT * FROM registrations LIMIT 10\"\n}\n```\n\n### 輸出格式\n```json\n{\n  \"success\": true,\n  \"data\": [...],\n  \"rowCount\": 10\n}\n```\n\n### 錯誤格式\n```json\n{\n  \"success\": false,\n  \"error\": \"錯誤訊息\"\n}\n```",
+                "height": 400,
+                "width": 300
+            },
+            "id": "sticky-note",
+            "name": "說明文件",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                0,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// 驗證輸入\nconst input = $input.first().json;\nconst body = input.body || input;\n\nif (!body.query || typeof body.query !== 'string') {\n  throw new Error('缺少必要參數: query (SQL 查詢語句)');\n}\n\n// 安全檢查：禁止危險操作（可選，根據需求調整）\nconst query = body.query.trim();\nconst dangerousPatterns = ['DROP', 'TRUNCATE', 'DELETE FROM'];\nconst isReadOnly = body.readOnly === true;\n\nif (isReadOnly) {\n  for (const pattern of dangerousPatterns) {\n    if (query.toUpperCase().includes(pattern)) {\n      throw new Error(`唯讀模式下禁止執行 ${pattern} 操作`);\n    }\n  }\n}\n\nreturn [{\n  json: {\n    query: query,\n    readOnly: isReadOnly\n  }\n}];"
+            },
+            "id": "validate-input",
+            "name": "驗證輸入參數",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                440,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "={{ $json.query }}",
+                "options": {}
+            },
+            "id": "execute-sql",
+            "name": "執行 SQL 查詢",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                660,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "REPLACE_WITH_CREDENTIAL_ID",
+                    "name": "Zeabur Supabase Postgres"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// 格式化成功回應\nconst items = $input.all();\nconst data = items.map(item => item.json);\n\nreturn [{\n  json: {\n    success: true,\n    data: data,\n    rowCount: data.length,\n    message: `查詢成功，共返回 ${data.length} 筆資料`\n  }\n}];"
+            },
+            "id": "format-success",
+            "name": "格式化成功回應",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                880,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}"
+            },
+            "id": "respond-success",
+            "name": "返回成功結果",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1100,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// 格式化錯誤回應\nconst errorMessage = $execution.error?.message || '未知錯誤';\n\nreturn [{\n  json: {\n    success: false,\n    error: errorMessage,\n    message: `SQL 執行失敗: ${errorMessage}`\n  }\n}];"
+            },
+            "id": "format-error",
+            "name": "格式化錯誤回應",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                880,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}",
+                "options": {
+                    "responseCode": 400
+                }
+            },
+            "id": "respond-error",
+            "name": "返回錯誤結果",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1100,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "接收 SQL 請求": {
+            "main": [
+                [
+                    {
+                        "node": "驗證輸入參數",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "驗證輸入參數": {
+            "main": [
+                [
+                    {
+                        "node": "執行 SQL 查詢",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "執行 SQL 查詢": {
+            "main": [
+                [
+                    {
+                        "node": "格式化成功回應",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "格式化成功回應": {
+            "main": [
+                [
+                    {
+                        "node": "返回成功結果",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "格式化錯誤回應": {
+            "main": [
+                [
+                    {
+                        "node": "返回錯誤結果",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "saveManualExecutions": true,
+        "callerPolicy": "workflowsFromSameOwner",
+        "errorWorkflow": ""
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "MCP"
+        },
+        {
+            "name": "Supabase"
+        }
+    ],
+    "pinData": {}
+}

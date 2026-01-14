@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useSegmentData } from '../hooks/useSegmentData';
+import { useSegmentData, formatTime } from '../hooks/useSegmentData';
 import { MOCK_SEGMENT_STATS, MOCK_ACTIVITIES } from '../constants';
 import { Activity } from '../types';
 
@@ -112,6 +112,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       setIsLoading(false);
     }
   };
+
+  // 抓取選手在該路段的活動紀錄
+  useEffect(() => {
+    const fetchEfforts = async () => {
+      if (!athlete || !segment) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('segment_efforts')
+          .select('*')
+          .eq('athlete_id', athlete.id)
+          .eq('segment_id', segment.id)
+          .order('start_date', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const mappedActivities: Activity[] = data.map(effort => ({
+            id: effort.id,
+            title: effort.athlete_name || 'Segment Effort',
+            date: new Date(effort.start_date).toLocaleDateString(),
+            time: formatTime(effort.elapsed_time),
+            power: `${Math.round(effort.average_watts || 0)}W`,
+            is_pr: false // 現有資料庫結構無 is_pr，預設為 false
+          }));
+          setActivities(mappedActivities);
+        }
+      } catch (err) {
+        console.error('抓取活動紀錄失敗:', err);
+      }
+    };
+
+    if (isRegistered) {
+      fetchEfforts();
+    }
+  }, [athlete, segment, isRegistered]);
+
+  // 從排行榜中尋找選手的排名與最佳表現
+  const { leaderboard } = useSegmentData();
+  const athleteEffort = leaderboard.find(e => Number(e.athlete_id) === Number(athlete?.id));
 
   if (!athlete) {
     // ... (unchanged)
@@ -238,23 +278,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">最佳時間</p>
                   <span className="material-symbols-outlined text-tsu-blue-light text-xl">timer</span>
                 </div>
-                <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">42:15</p>
+                <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">
+                  {athleteEffort ? formatTime(athleteEffort.elapsed_time) : '-'}
+                </p>
                 <div className="flex items-center gap-1 text-emerald-500 mt-2">
                   <span className="material-symbols-outlined text-sm font-bold">trending_down</span>
-                  <p className="text-sm font-bold">-1:30 (PR)</p>
+                  <p className="text-sm font-bold">{athleteEffort?.average_watts ? `${Math.round(athleteEffort.average_watts)}W` : '記錄同步中'}</p>
                 </div>
               </div>
 
-              {/* Average VAM */}
+              {/* Average Speed */}
               <div className="flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:border-tsu-blue-light/50 transition-all duration-300">
                 <div className="flex justify-between items-start mb-1">
-                  <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">平均 VAM</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">平均時速</p>
                   <span className="material-symbols-outlined text-tsu-blue-light text-xl">speed</span>
                 </div>
-                <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">1,250 <span className="text-lg font-normal text-slate-500">m/h</span></p>
+                <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">
+                  {athleteEffort?.average_speed ? (athleteEffort.average_speed * 3.6).toFixed(1) : '-'}{' '}
+                  <span className="text-lg font-normal text-slate-500">km/h</span>
+                </p>
                 <div className="flex items-center gap-1 text-emerald-500 mt-2">
                   <span className="material-symbols-outlined text-sm font-bold">trending_up</span>
-                  <p className="text-sm font-bold">+24 m/h</p>
+                  <p className="text-sm font-bold">目前最新數據</p>
                 </div>
               </div>
 
@@ -267,10 +312,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <p className="text-tsu-blue-light text-xs font-bold uppercase tracking-widest">目前排名</p>
                   <span className="material-symbols-outlined text-tsu-blue-light text-2xl">workspace_premium</span>
                 </div>
-                <p className="text-slate-900 dark:text-white tracking-tight text-5xl font-black leading-none relative z-10">#14</p>
+                <p className="text-slate-900 dark:text-white tracking-tight text-5xl font-black leading-none relative z-10">
+                  {athleteEffort ? `#${athleteEffort.rank}` : '-'}
+                </p>
                 <div className="flex items-center gap-1 text-tsu-blue-light mt-2 relative z-10">
                   <span className="material-symbols-outlined text-sm font-bold">keyboard_double_arrow_up</span>
-                  <p className="text-sm font-bold uppercase tracking-tighter">Top 5% 挑戰者</p>
+                  <p className="text-sm font-bold uppercase tracking-tighter">
+                    {athleteEffort ? `總計 ${leaderboard.length} 名挑戰者` : '努力刷新排名中'}
+                  </p>
                 </div>
               </div>
             </>
@@ -316,7 +365,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <ActivitySkeleton />
                 <ActivitySkeleton />
               </>
-            ) : (
+            ) : activities.length > 0 ? (
               activities.map((activity) => (
                 <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-tsu-blue-light/50 transition-all group shadow-sm hover:shadow-md backdrop-blur-sm">
                   <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
@@ -337,12 +386,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest">Time</p>
                       <p className="text-tsu-blue dark:text-tsu-blue-light font-black text-xl">{activity.time}</p>
                     </div>
-                    <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                      <span className="material-symbols-outlined text-tsu-blue-light">chevron_right</span>
-                    </button>
                   </div>
                 </div>
               ))
+            ) : (
+              <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-200 dark:border-slate-800">
+                <span className="material-symbols-outlined text-slate-300 dark:text-slate-700 text-5xl mb-3">directions_bike</span>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">尚未在此路段留下挑戰紀錄</p>
+              </div>
             )}
           </div>
         </section>

@@ -20,6 +20,7 @@ export interface Participant {
   avatar: string;
   bike?: string;
   team?: string;
+  tcu_id?: string;
   number?: string;
   time: string;
   time_seconds?: number;
