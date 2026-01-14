@@ -662,6 +662,8 @@ const AdminPanel: React.FC = () => {
                                             athlete_count: segment.athlete_count,
                                             kom: segment.KOM,
                                             qom: segment.QOM,
+                                            pr_elapsed_time: segment.pr_elapsed_time,
+                                            pr_date: segment.pr_date,
                                             elevation_profile: segment.elevation_profile,
                                             polyline: polyline,
                                             is_active: true
