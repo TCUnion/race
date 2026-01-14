@@ -93,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       const { data, error } = await supabase
         .from('registrations')
         .select('*')
-        .eq('strava_athlete_id', athleteId)
+        .or(`strava_athlete_id.eq.${athleteId},strava_id.eq.${athleteId}`)
         .eq('segment_id', segment.id)
         .maybeSingle();
 

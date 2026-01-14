@@ -40,7 +40,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 const { data, error: regError } = await supabase
                     .from('registrations')
                     .select('*, segments(name, strava_id)')
-                    .eq('strava_athlete_id', athlete.id);
+                    .or(`strava_athlete_id.eq.${athlete.id},strava_id.eq.${athlete.id}`);
 
                 if (regError) throw regError;
                 setExistingRegistrations(data || []);
@@ -135,7 +135,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 const { error: delError } = await supabase
                     .from('registrations')
                     .delete()
-                    .eq('strava_athlete_id', athlete.id)
+                    .or(`strava_athlete_id.eq.${athlete.id},strava_id.eq.${athlete.id}`)
                     .in('segment_id', toDelete);
                 if (delError) throw delError;
             }
