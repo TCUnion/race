@@ -18,6 +18,8 @@ export interface StravaSegment {
     link?: string;
     description?: string;
     athlete_count?: number;
+    start_date?: string;
+    end_date?: string;
 }
 
 export interface WeatherData {
@@ -178,6 +180,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     polyline: s.polyline,
                     link: s.link,
                     description: s.description,
+                    start_date: s.start_date,
+                    end_date: s.end_date,
                 }));
                 setSegments(mappedSegments);
                 segmentsRef.current = mappedSegments;

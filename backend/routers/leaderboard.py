@@ -8,15 +8,24 @@ router = APIRouter(prefix="/api/leaderboard", tags=["leaderboard"])
 
 @router.get("/{segment_id}")
 def get_leaderboard(segment_id: int):
-    # 從 segment_efforts 取得該路段的所有努力，並按時間排序
-    # 這裡使用 RPC 或 複雜查詢來取得每個人的最佳成績
-    # 簡單起見，我們先抓取所有數據並在 Python 中處理 (或使用 SQL GROUP BY)
+    # 1. 取得路段設定的起訖時間
+    seg_query = supabase.table("segments").select("start_date, end_date").eq("id", segment_id).execute()
+    start_date = None
+    end_date = None
     
-    query = supabase.table("segment_efforts")\
-        .select("*")\
-        .eq("segment_id", segment_id)\
-        .order("elapsed_time", desc=False)\
-        .execute()
+    if seg_query.data:
+        start_date = seg_query.data[0].get("start_date")
+        end_date = seg_query.data[0].get("end_date")
+
+    # 2. 從 segment_efforts 取得該路段的所有努力
+    query_builder = supabase.table("segment_efforts").select("*").eq("segment_id", segment_id)
+    
+    if start_date:
+        query_builder = query_builder.gte("start_date", start_date)
+    if end_date:
+        query_builder = query_builder.lte("start_date", end_date)
+        
+    query = query_builder.order("elapsed_time", desc=False).execute()
     
     # 處理重複的選手，只取最佳成績
     seen_athletes = {}

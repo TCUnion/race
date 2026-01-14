@@ -222,7 +222,9 @@ const AdminPanel: React.FC = () => {
                 maximum_grade: editingSegment.maximum_grade,
                 elevation_gain: editingSegment.elevation_gain,
                 polyline: editingSegment.polyline,
-                is_active: editingSegment.is_active
+                is_active: editingSegment.is_active,
+                start_date: editingSegment.start_date,
+                end_date: editingSegment.end_date
             });
             error = insertError;
         } else {
@@ -238,7 +240,9 @@ const AdminPanel: React.FC = () => {
                     maximum_grade: editingSegment.maximum_grade,
                     elevation_gain: editingSegment.elevation_gain,
                     polyline: editingSegment.polyline,
-                    is_active: editingSegment.is_active
+                    is_active: editingSegment.is_active,
+                    start_date: editingSegment.start_date,
+                    end_date: editingSegment.end_date
                 })
                 .eq('id', editingSegment.id);
             error = updateError;
@@ -538,6 +542,26 @@ const AdminPanel: React.FC = () => {
                                     onChange={(e) => setEditingSegment({ ...editingSegment, polyline: e.target.value })}
                                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm h-16 font-mono"
                                 />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">開始日期</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={editingSegment.start_date ? new Date(editingSegment.start_date).toISOString().slice(0, 16) : ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, start_date: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">結束日期</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={editingSegment.end_date ? new Date(editingSegment.end_date).toISOString().slice(0, 16) : ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, end_date: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    />
+                                </div>
                             </div>
                             <div className="flex gap-2 pt-2">
                                 <button

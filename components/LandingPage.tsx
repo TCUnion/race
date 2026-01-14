@@ -9,7 +9,21 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
-  const { segment, leaderboard, stats, weather, isLoading } = useSegmentData();
+  const { segments, statsMap, weather, isLoading } = useSegmentData();
+  const [displaySegment, setDisplaySegment] = React.useState<any>(null);
+
+  // 隨機選擇一個路段
+  React.useEffect(() => {
+    if (segments.length > 0 && !displaySegment) {
+      const randomIndex = Math.floor(Math.random() * segments.length);
+      setDisplaySegment(segments[randomIndex]);
+    }
+  }, [segments, displaySegment]);
+
+  // 使用當前路段的統計數據
+  const segment = displaySegment;
+  const stats = segment ? statsMap[segment.id] || { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null } : { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null };
+  const leaderboard = []; // 首頁预览排行暂时保留空，或者可以扩展 useSegmentData 返回 leaderboardsMap
 
   // 動態統計數據
   const dynamicStats = [
@@ -152,38 +166,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                     <div className="w-8 h-8 border-4 border-tsu-blue/20 border-t-tsu-blue rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="text-slate-500 text-sm">載入排行榜...</p>
                   </div>
-                ) : leaderboard.length > 0 ? (
-                  leaderboard.slice(0, 5).map((rider) => (
-                    <div key={rider.athlete_id} className="flex items-center gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
-                      <span className={`w-8 text-center font-black text-2xl italic ${rider.rank === 1 ? 'text-tsu-blue' : 'text-slate-400'}`}>
-                        {rider.rank.toString().padStart(2, '0')}
-                      </span>
-                      <div className="size-10 rounded-full overflow-hidden border-2 border-transparent group-hover:border-tsu-blue transition-all bg-slate-200">
-                        {rider.profile_medium || rider.profile ? (
-                          <img alt={rider.name} className="w-full h-full object-cover" src={rider.profile_medium || rider.profile} />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-300 text-slate-600 font-bold text-sm">
-                            {rider.name?.charAt(0) || '?'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-tight">{rider.name}</h4>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">
-                          {rider.team || `#${rider.number || rider.athlete_id}`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-lg italic text-slate-900 dark:text-white">{formatTime(rider.elapsed_time)}</p>
-                        <p className="text-[10px] text-slate-400 font-bold">
-                          {rider.average_speed ? formatSpeed(rider.average_speed) : '-'}
-                        </p>
-                      </div>
-                    </div>
-                  ))
                 ) : (
-                  <div className="p-8 text-center text-slate-500">
-                    <p className="text-sm">尚無排行資料</p>
+                  <div className="p-12 text-center text-slate-500">
+                    <span className="material-symbols-outlined text-4xl mb-2 opacity-20">leaderboard</span>
+                    <p className="text-sm">前往各路段儀表板查看即時排行</p>
+                    <button 
+                      onClick={onRegister}
+                      className="mt-4 text-tsu-blue text-xs font-bold hover:underline"
+                    >
+                      立即加入挑戰
+                    </button>
                   </div>
                 )}
               </div>

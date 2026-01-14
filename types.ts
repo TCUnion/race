@@ -58,6 +58,8 @@ export interface SegmentData {
   map?: {
     polyline: string;
   };
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface LeaderboardStats {

@@ -42,7 +42,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { segment } = useSegmentData();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [athlete, setAthlete] = useState<any>(null);
-  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
+  const [registeredSegments, setRegisteredSegments] = useState<any[]>([]);
+  const [currentSegmentId, setCurrentSegmentId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [registrationError, setRegistrationError] = useState(false);
 
@@ -64,10 +65,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       try {
         const athleteData = JSON.parse(savedData);
         setAthlete(athleteData);
-        if (segment) {
-          checkRegistration(athleteData.id);
+        if (segments.length > 0) {
+          fetchAllRegistrations(athleteData.id);
         } else {
-          console.log('Dashboard: Segment not ready yet, waiting...');
+          console.log('Dashboard: Segments not ready yet, waiting...');
         }
       } catch (e) {
         console.error('Dashboard: Access token parse error', e);
@@ -78,52 +79,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     } else {
       setIsLoading(false);
     }
-  }, [segment]);
+  }, [segments]);
 
-  const checkRegistration = async (athleteId: string | number) => {
-    if (!segment) return;
-
-    // 只有在還不知道是否報名時才顯示初始載入狀態
-    if (isRegistered === null) {
-      setIsLoading(true);
-    }
+  const fetchAllRegistrations = async (athleteId: string | number) => {
+    setIsLoading(true);
     setRegistrationError(false);
 
     try {
+      // 抓取該選手的所有報名
       const { data, error } = await supabase
         .from('registrations')
-        .select('*')
-        .eq('strava_athlete_id', athleteId)
-        .eq('segment_id', segment.id)
-        .limit(1);
+        .select('*, segments(*)')
+        .eq('strava_athlete_id', athleteId);
 
-      if (error) {
-        console.error('Supabase 查詢錯誤 (檢查報名狀態):', error);
-        throw error;
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setRegisteredSegments(data);
+        // 預設選擇第一個報名的路段
+        setCurrentSegmentId(data[0].segment_id);
+      } else {
+        setRegisteredSegments([]);
       }
-
-      setIsRegistered(data && data.length > 0);
     } catch (err) {
       console.error('檢查報名狀態失敗:', err);
-      // 發生錯誤時不應預設為未報名，而是顯示重試
       setRegistrationError(true);
-      if (isRegistered === null) setIsRegistered(null);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const selectedSegment = segments.find(s => s.id === currentSegmentId) || (registeredSegments.length > 0 ? registeredSegments[0].segments : null);
+
   // 抓取選手在該路段的活動紀錄
   useEffect(() => {
     const fetchEfforts = async () => {
-      if (!athlete || !segment) return;
+      if (!athlete || !currentSegmentId) return;
       
       try {
         const { data, error } = await supabase
           .from('segment_efforts')
           .select('*')
           .eq('athlete_id', athlete.id)
-          .eq('segment_id', segment.id)
+          .eq('segment_id', currentSegmentId)
           .order('start_date', { ascending: false });
 
         if (error) throw error;
@@ -135,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             date: new Date(effort.start_date).toLocaleDateString(),
             time: formatTime(effort.elapsed_time),
             power: `${Math.round(effort.average_watts || 0)}W`,
-            is_pr: false // 現有資料庫結構無 is_pr，預設為 false
+            is_pr: false
           }));
           setActivities(mappedActivities);
         }
@@ -144,14 +142,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       }
     };
 
-    if (isRegistered) {
+    if (registeredSegments.length > 0) {
       fetchEfforts();
     }
-  }, [athlete, segment, isRegistered]);
+  }, [athlete, currentSegmentId, registeredSegments]);
 
   // 從排行榜中尋找選手的排名與最佳表現
-  const { leaderboard } = useSegmentData();
-  const athleteEffort = leaderboard.find(e => Number(e.athlete_id) === Number(athlete?.id));
+  const { leaderboardsMap } = useSegmentData();
+  const currentLeaderboard = currentSegmentId ? leaderboardsMap[currentSegmentId] || [] : [];
+  const athleteEffort = currentLeaderboard.find(e => Number(e.athlete_id) === Number(athlete?.id));
 
   if (!athlete) {
     // ... (unchanged)
@@ -172,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     );
   }
 
-  if (isLoading && isRegistered === null) {
+  if (isLoading && registeredSegments.length === 0 && !registrationError) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
@@ -180,12 +179,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     );
   }
 
-  if (registrationError && isRegistered === null) {
+  if (registrationError && registeredSegments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="text-red-400 font-bold">無法載入報名資訊</div>
         <button
-          onClick={() => athlete && checkRegistration(athlete.id)}
+          onClick={() => athlete && fetchAllRegistrations(athlete.id)}
           className="px-6 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition"
         >
           重試
@@ -194,14 +193,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     );
   }
 
-  // Show warning if not registered but allow navigating
-  if (isRegistered === false && segment) {
+  // Show warning if not registered for any segment
+  if (registeredSegments.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
           <span className="material-symbols-outlined text-6xl text-tsu-blue mb-4">how_to_reg</span>
-          <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未完成報名</h2>
-          <p className="text-slate-400 text-sm mb-6">您需要先完成報名程序才能查看個人儀表板與排名。若您已報名，請確認您的 Strava 帳號是否正確。</p>
+          <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未報名任何路段</h2>
+          <p className="text-slate-400 text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
           <div className="flex flex-col gap-3">
             <button
               onClick={() => onNavigate(ViewType.REGISTER)}
@@ -232,14 +231,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="material-symbols-outlined text-sm">mountain_flag</span>
               <span className="text-[10px] font-bold uppercase tracking-widest">TSU Challenge Series</span>
             </div>
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              {segment ? `Segment #${segment.strava_id}` : 'Loading...'}
-            </span>
             <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">
-              {segment ? `Segment: ${segment.name}` : '載入路段中...'}
+              個人儀表板
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-normal">
-              {segment?.description || '持續超越極限，爭奪榮耀排位。'}
+              追蹤您參與的所有路段挑戰。
             </p>
           </div>
           <div className="flex flex-col gap-3 w-full md:w-auto">
@@ -260,7 +256,39 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-widest font-bold">資料每小時自動更新</p>
             </div>
           </div>
+        {/* Segment Selector */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">您可以點擊切換路段詳情</h2>
+          <div className="flex flex-wrap gap-4">
+            {registeredSegments.map((reg) => (
+              <button
+                key={reg.id}
+                onClick={() => setCurrentSegmentId(reg.segment_id)}
+                className={`flex flex-col items-start gap-1 p-4 rounded-2xl border-2 transition-all min-w-[200px] ${currentSegmentId === reg.segment_id ? 'border-tsu-blue bg-tsu-blue/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
+              >
+                <div className="flex justify-between w-full items-center">
+                   <span className="text-[10px] font-bold text-slate-400 uppercase">#{reg.segments?.strava_id}</span>
+                   {currentSegmentId === reg.segment_id && <span className="material-symbols-outlined text-tsu-blue text-sm">check_circle</span>}
+                </div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">{reg.segments?.name}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${reg.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                    {reg.status === 'approved' ? '已核准' : '審核中'}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">#{reg.number || '未配號'}</span>
+                </div>
+              </button>
+            ))}
+          </div>
         </section>
+
+        {/* Selected Segment Details Title */}
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+           <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-tsu-blue text-3xl">sports_score</span>
+              <h2 className="text-2xl font-black italic uppercase italic">{selectedSegment?.name} 挑戰數據</h2>
+           </div>
+        </div>
 
         {/* Performance Cards */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -318,7 +346,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <div className="flex items-center gap-1 text-tsu-blue-light mt-2 relative z-10">
                   <span className="material-symbols-outlined text-sm font-bold">keyboard_double_arrow_up</span>
                   <p className="text-sm font-bold uppercase tracking-tighter">
-                    {athleteEffort ? `總計 ${leaderboard.length} 名挑戰者` : '努力刷新排名中'}
+                    {athleteEffort ? `總計 ${currentLeaderboard.length} 名挑戰者` : '努力刷新排名中'}
                   </p>
                 </div>
               </div>
