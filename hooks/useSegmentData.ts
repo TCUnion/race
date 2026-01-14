@@ -220,52 +220,68 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 }
             }));
 
-            const newLeaderboardsMap: Record<number, LeaderboardEntry[]> = {};
-            const newStatsMap: Record<number, SegmentStats> = {};
+            // 1. 先從 Webhook 取得所有排行榜基礎數據 (同步處理)
+            const baseLeaderboards: Record<number, LeaderboardEntry[]> = {};
+            const baseStats: Record<number, SegmentStats> = {};
             let firstWeather: WeatherData | null = null;
 
             results.forEach((res) => {
                 if ('data' in res && res.data) {
                     const data = res.data;
-                    // 取得氣象（通常各個路段氣象差異不大，取第一個成功的）
-                    if (data.weather && !firstWeather) {
-                        firstWeather = data.weather;
-                    }
+                    if (data.weather && !firstWeather) firstWeather = data.weather;
 
-                    // 🚀 整合來自 Supabase 的選手號碼 (Number) 與車隊 (Team)
-                    // 排行榜 Webhook 回傳的是 Strava 即時數據，不包含我們自定義的號碼
                     if (Array.isArray(data.leaderboard)) {
-                        (async () => {
-                            const { data: regData } = await supabase
-                                .from('registrations')
-                                .select('strava_athlete_id, number, team')
-                                .eq('segment_id', res.id);
-
-                            if (regData) {
-                                const regMap = new Map(regData.map(r => [Number(r.strava_athlete_id), r]));
-                                const enrichedLeaderboard = data.leaderboard.map((entry: any) => {
-                                    const reg = regMap.get(Number(entry.athlete_id));
-                                    return {
-                                        ...entry,
-                                        number: reg?.number || entry.number,
-                                        team: reg?.team || entry.team
-                                    };
-                                });
-                                // 重新排序並更新地圖
-                                const sorted = enrichedLeaderboard.sort((a: any, b: any) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999));
-                                const ranked = sorted.map((entry: any, index: number) => ({ ...entry, rank: index + 1 }));
-
-                                setLeaderboardsMap(prev => ({ ...prev, [res.id]: ranked }));
-                                setStatsMap(prev => ({ ...prev, [res.id]: calculateStats(ranked) }));
-                            }
-                        })();
+                        const sorted = [...data.leaderboard].sort((a, b) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999));
+                        const ranked = sorted.map((entry, index) => ({ ...entry, rank: index + 1 }));
+                        baseLeaderboards[res.id] = ranked;
+                        baseStats[res.id] = calculateStats(ranked);
                     }
                 }
             });
 
-            setLeaderboardsMap(newLeaderboardsMap);
-            setStatsMap(newStatsMap);
+            // 立即顯示基礎數據，避免畫面空白
+            setLeaderboardsMap(baseLeaderboards);
+            setStatsMap(baseStats);
             if (firstWeather) setWeather(firstWeather);
+
+            // 2. 🚀 批量抓取報名資料進行「增強」(Enrichment)
+            const segmentIds = activeSegments.map(s => s.id);
+            const { data: allRegData } = await supabase
+                .from('registrations')
+                .select('segment_id, strava_athlete_id, number, team')
+                .in('segment_id', segmentIds);
+
+            if (allRegData && allRegData.length > 0) {
+                // 按 segment_id 分組報名資料
+                const regMapBySegment: Record<number, Map<number, any>> = {};
+                allRegData.forEach(reg => {
+                    const sid = Number(reg.segment_id);
+                    if (!regMapBySegment[sid]) regMapBySegment[sid] = new Map();
+                    regMapBySegment[sid].set(Number(reg.strava_athlete_id), reg);
+                });
+
+                // 更新地圖
+                setLeaderboardsMap(prev => {
+                    const updated = { ...prev };
+                    Object.keys(baseLeaderboards).forEach(key => {
+                        const sid = Number(key);
+                        const leaderboard = baseLeaderboards[sid];
+                        const regMap = regMapBySegment[sid];
+
+                        if (regMap && leaderboard) {
+                            updated[sid] = leaderboard.map(entry => {
+                                const reg = regMap.get(Number(entry.athlete_id));
+                                return {
+                                    ...entry,
+                                    number: reg?.number || entry.number,
+                                    team: reg?.team || entry.team
+                                };
+                            });
+                        }
+                    });
+                    return updated;
+                });
+            }
 
         } catch (err) {
             console.error('載入資料失敗:', err);

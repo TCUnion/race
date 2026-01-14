@@ -95,14 +95,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         .select('*')
         .or(`strava_athlete_id.eq.${athleteId},strava_id.eq.${athleteId}`)
         .eq('segment_id', segment.id)
-        .maybeSingle();
+        .limit(1);
 
       if (error) {
-        console.error('Supabase 查詢錯誤:', error);
+        console.error('Supabase 查詢錯誤 (檢查報名狀態):', error);
         throw error;
       }
 
-      setIsRegistered(!!data);
+      setIsRegistered(data && data.length > 0);
     } catch (err) {
       console.error('檢查報名狀態失敗:', err);
       // 發生錯誤時不應預設為未報名，而是顯示重試
