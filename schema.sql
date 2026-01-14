@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS public.segments (
     total_elevation_gain FLOAT,
     activity_type TEXT,
     polyline TEXT,
+    start_date TIMESTAMP WITH TIME ZONE,
+    end_date TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
