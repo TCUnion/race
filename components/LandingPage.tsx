@@ -12,6 +12,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   const { segments, statsMap, weather, isLoading } = useSegmentData();
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
+  // 定義多組配色主題
+  const themes = [
+    { primary: 'bg-tsu-blue', shadow: 'shadow-tsu-blue/30', gradient: 'rgba(0, 102, 204, 0.4)' }, // 經典藍
+    { primary: 'bg-strava-orange', shadow: 'shadow-strava-orange/30', gradient: 'rgba(252, 76, 2, 0.4)' }, // Strava 橘
+    { primary: 'bg-emerald-600', shadow: 'shadow-emerald-600/30', gradient: 'rgba(5, 150, 105, 0.4)' }, // 森林綠
+    { primary: 'bg-purple-600', shadow: 'shadow-purple-600/30', gradient: 'rgba(124, 58, 237, 0.4)' }, // 幻影紫
+    { primary: 'bg-rose-600', shadow: 'shadow-rose-600/30', gradient: 'rgba(225, 29, 72, 0.4)' }, // 競速紅
+  ];
+
+  const currentTheme = themes[currentIndex % themes.length];
+
+  // 5 秒自動輪播
+  React.useEffect(() => {
+    if (segments.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % segments.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [segments.length]);
+
   // 輔助函式：格式化日期
   const formatDateRange = (start?: string, end?: string) => {
     if (!start && !end) return null;
@@ -61,10 +83,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
     <div className="flex flex-col items-center w-full pb-20">
       {/* Hero Section */}
       <div className="w-full max-w-[1200px] px-4 py-8">
-        <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group">
+        <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group transition-all duration-700">
           <div
-            className="flex min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-500"
-            style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")` }}
+            className="flex min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
+            style={{ 
+              backgroundImage: `linear-gradient(${currentTheme.gradient} 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")` 
+            }}
           >
             {/* Pagination Controls */}
             {segments.length > 1 && (
@@ -87,18 +111,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   {segments.map((_, i) => (
                     <div 
                       key={i} 
-                      className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-tsu-blue w-6' : 'bg-white/30'}`}
+                      className={`w-2 h-2 rounded-full transition-all duration-500 ${i === currentIndex ? `${currentTheme.primary} w-6` : 'bg-white/30'}`}
                     />
                   ))}
                 </div>
               </>
             )}
 
-            <div className="flex flex-col gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col gap-4 max-w-3xl transform transition-all duration-700 delay-100">
               <div className="flex flex-col gap-2 items-center">
-                <span className="inline-block px-4 py-1 rounded bg-tsu-blue text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">Limited Time Challenge</span>
+                <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-colors duration-700`}>Limited Time Challenge</span>
                 {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
-                  <span className="text-amber-400 text-xs font-bold tracking-widest uppercase">
+                  <span className="text-amber-400 text-xs font-bold tracking-widest uppercase animate-pulse">
                      🗓️ {formatDateRange(segment.start_date, segment.end_date)}
                   </span>
                 )}
@@ -113,7 +137,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
               <button
                 onClick={onRegister}
-                className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-tsu-blue text-white text-lg font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-tsu-blue/30 active:scale-95"
+                className={`flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 ${currentTheme.primary} text-white text-lg font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl ${currentTheme.shadow} active:scale-95 duration-700`}
               >
                 <span>立即報名</span>
               </button>
