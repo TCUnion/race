@@ -97,22 +97,40 @@ CREATE TABLE IF NOT EXISTS public.shoes (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 7. 路段成績紀錄表 (Segment Efforts)
-CREATE TABLE IF NOT EXISTS public.segment_efforts (
-    id BIGINT PRIMARY KEY, -- Strava Effort ID
-    segment_id BIGINT NOT NULL,
-    athlete_id BIGINT NOT NULL,
-    athlete_name TEXT,
-    elapsed_time INTEGER NOT NULL, -- seconds
-    moving_time INTEGER,
-    start_date TIMESTAMP WITH TIME ZONE,
-    max_heartrate FLOAT,
-    average_heartrate FLOAT,
-    average_watts FLOAT,
-    device_watts BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    UNIQUE(segment_id, athlete_id, start_date)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- 7. 俱樂部資料表 (Clubs)
+CREATE TABLE IF NOT EXISTS public.clubs (
+    id BIGINT PRIMARY KEY, -- Strava Club ID
+    name TEXT,
+    profile_medium TEXT,
+    profile TEXT,
+    cover_photo TEXT,
+    cover_photo_small TEXT,
+    sport_type TEXT,
+    city TEXT,
+    state TEXT,
+    country TEXT,
+    private BOOLEAN,
+    member_count INTEGER,
+    featured BOOLEAN,
+    verified BOOLEAN,
+    url TEXT,
+    updated_at_db TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 8. 選手俱樂部關聯表 (Athlete Clubs)
+CREATE TABLE IF NOT EXISTS public.athlete_clubs (
+    athlete_id BIGINT REFERENCES public.athletes(id) ON DELETE CASCADE,
+    club_id BIGINT REFERENCES public.clubs(id) ON DELETE CASCADE,
+    membership TEXT, -- 'member', 'admin', 'owner'
+    admin BOOLEAN,
+    owner BOOLEAN,
+    PRIMARY KEY (athlete_id, club_id)
+);
+
+-- 9. 路段成績紀錄表 (Segment Efforts)
 
 -- ==========================================
 -- Row Level Security (RLS) 配置
@@ -120,11 +138,11 @@ CREATE TABLE IF NOT EXISTS public.segment_efforts (
 
 -- 啟用 RLS
 ALTER TABLE public.segments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.strava_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.athletes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bikes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shoes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clubs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.athlete_clubs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.segment_efforts ENABLE ROW LEVEL SECURITY;
 
 -- Segments 策略: 所有人可讀，僅管理者可寫
@@ -151,6 +169,14 @@ CREATE POLICY "Admin full access bikes" ON public.bikes FOR ALL TO authenticated
 -- Shoes 策略: 所有人可讀，管理者可寫
 CREATE POLICY "Public read shoes" ON public.shoes FOR SELECT USING (true);
 CREATE POLICY "Admin full access shoes" ON public.shoes FOR ALL TO authenticated USING (true);
+
+-- Clubs 策略: 所有人可讀，管理者可寫
+CREATE POLICY "Public read clubs" ON public.clubs FOR SELECT USING (true);
+CREATE POLICY "Admin full access clubs" ON public.clubs FOR ALL TO authenticated USING (true);
+
+-- Athlete Clubs 策略: 所有人可讀，管理者可寫
+CREATE POLICY "Public read athlete_clubs" ON public.athlete_clubs FOR SELECT USING (true);
+CREATE POLICY "Admin full access athlete_clubs" ON public.athlete_clubs FOR ALL TO authenticated USING (true);
 
 -- Segment Efforts 策略: 所有人可讀，內部同步系統 (authenticated) 可寫
 CREATE POLICY "Public read efforts" ON public.segment_efforts FOR SELECT USING (true);
