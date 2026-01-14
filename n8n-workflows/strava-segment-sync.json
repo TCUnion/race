@@ -1,0 +1,271 @@
+{
+    "name": "Strava-路段成績同步系統",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 60
+                        }
+                    ]
+                }
+            },
+            "id": "trigger-cron",
+            "name": "每小時執行一次",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {},
+            "id": "trigger-manual",
+            "name": "手動執行",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                140
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "select",
+                "table": "segments",
+                "returnAll": true
+            },
+            "id": "get-segments",
+            "name": "讀取啟用的路段",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                420,
+                220
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+                    "name": "Zeabur Supabase"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "select",
+                "table": "registrations",
+                "filters": {
+                    "conditions": [
+                        {
+                            "key": "segment_id",
+                            "value": "={{ $json.id }}"
+                        }
+                    ]
+                }
+            },
+            "id": "get-registrations",
+            "name": "讀取該路段報名名單",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                640,
+                220
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+                    "name": "Zeabur Supabase"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "select",
+                "table": "strava_tokens",
+                "filters": {
+                    "conditions": [
+                        {
+                            "key": "athlete_id",
+                            "value": "={{ $json.strava_athlete_id }}"
+                        }
+                    ]
+                }
+            },
+            "id": "get-tokens",
+            "name": "取得選手 Token",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                860,
+                220
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+                    "name": "Zeabur Supabase"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "=https://www.strava.com/api/v3/segment_efforts",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $json.access_token }}"
+                        }
+                    ]
+                },
+                "sendQueryParameters": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "segment_id",
+                            "value": "={{ $node[\"get-registrations\"].json.segment_id }}"
+                        },
+                        {
+                            "name": "athlete_id",
+                            "value": "={{ $json.athlete_id }}"
+                        }
+                    ]
+                }
+            },
+            "id": "strava-api",
+            "name": "Strava 抓取努力紀錄",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1080,
+                220
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "return items.map(item => {\n  const effort = item.json;\n  return {\n    json: {\n      id: effort.id,\n      segment_id: effort.segment.id,\n      athlete_id: effort.athlete.id,\n      athlete_name: effort.athlete.firstname + \" \" + (effort.athlete.lastname || \"\"),\n      elapsed_time: effort.elapsed_time,\n      moving_time: effort.moving_time,\n      start_date: effort.start_date_local,\n      average_watts: effort.average_watts,\n      device_watts: effort.device_watts\n    }\n  };\n});"
+            },
+            "id": "transform-data",
+            "name": "資料結構轉換",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1300,
+                220
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "upsert",
+                "table": "segment_efforts",
+                "columns": [
+                    "id",
+                    "segment_id",
+                    "athlete_id",
+                    "athlete_name",
+                    "elapsed_time",
+                    "moving_time",
+                    "start_date",
+                    "average_watts",
+                    "device_watts"
+                ]
+            },
+            "id": "upsert-efforts",
+            "name": "存入成績資料表",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1520,
+                220
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "YOUR_SUPABASE_CREDENTIAL_ID",
+                    "name": "Zeabur Supabase"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "每小時執行一次": {
+            "main": [
+                [
+                    {
+                        "node": "讀取啟用的路段",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "手動執行": {
+            "main": [
+                [
+                    {
+                        "node": "讀取啟用的路段",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "讀取啟用的路段": {
+            "main": [
+                [
+                    {
+                        "node": "讀取該路段報名名單",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "讀取該路段報名名單": {
+            "main": [
+                [
+                    {
+                        "node": "取得選手 Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "取得選手 Token": {
+            "main": [
+                [
+                    {
+                        "node": "Strava 抓取努力紀錄",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Strava 抓取努力紀錄": {
+            "main": [
+                [
+                    {
+                        "node": "資料結構轉換",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "資料結構轉換": {
+            "main": [
+                [
+                    {
+                        "node": "存入成績資料表",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
