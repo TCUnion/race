@@ -50,8 +50,6 @@ class StravaService:
         
         headers = {"Authorization": f"Bearer {token_data['access_token']}"}
         # 取得該選手在該路段的所有努力 (efforts)
-        # 注意: Strava API 對於非目前使用者的數據獲取有限制，通常只能拿自己的
-        # 但在 Challenge 場景，我們可以要求使用者連結後，定期備份他們的努力
         response = requests.get(
             f"https://www.strava.com/api/v3/segment_efforts?segment_id={segment_id}&athlete_id={athlete_id}",
             headers=headers
@@ -59,3 +57,34 @@ class StravaService:
         if response.status_code == 200:
             return response.json()
         return None
+
+    @staticmethod
+    def get_segment_leaderboard(segment_id: int, athlete_id_for_token: Optional[int] = None):
+        """
+        取得路段的公開排行榜。
+        athlete_id_for_token: 用於獲取 access_token 的選手 ID。若未提供，則隨機取用資料庫中第一個有效的 Token。
+        """
+        if athlete_id_for_token:
+            token_data = StravaService.get_token(athlete_id_for_token)
+        else:
+            # 隨機取得一個 Token
+            response = supabase.table("strava_tokens").select("*").limit(1).execute()
+            if response.data:
+                token_data = StravaService.get_token(response.data[0]["athlete_id"])
+            else:
+                return None
+
+        if not token_data:
+            return None
+
+        headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+        # 抓取前 50 名 (或者更多)
+        response = requests.get(
+            f"https://www.strava.com/api/v3/segments/{segment_id}/leaderboard?per_page=50",
+            headers=headers
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching leaderboard: {response.status_code} - {response.text}")
+            return None

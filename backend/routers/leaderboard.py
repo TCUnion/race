@@ -61,23 +61,31 @@ async def sync_leaderboard(segment_id: int, background_tasks: BackgroundTasks):
 def perform_sync(segment_id: int):
     # 1. 取得所有報名該路段的選手
     registrations = supabase.table("registrations").select("strava_athlete_id").eq("segment_id", segment_id).execute()
-    athlete_ids = [r["strava_athlete_id"] for r in registrations.data]
+    registered_athlete_ids = {r["strava_athlete_id"] for r in registrations.data}
     
-    for aid in athlete_ids:
-        # 2. 取得選手 Token 並抓取努力
-        efforts = StravaService.get_segment_efforts(aid, segment_id)
-        if efforts:
-            for effort in efforts:
-                # 3. 儲存努力到資料庫
+    # 2. 批量同步：取得路段排行榜 (前 50 名)
+    leaderboard = StravaService.get_segment_leaderboard(segment_id)
+    if leaderboard and "entries" in leaderboard:
+        print(f"Sync: Processing {len(leaderboard['entries'])} leaderboard entries for segment {segment_id}")
+        for entry in leaderboard["entries"]:
+            athlete_id = entry["athlete_id"]
+            # 只儲存有報名的選手，或者為了數據完整性，我們可以擴充策略
+            if athlete_id in registered_athlete_ids:
                 data = {
-                    "id": effort["id"],
+                    "id": entry.get("effort_id") or f"lb_{segment_id}_{athlete_id}", # 優先使用 effort_id
                     "segment_id": segment_id,
-                    "athlete_id": aid,
-                    "athlete_name": effort["athlete"]["firstname"] + " " + effort["athlete"]["lastname"] if "athlete" in effort else None,
-                    "elapsed_time": effort["elapsed_time"],
-                    "moving_time": effort["moving_time"],
-                    "start_date": effort["start_date_local"],
-                    "average_watts": effort.get("average_watts"),
-                    "device_watts": effort.get("device_watts"),
+                    "athlete_id": athlete_id,
+                    "athlete_name": entry["athlete_name"],
+                    "elapsed_time": entry["elapsed_time"],
+                    "moving_time": entry["moving_time"],
+                    "start_date": entry["start_date_local"],
+                    "average_watts": entry.get("average_watts"),
+                    "device_watts": entry.get("device_watts"),
                 }
                 supabase.table("segment_efforts").upsert(data).execute()
+
+    # 3. 補充同步：針對已報名但不在前 50 名的選手進行個別抓取 (確保數據完整)
+    # 這裡可以根據需求決定執行頻率，暫時先實作主邏輯
+    for aid in registered_athlete_ids:
+        # TODO: 判斷是否需要個別同步 (例如距離上次更新超過 1 小時)
+        pass
