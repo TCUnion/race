@@ -639,9 +639,9 @@ const AdminPanel: React.FC = () => {
 
                                         if (!confirm(confirmMsg)) return;
 
-                                        // 寫入 Supabase
+                                        // 寫入 Supabase (包含所有 Strava 資料)
                                         const { error } = await supabase.from('segments').insert({
-                                            id: segment.id, // 顯式傳遞 Strava ID 作為主鍵
+                                            id: segment.id,
                                             strava_id: segment.id,
                                             name: segment.name,
                                             description: segment.name,
@@ -650,6 +650,19 @@ const AdminPanel: React.FC = () => {
                                             average_grade: segment.average_grade,
                                             maximum_grade: segment.maximum_grade,
                                             elevation_gain: segment.total_elevation_gain || segment.elevation_gain,
+                                            elevation_high: segment.elevation_high,
+                                            elevation_low: segment.elevation_low,
+                                            total_elevation_gain: segment.total_elevation_gain,
+                                            activity_type: segment.activity_type,
+                                            climb_category: segment.climb_category,
+                                            city: segment.city,
+                                            state: segment.state,
+                                            country: segment.country,
+                                            star_count: segment.star_count,
+                                            athlete_count: segment.athlete_count,
+                                            kom: segment.KOM,
+                                            qom: segment.QOM,
+                                            elevation_profile: segment.elevation_profile,
                                             polyline: polyline,
                                             is_active: true
                                         });
