@@ -256,6 +256,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-widest font-bold">資料每小時自動更新</p>
             </div>
           </div>
+        </section>
         {/* Segment Selector */}
         <section className="flex flex-col gap-4">
           <h2 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">您可以點擊切換路段詳情</h2>
@@ -433,7 +434,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
             <div className="absolute bottom-6 left-6 flex flex-col gap-1">
               <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest">Route Profile</p>
-              <h4 className="text-white text-xl font-black">{segment?.name || '路線概況'}</h4>
+              <h4 className="text-white text-xl font-black">{selectedSegment?.name || '路線概況'}</h4>
             </div>
           </div>
           <div className="rounded-2xl p-8 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex flex-col justify-center shadow-sm backdrop-blur-sm">
@@ -443,9 +444,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
             <div className="space-y-4">
               {[
-                { label: '距離', value: segment ? `${(segment.distance / 1000).toFixed(2)} km` : MOCK_SEGMENT_STATS.distance, icon: 'straighten' },
-                { label: '平均坡度', value: segment ? `${segment.average_grade}%` : MOCK_SEGMENT_STATS.grade, icon: 'trending_up' },
-                { label: '垂直爬升', value: segment ? `${segment.total_elevation_gain} m` : MOCK_SEGMENT_STATS.ascent, icon: 'elevation' }
+                { label: '距離', value: selectedSegment ? `${(selectedSegment.distance / 1000).toFixed(2)} km` : MOCK_SEGMENT_STATS.distance, icon: 'straighten' },
+                { label: '平均坡度', value: selectedSegment ? `${selectedSegment.average_grade}%` : MOCK_SEGMENT_STATS.grade, icon: 'trending_up' },
+                { label: '垂直爬升', value: selectedSegment ? `${selectedSegment.total_elevation_gain} m` : MOCK_SEGMENT_STATS.ascent, icon: 'elevation' }
               ].map((row, i) => (
                 <div key={i} className={`flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 ${i === 2 ? 'border-none pb-0' : ''}`}>
                   <div className="flex items-center gap-2">
