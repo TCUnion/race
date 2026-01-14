@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSegmentData, formatTime } from '../hooks/useSegmentData';
+import SegmentMap from './SegmentMap';
 import { MOCK_SEGMENT_STATS, MOCK_ACTIVITIES } from '../constants';
 import { Activity } from '../types';
 
@@ -429,12 +430,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {/* Route Info Section */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 h-56 md:h-64 relative group shadow-lg">
-            <div className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2070')" }}></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-6 left-6 flex flex-col gap-1">
-              <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest">Route Profile</p>
-              <h4 className="text-white text-xl font-black">{selectedSegment?.name || '路線概況'}</h4>
+          <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 h-56 md:h-64 relative group shadow-lg bg-slate-100 dark:bg-slate-900">
+            <div className="absolute inset-0 transition-transform duration-1000 group-hover:scale-105">
+              <SegmentMap polyline={selectedSegment?.polyline} />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+            <div className="absolute bottom-6 left-6 flex flex-col gap-1 z-10">
+              <p className="text-[10px] text-white/90 font-bold uppercase tracking-widest drop-shadow-md">Route Profile</p>
+              <h4 className="text-white text-xl font-black drop-shadow-md">{selectedSegment?.name || '路線概況'}</h4>
             </div>
           </div>
           <div className="rounded-2xl p-8 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex flex-col justify-center shadow-sm backdrop-blur-sm">
