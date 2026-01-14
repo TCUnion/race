@@ -34,6 +34,43 @@ const findPolyline = (obj: any): string => {
     return "";
 };
 
+const normalizeSegment = (raw: any): any => {
+    const data = Array.isArray(raw) ? raw[0] : raw;
+    if (!data) return null;
+
+    // 🚀 多重備援 Key 檢查 (Strava API 有時會變動，或經過 n8n 轉換)
+    const elevation = data.total_elevation_gain || data.elevation_gain || (data.elevationDetail?.total_gain);
+    const id = data.id || data.strava_id || data.segment_id;
+
+    return {
+        id: id,
+        strava_id: id,
+        name: data.name,
+        description: data.description || data.name,
+        link: data.link || `https://www.strava.com/segments/${id}`,
+        distance: data.distance,
+        average_grade: data.average_grade,
+        maximum_grade: data.maximum_grade,
+        elevation_gain: elevation,
+        elevation_high: data.elevation_high,
+        elevation_low: data.elevation_low,
+        total_elevation_gain: elevation,
+        activity_type: data.activity_type || 'Ride',
+        climb_category: data.climb_category,
+        city: data.city,
+        state: data.state,
+        country: data.country,
+        star_count: data.star_count,
+        athlete_count: data.athlete_count,
+        kom: data.KOM || data.kom || data.kom_time,
+        qom: data.QOM || data.qom || data.qom_time,
+        pr_elapsed_time: data.pr_elapsed_time || data.athlete_segment_stats?.pr_elapsed_time,
+        pr_date: data.pr_date || data.athlete_segment_stats?.pr_date,
+        elevation_profile: data.elevation_profile,
+        polyline: findPolyline(data)
+    };
+};
+
 const AdminPanel: React.FC = () => {
     const [session, setSession] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -99,24 +136,37 @@ const AdminPanel: React.FC = () => {
             const responseText = await response.text();
             if (!responseText || responseText.trim() === "") throw new Error("伺服器回傳了空內容");
 
-            let segmentData = JSON.parse(responseText);
-            const targetData = Array.isArray(segmentData) ? segmentData[0] : segmentData;
+            const normalized = normalizeSegment(segmentData);
+            if (!normalized) throw new Error("正規化資料後為空，請檢查伺服器回傳格式");
 
-            const newPolyline = findPolyline(targetData);
-
-            if (!newPolyline) {
-                alert('警告：雖然成功取得資料，進地圖路線 (Polyline) 仍然缺失。');
+            if (!normalized.polyline) {
+                alert('警告：雖然成功取得資料，地圖路線 (Polyline) 仍然缺失。');
             }
 
             const { error } = await supabase
                 .from('segments')
                 .update({
-                    name: targetData.name || seg.name,
-                    distance: targetData.distance || seg.distance,
-                    average_grade: targetData.average_grade || seg.average_grade,
-                    maximum_grade: targetData.maximum_grade || seg.maximum_grade,
-                    elevation_gain: targetData.total_elevation_gain || targetData.elevation_gain || seg.elevation_gain,
-                    polyline: newPolyline || seg.polyline
+                    name: normalized.name || seg.name,
+                    distance: normalized.distance || seg.distance,
+                    average_grade: normalized.average_grade || seg.average_grade,
+                    maximum_grade: normalized.maximum_grade || seg.maximum_grade,
+                    elevation_gain: normalized.elevation_gain || seg.elevation_gain,
+                    elevation_high: normalized.elevation_high,
+                    elevation_low: normalized.elevation_low,
+                    total_elevation_gain: normalized.total_elevation_gain,
+                    activity_type: normalized.activity_type,
+                    climb_category: normalized.climb_category,
+                    city: normalized.city,
+                    state: normalized.state,
+                    country: normalized.country,
+                    star_count: normalized.star_count,
+                    athlete_count: normalized.athlete_count,
+                    kom: normalized.kom,
+                    qom: normalized.qom,
+                    pr_elapsed_time: normalized.pr_elapsed_time,
+                    pr_date: normalized.pr_date,
+                    elevation_profile: normalized.elevation_profile,
+                    polyline: normalized.polyline || seg.polyline
                 })
                 .eq('id', seg.id);
 
@@ -612,60 +662,27 @@ const AdminPanel: React.FC = () => {
                                             throw new Error("伺服器回傳了空內容，請稍後再試或檢查 Strava ID 是否正確。");
                                         }
 
-                                        let segment;
-                                        try {
-                                            segment = JSON.parse(responseText);
-                                        } catch (e) {
-                                            console.error("JSON Parse Error:", e, "Raw response:", responseText);
-                                            throw new Error("伺服器回傳格式錯誤 (非有效 JSON)。");
-                                        }
+                                        // 解析並正規化資料 (處理 Array 與多重 Key)
+                                        const segment = JSON.parse(responseText);
+                                        const normalized = normalizeSegment(segment);
+                                        if (!normalized) throw new Error('無法正規化路段資料');
 
-                                        if (!segment || (!segment.id && !segment.strava_id)) {
-                                            throw new Error('路段資料格式錯誤或找不到該路段');
-                                        }
+                                        console.log('Extracted Polyline:', normalized.polyline ? `${normalized.polyline.substring(0, 30)}...` : '❌ MISSING');
 
-                                        // 使用全局 Polyline 提取邏輯
-                                        const polyline = findPolyline(segment);
-                                        console.log('Extracted Polyline:', polyline ? `${polyline.substring(0, 30)}...` : '❌ MISSING');
-
-                                        if (!polyline) {
+                                        if (!normalized.polyline) {
                                             if (!confirm('警告：無法從 Strava 取得路線資訊 (Polyline)。\n這將導致排行榜地圖無法顯示。\n\n是否仍要強行新增該路段？')) {
                                                 return;
                                             }
                                         }
 
                                         // 顯示預覽並確認
-                                        const confirmMsg = `確認新增此路段？\n\n路段名稱: ${segment.name}\nStrava ID: ${segment.id}\n距離: ${(segment.distance / 1000).toFixed(2)} km\n平均坡度: ${segment.average_grade}%\n總爬升: ${segment.total_elevation_gain} m`;
+                                        const confirmMsg = `確認新增此路段？\n\n路段名稱: ${normalized.name}\nStrava ID: ${normalized.id}\n距離: ${(normalized.distance / 1000).toFixed(2)} km\n平均坡度: ${normalized.average_grade}%\n總爬升: ${normalized.elevation_gain} m`;
 
                                         if (!confirm(confirmMsg)) return;
 
                                         // 寫入 Supabase (包含所有 Strava 資料)
                                         const { error } = await supabase.from('segments').insert({
-                                            id: segment.id,
-                                            strava_id: segment.id,
-                                            name: segment.name,
-                                            description: segment.name,
-                                            link: segment.link || `https://www.strava.com/segments/${segment.id}`,
-                                            distance: segment.distance,
-                                            average_grade: segment.average_grade,
-                                            maximum_grade: segment.maximum_grade,
-                                            elevation_gain: segment.total_elevation_gain || segment.elevation_gain,
-                                            elevation_high: segment.elevation_high,
-                                            elevation_low: segment.elevation_low,
-                                            total_elevation_gain: segment.total_elevation_gain,
-                                            activity_type: segment.activity_type,
-                                            climb_category: segment.climb_category,
-                                            city: segment.city,
-                                            state: segment.state,
-                                            country: segment.country,
-                                            star_count: segment.star_count,
-                                            athlete_count: segment.athlete_count,
-                                            kom: segment.KOM,
-                                            qom: segment.QOM,
-                                            pr_elapsed_time: segment.pr_elapsed_time,
-                                            pr_date: segment.pr_date,
-                                            elevation_profile: segment.elevation_profile,
-                                            polyline: polyline,
+                                            ...normalized,
                                             is_active: true
                                         });
 
