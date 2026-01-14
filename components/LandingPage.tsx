@@ -10,20 +10,28 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   const { segments, statsMap, weather, isLoading } = useSegmentData();
-  const [displaySegment, setDisplaySegment] = React.useState<any>(null);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
-  // 隨機選擇一個路段
-  React.useEffect(() => {
-    if (segments.length > 0 && !displaySegment) {
-      const randomIndex = Math.floor(Math.random() * segments.length);
-      setDisplaySegment(segments[randomIndex]);
-    }
-  }, [segments, displaySegment]);
+  // 輔助函式：格式化日期
+  const formatDateRange = (start?: string, end?: string) => {
+    if (!start && !end) return null;
+    const s = start ? new Date(start).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '未設定';
+    const e = end ? new Date(end).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '未設定';
+    return `${s} - ${e}`;
+  };
 
-  // 使用當前路段的統計數據
-  const segment = displaySegment;
+  // 使用索引選擇路段
+  const segment = segments.length > 0 ? segments[currentIndex] : null;
   const stats = segment ? statsMap[segment.id] || { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null } : { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null };
-  const leaderboard = []; // 首頁预览排行暂时保留空，或者可以扩展 useSegmentData 返回 leaderboardsMap
+  const leaderboard = [];
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % segments.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + segments.length) % segments.length);
+  };
 
   // 動態統計數據
   const dynamicStats = [
@@ -53,13 +61,48 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
     <div className="flex flex-col items-center w-full pb-20">
       {/* Hero Section */}
       <div className="w-full max-w-[1200px] px-4 py-8">
-        <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group">
           <div
-            className="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative"
+            className="flex min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-500"
             style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")` }}
           >
-            <div className="flex flex-col gap-4 max-w-3xl">
-              <span className="inline-block px-4 py-1 rounded bg-tsu-blue text-white text-[10px] font-black self-center uppercase tracking-[0.2em] shadow-lg">Limited Time Challenge</span>
+            {/* Pagination Controls */}
+            {segments.length > 1 && (
+              <>
+                <button 
+                  onClick={handlePrev}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10"
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button 
+                  onClick={handleNext}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10"
+                >
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+                
+                {/* Pagination Dots */}
+                <div className="absolute bottom-6 flex gap-2">
+                  {segments.map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-tsu-blue w-6' : 'bg-white/30'}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div className="flex flex-col gap-4 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex flex-col gap-2 items-center">
+                <span className="inline-block px-4 py-1 rounded bg-tsu-blue text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">Limited Time Challenge</span>
+                {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
+                  <span className="text-amber-400 text-xs font-bold tracking-widest uppercase">
+                     🗓️ {formatDateRange(segment.start_date, segment.end_date)}
+                  </span>
+                )}
+              </div>
               <h1 className="text-white text-4xl md:text-6xl font-black leading-tight tracking-tight uppercase italic drop-shadow-md">
                 {segment?.description || '台中經典挑戰：136檢定'}
               </h1>
@@ -203,15 +246,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic">路段詳情</h3>
               <ul className="space-y-3">
                 {[
+                  { label: '挑戰期間', value: (segment && formatDateRange(segment.start_date, segment.end_date)) || '未設定' },
                   { label: '路段名稱', value: segment?.name || '-' },
                   { label: '平均坡度', value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
                   { label: '最陡坡度', value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
                   { label: '挑戰人數', value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
                   { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
                 ].map((item, i) => (
-                  <li key={i} className="flex justify-between items-center text-[11px] font-bold">
+                  <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0">
                     <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest">{item.label}</span>
-                    <span className={`${item.color || 'text-slate-900 dark:text-slate-200'} uppercase truncate max-w-[120px]`}>{item.value}</span>
+                    <span className={`${item.color || 'text-slate-900 dark:text-slate-200'} uppercase break-all`}>{item.value}</span>
                   </li>
                 ))}
               </ul>
