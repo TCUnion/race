@@ -136,6 +136,7 @@ const AdminPanel: React.FC = () => {
             const responseText = await response.text();
             if (!responseText || responseText.trim() === "") throw new Error("伺服器回傳了空內容");
 
+            const segmentData = JSON.parse(responseText);
             const normalized = normalizeSegment(segmentData);
             if (!normalized) throw new Error("正規化資料後為空，請檢查伺服器回傳格式");
 
@@ -479,8 +480,9 @@ const AdminPanel: React.FC = () => {
                                     type="text"
                                     value={editingSegment.name}
                                     onChange={(e) => setEditingSegment({ ...editingSegment, name: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                     required
+                                    readOnly={editingSegment.id !== 'new'}
                                 />
                             </div>
                             <div>
@@ -499,8 +501,9 @@ const AdminPanel: React.FC = () => {
                                     type="text"
                                     value={editingSegment.link || ''}
                                     onChange={(e) => setEditingSegment({ ...editingSegment, link: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                    className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                     placeholder="https://..."
+                                    readOnly={editingSegment.id !== 'new'}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -510,7 +513,8 @@ const AdminPanel: React.FC = () => {
                                         type="number"
                                         value={editingSegment.distance || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, distance: parseFloat(e.target.value) })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                        className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                        readOnly={editingSegment.id !== 'new'}
                                     />
                                 </div>
                                 <div>
@@ -520,7 +524,8 @@ const AdminPanel: React.FC = () => {
                                         step="0.1"
                                         value={editingSegment.average_grade || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, average_grade: parseFloat(e.target.value) })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                        className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                        readOnly={editingSegment.id !== 'new'}
                                     />
                                 </div>
                             </div>
@@ -531,7 +536,8 @@ const AdminPanel: React.FC = () => {
                                         type="number"
                                         value={editingSegment.elevation_gain || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, elevation_gain: parseFloat(e.target.value) })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                        className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                        readOnly={editingSegment.id !== 'new'}
                                     />
                                 </div>
                             </div>
@@ -540,7 +546,8 @@ const AdminPanel: React.FC = () => {
                                 <textarea
                                     value={editingSegment.polyline || ''}
                                     onChange={(e) => setEditingSegment({ ...editingSegment, polyline: e.target.value })}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm h-16 font-mono"
+                                    className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm h-16 font-mono ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                    readOnly={editingSegment.id !== 'new'}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
