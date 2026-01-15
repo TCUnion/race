@@ -1,6 +1,6 @@
 import React from 'react';
 import { Vehicle } from '../../types';
-import { Settings, Calendar, Navigation, Tool } from 'lucide-react';
+import { Settings, Calendar, Navigation, Wrench } from 'lucide-react';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -40,7 +40,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails, onAdd
         </div>
         <div className="bg-black/20 rounded-xl p-3 border border-white/5">
           <div className="flex items-center gap-2 text-blue-200/50 text-xs mb-1">
-            <Tool className="w-3 h-3" />
+            <Wrench className="w-3 h-3" />
             <span>保養次數</span>
           </div>
           <div className="text-white font-bold text-lg">
