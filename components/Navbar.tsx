@@ -22,7 +22,7 @@ const CONFIG = {
   pollingTimeout: 120000,
   allowedOrigins: [
     'https://n8n.criterium.tw',
-    'https://status.criterium.tw',
+    'https://strava.criterium.tw',
     'https://criterium.tw'
   ]
 };

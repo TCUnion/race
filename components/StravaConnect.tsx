@@ -18,7 +18,7 @@ const CONFIG = {
     pollingTimeout: 120000,
     allowedOrigins: [
         'https://n8n.criterium.tw',
-        'https://status.criterium.tw',
+        'https://strava.criterium.tw',
         'https://criterium.tw',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
@@ -206,7 +206,7 @@ const StravaConnect: React.FC = () => {
         if (!window.confirm('確定要中斷與 Strava 的連結嗎？')) return;
 
         if (athlete) {
-             try {
+            try {
                 // 發送 Webhook 通知的邏輯
                 await fetch('https://n8n.criterium.tw/webhook/strava/auth/cancel', {
                     method: 'POST',
@@ -259,7 +259,7 @@ const StravaConnect: React.FC = () => {
                 </button>
                 <div className="flex justify-center">
                     <img
-                        src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png"
+                        src="https://strava.criterium.tw/logo_pwrdBy_strava_horiz_orange.png"
                         alt="Powered by Strava"
                         className="h-6 opacity-80"
                     />
@@ -287,7 +287,7 @@ const StravaConnect: React.FC = () => {
 
             <div className="flex justify-center">
                 <img
-                    src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png"
+                    src="https://strava.criterium.tw/logo_pwrdBy_strava_horiz_orange.png"
                     alt="Powered by Strava"
                     className="h-8"
                 />

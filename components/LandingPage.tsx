@@ -29,7 +29,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   // 5 秒自動輪播
   React.useEffect(() => {
     if (segments.length <= 1) return;
-    
+
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % segments.length);
     }, 5000);
@@ -89,31 +89,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
         <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group transition-all duration-700">
           <div
             className="flex min-h-[380px] sm:min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
-            style={{ 
-              backgroundImage: `linear-gradient(${currentTheme.gradient} 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")` 
+            style={{
+              backgroundImage: `linear-gradient(${currentTheme.gradient} 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")`
             }}
           >
             {/* Pagination Controls */}
             {segments.length > 1 && (
               <>
-                <button 
+                <button
                   onClick={handlePrev}
                   className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10"
                 >
                   <span className="material-symbols-outlined">chevron_left</span>
                 </button>
-                <button 
+                <button
                   onClick={handleNext}
                   className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10"
                 >
                   <span className="material-symbols-outlined">chevron_right</span>
                 </button>
-                
+
                 {/* Pagination Dots */}
                 <div className="absolute bottom-6 flex gap-2">
                   {segments.map((_, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className={`w-2 h-2 rounded-full transition-all duration-500 ${i === currentIndex ? `${currentTheme.primary} w-6` : 'bg-white/30'}`}
                     />
                   ))}
@@ -156,7 +156,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-xs font-black uppercase tracking-wide shadow-md transition-colors duration-700`}>Limited Time Challenge</span>
               {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
                 <span className="text-amber-400 text-sm font-bold tracking-widest uppercase animate-pulse">
-                   🗓️ {formatDateRange(segment.start_date, segment.end_date)}
+                  🗓️ {formatDateRange(segment.start_date, segment.end_date)}
                 </span>
               )}
             </div>
@@ -223,7 +223,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">目前排行榜</h2>
                 <a
-                  href="https://status.criterium.tw/136leaderboard.html"
+                  href="https://strava.criterium.tw/136leaderboard.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
@@ -241,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   <div className="p-12 text-center text-slate-500">
                     <span className="material-symbols-outlined text-4xl mb-2 opacity-20">leaderboard</span>
                     <p className="text-sm">前往各路段儀表板查看即時排行</p>
-                    <button 
+                    <button
                       onClick={onRegister}
                       className="mt-4 text-tsu-blue text-xs font-bold hover:underline"
                     >
@@ -256,9 +256,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
           {/* Sidebar */}
           <div className="space-y-6">
             <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-              <button 
-                type="button" 
-                className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic" 
+              <button
+                type="button"
+                className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic"
                 onClick={() => setDetailsOpen(prev => !prev)}
               >
                 <span>路段詳情</span>
@@ -266,7 +266,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   expand_less
                 </span>
               </button>
-              
+
               {detailsOpen && (
                 <div className="mt-4 space-y-4">
                   <ul className="space-y-3">
@@ -300,9 +300,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             </section>
 
             <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden">
-              <button 
-                type="button" 
-                className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic" 
+              <button
+                type="button"
+                className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic"
                 onClick={() => setStartOpen(prev => !prev)}
               >
                 <span>開始挑戰</span>
@@ -310,7 +310,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   expand_less
                 </span>
               </button>
-              
+
               {startOpen && (
                 <div className="mt-4 space-y-4">
                   <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium">
