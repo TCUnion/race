@@ -22,6 +22,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   ];
 
   const currentTheme = themes[currentIndex % themes.length];
+  // 手風琴狀態
+  const [detailsOpen, setDetailsOpen] = React.useState(true);
+  const [startOpen, setStartOpen] = React.useState(true);
 
   // 5 秒自動輪播
   React.useEffect(() => {
@@ -85,7 +88,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
       <div className="w-full max-w-[1200px] px-4 py-8">
         <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group transition-all duration-700">
           <div
-            className="flex min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
+            className="flex min-h-[380px] sm:min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
             style={{ 
               backgroundImage: `linear-gradient(${currentTheme.gradient} 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")` 
             }}
@@ -150,9 +153,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             </div>
 
             <div className="flex flex-col gap-2 items-center mt-6">
-              <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-colors duration-700`}>Limited Time Challenge</span>
+              <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-xs font-black uppercase tracking-wide shadow-md transition-colors duration-700`}>Limited Time Challenge</span>
               {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
-                <span className="text-amber-400 text-xs font-bold tracking-widest uppercase animate-pulse">
+                <span className="text-amber-400 text-sm font-bold tracking-widest uppercase animate-pulse">
                    🗓️ {formatDateRange(segment.start_date, segment.end_date)}
                 </span>
               )}
@@ -163,7 +166,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
         {/* Dynamic Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
           {dynamicStats.map((stat, i) => (
-            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 transition-colors min-h-[140px]">
+            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 hover:shadow-lg hover:-translate-y-1 transition-colors min-h-[140px]">
               <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
               <div className="h-10 flex items-center">
                 <p className={`text-slate-900 dark:text-white text-3xl font-black italic ${isLoading ? 'animate-pulse' : ''}`}>
@@ -253,48 +256,74 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
           {/* Sidebar */}
           <div className="space-y-6">
             <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic">路段詳情</h3>
-              <ul className="space-y-3">
-                {[
-                  { label: '挑戰期間', value: (segment && formatDateRange(segment.start_date, segment.end_date)) || '未設定' },
-                  { label: '路段名稱', value: segment?.name || '-' },
-                  { label: '平均坡度', value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
-                  { label: '最陡坡度', value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
-                  { label: '挑戰人數', value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
-                  { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
-                ].map((item, i) => (
-                  <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0">
-                    <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest">{item.label}</span>
-                    <span className={`${item.color || 'text-slate-900 dark:text-slate-200'} uppercase break-all`}>{item.value}</span>
-                  </li>
-                ))}
-              </ul>
-              {segment?.link && (
-                <a
-                  href={segment.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all"
-                >
-                  <span>🔗</span>
-                  <span>在 Strava 查看路段</span>
-                </a>
+              <button 
+                type="button" 
+                className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic" 
+                onClick={() => setDetailsOpen(prev => !prev)}
+              >
+                <span>路段詳情</span>
+                <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: detailsOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+                  expand_less
+                </span>
+              </button>
+              
+              {detailsOpen && (
+                <div className="mt-4 space-y-4">
+                  <ul className="space-y-3">
+                    {[
+                      { label: '挑戰期間', value: (segment && formatDateRange(segment.start_date, segment.end_date)) || '未設定' },
+                      { label: '路段名稱', value: segment?.name || '-' },
+                      { label: '平均坡度', value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
+                      { label: '最陡坡度', value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
+                      { label: '挑戰人數', value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
+                      { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
+                    ].map((item, i) => (
+                      <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0">
+                        <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest">{item.label}</span>
+                        <span className={`${item.color || 'text-slate-900 dark:text-slate-200'} uppercase break-all`}>{item.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {segment?.link && (
+                    <a
+                      href={segment.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all"
+                    >
+                      <span>🔗</span>
+                      <span>在 Strava 查看路段</span>
+                    </a>
+                  )}
+                </div>
               )}
             </section>
 
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-8 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mb-4 uppercase italic">開始挑戰</h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium">
-                為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
-              </p>
-              <div className="space-y-4">
-                <div className="mt-8">
-                  <StravaConnect />
-                  <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
-                    點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">服務條款</a>
+            <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden">
+              <button 
+                type="button" 
+                className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic" 
+                onClick={() => setStartOpen(prev => !prev)}
+              >
+                <span>開始挑戰</span>
+                <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: startOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+                  expand_less
+                </span>
+              </button>
+              
+              {startOpen && (
+                <div className="mt-4 space-y-4">
+                  <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium">
+                    為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
                   </p>
+                  <div className="mt-6">
+                    <StravaConnect />
+                    <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
+                      點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">服務條款</a>
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </section>
 
             {/* KOM / QOM 紀錄 */}

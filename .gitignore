@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Security & Secrets
+.env
+.env.*
+lib/supabase.ts
+n8n-workflows/*.json
+backend/.env
+
