@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // 自定義環境變數讀取與備援邏輯
 // 更新紀錄：已套用 samkhlin 帳號之新金鑰
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tcusupabase.zeabur.app/';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tcusupabase2.zeabur.app/';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // 檢查金鑰是否存在，若缺失則輸出警告訊息
