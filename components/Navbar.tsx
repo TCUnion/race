@@ -22,8 +22,12 @@ const CONFIG = {
   pollingTimeout: 120000,
   allowedOrigins: [
     'https://n8n.criterium.tw',
-    'https://strava.criterium.tw',
-    'https://criterium.tw'
+    'https://n8n.criterium.tw',
+    'https://criterium.tw',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001'
   ]
 };
 
@@ -179,7 +183,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
       <div className="flex items-center justify-between px-6 md:px-20 py-4">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate(ViewType.LANDING)}>
-          <img src="https://www.tsu.com.tw/images/logo.png" alt="TCU Logo" className="h-8 w-auto" />
+          <img src="/favicon.png" alt="TCU Logo" className="h-8 w-auto" />
           <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight uppercase">TCU STRAVA RANK</h2>
         </div>
 
@@ -243,9 +247,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
         {/* Mobile Toggle */}
         <div className="md:hidden flex items-center">
-          <button 
+          <button
             type="button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="text-slate-900 dark:text-white p-2"
           >
             <span className="material-symbols-outlined text-3xl">

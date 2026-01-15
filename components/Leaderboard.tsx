@@ -428,7 +428,7 @@ const Leaderboard: React.FC = () => {
       </div>
 
       <div className="mt-12 flex justify-center">
-        <img src="https://strava.criterium.tw/api_logo_pwrdBy_strava_horiz_white.png" alt="Powered by Strava" className="h-8 opacity-40 dark:opacity-30 invert dark:invert-0" />
+        <img src="/api_logo_pwrdBy_strava_horiz_white.png" alt="Powered by Strava" className="h-8 opacity-40 dark:opacity-30 invert dark:invert-0" />
       </div>
     </div>
   );

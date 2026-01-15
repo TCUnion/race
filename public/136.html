@@ -407,8 +407,7 @@
       <h1>TCU 136檢定<span class="challenge-badge">大挑戰</span></h1>
       <p class="subtitle">
         授權資料僅供TCU內部使用,並保證不對外使用<br>
-        <a href="https://status.criterium.tw/privacy-policy.html" class="privacy-link" target="_blank"
-          rel="noopener noreferrer">
+        <a href="/privacy-policy.html" class="privacy-link" target="_blank" rel="noopener noreferrer">
           查看完整隱私政策與資料使用說明
         </a>
       </p>
@@ -424,13 +423,11 @@
 
       <div id="stravaStatus" class="strava-status">
         <button class="btn-connect-strava" type="button" onclick="connectStrava()">
-          <img src="https://status.criterium.tw/btn_strava_connect_with_orange_x2.png" alt="Connect with Strava"
-            height="48">
+          <img src="/btn_strava_connect_with_orange_x2.png" alt="Connect with Strava" height="48">
         </button>
 
         <div class="powered-by-strava">
-          <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" alt="Powered by Strava"
-            class="strava-logo">
+          <img src="/logo_pwrdBy_strava_horiz_orange.png" alt="Powered by Strava" class="strava-logo">
         </div>
       </div>
     </div>
@@ -611,7 +608,7 @@
           </div>
           <button class="btn-disconnect" type="button" onclick="disconnectStrava()">取消授權</button>
           <div class="powered-by-strava">
-            <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" 
+            <img src="/logo_pwrdBy_strava_horiz_orange.png" 
                  alt="Powered by Strava" 
                  class="strava-logo">
           </div>
@@ -619,12 +616,12 @@
       } else {
         statusEl.innerHTML = `
           <button class="btn-connect-strava" type="button" onclick="connectStrava()">
-            <img src="https://status.criterium.tw/btn_strava_connect_with_orange_x2.png" 
+            <img src="/btn_strava_connect_with_orange_x2.png" 
                  alt="Connect with Strava" 
                  height="48">
           </button>
           <div class="powered-by-strava">
-            <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" 
+            <img src="/logo_pwrdBy_strava_horiz_orange.png" 
                  alt="Powered by Strava" 
                  class="strava-logo">
           </div>
@@ -641,13 +638,13 @@
           <span class="spinner"></span>授權處理中,請在彈出視窗中完成授權...
         </div>
         <button class="btn-connect-strava" type="button" disabled>
-          <img src="https://status.criterium.tw/btn_strava_connect_with_orange_x2.png" 
+          <img src="/btn_strava_connect_with_orange_x2.png" 
                alt="Connect with Strava" 
                height="48"
                style="opacity: 0.6;">
         </button>
         <div class="powered-by-strava">
-          <img src="https://status.criterium.tw/logo_pwrdBy_strava_horiz_orange.png" 
+          <img src="/logo_pwrdBy_strava_horiz_orange.png" 
                alt="Powered by Strava" 
                class="strava-logo">
         </div>
@@ -896,7 +893,7 @@
             strava_athlete_id: data.strava_athlete_id || '',
             submitted_at: new Date().toLocaleString('zh-TW')
           });
-          window.location.href = `https://status.criterium.tw/136result.html?${params.toString()}`;
+          window.location.href = `/136result.html?${params.toString()}`;
           return;
         } else {
           const errorText = await response.text();

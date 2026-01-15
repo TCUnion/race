@@ -223,7 +223,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">目前排行榜</h2>
                 <a
-                  href="https://strava.criterium.tw/136leaderboard.html"
+                  href="/136leaderboard.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
@@ -319,7 +319,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   <div className="mt-6">
                     <StravaConnect />
                     <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
-                      點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">服務條款</a>
+                      點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">隱私權政策</a>
                     </p>
                   </div>
                 </div>
