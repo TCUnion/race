@@ -243,11 +243,11 @@ const StravaConnect: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h4 className="text-slate-900 dark:text-white font-black text-sm uppercase truncate">
-                            {athlete.firstname} {athlete.lastname}
+                        <h4 className="text-slate-900 dark:text-white font-black text-base uppercase truncate leading-tight">
+                            {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : `Athlete #${athlete.id}`}
                         </h4>
-                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-                            Athlete ID: {athlete.id}
+                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">
+                            Strava ID: {athlete.id}
                         </p>
                     </div>
                 </div>
