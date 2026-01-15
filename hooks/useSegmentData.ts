@@ -211,82 +211,78 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 return;
             }
 
-            // 為所有路段進行並發請求
-            const results = await Promise.all(activeSegments.map(async (seg) => {
-                try {
-                    const sid = seg.strava_id || seg.id;
-                    const url = `${CONFIG.apiUrl}?segment_id=${sid}`;
-                    const response = await fetch(url);
-                    if (!response.ok) return { id: seg.id, error: true };
-                    const data = await response.json();
-                    return { id: seg.id, data };
-                } catch (e) {
-                    return { id: seg.id, error: true };
-                }
-            }));
-
-            // 1. 先從 Webhook 取得所有排行榜基礎數據 (同步處理)
-            const baseLeaderboards: Record<number, LeaderboardEntry[]> = {};
-            const baseStats: Record<number, SegmentStats> = {};
-            let firstWeather: WeatherData | null = null;
-
-            results.forEach((res) => {
-                if ('data' in res && res.data) {
-                    const data = res.data;
-                    if (data.weather && !firstWeather) firstWeather = data.weather;
-
-                    if (Array.isArray(data.leaderboard)) {
-                        const sorted = [...data.leaderboard].sort((a, b) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999));
-                        const ranked = sorted.map((entry, index) => ({ ...entry, rank: index + 1 }));
-                        baseLeaderboards[res.id] = ranked;
-                        baseStats[res.id] = calculateStats(ranked);
-                    }
-                }
-            });
-
-            // 立即顯示基礎數據，避免畫面空白
-            setLeaderboardsMap(baseLeaderboards);
-            setStatsMap(baseStats);
-            if (firstWeather) setWeather(firstWeather);
-
-            // 2. 🚀 批量抓取報名資料進行「增強」(Enrichment)
+            // 1. 直接從 Supabase 抓取所有成績資料
             const segmentIds = activeSegments.map(s => s.id);
+            const { data: allEfforts, error: effortsError } = await supabase
+                .from('segment_efforts')
+                .select('*')
+                .in('segment_id', segmentIds)
+                .order('elapsed_time', { ascending: true });
+
+            if (effortsError) throw effortsError;
+
+            // 2. 抓取所有報名資料（用於補強車隊、號碼布與大頭照）
             const { data: allRegData } = await supabase
                 .from('registrations')
-                .select('segment_id, strava_athlete_id, number, team')
+                .select('segment_id, strava_athlete_id, number, team, athlete_name, athlete_profile')
                 .in('segment_id', segmentIds);
 
-            if (allRegData && allRegData.length > 0) {
-                // 按 segment_id 分組報名資料
-                const regMapBySegment: Record<number, Map<number, any>> = {};
+            // 建立報名資料地圖
+            const regMapBySegment: Record<number, Map<number, any>> = {};
+            if (allRegData) {
                 allRegData.forEach(reg => {
                     const sid = Number(reg.segment_id);
                     if (!regMapBySegment[sid]) regMapBySegment[sid] = new Map();
                     regMapBySegment[sid].set(Number(reg.strava_athlete_id), reg);
                 });
-
-                // 更新地圖
-                setLeaderboardsMap(prev => {
-                    const updated = { ...prev };
-                    Object.keys(baseLeaderboards).forEach(key => {
-                        const sid = Number(key);
-                        const leaderboard = baseLeaderboards[sid];
-                        const regMap = regMapBySegment[sid];
-
-                        if (regMap && leaderboard) {
-                            updated[sid] = leaderboard.map(entry => {
-                                const reg = regMap.get(Number(entry.athlete_id));
-                                return {
-                                    ...entry,
-                                    number: reg?.number || entry.number,
-                                    team: reg?.team || entry.team
-                                };
-                            });
-                        }
-                    });
-                    return updated;
-                });
             }
+
+            const newLeaderboards: Record<number, LeaderboardEntry[]> = {};
+            const newStats: Record<number, SegmentStats> = {};
+
+            // 3. 處理每個路段的排行榜
+            activeSegments.forEach(seg => {
+                const segmentEfforts = (allEfforts || []).filter(e => Number(e.segment_id) === Number(seg.id));
+                const regMap = regMapBySegment[seg.id] || new Map();
+
+                // 每個選手只保留「最佳成績」
+                const bestEffortsMap = new Map<number, any>();
+                segmentEfforts.forEach(e => {
+                    const aid = Number(e.athlete_id);
+                    if (!bestEffortsMap.has(aid) || (e.elapsed_time && e.elapsed_time < bestEffortsMap.get(aid).elapsed_time)) {
+                        bestEffortsMap.set(aid, e);
+                    }
+                });
+
+                // 轉換為 LeaderboardEntry 格式
+                const ranked = Array.from(bestEffortsMap.values())
+                    .sort((a, b) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999))
+                    .map((e, index) => {
+                        const reg = regMap.get(Number(e.athlete_id));
+                        return {
+                            rank: index + 1,
+                            athlete_id: e.athlete_id,
+                            // 優先級：報名表名字 > 成績表名字 > 預設值
+                            name: reg?.athlete_name || e.athlete_name || `選手 ${e.athlete_id}`,
+                            profile_medium: reg?.athlete_profile || "",
+                            team: reg?.team || "",
+                            number: reg?.number || "",
+                            elapsed_time: e.elapsed_time,
+                            moving_time: e.moving_time,
+                            average_speed: seg.distance / (e.elapsed_time || 1), // 計算時速 m/s
+                            average_watts: e.average_watts,
+                            average_heartrate: e.average_heartrate,
+                            start_date: e.start_date,
+                            activity_id: e.id
+                        };
+                    });
+
+                newLeaderboards[seg.id] = ranked;
+                newStats[seg.id] = calculateStats(ranked);
+            });
+
+            setLeaderboardsMap(newLeaderboards);
+            setStatsMap(newStats);
 
         } catch (err) {
             console.error('載入資料失敗:', err);
@@ -295,7 +291,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             if (isInitialLoad) setIsLoading(false);
             isFetching.current = false;
         }
-    }, []);
+    }, [calculateStats]);
 
     // 初始載入：先拿 segments 再拿排行榜
     useEffect(() => {

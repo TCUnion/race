@@ -131,6 +131,18 @@ CREATE TABLE IF NOT EXISTS public.athlete_clubs (
 );
 
 -- 9. 路段成績紀錄表 (Segment Efforts)
+CREATE TABLE IF NOT EXISTS public.segment_efforts (
+    id BIGINT PRIMARY KEY, -- Strava Effort ID
+    segment_id BIGINT REFERENCES public.segments(id) ON DELETE CASCADE,
+    athlete_id BIGINT,
+    athlete_name TEXT,
+    elapsed_time INTEGER,
+    moving_time INTEGER,
+    start_date TIMESTAMP WITH TIME ZONE,
+    average_watts FLOAT,
+    device_watts BOOLEAN,
+    updated_at_db TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
 -- ==========================================
 -- Row Level Security (RLS) 配置
@@ -178,9 +190,14 @@ CREATE POLICY "Admin full access clubs" ON public.clubs FOR ALL TO authenticated
 CREATE POLICY "Public read athlete_clubs" ON public.athlete_clubs FOR SELECT USING (true);
 CREATE POLICY "Admin full access athlete_clubs" ON public.athlete_clubs FOR ALL TO authenticated USING (true);
 
--- Segment Efforts 策略: 所有人可讀，內部同步系統 (authenticated) 可寫
-CREATE POLICY "Public read efforts" ON public.segment_efforts FOR SELECT USING (true);
-CREATE POLICY "Sync system write efforts" ON public.segment_efforts FOR ALL TO authenticated USING (true);
+-- Segment Efforts 策略: 僅限 criterium.tw 及其子網域存取
+CREATE POLICY "Restricted domain access efforts" ON public.segment_efforts 
+FOR ALL 
+USING (
+    (current_setting('request.headers', true)::json->>'origin' ~~ '%criterium.tw')
+    OR 
+    (current_setting('request.headers', true)::json->>'referer' ~~ '%criterium.tw')
+);
 
 -- ==========================================
 -- 初始資料 (136 檢定)
