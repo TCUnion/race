@@ -10,8 +10,12 @@ export const useMaintenance = () => {
   const fetchVehicles = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('尚未登入：請先登入後再查看保養紀錄');
+      // 改為從 localStorage 獲取 Strava 資訊
+      const savedData = localStorage.getItem('strava_athlete_meta');
+      if (!savedData) throw new Error('尚未連結 Strava：請先在首頁連結您的 Strava 帳號');
+
+      const athlete = JSON.parse(savedData);
+      const athleteId = athlete.id;
 
       const { data, error } = await supabase
         .from('vehicles')
@@ -19,7 +23,7 @@ export const useMaintenance = () => {
           *,
           maintenance_records (*)
         `)
-        .eq('user_id', user.id)
+        .eq('strava_athlete_id', athleteId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -33,12 +37,18 @@ export const useMaintenance = () => {
 
   const addVehicle = async (vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const savedData = localStorage.getItem('strava_athlete_meta');
+      if (!savedData) throw new Error('尚未連結 Strava');
+
+      const athlete = JSON.parse(savedData);
+      const athleteId = athlete.id;
 
       const { data, error } = await supabase
         .from('vehicles')
-        .insert([{ ...vehicle, user_id: user.id }])
+        .insert([{
+          ...vehicle,
+          strava_athlete_id: athleteId
+        }])
         .select()
         .single();
 
