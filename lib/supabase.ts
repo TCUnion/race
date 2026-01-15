@@ -4,17 +4,21 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tcusupabase.zeabur.app/';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// 檢查金鑰是否存在，若缺失則輸出警告訊息
 if (!supabaseAnonKey) {
-    console.error(
-        "❌ 偵測到 Supabase Anon Key 缺失！\n" +
-        "1. 請確保 GitHub Repository Secrets 已設定 VITE_SUPABASE_ANON_KEY。\n" +
-        "2. 請確認您已將目前的修正代碼推送 (push) 至 GitHub。\n" +
-        "目前的應用程式將無法正常運行。"
+    console.warn(
+        "⚠️ 偵測到 Supabase Anon Key 缺失！應用程式將切換至唯讀/受限模式。\n" +
+        "請確保已在 GitHub Secrets 或 .env 中設定 VITE_SUPABASE_ANON_KEY。"
     );
 }
 
-// 只有在金鑰存在時才初始化，避免 supabase-js 拋出 'supabaseKey is required' 造成 JS 崩潰
-export const supabase = supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : null as any;
+/**
+ * 建立 Supabase 客戶端實例。
+ * 如果金鑰缺失，我們提供一個空字串作為備援，這樣 createClient 可能會產生警告，
+ * 但比直接回傳 null 導致組件存取 supabase.auth 時崩潰更安全。
+ */
+export const supabase = createClient(
+    supabaseUrl,
+    supabaseAnonKey || 'MISSING_KEY'
+);
 
