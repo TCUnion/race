@@ -11,7 +11,7 @@ export const useMaintenance = () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error('尚未登入：請先登入後再查看保養紀錄');
 
       const { data, error } = await supabase
         .from('vehicles')
@@ -60,10 +60,10 @@ export const useMaintenance = () => {
         .single();
 
       if (error) throw error;
-      
+
       // 更新本地狀態中的車輛記錄
-      setVehicles(prev => prev.map(v => 
-        v.id === record.vehicle_id 
+      setVehicles(prev => prev.map(v =>
+        v.id === record.vehicle_id
           ? { ...v, maintenance_records: [data, ...(v.maintenance_records || [])] }
           : v
       ));
