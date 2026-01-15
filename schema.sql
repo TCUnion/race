@@ -4,7 +4,8 @@
 
 -- 1. 路段資料表 (Segments)
 CREATE TABLE IF NOT EXISTS public.segments (
-    id BIGINT PRIMARY KEY, -- Strava Segment ID
+    id BIGINT PRIMARY KEY, -- 內部唯一識別碼 (通常與 Strava ID 相同)
+    strava_id BIGINT, -- Strava Segment ID
     name TEXT NOT NULL,
     description TEXT,
     link TEXT,
@@ -13,9 +14,11 @@ CREATE TABLE IF NOT EXISTS public.segments (
     maximum_grade FLOAT,
     elevation_high FLOAT,
     elevation_low FLOAT,
+    elevation_gain FLOAT, -- 新增: 單次爬升
     total_elevation_gain FLOAT,
     activity_type TEXT,
     polyline TEXT,
+    is_active BOOLEAN DEFAULT true, -- 新增: 是否啟用
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -159,13 +162,12 @@ ALTER TABLE public.segment_efforts ENABLE ROW LEVEL SECURITY;
 
 -- Segments 策略: 所有人可讀，僅管理者可寫
 CREATE POLICY "Public read segments" ON public.segments FOR SELECT USING (true);
--- 注意: 管理者權限通常依賴於 auth.users，這裡先設為允許 authenticated 寫入，或視情況細分
-CREATE POLICY "Admin full access segments" ON public.segments FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admin full access segments" ON public.segments FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Registrations 策略: 所有人可讀，所有人可插入 (報名)，管理者可更新/刪除
 CREATE POLICY "Public read registrations" ON public.registrations FOR SELECT USING (true);
 CREATE POLICY "Public insert registrations" ON public.registrations FOR INSERT WITH CHECK (true);
-CREATE POLICY "Admin full access registrations" ON public.registrations FOR ALL TO authenticated USING (true);
+CREATE POLICY "Admin full access registrations" ON public.registrations FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Strava Tokens 策略: 僅限管理者操作 (後端 Service Role 或 Admin)
 CREATE POLICY "Admin only strava_tokens" ON public.strava_tokens FOR ALL TO authenticated USING (true);
