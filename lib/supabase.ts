@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // 自定義環境變數讀取與備援邏輯
-// 回報：暫時還原為原始服務地址
+// 更新紀錄：已套用 samkhlin 帳號之新金鑰
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://tcusupabase.zeabur.app/';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
