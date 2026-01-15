@@ -209,6 +209,7 @@ CREATE TABLE IF NOT EXISTS public.vehicles (
     transmission TEXT,
     wheel_system TEXT,
     modifications TEXT,
+    initial_mileage INTEGER DEFAULT 0, -- 新增: 初始里程
     current_mileage INTEGER DEFAULT 0, -- 新增: 目前里程
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
