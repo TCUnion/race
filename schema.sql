@@ -192,14 +192,9 @@ CREATE POLICY "Admin full access clubs" ON public.clubs FOR ALL TO authenticated
 CREATE POLICY "Public read athlete_clubs" ON public.athlete_clubs FOR SELECT USING (true);
 CREATE POLICY "Admin full access athlete_clubs" ON public.athlete_clubs FOR ALL TO authenticated USING (true);
 
--- Segment Efforts 策略: 僅限 criterium.tw 及其子網域存取
-CREATE POLICY "Restricted domain access efforts" ON public.segment_efforts 
-FOR ALL 
-USING (
-    (current_setting('request.headers', true)::json->>'origin' ~~ '%criterium.tw')
-    OR 
-    (current_setting('request.headers', true)::json->>'referer' ~~ '%criterium.tw')
-);
+-- Segment Efforts 策略: 允許公開讀取，後端與 n8n 可寫入
+CREATE POLICY "Public read segment_efforts" ON public.segment_efforts FOR SELECT USING (true);
+CREATE POLICY "Admin full access segment_efforts" ON public.segment_efforts FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ==========================================
 -- 10. 車輛資料表 (Vehicles)
@@ -214,6 +209,7 @@ CREATE TABLE IF NOT EXISTS public.vehicles (
     transmission TEXT,
     wheel_system TEXT,
     modifications TEXT,
+    current_mileage INTEGER DEFAULT 0, -- 新增: 目前里程
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
