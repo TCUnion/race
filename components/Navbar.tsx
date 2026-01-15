@@ -183,7 +183,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
       <div className="flex items-center justify-between px-6 md:px-20 py-4">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate(ViewType.LANDING)}>
-          <img src="/favicon.png" alt="TCU Logo" className="h-8 w-auto" />
+          <img src="https://www.tsu.com.tw/images/logo.png" alt="TCU Logo" className="h-8 w-auto" />
           <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight uppercase">TCU STRAVA RANK</h2>
         </div>
 
