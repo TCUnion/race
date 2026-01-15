@@ -202,6 +202,56 @@ USING (
 );
 
 -- ==========================================
+-- 10. 車輛資料表 (Vehicles)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.vehicles (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID, -- 可選，若未來要綁定 Supabase Auth User
+    strava_athlete_id BIGINT, -- 綁定 Strava Athlete ID
+    brand TEXT NOT NULL,
+    model TEXT NOT NULL,
+    year INTEGER,
+    transmission TEXT,
+    wheel_system TEXT,
+    modifications TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- ==========================================
+-- 11. 保養紀錄表 (Maintenance Records)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.maintenance_records (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    vehicle_id UUID NOT NULL REFERENCES public.vehicles(id) ON DELETE CASCADE,
+    maintenance_date DATE NOT NULL,
+    item TEXT NOT NULL,
+    cost INTEGER, -- 工資
+    parts_cost INTEGER, -- 零件費用
+    mileage INTEGER,
+    technician TEXT,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- 啟用 RLS
+ALTER TABLE public.vehicles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.maintenance_records ENABLE ROW LEVEL SECURITY;
+
+-- Vehicles 策略
+CREATE POLICY "Public read vehicles" ON public.vehicles FOR SELECT USING (true);
+CREATE POLICY "Auth all vehicles" ON public.vehicles FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public insert vehicles" ON public.vehicles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update vehicles" ON public.vehicles FOR UPDATE USING (true);
+
+-- Maintenance Records 策略
+CREATE POLICY "Public read maintenance_records" ON public.maintenance_records FOR SELECT USING (true);
+CREATE POLICY "Auth all maintenance_records" ON public.maintenance_records FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Public insert maintenance_records" ON public.maintenance_records FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update maintenance_records" ON public.maintenance_records FOR UPDATE USING (true);
+
+-- ==========================================
 -- 初始資料 (136 檢定)
 -- ==========================================
 INSERT INTO public.segments (id, name, description, link, distance, average_grade, maximum_grade, elevation_high, elevation_low, total_elevation_gain, activity_type, polyline)
