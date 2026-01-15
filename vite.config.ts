@@ -12,11 +12,12 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || 'https://tcusupabase.zeabur.app/'),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
+      // 移除 VITE_SUPABASE_URL 與 VITE_SUPABASE_ANON_KEY 的手動 define，
+      // Vite 會自動讀取 VITE_ 開頭的環境變數並注入 import.meta.env。
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
+
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
