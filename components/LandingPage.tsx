@@ -119,14 +119,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             )}
 
             <div className="flex flex-col gap-4 max-w-3xl transform transition-all duration-700 delay-100">
-              <div className="flex flex-col gap-2 items-center">
-                <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-colors duration-700`}>Limited Time Challenge</span>
-                {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
-                  <span className="text-amber-400 text-xs font-bold tracking-widest uppercase animate-pulse">
-                     🗓️ {formatDateRange(segment.start_date, segment.end_date)}
-                  </span>
-                )}
-              </div>
               <h1 className="text-white text-4xl md:text-6xl font-black leading-tight tracking-tight uppercase italic drop-shadow-md">
                 {segment?.description || '台中經典挑戰：136檢定'}
               </h1>
@@ -154,6 +146,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 <button className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95">
                   <span>查看詳情</span>
                 </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 items-center mt-6">
+              <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-colors duration-700`}>Limited Time Challenge</span>
+              {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
+                <span className="text-amber-400 text-xs font-bold tracking-widest uppercase animate-pulse">
+                   🗓️ {formatDateRange(segment.start_date, segment.end_date)}
+                </span>
               )}
             </div>
           </div>
@@ -251,21 +252,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-8 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mb-4 uppercase italic">開始挑戰</h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium">
-                為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
-              </p>
-              <div className="space-y-4">
-                <div className="mt-8">
-                  <StravaConnect />
-                  <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
-                    點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">服務條款</a>
-                  </p>
-                </div>
-              </div>
-            </section>
-
             <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic">路段詳情</h3>
               <ul className="space-y-3">
@@ -294,6 +280,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   <span>在 Strava 查看路段</span>
                 </a>
               )}
+            </section>
+
+            <section className="bg-white dark:bg-slate-900 rounded-2xl p-8 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white mb-4 uppercase italic">開始挑戰</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium">
+                為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
+              </p>
+              <div className="space-y-4">
+                <div className="mt-8">
+                  <StravaConnect />
+                  <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
+                    點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">服務條款</a>
+                  </p>
+                </div>
+              </div>
             </section>
 
             {/* KOM / QOM 紀錄 */}
@@ -349,15 +350,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               </section>
             )}
 
-            <div className="rounded-2xl overflow-hidden aspect-[4/3] relative group border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer">
-              <img className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" src="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=2070" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex items-end p-6">
-                <div>
-                  <h4 className="text-white font-black text-sm uppercase italic">完賽專屬禮遇</h4>
-                  <p className="text-white/70 text-[10px] font-bold uppercase tracking-tight">Win professional gear and more</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
