@@ -5,6 +5,7 @@ export enum ViewType {
   LEADERBOARD = 'LEADERBOARD',
   ADMIN = 'ADMIN',
   REGISTER = 'REGISTER',
+  MAINTENANCE = 'MAINTENANCE',
 }
 
 export enum RaceStatus {
@@ -76,4 +77,36 @@ export interface LeaderboardResponse {
   stats: LeaderboardStats;
   segment: SegmentData;
   last_updated: string;
+}
+
+export interface MaintenanceItem {
+  id?: string;
+  name: string;
+  cost: number;
+  note?: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  vehicle_id: string;
+  date: string;
+  mileage: number;
+  total_cost: number;
+  description: string;
+  service_type: 'Shop' | 'DIY';
+  items: MaintenanceItem[];
+  created_at: string;
+}
+
+export interface Vehicle {
+  id: string;
+  user_id: string;
+  brand: string;
+  model: string;
+  year?: number;
+  transmission?: string;
+  initial_mileage: number;
+  current_mileage: number;
+  created_at: string;
+  maintenance_records?: MaintenanceRecord[];
 }

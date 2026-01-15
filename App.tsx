@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import RegisterPage from './components/RegisterPage';
+import MaintenanceDashboard from './components/maintenance/MaintenanceDashboard';
 import { useSEO } from './hooks/useSEO';
 
 const App: React.FC = () => {
@@ -26,6 +27,8 @@ const App: React.FC = () => {
         return <AdminPanel />;
       case ViewType.REGISTER:
         return <RegisterPage onNavigate={setCurrentView} />;
+      case ViewType.MAINTENANCE:
+        return <MaintenanceDashboard />;
       default:
         return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
     }

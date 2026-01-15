@@ -204,6 +204,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               個人儀表板
             </button>
+            <button
+              onClick={() => handleNavigate(ViewType.MAINTENANCE)}
+              className={`text-sm font-bold uppercase tracking-wide transition-colors ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue' : 'text-slate-600 dark:text-slate-300 hover:text-tsu-blue'}`}
+            >
+              保養紀錄
+            </button>
           </nav>
 
           {athlete ? (
@@ -273,6 +279,13 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               <span className="material-symbols-outlined mr-3 text-xl">account_circle</span>
               個人儀表板
+            </button>
+            <button
+              onClick={() => handleNavigate(ViewType.MAINTENANCE)}
+              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-colors ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+            >
+              <span className="material-symbols-outlined mr-3 text-xl">handyman</span>
+              保養紀錄
             </button>
 
             <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
