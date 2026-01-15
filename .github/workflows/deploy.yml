@@ -18,6 +18,8 @@ concurrency:
 
 jobs:
   build:
+    # 關鍵：必須指定環境名稱，否則抓不到該環境下的 Secrets/Variables
+    environment: github-pages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,29 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Inject Environment Variables
-        shell: bash
-        env:
-          S_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          V_URL: ${{ vars.VITE_SUPABASE_URL }}
-          S_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          V_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-        run: |
-          # 優先使用 Secret，若無則使用 Variable
-          URL="${S_URL:-$V_URL}"
-          KEY="${S_KEY:-$V_KEY}"
-          
-          if [ -z "$URL" ] || [ -z "$KEY" ]; then
-            echo "❌ 錯誤: GitHub Secrets 或 Variables 均未設定！"
-            exit 1
-          fi
-          
-          echo "VITE_SUPABASE_URL=$URL" > .env
-          echo "VITE_SUPABASE_ANON_KEY=$KEY" >> .env
-          echo "✅ .env 檔案已產生，金鑰注入成功。"
-
       - name: Build
+        # 直接在建置指令前傳入環境變數，這是最保險的做法
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
