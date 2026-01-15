@@ -711,10 +711,22 @@ const AdminPanel: React.FC = () => {
 
                                         if (!confirm(confirmMsg)) return;
 
-                                        // 寫入 Supabase (包含所有 Strava 資料)
+                                        // 計算預設日期：今天的前後 7 天 (00:00)
+                                        const now = new Date();
+                                        const startDate = new Date(now);
+                                        startDate.setDate(now.getDate() - 7);
+                                        startDate.setHours(0, 0, 0, 0);
+
+                                        const endDate = new Date(now);
+                                        endDate.setDate(now.getDate() + 7);
+                                        endDate.setHours(0, 0, 0, 0);
+
+                                        // 寫入 Supabase (包含所有 Strava 資料與預設日期)
                                         const { error } = await supabase.from('segments').insert({
                                             ...normalized,
-                                            is_active: true
+                                            is_active: true,
+                                            start_date: startDate.toISOString(),
+                                            end_date: endDate.toISOString()
                                         });
 
                                         if (error) {
