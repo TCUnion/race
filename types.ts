@@ -100,7 +100,8 @@ export interface MaintenanceRecord {
 
 export interface Vehicle {
   id: string;
-  user_id: string;
+  user_id?: string;
+  strava_athlete_id?: number | string;
   brand: string;
   model: string;
   year?: number;
