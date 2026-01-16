@@ -15,6 +15,7 @@ interface RegistrationFormProps {
         firstName?: string;
         lastName?: string;
         profile?: string;
+        access_token?: string;
     };
     segments: Segment[];
     onSuccess: () => void;

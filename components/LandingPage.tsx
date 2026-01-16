@@ -121,8 +121,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               </>
             )}
 
-            <div className="flex flex-col gap-4 max-w-3xl transform transition-all duration-700 delay-100">
-              <h1 className="text-white text-4xl md:text-6xl font-black leading-tight tracking-tight uppercase italic drop-shadow-md">
+            <div className="flex flex-col gap-4 max-w-4xl transform transition-all duration-700 delay-100">
+              <h1 className="text-white text-5xl md:text-7xl font-black leading-none tracking-tighter uppercase italic drop-shadow-2xl font-display">
                 {segment?.description || '台中經典挑戰：136檢定'}
               </h1>
               <p className="text-slate-300 text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto">
@@ -155,8 +155,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <div className="flex flex-col gap-2 items-center mt-6">
               <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-xs font-black uppercase tracking-wide shadow-md transition-colors duration-700`}>Limited Time Challenge</span>
               {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
-                <span className="text-amber-400 text-sm font-bold tracking-widest uppercase animate-pulse">
-                  🗓️ {formatDateRange(segment.start_date, segment.end_date)}
+                <span className="text-amber-400 text-sm font-black tracking-widest uppercase animate-pulse flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                  {formatDateRange(segment.start_date, segment.end_date)}
                 </span>
               )}
             </div>
@@ -284,17 +285,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       </li>
                     ))}
                   </ul>
-                  {segment?.link && (
-                    <a
-                      href={segment.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all"
-                    >
-                      <span>🔗</span>
-                      <span>在 Strava 查看路段</span>
-                    </a>
-                  )}
+                  <a
+                    href={segment.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all shadow-md active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">link</span>
+                    <span>在 Strava 查看路段</span>
+                  </a>
                 </div>
               )}
             </section>
@@ -330,7 +329,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             {(segment?.KOM || segment?.QOM) && (
               <section className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 rounded-2xl p-6 border border-amber-500/30">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
-                  <span>🏆</span> 紀錄保持者
+                  <span className="material-symbols-outlined text-amber-500">trophy</span> 紀錄保持者
                 </h3>
                 <div className="space-y-3">
                   {segment?.KOM && (
@@ -353,7 +352,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             {weather && (
               <section className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 dark:from-sky-500/20 dark:to-blue-500/20 rounded-2xl p-6 border border-sky-500/30">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
-                  <span>🌤️</span> {weather.location || '路段'} 天氣
+                  <span className="material-symbols-outlined text-sky-500">wb_sunny</span> {weather.location || '路段'} 天氣
                 </h3>
                 <div className="flex items-center justify-between">
                   <div>
@@ -381,8 +380,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

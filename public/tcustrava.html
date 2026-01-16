@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TCU STRAVA大挑戰</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
       background: #000;
@@ -22,6 +28,7 @@
       align-items: center;
       margin-bottom: 16px;
     }
+
     .tsu-banner img {
       height: 32px;
       width: auto;
@@ -34,13 +41,15 @@
       background: white;
       padding: 2.5rem;
       border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
+
     h1 {
       color: #333;
       margin-bottom: 0.5rem;
       font-size: 28px;
     }
+
     .subtitle {
       color: #666;
       margin-bottom: 2rem;
@@ -56,27 +65,40 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .strava-status.connected {
       background: #d4edda;
       border-left: 4px solid #28a745;
     }
+
     .strava-status.loading {
       background: #fff3cd;
       border-left: 4px solid #ffc107;
     }
+
     .strava-info {
       display: flex;
       align-items: center;
       gap: 1rem;
     }
+
     .strava-avatar {
       width: 50px;
       height: 50px;
       border-radius: 50%;
       object-fit: cover;
     }
-    .strava-name { font-weight: 600; color: #333; }
-    .strava-id { font-size: 12px; color: #666; }
+
+    .strava-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .strava-id {
+      font-size: 12px;
+      color: #666;
+    }
+
     .btn-strava {
       background: #fc5200;
       color: white;
@@ -88,10 +110,22 @@
       cursor: pointer;
       transition: all 0.3s;
     }
-    .btn-strava:hover { background: #e04a00; transform: translateY(-2px); }
-    .btn-strava:disabled { background: #ccc; cursor: not-allowed; transform: none; }
 
-    .form-group { margin-bottom: 1.5rem; }
+    .btn-strava:hover {
+      background: #e04a00;
+      transform: translateY(-2px);
+    }
+
+    .btn-strava:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
     label {
       display: block;
       color: #333;
@@ -99,8 +133,13 @@
       margin-bottom: 0.5rem;
       font-size: 14px;
     }
-    label .required { color: #dc3545; }
-    input, textarea {
+
+    label .required {
+      color: #dc3545;
+    }
+
+    input,
+    textarea {
       width: 100%;
       padding: 12px;
       border: 2px solid #e9ecef;
@@ -109,22 +148,31 @@
       font-family: inherit;
       transition: border-color 0.3s;
     }
-    input:focus, textarea:focus {
+
+    input:focus,
+    textarea:focus {
       outline: none;
       border-color: #667eea;
     }
+
     input:disabled {
       background: #f8f9fa;
       color: #6c757d;
       cursor: not-allowed;
     }
-    .input-hint { font-size: 12px; color: #6c757d; margin-top: 0.25rem; }
+
+    .input-hint {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
 
     .form-actions {
       display: flex;
       gap: 1rem;
       margin-top: 2rem;
     }
+
     .btn {
       flex: 1;
       padding: 14px;
@@ -135,11 +183,30 @@
       cursor: pointer;
       transition: all 0.3s;
     }
-    .btn-primary { background: #667eea; color: white; }
-    .btn-primary:hover:not(:disabled) { background: #5568d3; transform: translateY(-2px); }
-    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
-    .btn-secondary { background: #6c757d; color: white; }
-    .btn-secondary:hover { background: #5a6268; }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
 
     .message {
       padding: 12px 16px;
@@ -149,17 +216,20 @@
       font-size: 16px;
       font-weight: 600;
     }
+
     .message.show {
       display: block;
       position: sticky;
       top: 0;
       z-index: 10;
     }
+
     .success-message {
       background: #28a745;
       border: 2px solid #1e7e34;
       color: #fff;
     }
+
     .error-message {
       background: #dc3545;
       border: 2px solid #b21f2d;
@@ -177,9 +247,15 @@
       margin-right: 8px;
       vertical-align: middle;
     }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .info-block {
@@ -193,6 +269,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="tsu-banner">
     <a href="https://www.tsu.com.tw/" target="_blank" rel="noopener noreferrer">
@@ -230,8 +307,9 @@
 
       <div class="form-group">
         <label>TCU-ID / 個人身份證ID</label>
-        <input type="text" id="tcu_id" name="tcu_id" placeholder="TCU-zvnrqonh9coqy4kp 或是分份證 A123456789均可" autocomplete="off">
-       
+        <input type="text" id="tcu_id" name="tcu_id" placeholder="TCU-zvnrqonh9coqy4kp 或是分份證 A123456789均可"
+          autocomplete="off">
+
       </div>
 
       <div class="form-group">
@@ -240,12 +318,12 @@
       </div>
 
 
-  
+
 
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" onclick="syncTCUData()">
           同步個人資料
-   
+
       </div>
     </form>
   </div>
@@ -258,6 +336,10 @@
       allowedOrigins: [
         'https://n8n.criterium.tw',
         'https://status.criterium.tw',
+        'https://race.criterium.tw',
+        'https://strava.criterium.tw',
+        'https://tcu.criterium.tw',
+        'https://www.criterium.tw',
         'https://criterium.tw'
       ],
       storageKey: 'strava_athlete_meta',
@@ -332,11 +414,17 @@
       updateStravaStatus(athlete);
 
       try {
-        const meta = {
+        const athleteData = {
           id: athlete.id,
+          username: athlete.username || '',
+          firstname: athlete.firstname || athlete.firstName || '',
+          lastname: athlete.lastname || athlete.lastName || '',
+          profile: athlete.profile || athlete.profile_medium || '',
+          profile_medium: athlete.profile_medium || athlete.profile || '',
+          access_token: athlete.access_token || '',
           ts: Date.now()
         };
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify(meta));
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(athleteData));
       } catch (e) {
         console.warn('無法寫入 localStorage:', e);
       }
@@ -505,7 +593,7 @@
       showMessage('success', '已中斷 Strava 連接');
     }
 
-    window.addEventListener('message', function(event) {
+    window.addEventListener('message', function (event) {
       const isAllowedOrigin =
         !!event.origin && CONFIG.allowedOrigins.includes(event.origin);
 
@@ -624,7 +712,7 @@
           showMessage('success', `${msg} ${regId}`);
           try {
             localStorage.removeItem(CONFIG.storageKey + '_temp');
-          } catch (e) {}
+          } catch (e) { }
         } else {
           const errorText = await response.text();
           let errorMessage = '提交失敗';
@@ -652,64 +740,64 @@
       }
     }
 
- async function syncTCUData() {
-  const tcuInput = document.getElementById('tcu_id');
-  let tcuId = tcuInput.value.trim();
+    async function syncTCUData() {
+      const tcuInput = document.getElementById('tcu_id');
+      let tcuId = tcuInput.value.trim();
 
-  if (!tcuId) {
-    showMessage('error', '請先輸入 TCU-ID / 個人身份證ID');
-    return;
-  }
+      if (!tcuId) {
+        showMessage('error', '請先輸入 TCU-ID / 個人身份證ID');
+        return;
+      }
 
-  // 將 TCU-ID 正規化成預留字串格式（例：全部大寫）
-  tcuId = tcuId.toUpperCase();
-  tcuInput.value = tcuId;
+      // 將 TCU-ID 正規化成預留字串格式（例：全部大寫）
+      tcuId = tcuId.toUpperCase();
+      tcuInput.value = tcuId;
 
-  const btn = document.querySelector('.btn.btn-secondary');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>同步中...';
-  }
+      const btn = document.querySelector('.btn.btn-secondary');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>同步中...';
+      }
 
-  try {
-    const response = await fetch(CONFIG.tcuSyncUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // 這裡同時送 TCU-ID 與 Strava ID
-        tcu_id: tcuId,
-        strava_athlete_id: document.getElementById('strava_athlete_id').value || ''
-      })
-    });
+      try {
+        const response = await fetch(CONFIG.tcuSyncUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // 這裡同時送 TCU-ID 與 Strava ID
+            tcu_id: tcuId,
+            strava_athlete_id: document.getElementById('strava_athlete_id').value || ''
+          })
+        });
 
-    const result = await response.json().catch(() => ({}));
+        const result = await response.json().catch(() => ({}));
 
-    if (result.success) {
-      if (result.data) {
-        if (result.data.tcu_id) {
-          document.getElementById('tcu_id').value = result.data.tcu_id;
+        if (result.success) {
+          if (result.data) {
+            if (result.data.tcu_id) {
+              document.getElementById('tcu_id').value = result.data.tcu_id;
+            }
+            if (result.data.name) {
+              document.getElementById('name').value = result.data.name;
+            }
+            if (result.data.notes && document.getElementById('notes')) {
+              document.getElementById('notes').value = result.data.notes;
+            }
+          }
+          showMessage('success', result.message || 'TCU 資料同步成功！');
+        } else {
+          showMessage('error', result.message || 'TCU 資料同步失敗');
         }
-        if (result.data.name) {
-          document.getElementById('name').value = result.data.name;
-        }
-        if (result.data.notes && document.getElementById('notes')) {
-          document.getElementById('notes').value = result.data.notes;
+      } catch (error) {
+        console.error('同步錯誤:', error);
+        showMessage('error', '同步失敗，請稍後再試');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '同步個人資料';
         }
       }
-      showMessage('success', result.message || 'TCU 資料同步成功！');
-    } else {
-      showMessage('error', result.message || 'TCU 資料同步失敗');
     }
-  } catch (error) {
-    console.error('同步錯誤:', error);
-    showMessage('error', '同步失敗，請稍後再試');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '同步個人資料';
-    }
-  }
-}
 
 
     function resetForm() {
@@ -722,7 +810,7 @@
       if (ok) ok.classList.remove('show');
     }
 
-    window.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('DOMContentLoaded', function () {
       loadStravaDataFromURL();
       loadFormState();
 
@@ -740,10 +828,11 @@
       }
     });
 
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
       if (pollingTimer) clearInterval(pollingTimer);
       if (authWindow && !authWindow.closed) authWindow.close();
     });
   </script>
 </body>
+
 </html>

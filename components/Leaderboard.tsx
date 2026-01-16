@@ -156,7 +156,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
           <div className={`flex items-center gap-4 border-l-8 ${barColor} pl-6`}>
             <div>
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter font-display">
                 {segment.name}
               </h2>
               <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1">
@@ -340,8 +340,15 @@ const Leaderboard: React.FC = () => {
         <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 italic uppercase tracking-tighter">
           賽事<span className="text-tsu-blue">排行榜</span>
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">
-          即時路段計時數據 · 多段同步更新 (Powered by Strava)
+        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+          <span>即時路段計時數據</span>
+          <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+          <span>多段同步更新</span>
+          <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+          <span className="flex items-center gap-1">
+            <span className="text-[9px]">Powered by</span>
+            <span className="text-strava-orange font-black italic">STRAVA</span>
+          </span>
         </p>
       </div>
 
@@ -428,7 +435,7 @@ const Leaderboard: React.FC = () => {
       </div>
 
       <div className="mt-12 flex justify-center">
-        <img src="/api_logo_pwrdBy_strava_horiz_white.png" alt="Powered by Strava" className="h-8 opacity-40 dark:opacity-30 invert dark:invert-0" />
+        <img src="/api_logo_pwrdBy_strava_horiz_orange.png" alt="Powered by Strava" className="h-6 opacity-60 hover:opacity-100 transition-opacity" />
       </div>
     </div>
   );

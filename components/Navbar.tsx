@@ -10,6 +10,7 @@ interface StravaAthlete {
   lastName?: string;  // 補強相容性
   profile?: string;
   profile_medium?: string;
+  access_token?: string; // 補強同步用
 }
 
 interface NavbarProps {
@@ -25,12 +26,16 @@ const CONFIG = {
   allowedOrigins: [
     'https://n8n.criterium.tw',
     'https://criterium.tw',
-    'https://status.criterium.tw', // 新增
+    'https://status.criterium.tw',
+    'https://race.criterium.tw',
+    'https://strava.criterium.tw',
+    'https://tcu.criterium.tw',
+    'https://www.criterium.tw',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3001',
     'http://127.0.0.1:3001',
-    'http://localhost:5173', // Vite 預設
+    'http://localhost:5173',
   ]
 };
 
@@ -79,8 +84,13 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         event.data?.athlete?.id;
 
       if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
+        if (event.data?.type?.startsWith('STRAVA_')) {
+          console.log('Navbar: 收到 Strava 相關訊息但來源未授權:', event.origin, event.data);
+        }
         return;
       }
+
+      console.log('Navbar: 收到授權訊息:', event.data);
 
       if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
         stopPolling();
@@ -92,17 +102,35 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const saveAndSetAthlete = (athleteData: StravaAthlete) => {
+  const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
     // 規範化資料
     const normalizedData = {
       ...athleteData,
-      firstname: athleteData.firstname || athleteData.firstName || '',
-      lastname: athleteData.lastname || athleteData.lastName || '',
+      firstname: athleteData.firstname || (athleteData as any).firstName || '',
+      lastname: athleteData.lastname || (athleteData as any).lastName || '',
       ts: Date.now()
     };
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
     setAthlete(normalizedData);
     setIsLoading(false);
+
+    // 同步 Token 到後端
+    if (athleteData.access_token) {
+      try {
+        await fetch('https://race.criterium.tw/api/auth/strava-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            athlete_id: Number(athleteData.id),
+            access_token: athleteData.access_token,
+            refresh_token: (athleteData as any).refresh_token || '',
+            expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600
+          })
+        }).catch(err => console.warn('Navbar: 後端同步失敗', err));
+      } catch (e) {
+        console.error('Navbar: 儲存 Token 到後端過程發生錯誤', e);
+      }
+    }
 
     window.dispatchEvent(new Event('strava-auth-changed'));
   };
@@ -190,7 +218,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       <div className="flex items-center justify-between px-6 md:px-20 py-4">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate(ViewType.LANDING)}>
           <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto" />
-          <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight uppercase">TCU STRAVA RANK</h2>
+          <h2 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tighter uppercase font-display italic">TCU STRAVA RANK</h2>
         </div>
 
         {/* Desktop Navigation */}
@@ -198,25 +226,25 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <nav className="flex items-center gap-8">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-sm font-bold uppercase tracking-wide transition-colors ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue' : 'text-slate-600 dark:text-slate-300 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               探索活動
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`text-sm font-bold uppercase tracking-wide transition-colors ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue' : 'text-slate-600 dark:text-slate-300 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               排行榜
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`text-sm font-bold uppercase tracking-wide transition-colors ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue' : 'text-slate-600 dark:text-slate-300 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               個人儀表板
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`text-sm font-bold uppercase tracking-wide transition-colors ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue' : 'text-slate-600 dark:text-slate-300 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               保養紀錄
             </button>

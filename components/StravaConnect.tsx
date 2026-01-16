@@ -21,12 +21,16 @@ const CONFIG = {
     allowedOrigins: [
         'https://n8n.criterium.tw',
         'https://criterium.tw',
-        'https://status.criterium.tw', // 新增
+        'https://status.criterium.tw',
+        'https://race.criterium.tw',
+        'https://strava.criterium.tw',
+        'https://tcu.criterium.tw',
+        'https://www.criterium.tw',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:3001',
         'http://127.0.0.1:3001',
-        'http://localhost:5173', // Vite 預設
+        'http://localhost:5173',
     ]
 };
 
@@ -58,8 +62,13 @@ const StravaConnect: React.FC = () => {
                 event.data?.athlete?.id;
 
             if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
+                if (event.data?.type?.startsWith('STRAVA_')) {
+                    console.log('StravaConnect: 收到 Strava 相關訊息但來源未授權:', event.origin, event.data);
+                }
                 return;
             }
+
+            console.log('StravaConnect: 收到授權訊息:', event.data);
 
             if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
                 stopPolling();
