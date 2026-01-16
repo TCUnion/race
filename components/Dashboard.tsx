@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSegmentData, formatTime } from '../hooks/useSegmentData';
 import SegmentMap from './SegmentMap';
-import { MOCK_SEGMENT_STATS, MOCK_ACTIVITIES } from '../constants';
+import { MOCK_SEGMENT_STATS } from '../constants';
 import { Activity } from '../types';
 
 const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
@@ -33,6 +33,27 @@ const ActivitySkeleton = () => (
   </div>
 );
 
+import {
+  Link2Off,
+  UserCheck,
+  RefreshCw,
+  CheckCircle2,
+  Trophy,
+  Timer,
+  TrendingDown,
+  TrendingUp,
+  BarChart3,
+  Award,
+  ChevronsUp,
+  Star,
+  Bike,
+  Info,
+  Ruler,
+  Mountain,
+  MapPin,
+  Zap,
+  Gauge
+} from 'lucide-react';
 import { ViewType } from '../types';
 
 interface DashboardProps {
@@ -170,7 +191,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
-          <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">link_off</span>
+          <Link2Off className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-black uppercase italic mb-2">尚未連結 Strava</h2>
           <p className="text-slate-500 text-sm mb-6">請先返回首頁連結您的 Strava 帳號，以便取得您的活動數據並進行報名。</p>
           <button
@@ -211,7 +232,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
-          <span className="material-symbols-outlined text-6xl text-tsu-blue mb-4">how_to_reg</span>
+          <UserCheck className="w-16 h-16 text-tsu-blue mx-auto mb-4" />
           <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未報名任何路段</h2>
           <p className="text-slate-400 text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
           <div className="flex flex-col gap-3">
@@ -241,7 +262,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 text-tsu-blue-light">
-              <span className="material-symbols-outlined text-sm">mountain_flag</span>
+              <MapPin className="w-3.5 h-3.5" />
               <span className="text-[10px] font-bold uppercase tracking-widest">TSU Challenge Series</span>
             </div>
             <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">
@@ -257,11 +278,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 onClick={() => onNavigate(ViewType.REGISTER)}
                 className="flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-white/5 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-tsu-blue-light text-slate-900 dark:text-white text-base md:text-sm font-bold transition-all active:scale-95 group"
               >
-                <span className="material-symbols-outlined text-xl text-tsu-blue-light">how_to_reg</span>
+                <UserCheck className="w-5 h-5 text-tsu-blue-light" />
                 <span>管理報名 / 報名新路段</span>
               </button>
               <button className="flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-tsu-blue hover:bg-tsu-blue-light text-white text-base md:text-sm font-bold transition-all shadow-lg shadow-tsu-blue/20 active:scale-95 group">
-                <span className="material-symbols-outlined text-xl group-hover:rotate-180 transition-transform duration-500">sync</span>
+                <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
                 <span>立即同步數據</span>
               </button>
             </div>
@@ -282,7 +303,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               >
                 <div className="flex justify-between w-full items-center">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">#{reg.segments?.strava_id}</span>
-                  {currentSegmentId === reg.segment_id && <span className="material-symbols-outlined text-tsu-blue text-sm">check_circle</span>}
+                  {currentSegmentId === reg.segment_id && <CheckCircle2 className="w-4 h-4 text-tsu-blue" />}
                 </div>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">{reg.segments?.name}</h3>
                 <div className="flex items-center gap-2 mt-1">
@@ -299,7 +320,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {/* Selected Segment Details Title */}
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-tsu-blue text-3xl">sports_score</span>
+            <Trophy className="w-8 h-8 text-tsu-blue" />
             <h2 className="text-2xl font-black italic uppercase italic">{selectedSegment?.name} 挑戰數據</h2>
           </div>
         </div>
@@ -318,13 +339,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <div className="flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:border-tsu-blue-light/50 transition-all duration-300">
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">最佳時間</p>
-                  <span className="material-symbols-outlined text-tsu-blue-light text-xl">timer</span>
+                  <Timer className="w-5 h-5 text-tsu-blue-light" />
                 </div>
                 <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">
                   {athleteEffort ? formatTime(athleteEffort.elapsed_time) : '-'}
                 </p>
                 <div className="flex items-center gap-1 text-emerald-500 mt-2">
-                  <span className="material-symbols-outlined text-sm font-bold">trending_down</span>
+                  <TrendingDown className="w-4 h-4 font-bold" />
                   <p className="text-sm font-bold">{athleteEffort?.average_watts ? `${Math.round(athleteEffort.average_watts)}W` : '記錄同步中'}</p>
                 </div>
               </div>
@@ -333,14 +354,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <div className="flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:border-tsu-blue-light/50 transition-all duration-300">
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">平均時速</p>
-                  <span className="material-symbols-outlined text-tsu-blue-light text-xl">speed</span>
+                  <Gauge className="w-5 h-5 text-tsu-blue-light" />
                 </div>
                 <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">
                   {athleteEffort?.average_speed ? (athleteEffort.average_speed * 3.6).toFixed(1) : '-'}{' '}
                   <span className="text-lg font-normal text-slate-500">km/h</span>
                 </p>
                 <div className="flex items-center gap-1 text-emerald-500 mt-2">
-                  <span className="material-symbols-outlined text-sm font-bold">trending_up</span>
+                  <TrendingUp className="w-4 h-4 font-bold" />
                   <p className="text-sm font-bold">目前最新數據</p>
                 </div>
               </div>
@@ -348,17 +369,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* Current Rank */}
               <div className="flex flex-col gap-2 rounded-2xl p-6 border-2 border-tsu-blue-light/50 bg-tsu-blue-light/5 sm:col-span-2 lg:col-span-1 shadow-inner group overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <span className="material-symbols-outlined text-9xl absolute -top-8 -right-8">leaderboard</span>
+                  <BarChart3 className="w-24 h-24 absolute -top-4 -right-4" />
                 </div>
                 <div className="flex justify-between items-start mb-1 relative z-10">
                   <p className="text-tsu-blue-light text-xs font-bold uppercase tracking-widest">目前排名</p>
-                  <span className="material-symbols-outlined text-tsu-blue-light text-2xl">workspace_premium</span>
+                  <Award className="w-6 h-6 text-tsu-blue-light" />
                 </div>
                 <p className="text-slate-900 dark:text-white tracking-tight text-5xl font-black leading-none relative z-10">
                   {athleteEffort ? `#${athleteEffort.rank}` : '-'}
                 </p>
                 <div className="flex items-center gap-1 text-tsu-blue-light mt-2 relative z-10">
-                  <span className="material-symbols-outlined text-sm font-bold">keyboard_double_arrow_up</span>
+                  <ChevronsUp className="w-4 h-4 font-bold" />
                   <p className="text-sm font-bold uppercase tracking-tighter">
                     {athleteEffort ? `總計 ${currentLeaderboard.length} 名挑戰者` : '努力刷新排名中'}
                   </p>
@@ -412,7 +433,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-tsu-blue-light/50 transition-all group shadow-sm hover:shadow-md backdrop-blur-sm">
                   <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                     <div className={`flex shrink-0 size-10 md:size-12 items-center justify-center rounded-full transition-transform group-hover:scale-110 ${activity.is_pr ? 'bg-tsu-blue/10 text-tsu-blue-light shadow-inner shadow-tsu-blue/5' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-                      <span className="material-symbols-outlined">{activity.is_pr ? 'star' : 'directions_bike'}</span>
+                      {activity.is_pr ? <Star className="w-5 h-5 fill-current" /> : <Bike className="w-5 h-5" />}
                     </div>
                     <div className="truncate">
                       <h4 className="text-slate-900 dark:text-white font-bold truncate block text-sm md:text-base group-hover:text-tsu-blue-light transition-colors">{activity.title}</h4>
@@ -433,7 +454,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               ))
             ) : (
               <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-slate-50 dark:bg-slate-900/30 border border-dashed border-slate-200 dark:border-slate-800">
-                <span className="material-symbols-outlined text-slate-300 dark:text-slate-700 text-5xl mb-3">directions_bike</span>
+                <Bike className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
                 <p className="text-slate-500 dark:text-slate-400 text-sm">尚未在此路段留下挑戰紀錄</p>
               </div>
             )}
@@ -454,18 +475,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
           <div className="rounded-2xl p-8 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex flex-col justify-center shadow-sm backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-tsu-blue-light">info</span>
+              <Info className="w-6 h-6 text-tsu-blue-light" />
               <h4 className="text-slate-900 dark:text-white font-bold text-lg">Segment 詳細資訊</h4>
             </div>
             <div className="space-y-4">
               {[
-                { label: '距離', value: selectedSegment ? `${(selectedSegment.distance / 1000).toFixed(2)} km` : MOCK_SEGMENT_STATS.distance, icon: 'straighten' },
-                { label: '平均坡度', value: selectedSegment ? `${selectedSegment.average_grade}%` : MOCK_SEGMENT_STATS.grade, icon: 'trending_up' },
-                { label: '垂直爬升', value: selectedSegment ? `${selectedSegment.total_elevation_gain} m` : MOCK_SEGMENT_STATS.ascent, icon: 'elevation' }
+                { label: '距離', value: selectedSegment ? `${(selectedSegment.distance / 1000).toFixed(2)} km` : MOCK_SEGMENT_STATS.distance, icon: <Ruler className="w-4 h-4" /> },
+                { label: '平均坡度', value: selectedSegment ? `${selectedSegment.average_grade}%` : MOCK_SEGMENT_STATS.grade, icon: <TrendingUp className="w-4 h-4" /> },
+                { label: '垂直爬升', value: selectedSegment ? `${selectedSegment.total_elevation_gain} m` : MOCK_SEGMENT_STATS.ascent, icon: <Mountain className="w-4 h-4" /> }
               ].map((row, i) => (
                 <div key={i} className={`flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 ${i === 2 ? 'border-none pb-0' : ''}`}>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-slate-400">{row.icon}</span>
+                    <div className="text-slate-400">{row.icon}</div>
                     <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">{row.label}</span>
                   </div>
                   <span className="text-slate-900 dark:text-white text-sm font-black">{row.value}</span>

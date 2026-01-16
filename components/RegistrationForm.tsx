@@ -1,4 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import {
+    Check,
+    Fingerprint,
+    User,
+    Users,
+    CheckCircle2,
+    AlertCircle,
+    Save,
+    RefreshCw
+} from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Segment {
@@ -217,8 +227,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                 alt="Profile"
                                 className="w-16 h-16 rounded-full border-2 border-strava-orange shadow-lg object-cover"
                             />
-                            <div className="absolute -bottom-1 -right-1 bg-strava-orange text-white rounded-full p-1 shadow-md border border-slate-900">
-                                <span className="material-symbols-outlined text-[12px] block font-black">check</span>
+                            <div className="absolute -bottom-1 -right-1 bg-tsu-blue text-white rounded-full p-1 shadow-md border border-slate-900">
+                                <Check className="w-3 h-3" />
                             </div>
                         </div>
                         <div>
@@ -252,7 +262,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         : 'border-white/30'
                                         }`}>
                                         {selectedSegmentIds.includes(seg.id) && (
-                                            <span className="material-symbols-outlined text-white text-sm">check</span>
+                                            <Check className="w-4 h-4 text-white" />
                                         )}
                                     </div>
                                     <div className="flex-1">
@@ -283,7 +293,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
                                         placeholder="例如：TCU-zvnrqonh..."
                                     />
-                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">fingerprint</span>
+                                    <Fingerprint className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
                                 </div>
                                 <button
                                     type="button"
@@ -292,9 +302,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                     className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
                                 >
                                     {isSyncing ? (
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
                                     ) : (
-                                        <span className="material-symbols-outlined text-lg">sync</span>
+                                        <RefreshCw className="w-4 h-4" />
                                     )}
                                     <span className="hidden sm:inline">同步</span>
                                 </button>
@@ -314,7 +324,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                     placeholder="三義 劉德華"
                                     required
                                 />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">person</span>
+                                <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
                             </div>
                         </div>
 
@@ -329,7 +339,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                     className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
                                     placeholder="例如：TCU Taiwan"
                                 />
-                                <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-xl">group</span>
+                                <Users className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
                             </div>
                         </div>
 
@@ -340,7 +350,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     {successMessage && (
                         <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
                             <p className="text-emerald-400 text-xs font-bold flex items-center gap-2">
-                                <span className="material-symbols-outlined text-sm">check_circle</span>
+                                <CheckCircle2 className="w-4 h-4" />
                                 {successMessage}
                             </p>
                         </div>
@@ -350,7 +360,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     {error && (
                         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
                             <p className="text-red-400 text-xs font-bold flex items-center gap-2">
-                                <span className="material-symbols-outlined text-sm">error</span>
+                                <AlertCircle className="w-4 h-4" />
                                 {error}
                             </p>
                         </div>
@@ -368,9 +378,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                             </>
                         ) : (
                             <>
-                                <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
-                                    save
-                                </span>
+                                <Save className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 <span>確認報名內容</span>
                             </>
                         )}

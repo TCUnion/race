@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -10,7 +11,10 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
     },
-    plugins: [react()],
+    plugins: [
+      react(),
+      tailwindcss(),
+    ],
     define: {
       // 移除 VITE_SUPABASE_URL 與 VITE_SUPABASE_ANON_KEY 的手動 define，
       // Vite 會自動讀取 VITE_ 開頭的環境變數並注入 import.meta.env。

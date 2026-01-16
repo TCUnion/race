@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // 🚀 深度搜索 Polyline 函式 (地毯式搜尋)
@@ -410,7 +411,7 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black uppercase italic italic flex items-center gap-2">
-                            <span className="material-symbols-outlined text-tsu-blue">language</span>
+                            <Globe className="w-5 h-5 text-tsu-blue" />
                             SEO & 站點設定
                         </h3>
                         <button
@@ -600,10 +601,10 @@ const AdminPanel: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={() => handleRefreshSegment(seg)}
-                                            className="material-symbols-outlined text-slate-400 hover:text-tsu-blue text-lg transition-colors"
+                                            className="text-slate-400 hover:text-tsu-blue transition-colors"
                                             title="重新整理路段資料與地圖"
                                         >
-                                            sync
+                                            <RefreshCw className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={async () => {
@@ -624,9 +625,9 @@ const AdminPanel: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => setEditingSegment(seg)}
-                                            className="material-symbols-outlined text-slate-400 hover:text-tsu-blue text-lg transition-colors"
+                                            className="text-slate-400 hover:text-tsu-blue transition-colors"
                                         >
-                                            edit
+                                            <Edit2 className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={async () => {
@@ -655,9 +656,9 @@ const AdminPanel: React.FC = () => {
                                                     alert('刪除失敗: ' + err.message);
                                                 }
                                             }}
-                                            className="material-symbols-outlined text-slate-400 hover:text-red-500 text-lg transition-colors"
+                                            className="text-slate-400 hover:text-red-500 transition-colors"
                                         >
-                                            delete
+                                            <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
                                 </div>
@@ -786,7 +787,7 @@ const AdminPanel: React.FC = () => {
 
                     {registrations.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
-                            <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">assignment_turned_in</span>
+                            <ClipboardCheck className="w-10 h-10 text-slate-300 mb-2" />
                             <p className="text-slate-400 font-bold">目前無待處理報名</p>
                         </div>
                     ) : (

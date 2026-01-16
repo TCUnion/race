@@ -1,4 +1,5 @@
 import React from 'react';
+import { Share2, FileText, LifeBuoy, Bike } from 'lucide-react';
 import { ViewType } from '../types';
 
 interface FooterProps {
@@ -12,7 +13,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-10">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 text-tsu-blue">
-              <span className="material-symbols-outlined text-4xl">directions_run</span>
+              <Bike className="w-8 h-8" />
             </div>
           </div>
 
@@ -25,9 +26,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           <div className="flex gap-8">
-            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><span className="material-symbols-outlined">share</span></a>
-            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><span className="material-symbols-outlined">description</span></a>
-            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><span className="material-symbols-outlined">contact_support</span></a>
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><Share2 className="w-5 h-5" /></a>
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><FileText className="w-5 h-5" /></a>
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><LifeBuoy className="w-5 h-5" /></a>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link2Off } from 'lucide-react';
 import RegistrationForm from './RegistrationForm';
 import { supabase } from '../lib/supabase';
 import { useSegmentData } from '../hooks/useSegmentData';
@@ -53,7 +54,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-10 text-center">
         <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
-          <span className="material-symbols-outlined text-6xl text-slate-700 mb-4">link_off</span>
+          <Link2Off className="w-16 h-16 text-slate-700 mx-auto mb-4" />
           <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未連結 Strava</h2>
           <p className="text-slate-400 text-sm mb-6">請先返回首頁連結您的 Strava 帳號。</p>
           <button
