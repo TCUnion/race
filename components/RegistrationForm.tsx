@@ -97,12 +97,13 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         setError(null);
         setSuccessMessage(null);
 
+
         try {
             // 直接查詢 Supabase tcu_members 資料表
             const { data, error } = await supabase
                 .from('tcu_members')
                 .select('*')
-                .eq('tcu_id', tcuId.toUpperCase())
+                .or(`account.eq.${tcuId.toUpperCase()},tcu_id.eq.${tcuId}`)
                 .maybeSingle();
 
             if (error) throw error;
@@ -113,6 +114,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 }
                 if (data.team) {
                     setTeam(data.team);
+                }
+                if (data.tcu_id) {
+                    setTcuId(data.tcu_id);
                 }
                 setSuccessMessage('TCU 資料同步成功！');
             } else {
