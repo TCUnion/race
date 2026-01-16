@@ -142,9 +142,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
             const existingSegmentIds = existingRegistrations.map(r => r.segment_id);
             const currentSegmentIds = selectedSegmentIds;
 
-            // 需要新增的
-            const toAdd = currentSegmentIds.filter(id => !existingSegmentIds.includes(id));
-            // 需要刪除的
+            // 需要刪除的 (使用者在介面上取消勾選的)
             const toDelete = existingSegmentIds.filter(id => !currentSegmentIds.includes(id));
 
             // 1. 執行刪除
@@ -157,25 +155,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 if (delError) throw delError;
             }
 
-            // 2. 執行新增
-            if (toAdd.length > 0) {
-                const registrationsToAdd = toAdd.map(sid => ({
-                    segment_id: sid,
-                    strava_athlete_id: athlete.id,
-                    athlete_name: name,
-                    athlete_profile: athlete.profile,
-                    team: team,
-                    tcu_id: tcuId,
-                    status: 'approved'
-                }));
-
-                const { error: insError } = await supabase
-                    .from('registrations')
-                    .insert(registrationsToAdd);
-                if (insError) throw insError;
-            }
-
-            // 3. 更新現有資料的備註或團隊資訊 (如果需要的話)
+            // 2. 執行更新/新增 (Upsert)
+            // 直接對目前選中的所有路段進行 upsert，這會同時處理新增與更新
             if (currentSegmentIds.length > 0) {
                 const { error: upsertError } = await supabase
                     .from('registrations')
@@ -187,7 +168,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                             athlete_profile: athlete.profile,
                             team: team,
                             tcu_id: tcuId,
-                            status: 'approved'
+                            status: 'approved',
+                            updated_at: new Date().toISOString()
                         })),
                         { onConflict: 'strava_athlete_id,segment_id' }
                     );
