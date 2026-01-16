@@ -330,14 +330,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
                         {/* Team */}
                         <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 (選填)</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 (TCU同步資料)</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={team}
-                                    onChange={(e) => setTeam(e.target.value)}
-                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                                    placeholder="例如：TCU Taiwan"
+                                    readOnly
+                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white/50 placeholder:text-slate-600 focus:outline-none cursor-not-allowed font-bold"
+                                    placeholder="同步後自動帶入"
                                 />
                                 <Users className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
                             </div>
