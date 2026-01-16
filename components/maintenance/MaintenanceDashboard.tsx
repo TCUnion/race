@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMaintenance, StravaBike, MaintenanceReminder } from '../../hooks/useMaintenance';
+import { useMaintenance, StravaBike, MaintenanceReminder, MaintenanceType } from '../../hooks/useMaintenance';
 import {
   Wrench,
   Loader2,
@@ -47,6 +47,7 @@ const MaintenanceDashboard: React.FC = () => {
     error,
     addMaintenanceRecord,
     deleteMaintenanceRecord,
+    updateMaintenanceRecord,
     updateMaintenanceSetting,
     getRecordsByBike,
     getMaintenanceReminders,
@@ -59,6 +60,7 @@ const MaintenanceDashboard: React.FC = () => {
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editInterval, setEditInterval] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedHistoryType, setSelectedHistoryType] = useState<MaintenanceType | null>(null);
 
   const selectedBike = bikes.find(b => b.id === selectedBikeId);
   const reminders = selectedBike ? getMaintenanceReminders(selectedBike) : [];
@@ -94,6 +96,49 @@ const MaintenanceDashboard: React.FC = () => {
     is_diy: false
   });
 
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setFormData({
+      maintenance_type: [],
+      service_date: new Date().toISOString().split('T')[0],
+      cost: '',
+      shop_name: '',
+      notes: '',
+      other: '',
+      is_diy: false
+    });
+    setEditingRecordId(null);
+    setIsAddModalOpen(false);
+  };
+
+  const handleEditMaintenance = (record: any) => {
+    let typeList: string[] = [];
+    if (record.maintenance_type.startsWith('全車保養')) {
+      typeList.push('full');
+      const match = record.maintenance_type.match(/\((.*)\)/);
+      if (match) {
+        // 嘗試解析括號內的項目
+        const others = match[1].split(', ');
+        typeList.push(...others);
+      }
+    } else {
+      typeList = record.maintenance_type.split(', ');
+    }
+
+    setFormData({
+      maintenance_type: typeList,
+      service_date: record.service_date,
+      cost: record.cost ? record.cost.toString() : '',
+      shop_name: record.shop_name || '',
+      notes: record.notes || '',
+      other: record.other || '',
+      is_diy: record.is_diy
+    });
+    setEditingRecordId(record.id);
+    setIsAddModalOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBike) return;
@@ -113,7 +158,7 @@ const MaintenanceDashboard: React.FC = () => {
       maintenanceTypeValue = selectedTypes.join(', ');
     }
 
-    await addMaintenanceRecord({
+    const recordData = {
       bike_id: selectedBike.id,
       athlete_id: String(athlete.id),
       maintenance_type: maintenanceTypeValue,
@@ -124,18 +169,18 @@ const MaintenanceDashboard: React.FC = () => {
       notes: formData.notes || undefined,
       other: formData.other || undefined,
       is_diy: formData.is_diy
-    });
+    };
 
-    setFormData({
-      maintenance_type: [],
-      service_date: new Date().toISOString().split('T')[0],
-      cost: '',
-      shop_name: '',
-      notes: '',
-      other: '',
-      is_diy: false
-    });
-    setIsAddModalOpen(false);
+    try {
+      if (editingRecordId) {
+        await updateMaintenanceRecord(editingRecordId, recordData);
+      } else {
+        await addMaintenanceRecord(recordData);
+      }
+      resetForm();
+    } catch (err) {
+      console.error('儲存紀錄失敗:', err);
+    }
   };
 
   // 編輯腳踏車表單狀態
@@ -368,11 +413,45 @@ const MaintenanceDashboard: React.FC = () => {
                 {activeTab === 'reminders' && (
                   <div className="grid md:grid-cols-2 gap-4">
                     {reminders.map(reminder => {
+                      const isReplacement = reminder.type.name === '器材更換';
+
+                      if (isReplacement) {
+                        return (
+                          <div
+                            key={reminder.type.id}
+                            onClick={() => setSelectedHistoryType(reminder.type)}
+                            className="p-4 rounded-2xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h4 className="font-bold text-white group-hover:text-orange-400 transition-colors">
+                                  {reminder.type.name}
+                                </h4>
+                                <p className="text-sm text-orange-200/40">{reminder.type.description}</p>
+                              </div>
+                              <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/60 transition-colors" />
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="opacity-60">最近一次更換</span>
+                                <span className="font-mono font-bold text-white">
+                                  {reminder.lastService?.service_date || '尚無紀錄'}
+                                </span>
+                              </div>
+                              <div className="text-xs text-center p-1.5 rounded-lg bg-black/20 text-orange-200/40 font-medium">
+                                點擊查看更換歷史
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       const StatusIcon = statusIcons[reminder.status];
                       return (
                         <div
                           key={reminder.type.id}
-                          className={`p-4 rounded-2xl border ${statusColors[reminder.status]}`}
+                          onClick={() => setSelectedHistoryType(reminder.type)}
+                          className={`p-4 rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02]`}
                         >
                           <div className="flex items-start justify-between mb-3">
                             <div>
@@ -401,7 +480,10 @@ const MaintenanceDashboard: React.FC = () => {
                             </div>
                             <div className="flex justify-between text-xs opacity-40">
                               <span>0 km</span>
-                              <div className="flex items-center gap-1 group/interval">
+                              <div
+                                className="flex items-center gap-1 group/interval"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 {editingTypeId === reminder.type.id ? (
                                   <div className="flex items-center gap-1 bg-black/40 rounded-lg p-1 -m-1">
                                     <input
@@ -486,12 +568,24 @@ const MaintenanceDashboard: React.FC = () => {
                                 </div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => deleteMaintenanceRecord(record.id)}
-                              className="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEditMaintenance(record)}
+                                className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('確定要刪除此筆保養紀錄嗎？')) {
+                                    deleteMaintenanceRecord(record.id);
+                                  }
+                                }}
+                                className="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         );
                       })
@@ -508,236 +602,324 @@ const MaintenanceDashboard: React.FC = () => {
             )}
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* 編輯腳踏車 Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">編輯單車資訊</h3>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-all"
-              >
-                <X className="w-5 h-5 text-white/60" />
-              </button>
+      {
+        isEditModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">編輯單車資訊</h3>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">車架品牌</label>
+                  <input
+                    type="text"
+                    value={editFormData.brand}
+                    onChange={e => setEditFormData(prev => ({ ...prev, brand: e.target.value }))}
+                    placeholder="例：Factor"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">車架型號</label>
+                  <input
+                    type="text"
+                    value={editFormData.model}
+                    onChange={e => setEditFormData(prev => ({ ...prev, model: e.target.value }))}
+                    placeholder="例：O2"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">變速系統</label>
+                  <input
+                    type="text"
+                    value={editFormData.groupset_name}
+                    onChange={e => setEditFormData(prev => ({ ...prev, groupset_name: e.target.value }))}
+                    placeholder="例：Shimano Dura-Ace Di2"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">購買地點</label>
+                  <input
+                    type="text"
+                    value={editFormData.shop_name}
+                    onChange={e => setEditFormData(prev => ({ ...prev, shop_name: e.target.value }))}
+                    placeholder="例：永興車行"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">金額</label>
+                  <input
+                    type="number"
+                    value={editFormData.price}
+                    onChange={e => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
+                    placeholder="0"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 / 其他</label>
+                  <textarea
+                    value={editFormData.remarks}
+                    onChange={e => setEditFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                    rows={2}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
+                >
+                  儲存變更
+                </button>
+              </form>
             </div>
-
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">車架品牌</label>
-                <input
-                  type="text"
-                  value={editFormData.brand}
-                  onChange={e => setEditFormData(prev => ({ ...prev, brand: e.target.value }))}
-                  placeholder="例：Factor"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">車架型號</label>
-                <input
-                  type="text"
-                  value={editFormData.model}
-                  onChange={e => setEditFormData(prev => ({ ...prev, model: e.target.value }))}
-                  placeholder="例：O2"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">變速系統</label>
-                <input
-                  type="text"
-                  value={editFormData.groupset_name}
-                  onChange={e => setEditFormData(prev => ({ ...prev, groupset_name: e.target.value }))}
-                  placeholder="例：Shimano Dura-Ace Di2"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">購買地點</label>
-                <input
-                  type="text"
-                  value={editFormData.shop_name}
-                  onChange={e => setEditFormData(prev => ({ ...prev, shop_name: e.target.value }))}
-                  placeholder="例：永興車行"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">金額</label>
-                <input
-                  type="number"
-                  value={editFormData.price}
-                  onChange={e => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
-                  placeholder="0"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 / 其他</label>
-                <textarea
-                  value={editFormData.remarks}
-                  onChange={e => setEditFormData(prev => ({ ...prev, remarks: e.target.value }))}
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
-              >
-                儲存變更
-              </button>
-            </form>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* 新增保養紀錄 Modal */}
-      {isAddModalOpen && selectedBike && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">新增保養紀錄</h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-all"
-              >
-                <X className="w-5 h-5 text-white/60" />
-              </button>
-            </div>
+      {
+        isAddModalOpen && selectedBike && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">
+                  {editingRecordId ? '編輯保養紀錄' : '新增保養紀錄'}
+                </h3>
+                <button
+                  onClick={resetForm}
+                  className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養項目（可多選）</label>
-                <div className="grid grid-cols-1 gap-2">
-                  {/* 全車保養選項 */}
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      value="full"
-                      checked={formData.maintenance_type.includes('full')}
-                      onChange={e => {
-                        const checked = e.target.checked;
-                        setFormData(prev => {
-                          const types = prev.maintenance_type.filter((t: string) => t !== 'full');
-                          if (checked) types.push('full');
-                          return { ...prev, maintenance_type: types };
-                        });
-                      }}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
-                    />
-                    <span className="text-white">全車保養</span>
-                  </label>
-                  {/* 其他保養項目 */}
-                  {maintenanceTypes.map(type => (
-                    <label key={type.id} className="flex items-center space-x-2">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-3">保養項目（可多選）</label>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-4 bg-white/5 rounded-2xl border border-white/10 max-h-[30vh] overflow-y-auto">
+                    {/* 全車保養選項 */}
+                    <label className="flex items-center space-x-3 cursor-pointer group">
                       <input
                         type="checkbox"
-                        value={type.id}
-                        checked={formData.maintenance_type.includes(type.id)}
+                        value="full"
+                        checked={formData.maintenance_type.includes('full')}
                         onChange={e => {
                           const checked = e.target.checked;
                           setFormData(prev => {
-                            const types = [...prev.maintenance_type];
-                            if (checked) {
-                              if (!types.includes(type.id)) types.push(type.id);
-                            } else {
-                              const idx = types.indexOf(type.id);
-                              if (idx > -1) types.splice(idx, 1);
-                            }
+                            const types = prev.maintenance_type.filter((t: string) => t !== 'full');
+                            if (checked) types.push('full');
                             return { ...prev, maintenance_type: types };
                           });
                         }}
-                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
+                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
                       />
-                      <span className="text-white">{type.name}</span>
+                      <span className="text-white font-medium group-hover:text-orange-400 transition-colors">全車保養</span>
                     </label>
-                  ))}
+                    {/* 其他保養項目 */}
+                    {maintenanceTypes.map(type => (
+                      <label key={type.id} className="flex items-center space-x-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          value={type.id}
+                          checked={formData.maintenance_type.includes(type.id)}
+                          onChange={e => {
+                            const checked = e.target.checked;
+                            setFormData(prev => {
+                              const types = [...prev.maintenance_type];
+                              if (checked) {
+                                if (!types.includes(type.id)) types.push(type.id);
+                              } else {
+                                const idx = types.indexOf(type.id);
+                                if (idx > -1) types.splice(idx, 1);
+                              }
+                              return { ...prev, maintenance_type: types };
+                            });
+                          }}
+                          className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
+                        />
+                        <span className="text-white group-hover:text-orange-200 transition-colors">{type.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
-                <input
-                  type="date"
-                  value={formData.service_date}
-                  onChange={e => setFormData(prev => ({ ...prev, service_date: e.target.value }))}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
+                    <input
+                      type="date"
+                      value={formData.service_date}
+                      onChange={e => setFormData(prev => ({ ...prev, service_date: e.target.value }))}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">費用 (選填)</label>
-                <input
-                  type="number"
-                  value={formData.cost}
-                  onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
-                  placeholder="0"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">費用 (選填)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">$</span>
+                      <input
+                        type="number"
+                        value={formData.cost}
+                        onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
+                        placeholder="0"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">店家名稱 (選填)</label>
-                <input
-                  type="text"
-                  value={formData.shop_name}
-                  onChange={e => setFormData(prev => ({ ...prev, shop_name: e.target.value }))}
-                  placeholder="例：永興車行"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
+                <div className="flex items-end gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">店家名稱 (選填)</label>
+                    <input
+                      type="text"
+                      value={formData.shop_name}
+                      onChange={e => setFormData(prev => ({ ...prev, shop_name: e.target.value }))}
+                      placeholder="例：永興車行"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer mb-3 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_diy}
+                      onChange={e => setFormData(prev => ({ ...prev, is_diy: e.target.checked }))}
+                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-white font-bold text-sm">自己 DIY</span>
+                  </label>
+                </div>
 
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 (選填)</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">其他（選填）</label>
-                <input
-                  type="text"
-                  value={formData.other || ''}
-                  onChange={e => setFormData(prev => ({ ...prev, other: e.target.value }))}
-                  placeholder="其他資訊"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_diy}
-                  onChange={e => setFormData(prev => ({ ...prev, is_diy: e.target.checked }))}
-                  className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
-                />
-                <span className="text-white">自己 DIY 保養</span>
-              </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 (選填)</label>
+                    <input
+                      type="text"
+                      value={formData.notes}
+                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="簡單備註..."
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">其他（選填）</label>
+                    <input
+                      type="text"
+                      value={formData.other || ''}
+                      onChange={e => setFormData(prev => ({ ...prev, other: e.target.value }))}
+                      placeholder="其他資訊"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
 
+                <button
+                  type="submit"
+                  className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-orange-900/40 mt-2"
+                >
+                  {editingRecordId ? '儲存變更' : '儲存紀錄'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )
+      }
+
+      {/* 歷史紀錄詳情 Modal (器材更換) */}
+      {selectedHistoryType && selectedBike && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">{selectedHistoryType.name}紀錄</h3>
+                <p className="text-orange-200/50 text-sm">歷史更換清單</p>
+              </div>
               <button
-                type="submit"
-                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
+                onClick={() => setSelectedHistoryType(null)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-all"
               >
-                儲存紀錄
+                <X className="w-5 h-5 text-white/60" />
               </button>
-            </form>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+              {bikeRecords.filter(r => r.maintenance_type === selectedHistoryType.id || r.maintenance_type.includes(selectedHistoryType.id)).length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-white/30">尚無相關紀錄</p>
+                </div>
+              ) : (
+                bikeRecords
+                  .filter(r => r.maintenance_type === selectedHistoryType.id || r.maintenance_type.includes(selectedHistoryType.id))
+                  .map(record => (
+                    <div
+                      key={record.id}
+                      className="p-4 bg-white/5 border border-white/10 rounded-xl"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-white font-bold">{record.service_date}</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedHistoryType(null); // 先關閉此 Modal
+                              handleEditMaintenance(record); // 開啟編輯 Modal
+                            }}
+                            className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('確定要刪除此筆紀錄嗎？')) {
+                                deleteMaintenanceRecord(record.id);
+                              }
+                            }}
+                            className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-sm text-orange-200/60 space-y-1">
+                        {record.maintenance_type !== selectedHistoryType.id && !record.maintenance_type.includes('全車保養') && (
+                          <p className="text-white/80">{record.maintenance_type}</p>
+                        )}
+                        <p>里程：{record.mileage_at_service.toLocaleString()} km</p>
+                        {record.cost && <p>費用：${record.cost}</p>}
+                        {record.shop_name && <p>店家：{record.shop_name}</p>}
+                        {record.notes && <p className="text-white/50 pt-1 border-t border-white/5 mt-1">{record.notes}</p>}
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </div >
   );
 };
 
