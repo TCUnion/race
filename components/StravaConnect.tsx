@@ -21,9 +21,8 @@ const CONFIG = {
     allowedOrigins: [
         'https://n8n.criterium.tw',
         'https://criterium.tw',
-        'https://status.criterium.tw',
-        'https://race.criterium.tw',
         'https://strava.criterium.tw',
+        'https://race.criterium.tw',
         'https://tcu.criterium.tw',
         'https://www.criterium.tw',
         'http://localhost:3000',

@@ -1,11 +1,11 @@
 # TCU Segment Challenge - robots.txt
-# https://status.criterium.tw/
+# https://strava.criterium.tw/
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://status.criterium.tw/sitemap.xml
+Sitemap: https://strava.criterium.tw/sitemap.xml
 
 # Disallow admin and API paths (future)
 Disallow: /admin/

@@ -335,7 +335,7 @@
       tcuSyncUrl: 'https://n8n.criterium.tw/webhook/tcu-sync',
       allowedOrigins: [
         'https://n8n.criterium.tw',
-        'https://status.criterium.tw',
+        'https://strava.criterium.tw',
         'https://race.criterium.tw',
         'https://strava.criterium.tw',
         'https://tcu.criterium.tw',
@@ -703,7 +703,7 @@
               submitted_at: result.data?.submittedat || '',
               email: result.data?.email || ''
             });
-            window.location.href = `https://status.criterium.tw/register-result.html?${params.toString()}`;
+            window.location.href = `https://strava.criterium.tw/register-result.html?${params.toString()}`;
             return;
           }
 
