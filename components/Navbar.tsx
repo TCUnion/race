@@ -1,6 +1,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewType } from '../types';
+import {
+  Menu,
+  X,
+  Compass,
+  LayoutDashboard,
+  BarChart3,
+  Wrench,
+  UserCircle,
+  RefreshCw
+} from 'lucide-react';
+import StravaLogo from './StravaLogo';
 
 interface StravaAthlete {
   id: string | number;
@@ -73,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     };
   }, []);
 
-  // 監聽 postMessage（與 136.html 相同）
+  // 監聽 postMessage
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
@@ -213,11 +224,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md transition-all duration-300">
       <div className="flex items-center justify-between px-6 md:px-20 py-4">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate(ViewType.LANDING)}>
-          <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto" />
-          <h2 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tighter uppercase font-display italic">TCU STRAVA RANK</h2>
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNavigate(ViewType.LANDING)}>
+          <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto transform transition-transform group-hover:scale-110" />
+          <h2 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors">TCU STRAVA RANK</h2>
         </div>
 
         {/* Desktop Navigation */}
@@ -225,25 +236,25 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <nav className="flex items-center gap-8">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               探索活動
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               排行榜
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               個人儀表板
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
             >
               保養紀錄
             </button>
@@ -259,24 +270,30 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                       ? `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim()
                       : athlete.id}
                 </p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connected</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider flex items-center justify-end gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  Connected
+                </p>
               </div>
               <img
                 src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
                 alt={athlete.firstname || athlete.firstName || 'Profile'}
-                className="w-10 h-10 rounded-full border-2 border-strava-orange"
+                className="w-10 h-10 rounded-full border-2 border-strava-orange hover:scale-110 transition-transform cursor-pointer"
               />
             </div>
           ) : (
             <button
               onClick={handleConnect}
               disabled={isLoading}
-              className="flex min-w-[100px] cursor-pointer items-center justify-center rounded px-5 h-10 bg-strava-orange text-white text-sm font-bold uppercase tracking-widest hover:brightness-110 transition-all shadow-md shadow-strava-orange/20 disabled:opacity-70 disabled:cursor-wait"
+              className="group flex min-w-[140px] cursor-pointer items-center justify-center gap-2 rounded-lg px-5 h-10 bg-strava-orange text-white text-xs font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-strava-orange/20 disabled:opacity-70 disabled:cursor-wait"
             >
               {isLoading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
-                <span>Connect Strava</span>
+                <>
+                  <StravaLogo className="h-4 w-auto" color="white" />
+                  <span>Connect</span>
+                </>
               )}
             </button>
           )}
@@ -287,45 +304,43 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <button
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-slate-900 dark:text-white p-2"
+            className="text-slate-900 dark:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <span className="material-symbols-outlined text-3xl">
-              {isMenuOpen ? 'close' : 'menu'}
-            </span>
+            {isMenuOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xl animate-in slide-in-from-top duration-300">
+        <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xl animate-in slide-in-from-top duration-300 overflow-hidden">
           <nav className="flex flex-col p-4 space-y-2">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-colors ${currentView === ViewType.LANDING ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.LANDING ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
             >
-              <span className="material-symbols-outlined mr-3 text-xl">explore</span>
+              <Compass className="w-5 h-5 mr-3" />
               探索活動
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-colors ${currentView === ViewType.LEADERBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.LEADERBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
             >
-              <span className="material-symbols-outlined mr-3 text-xl">leaderboard</span>
+              <BarChart3 className="w-5 h-5 mr-3" />
               排行榜
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-colors ${currentView === ViewType.DASHBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.DASHBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
             >
-              <span className="material-symbols-outlined mr-3 text-xl">account_circle</span>
+              <UserCircle className="w-5 h-5 mr-3" />
               個人儀表板
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-colors ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
             >
-              <span className="material-symbols-outlined mr-3 text-xl">handyman</span>
+              <Wrench className="w-5 h-5 mr-3" />
               保養紀錄
             </button>
 
@@ -338,10 +353,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                     className="w-12 h-12 rounded-full border-2 border-strava-orange"
                   />
                   <div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase">
+                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase transition-all">
                       {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : athlete.id}
                     </p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                       Athlete Connected
                     </p>
                   </div>
@@ -353,11 +369,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   className="w-full flex items-center justify-center gap-3 bg-strava-orange text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-strava-orange/20 active:scale-[0.98] transition-all"
                 >
                   {isLoading ? (
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <span className="material-symbols-outlined">sync</span>
-                      Connect Strava
+                      <StravaLogo className="h-5 w-auto" color="white" />
+                      <span>Connect Strava</span>
                     </>
                   )}
                 </button>
@@ -367,7 +383,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
       )}
     </header>
-
   );
 };
 

@@ -3,6 +3,23 @@ import React from 'react';
 import StravaConnect from './StravaConnect';
 import SegmentMap from './SegmentMap';
 import { useSegmentData, formatTime, formatDistance, formatSpeed } from '../hooks/useSegmentData';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Trophy,
+  Sun,
+  Thermometer,
+  Droplets,
+  ChevronDown,
+  ChevronUp,
+  Map as MapIcon,
+  ExternalLink,
+  ChevronRight as ChevronRightIcon,
+  BarChart3,
+  RefreshCw
+} from 'lucide-react';
+import StravaLogo from './StravaLogo';
 
 interface LandingPageProps {
   onRegister: () => void;
@@ -48,7 +65,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   // 使用索引選擇路段
   const segment = segments.length > 0 ? segments[currentIndex] : null;
   const stats = segment ? statsMap[segment.id] || { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null } : { totalAthletes: 0, completedAthletes: 0, bestTime: null, avgTime: null, maxPower: null, avgSpeed: null };
-  const leaderboard = [];
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % segments.length);
@@ -83,7 +99,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   ];
 
   return (
-    <div className="flex flex-col items-center w-full pb-20">
+    <div className="flex flex-col items-center w-full pb-20 animate-fade-in">
       {/* Hero Section */}
       <div className="w-full max-w-[1200px] px-4 py-8">
         <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group transition-all duration-700">
@@ -98,15 +114,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <>
                 <button
                   onClick={handlePrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10 hover:scale-110 active:scale-90"
                 >
-                  <span className="material-symbols-outlined">chevron_left</span>
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10 hover:scale-110 active:scale-90"
                 >
-                  <span className="material-symbols-outlined">chevron_right</span>
+                  <ChevronRight className="w-6 h-6" />
                 </button>
 
                 {/* Pagination Dots */}
@@ -114,7 +130,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   {segments.map((_, i) => (
                     <div
                       key={i}
-                      className={`w-2 h-2 rounded-full transition-all duration-500 ${i === currentIndex ? `${currentTheme.primary} w-6` : 'bg-white/30'}`}
+                      className={`w-2 h-2 rounded-full transition-all duration-500 cursor-pointer ${i === currentIndex ? `${currentTheme.primary} w-6` : 'bg-white/30 hover:bg-white/50'}`}
+                      onClick={() => setCurrentIndex(i)}
                     />
                   ))}
                 </div>
@@ -141,9 +158,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   href={segment.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95"
+                  className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95 group"
                 >
                   <span>查看詳情</span>
+                  <ExternalLink className="w-5 h-5 ml-2 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </a>
               ) : (
                 <button className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95">
@@ -156,7 +174,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-xs font-black uppercase tracking-wide shadow-md transition-colors duration-700`}>Limited Time Challenge</span>
               {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
                 <span className="text-amber-400 text-sm font-black tracking-widest uppercase animate-pulse flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                  <Calendar className="w-4 h-4" />
                   {formatDateRange(segment.start_date, segment.end_date)}
                 </span>
               )}
@@ -167,8 +185,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
         {/* Dynamic Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
           {dynamicStats.map((stat, i) => (
-            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 hover:shadow-lg hover:-translate-y-1 transition-colors min-h-[140px]">
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
+            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer min-h-[140px] group">
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-tsu-blue transition-colors">{stat.label}</p>
               <div className="h-10 flex items-center">
                 <p className={`text-slate-900 dark:text-white text-3xl font-black italic ${isLoading ? 'animate-pulse' : ''}`}>
                   {stat.value === '-' && isLoading ? '\u00A0' : stat.value}
@@ -185,9 +203,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
           <div className="lg:col-span-2 space-y-8">
             {/* Map Section */}
-            <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+            <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-                <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
+                <div className="flex items-center gap-2">
+                  <MapIcon className="w-5 h-5 text-tsu-blue" />
+                  <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
+                </div>
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                   {segment ? `Segment #${segment.strava_id}` : 'Loading...'}
                 </span>
@@ -211,9 +232,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-all">
+                  <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-all group cursor-pointer">
                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Powered by</span>
-                    <span className="text-strava-orange font-black italic text-lg">STRAVA</span>
+                    <StravaLogo className="h-5 w-auto grayscale group-hover:grayscale-0 transition-all" />
                   </div>
                 </div>
               </div>
@@ -222,29 +243,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             {/* Leaderboard Preview */}
             <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-                <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">目前排行榜</h2>
-                <a
-                  href="/136leaderboard.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-tsu-blue" />
+                  <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">目前排行榜</h2>
+                </div>
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // 這裡應該導向 Leaderboard View 或頁面
+                  className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1 group"
                 >
                   查看完整榜單
-                </a>
+                  <ChevronRightIcon className="w-3 h-3 transition-transform group-hover:translate-x-1" />
+                </button>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {isLoading ? (
                   <div className="p-8 text-center">
-                    <div className="w-8 h-8 border-4 border-tsu-blue/20 border-t-tsu-blue rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-slate-500 text-sm">載入排行榜...</p>
+                    <RefreshCw className="w-8 h-8 text-tsu-blue animate-spin mx-auto mb-4" />
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">載入排行榜...</p>
                   </div>
                 ) : (
                   <div className="p-12 text-center text-slate-500">
-                    <span className="material-symbols-outlined text-4xl mb-2 opacity-20">leaderboard</span>
-                    <p className="text-sm">前往各路段儀表板查看即時排行</p>
+                    <BarChart3 className="w-12 h-12 mb-2 opacity-20 mx-auto" />
+                    <p className="text-sm font-bold uppercase tracking-widest">前往各路段儀表板查看即時排行</p>
                     <button
                       onClick={onRegister}
-                      className="mt-4 text-tsu-blue text-xs font-bold hover:underline"
+                      className="mt-4 text-tsu-blue text-xs font-black uppercase tracking-widest hover:brightness-110 underline decoration-2 underline-offset-4"
                     >
                       立即加入挑戰
                     </button>
@@ -256,20 +279,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800">
+            <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 transition-all hover:shadow-md">
               <button
                 type="button"
                 className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic"
                 onClick={() => setDetailsOpen(prev => !prev)}
               >
                 <span>路段詳情</span>
-                <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: detailsOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}>
-                  expand_less
-                </span>
+                {detailsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
               {detailsOpen && (
-                <div className="mt-4 space-y-4">
+                <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <ul className="space-y-3">
                     {[
                       { label: '挑戰期間', value: (segment && formatDateRange(segment.start_date, segment.end_date)) || '未設定' },
@@ -279,8 +300,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       { label: '挑戰人數', value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
                       { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
                     ].map((item, i) => (
-                      <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0">
-                        <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest">{item.label}</span>
+                      <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0 hover:bg-white/50 dark:hover:bg-white/5 rounded px-1 transition-colors">
+                        <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[9px]">{item.label}</span>
                         <span className={`${item.color || 'text-slate-900 dark:text-slate-200'} uppercase break-all`}>{item.value}</span>
                       </li>
                     ))}
@@ -290,9 +311,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       href={segment.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all shadow-md active:scale-95"
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-black text-[10px] uppercase hover:brightness-110 transition-all shadow-md active:scale-95 group"
                     >
-                      <span className="material-symbols-outlined text-[16px]">link</span>
+                      <StravaLogo className="h-3 w-auto" color="white" />
                       <span>在 Strava 查看路段</span>
                     </a>
                   )}
@@ -300,20 +321,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               )}
             </section>
 
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden">
+            <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden transition-all hover:shadow-xl">
               <button
                 type="button"
                 className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic"
                 onClick={() => setStartOpen(prev => !prev)}
               >
                 <span>開始挑戰</span>
-                <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: startOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}>
-                  expand_less
-                </span>
+                {startOpen ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
               </button>
 
               {startOpen && (
-                <div className="mt-4 space-y-4">
+                <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium">
                     為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
                   </p>
@@ -329,20 +348,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
             {/* KOM / QOM 紀錄 */}
             {(segment?.KOM || segment?.QOM) && (
-              <section className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 rounded-2xl p-6 border border-amber-500/30">
+              <section className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 rounded-2xl p-6 border border-amber-500/30 transition-all hover:scale-[1.02]">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
-                  <span className="material-symbols-outlined text-amber-500">trophy</span> 紀錄保持者
+                  <Trophy className="w-5 h-5 text-amber-500" /> 紀錄保持者
                 </h3>
                 <div className="space-y-3">
                   {segment?.KOM && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">KOM (男子紀錄)</span>
+                    <div className="flex justify-between items-center group">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-tsu-blue transition-colors">KOM (男子紀錄)</span>
                       <span className="text-lg font-black text-strava-orange italic">{segment.KOM}</span>
                     </div>
                   )}
                   {segment?.QOM && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">QOM (女子紀錄)</span>
+                    <div className="flex justify-between items-center group">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-pink-500 transition-colors">QOM (女子紀錄)</span>
                       <span className="text-lg font-black text-pink-500 italic">{segment.QOM}</span>
                     </div>
                   )}
@@ -352,28 +371,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
             {/* 天氣資訊 */}
             {weather && (
-              <section className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 dark:from-sky-500/20 dark:to-blue-500/20 rounded-2xl p-6 border border-sky-500/30">
+              <section className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 dark:from-sky-500/20 dark:to-blue-500/20 rounded-2xl p-6 border border-sky-500/30 transition-all hover:scale-[1.02]">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sky-500">wb_sunny</span> {weather.location || '路段'} 天氣
+                  <Sun className="w-5 h-5 text-sky-500" /> {weather.location || '路段'} 天氣
                 </h3>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-4xl font-black text-slate-900 dark:text-white">
-                      {weather.current?.temp ? `${Math.round(weather.current.temp)}°C` : '-'}
+                    <p className="text-4xl font-black text-slate-900 dark:text-white flex items-baseline">
+                      {weather.current?.temp ? `${Math.round(weather.current.temp)}` : '-'}
+                      <span className="text-lg ml-0.5">°C</span>
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize mt-1">
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 capitalize mt-1 flex items-center gap-1">
+                      <Thermometer className="w-3 h-3" />
                       {weather.current?.description || weather.today?.description || '-'}
                     </p>
                   </div>
-                  <div className="text-right text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                  <div className="text-right text-[10px] font-bold text-slate-500 dark:text-slate-400 space-y-1">
                     {weather.today && (
                       <>
-                        <p>最高 {Math.round(weather.today.max)}°C</p>
-                        <p>最低 {Math.round(weather.today.min)}°C</p>
+                        <p className="text-rose-500">MAX {Math.round(weather.today.max)}°C</p>
+                        <p className="text-sky-500">MIN {Math.round(weather.today.min)}°C</p>
                       </>
                     )}
                     {weather.current?.humidity && (
-                      <p>濕度 {weather.current.humidity}%</p>
+                      <p className="flex items-center justify-end gap-1">
+                        <Droplets className="w-3 h-3 text-sky-400" />
+                        濕度 {weather.current.humidity}%
+                      </p>
                     )}
                   </div>
                 </div>
