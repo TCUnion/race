@@ -12,6 +12,8 @@ interface RegistrationFormProps {
         id: string | number;
         firstname?: string;
         lastname?: string;
+        firstName?: string;
+        lastName?: string;
         profile?: string;
     };
     segments: Segment[];
@@ -28,7 +30,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     const [isLoadingExisting, setIsLoadingExisting] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [name, setName] = useState(athlete.firstname && athlete.lastname ? `${athlete.firstname} ${athlete.lastname}` : '');
+    const [name, setName] = useState(() => {
+        const fname = athlete.firstname || athlete.firstName || '';
+        const lname = athlete.lastname || athlete.lastName || '';
+        return (fname && lname) ? `${fname} ${lname}`.trim() : (fname || lname || '');
+    });
     const [team, setTeam] = useState('');
     const [tcuId, setTcuId] = useState('');
 

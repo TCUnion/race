@@ -6,6 +6,8 @@ interface StravaAthlete {
   id: string | number;
   firstname?: string;
   lastname?: string;
+  firstName?: string; // 補強相容性
+  lastName?: string;  // 補強相容性
   profile?: string;
   profile_medium?: string;
 }
@@ -22,12 +24,13 @@ const CONFIG = {
   pollingTimeout: 120000,
   allowedOrigins: [
     'https://n8n.criterium.tw',
-    'https://n8n.criterium.tw',
     'https://criterium.tw',
+    'https://status.criterium.tw', // 新增
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3001',
-    'http://127.0.0.1:3001'
+    'http://127.0.0.1:3001',
+    'http://localhost:5173', // Vite 預設
   ]
 };
 
@@ -90,12 +93,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   }, []);
 
   const saveAndSetAthlete = (athleteData: StravaAthlete) => {
-    const fullData = {
+    // 規範化資料
+    const normalizedData = {
       ...athleteData,
+      firstname: athleteData.firstname || athleteData.firstName || '',
+      lastname: athleteData.lastname || athleteData.lastName || '',
       ts: Date.now()
     };
-    localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
-    setAthlete(fullData);
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
+    setAthlete(normalizedData);
     setIsLoading(false);
 
     window.dispatchEvent(new Event('strava-auth-changed'));
@@ -220,13 +226,17 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
               <div className="text-right">
                 <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">
-                  {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : athlete.id}
+                  {(athlete.firstname || athlete.lastname)
+                    ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim()
+                    : (athlete.firstName || athlete.lastName)
+                      ? `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim()
+                      : athlete.id}
                 </p>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">Connected</p>
               </div>
               <img
                 src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                alt={athlete.firstname || 'Profile'}
+                alt={athlete.firstname || athlete.firstName || 'Profile'}
                 className="w-10 h-10 rounded-full border-2 border-strava-orange"
               />
             </div>

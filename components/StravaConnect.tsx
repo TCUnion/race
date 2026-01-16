@@ -6,6 +6,8 @@ interface StravaAthlete {
     username?: string;
     firstname?: string;
     lastname?: string;
+    firstName?: string; // 補強相容性
+    lastName?: string;  // 補強相容性
     profile?: string;
     profile_medium?: string;
     access_token?: string;
@@ -19,10 +21,12 @@ const CONFIG = {
     allowedOrigins: [
         'https://n8n.criterium.tw',
         'https://criterium.tw',
+        'https://status.criterium.tw', // 新增
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:3001',
-        'http://127.0.0.1:3001'
+        'http://127.0.0.1:3001',
+        'http://localhost:5173', // Vite 預設
     ]
 };
 
@@ -93,6 +97,8 @@ const StravaConnect: React.FC = () => {
     const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
         const fullData = {
             ...athleteData,
+            firstname: athleteData.firstname || athleteData.firstName || '',
+            lastname: athleteData.lastname || athleteData.lastName || '',
             ts: Date.now()
         };
         localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
@@ -103,16 +109,17 @@ const StravaConnect: React.FC = () => {
         if (athleteData.access_token) {
             try {
                 // FIXME: 確保後端 URL 正確，這裡先假定在同個 domain 或使用相對路徑
-                await fetch('/api/auth/strava-token', {
+                // 如果是 GitHub Pages 部署，這裡可能需要絕對路徑或是透過 API Proxy
+                await fetch('https://race.criterium.tw/api/auth/strava-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         athlete_id: Number(athleteData.id),
                         access_token: athleteData.access_token,
-                        refresh_token: (athleteData as any).refresh_token || '', // 如果 OAuth 回傳有包含
+                        refresh_token: (athleteData as any).refresh_token || '',
                         expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600
                     })
-                });
+                }).catch(err => console.warn('後端同步嘗試失敗，但不影響本機登入', err));
             } catch (e) {
                 console.error('儲存 Token 到後端失敗', e);
             }
@@ -243,7 +250,11 @@ const StravaConnect: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                         <h4 className="text-slate-900 dark:text-white font-black text-base uppercase truncate leading-tight">
-                            {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : `Athlete #${athlete.id}`}
+                            {(athlete.firstname || athlete.lastname)
+                                ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim()
+                                : (athlete.firstName || athlete.lastName)
+                                    ? `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim()
+                                    : `Athlete #${athlete.id}`}
                         </h4>
                         <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">
                             Strava ID: {athlete.id}

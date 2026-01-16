@@ -61,25 +61,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }, [isLoading, registeredSegments.length]);
 
   useEffect(() => {
-    const savedData = localStorage.getItem('strava_athlete_meta');
-    if (savedData) {
-      try {
-        const athleteData = JSON.parse(savedData);
-        setAthlete(athleteData);
-        if (segments.length > 0) {
-          fetchAllRegistrations(athleteData.id);
-        } else {
-          console.log('Dashboard: Segments not ready yet, waiting...');
+    const loadAthlete = () => {
+      const savedData = localStorage.getItem('strava_athlete_meta');
+      if (savedData) {
+        try {
+          const athleteData = JSON.parse(savedData);
+          setAthlete(athleteData);
+          if (segments.length > 0) {
+            fetchAllRegistrations(athleteData.id);
+          }
+        } catch (e) {
+          console.error('Dashboard: Access token parse error', e);
+          localStorage.removeItem('strava_athlete_meta');
+          setAthlete(null);
+          setIsLoading(false);
         }
-      } catch (e) {
-        console.error('Dashboard: Access token parse error', e);
-        localStorage.removeItem('strava_athlete_meta');
+      } else {
         setAthlete(null);
         setIsLoading(false);
       }
-    } else {
-      setIsLoading(false);
-    }
+    };
+
+    loadAthlete();
+
+    // 監聽來自其他元件的狀態變更
+    window.addEventListener('strava-auth-changed', loadAthlete);
+    window.addEventListener('storage', loadAthlete);
+
+    return () => {
+      window.removeEventListener('strava-auth-changed', loadAthlete);
+      window.removeEventListener('storage', loadAthlete);
+    };
   }, [segments]);
 
   const fetchAllRegistrations = async (athleteId: string | number) => {
@@ -116,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     const fetchEfforts = async () => {
       if (!athlete || !currentSegmentId) return;
-      
+
       try {
         const { data, error } = await supabase
           .from('segment_efforts')
@@ -269,8 +281,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 className={`flex flex-col items-start gap-1 p-4 rounded-2xl border-2 transition-all min-w-[200px] ${currentSegmentId === reg.segment_id ? 'border-tsu-blue bg-tsu-blue/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
               >
                 <div className="flex justify-between w-full items-center">
-                   <span className="text-[10px] font-bold text-slate-400 uppercase">#{reg.segments?.strava_id}</span>
-                   {currentSegmentId === reg.segment_id && <span className="material-symbols-outlined text-tsu-blue text-sm">check_circle</span>}
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">#{reg.segments?.strava_id}</span>
+                  {currentSegmentId === reg.segment_id && <span className="material-symbols-outlined text-tsu-blue text-sm">check_circle</span>}
                 </div>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">{reg.segments?.name}</h3>
                 <div className="flex items-center gap-2 mt-1">
@@ -286,10 +298,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {/* Selected Segment Details Title */}
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-           <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-tsu-blue text-3xl">sports_score</span>
-              <h2 className="text-2xl font-black italic uppercase italic">{selectedSegment?.name} 挑戰數據</h2>
-           </div>
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-tsu-blue text-3xl">sports_score</span>
+            <h2 className="text-2xl font-black italic uppercase italic">{selectedSegment?.name} 挑戰數據</h2>
+          </div>
         </div>
 
         {/* Performance Cards */}

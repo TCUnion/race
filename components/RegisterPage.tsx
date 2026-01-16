@@ -14,13 +14,31 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check Strava connection
-    const savedData = localStorage.getItem('strava_athlete_meta');
-    if (savedData) {
-      const athleteData = JSON.parse(savedData);
-      setAthlete(athleteData);
-    }
-    setIsLoading(false);
+    const loadAthlete = () => {
+      const savedData = localStorage.getItem('strava_athlete_meta');
+      if (savedData) {
+        try {
+          const athleteData = JSON.parse(savedData);
+          setAthlete(athleteData);
+        } catch (e) {
+          console.error('RegisterPage: parse error', e);
+          setAthlete(null);
+        }
+      } else {
+        setAthlete(null);
+      }
+      setIsLoading(false);
+    };
+
+    loadAthlete();
+
+    window.addEventListener('strava-auth-changed', loadAthlete);
+    window.addEventListener('storage', loadAthlete);
+
+    return () => {
+      window.removeEventListener('strava-auth-changed', loadAthlete);
+      window.removeEventListener('storage', loadAthlete);
+    };
   }, []);
 
   if (isLoading) {
@@ -53,7 +71,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const formSegments = segments.map(s => ({
     id: s.id,
     name: s.name,
-    internal_id: s.internal_id
+    strava_id: s.strava_id
   }));
 
   return (
