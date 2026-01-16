@@ -31,7 +31,7 @@ interface RegistrationFormProps {
     onSuccess: () => void;
 }
 
-const TCU_SYNC_URL = 'https://n8n.criterium.tw/webhook/tcu-sync';
+
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess }) => {
     const [selectedSegmentIds, setSelectedSegmentIds] = useState<number[]>([]);
@@ -98,30 +98,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         setSuccessMessage(null);
 
         try {
-            const response = await fetch(TCU_SYNC_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tcu_id: tcuId.toUpperCase(),
-                    strava_athlete_id: String(athlete.id)
-                })
-            });
+            // 直接查詢 Supabase tcu_members 資料表
+            const { data, error } = await supabase
+                .from('tcu_members')
+                .select('*')
+                .eq('tcu_id', tcuId.toUpperCase())
+                .maybeSingle();
 
-            const result = await response.json().catch(() => ({}));
+            if (error) throw error;
 
-            if (result.success && result.data) {
-                if (result.data.tcu_id) {
-                    setTcuId(result.data.tcu_id);
+            if (data) {
+                if (data.name) {
+                    setName(data.name);
                 }
-                if (result.data.name) {
-                    setName(result.data.name);
+                if (data.team) {
+                    setTeam(data.team);
                 }
-                if (result.data.team) {
-                    setTeam(result.data.team);
-                }
-                setSuccessMessage(result.message || 'TCU 資料同步成功！');
+                setSuccessMessage('TCU 資料同步成功！');
             } else {
-                setError(result.message || 'TCU 資料同步失敗');
+                setError('查無此 TCU ID 或身份證字號');
             }
         } catch (err: any) {
             console.error('同步錯誤:', err);
