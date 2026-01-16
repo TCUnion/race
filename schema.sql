@@ -249,6 +249,49 @@ CREATE POLICY "Public insert maintenance_records" ON public.maintenance_records 
 CREATE POLICY "Public update maintenance_records" ON public.maintenance_records FOR UPDATE USING (true);
 
 -- ==========================================
+-- 12. TCU 會員資料表 (TCU Members)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.tcu_members (
+    tcu_id TEXT PRIMARY KEY, -- SystemID
+    member_id TEXT,          -- MemberID
+    name TEXT NOT NULL,      -- MemberName
+    team TEXT,
+    member_type TEXT,        -- MemberType (付費會員)
+    status TEXT,             -- Status (啟用)
+    account TEXT,            -- Account
+    gender TEXT,             -- Gender
+    nickname TEXT,           -- Nickname
+    phone TEXT,              -- Phone
+    email TEXT,              -- Email
+    nationality TEXT,        -- Nationality
+    address TEXT,            -- Address
+    birthday DATE,           -- Birthday
+    emergency_contact TEXT,  -- EmergencyContact
+    emergency_phone TEXT,    -- EmergencyContactPhone
+    emergency_relation TEXT, -- EmergencyContactRelation
+    profile_photo TEXT,      -- ProfilePhoto
+    self_intro TEXT,         -- SelfIntroduction
+    race_results TEXT,       -- RaceResults
+    skills TEXT,             -- Skills
+    social_settings TEXT,    -- SocialSettings
+    sponsor_settings TEXT,   -- SponsorSettings
+    subscribed_newsletter TEXT, -- SubscribedNewsletter
+    registration_time TIMESTAMP WITH TIME ZONE, -- RegistrationTime
+    verification_time TIMESTAMP WITH TIME ZONE, -- AccountVerificationTime
+    last_modified_time TIMESTAMP WITH TIME ZONE, -- LastModifiedTime
+    legacy_id BIGINT,        -- id (Legacy DB ID)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.tcu_members ENABLE ROW LEVEL SECURITY;
+
+-- TCU Members 策略
+CREATE POLICY "Public read tcu_members" ON public.tcu_members FOR SELECT USING (true);
+CREATE POLICY "Admin full access tcu_members" ON public.tcu_members FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+
+-- ==========================================
 -- 初始資料 (136 檢定)
 -- ==========================================
 INSERT INTO public.segments (id, name, description, link, distance, average_grade, maximum_grade, elevation_high, elevation_low, total_elevation_gain, activity_type, polyline)

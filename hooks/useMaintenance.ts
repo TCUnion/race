@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 // Strava 腳踏車型別（對應 bikes 表）
 export interface StravaBike {
   id: string;
-  athlete_id: number;
+  athlete_id: string;
   name: string;
   nickname?: string;
   primary_gear: boolean;
@@ -12,6 +12,13 @@ export interface StravaBike {
   distance: number; // 累計里程（公尺）
   converted_distance: number; // 累計里程（公里）
   updated_at: string;
+  // 新增欄位
+  brand?: string;
+  model?: string;
+  groupset_name?: string;
+  shop_name?: string;
+  remarks?: string;
+  price?: number;
 }
 
 // 保養類型（對應 maintenance_types 表）
@@ -28,7 +35,7 @@ export interface MaintenanceType {
 export interface BikeMaintenanceRecord {
   id: string;
   bike_id: string;
-  athlete_id: number;
+  athlete_id: string;
   maintenance_type: string;
   service_date: string;
   mileage_at_service: number;
@@ -49,7 +56,7 @@ export interface MaintenanceSetting {
   bike_id: string;
   maintenance_type_id: string;
   custom_interval_km: number;
-  athlete_id: number;
+  athlete_id: string;
 }
 
 // 保養狀態
@@ -94,11 +101,11 @@ export const useMaintenance = () => {
   const [error, setError] = useState<string | null>(null);
 
   // 取得 athlete_id
-  const getAthleteId = useCallback((): number | null => {
+  const getAthleteId = useCallback((): string | null => {
     const savedData = localStorage.getItem('strava_athlete_meta');
     if (!savedData) return null;
     const athlete = JSON.parse(savedData);
-    return Number(athlete.id);
+    return String(athlete.id);
   }, []);
 
   // 載入所有資料
@@ -224,6 +231,26 @@ export const useMaintenance = () => {
     }
   };
 
+  // 更新腳踏車資訊
+  const updateBike = async (bikeId: string, updates: Partial<StravaBike>) => {
+    try {
+      const { data, error } = await supabase
+        .from('bikes')
+        .update(updates)
+        .eq('id', bikeId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setBikes(prev => prev.map(b => b.id === bikeId ? data : b));
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   // 取得特定腳踏車的保養紀錄
   const getRecordsByBike = useCallback((bikeId: string) => {
     return records.filter(r => r.bike_id === bikeId);
@@ -283,6 +310,7 @@ export const useMaintenance = () => {
     addMaintenanceRecord,
     deleteMaintenanceRecord,
     updateMaintenanceSetting,
+    updateBike,
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount,

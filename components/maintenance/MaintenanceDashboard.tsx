@@ -115,7 +115,7 @@ const MaintenanceDashboard: React.FC = () => {
 
     await addMaintenanceRecord({
       bike_id: selectedBike.id,
-      athlete_id: Number(athlete.id),
+      athlete_id: String(athlete.id),
       maintenance_type: maintenanceTypeValue,
       service_date: formData.service_date,
       mileage_at_service: selectedBike.converted_distance || (selectedBike.distance / 1000),
@@ -136,6 +136,52 @@ const MaintenanceDashboard: React.FC = () => {
       is_diy: false
     });
     setIsAddModalOpen(false);
+  };
+
+  // 編輯腳踏車表單狀態
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    id: '',
+    brand: '',
+    model: '',
+    groupset_name: '',
+    shop_name: '',
+    remarks: '',
+    price: ''
+  });
+
+  const { updateBike } = useMaintenance();
+
+  const handleEditClick = (bike: StravaBike) => {
+    setEditFormData({
+      id: bike.id,
+      brand: bike.brand || '',
+      model: bike.model || '',
+      groupset_name: bike.groupset_name || '',
+      shop_name: bike.shop_name || '',
+      remarks: bike.remarks || '',
+      price: bike.price ? bike.price.toString() : ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.id) return;
+
+    try {
+      await updateBike(editFormData.id, {
+        brand: editFormData.brand || undefined,
+        model: editFormData.model || undefined,
+        groupset_name: editFormData.groupset_name || undefined,
+        shop_name: editFormData.shop_name || undefined,
+        remarks: editFormData.remarks || undefined,
+        price: editFormData.price ? parseFloat(editFormData.price) : undefined
+      });
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error('更新腳踏車資訊失敗:', err);
+    }
   };
 
   if (loading) {
@@ -228,18 +274,67 @@ const MaintenanceDashboard: React.FC = () => {
               <div className="space-y-6">
                 {/* 車輛資訊卡 */}
                 <div className="bg-gradient-to-br from-orange-600/20 to-orange-900/20 border border-orange-500/30 rounded-3xl p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold text-white">{selectedBike.name}</h2>
-                      <p className="text-orange-200/60">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h2 className="text-2xl font-bold text-white">{selectedBike.name}</h2>
+                        <button
+                          onClick={() => handleEditClick(selectedBike)}
+                          className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-orange-200/60 hover:text-white transition-all"
+                          title="編輯詳情"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-orange-200/60 mb-2">
                         總里程：<span className="text-white font-mono font-bold">
                           {(selectedBike.converted_distance || selectedBike.distance / 1000).toLocaleString()}
                         </span> km
                       </p>
+
+                      {/* 顯示新增的欄位資訊 */}
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                        {selectedBike.brand && (
+                          <div className="flex flex-col">
+                            <span className="text-orange-200/40 text-xs">品牌</span>
+                            <span className="text-white font-medium">{selectedBike.brand}</span>
+                          </div>
+                        )}
+                        {selectedBike.model && (
+                          <div className="flex flex-col">
+                            <span className="text-orange-200/40 text-xs">型號</span>
+                            <span className="text-white font-medium">{selectedBike.model}</span>
+                          </div>
+                        )}
+                        {selectedBike.groupset_name && (
+                          <div className="flex flex-col">
+                            <span className="text-orange-200/40 text-xs">變速系統</span>
+                            <span className="text-white font-medium">{selectedBike.groupset_name}</span>
+                          </div>
+                        )}
+                        {selectedBike.shop_name && (
+                          <div className="flex flex-col">
+                            <span className="text-orange-200/40 text-xs">購買地點</span>
+                            <span className="text-white font-medium">{selectedBike.shop_name}</span>
+                          </div>
+                        )}
+                        {selectedBike.price && (
+                          <div className="flex flex-col">
+                            <span className="text-orange-200/40 text-xs">金額</span>
+                            <span className="text-white font-medium">${selectedBike.price.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {selectedBike.remarks && (
+                          <div className="flex flex-col col-span-2 lg:col-span-3">
+                            <span className="text-orange-200/40 text-xs">備註</span>
+                            <span className="text-white font-medium">{selectedBike.remarks}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => setIsAddModalOpen(true)}
-                      className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold transition-all"
+                      className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap"
                     >
                       <Plus className="w-4 h-4" />
                       新增保養
@@ -411,6 +506,97 @@ const MaintenanceDashboard: React.FC = () => {
                 <p className="text-orange-200/40">從左側列表選擇要查看的腳踏車</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 編輯腳踏車 Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">編輯單車資訊</h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-all"
+              >
+                <X className="w-5 h-5 text-white/60" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">車架品牌</label>
+                <input
+                  type="text"
+                  value={editFormData.brand}
+                  onChange={e => setEditFormData(prev => ({ ...prev, brand: e.target.value }))}
+                  placeholder="例：Factor"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">車架型號</label>
+                <input
+                  type="text"
+                  value={editFormData.model}
+                  onChange={e => setEditFormData(prev => ({ ...prev, model: e.target.value }))}
+                  placeholder="例：O2"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">變速系統</label>
+                <input
+                  type="text"
+                  value={editFormData.groupset_name}
+                  onChange={e => setEditFormData(prev => ({ ...prev, groupset_name: e.target.value }))}
+                  placeholder="例：Shimano Dura-Ace Di2"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">購買地點</label>
+                <input
+                  type="text"
+                  value={editFormData.shop_name}
+                  onChange={e => setEditFormData(prev => ({ ...prev, shop_name: e.target.value }))}
+                  placeholder="例：永興車行"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">金額</label>
+                <input
+                  type="number"
+                  value={editFormData.price}
+                  onChange={e => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
+                  placeholder="0"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 / 其他</label>
+                <textarea
+                  value={editFormData.remarks}
+                  onChange={e => setEditFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
+              >
+                儲存變更
+              </button>
+            </form>
           </div>
         </div>
       )}
