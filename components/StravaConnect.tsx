@@ -225,8 +225,6 @@ const StravaConnect: React.FC = () => {
     };
 
     const handleDisconnect = async () => {
-        if (!window.confirm('確定要中斷與 Strava 的連結嗎？')) return;
-
         if (athlete) {
             try {
                 // 發送 Webhook 通知的邏輯

@@ -95,18 +95,32 @@
 
     <script>
         // ========== 核心：傳送資料給父視窗 ==========
-        // 這段腳本會透過 postMessage 將選手資料傳回給開啟此視窗的頁面
+        // n8n 會將資料注入到這個頁面，請確認以下變數名稱與 Format Response 節點的輸出一致
+        // 
+        // 常見的 n8n 變數格式：
+        // - {{ $json.athlete.id }} - 如果資料來自 Strava API 原始回傳
+        // - {{ $json.id }} - 如果資料已經被 Format Response 節點扁平化
+        // - {{ $('獲取運動員詳情').item.json.id }} - 引用特定節點的資料
+        //
+        // 請根據您的 n8n 設定調整以下變數
 
         const athleteData = {
-            id: '{{ $json.athlete_id }}',
-            firstname: '{{ $json.firstname }}',
-            lastname: '{{ $json.lastname }}',
-            profile: '{{ $json.profile }}',
-            profile_medium: '{{ $json.profile_medium }}',
+            // 運動員 ID（必要）
+            id: '{{ $json.athlete.id }}',
+
+            // 運動員姓名（從 Strava API 取得）
+            firstname: '{{ $json.athlete.firstname }}',
+            lastname: '{{ $json.athlete.lastname }}',
+
+            // 頭像 URL
+            profile: '{{ $json.athlete.profile }}',
+            profile_medium: '{{ $json.athlete.profile_medium }}',
+
+            // Token 資訊（如果有）
             access_token: '{{ $json.access_token }}',
             refresh_token: '{{ $json.refresh_token }}',
-            expires_at: {{ $json.expires_at }}
-    };
+            expires_at: '{{ $json.expires_at }}'
+        };
 
         console.log('準備傳送授權資料:', athleteData);
 
@@ -126,7 +140,6 @@
         }
 
         // 方法 2: localStorage 暫存（備用方法）
-        // 這個方法適用於同源情況，作為備用
         try {
             localStorage.setItem('strava_athlete_meta_temp', JSON.stringify(athleteData));
             console.log('localStorage 暫存已設置');
