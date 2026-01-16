@@ -94,29 +94,22 @@
     </div>
 
     <script>
-        // ========== 核心：傳送資料給父視窗 ==========
-        // n8n 會將資料注入到這個頁面，請確認以下變數名稱與 Format Response 節點的輸出一致
-        // 
-        // 常見的 n8n 變數格式：
-        // - {{ $json.athlete.id }} - 如果資料來自 Strava API 原始回傳
-        // - {{ $json.id }} - 如果資料已經被 Format Response 節點扁平化
-        // - {{ $('獲取運動員詳情').item.json.id }} - 引用特定節點的資料
-        //
-        // 請根據您的 n8n 設定調整以下變數
+        // ========== n8n Format Response 節點的正確欄位名稱 ==========
+        // 根據實際輸出調整變數名稱
 
         const athleteData = {
-            // 運動員 ID（必要）
-            id: '{{ $json.athlete.id }}',
+            // 運動員 ID
+            id: '{{ $json.athlete_id }}',
 
-            // 運動員姓名（從 Strava API 取得）
-            firstname: '{{ $json.athlete.firstname }}',
-            lastname: '{{ $json.athlete.lastname }}',
+            // 運動員姓名 (camelCase 格式)
+            firstname: '{{ $json.firstName }}',
+            lastname: '{{ $json.lastName }}',
 
             // 頭像 URL
-            profile: '{{ $json.athlete.profile }}',
-            profile_medium: '{{ $json.athlete.profile_medium }}',
+            profile: '{{ $json.profile }}',
+            profile_medium: '{{ $json.profile_medium }}',
 
-            // Token 資訊（如果有）
+            // Token 資訊
             access_token: '{{ $json.access_token }}',
             refresh_token: '{{ $json.refresh_token }}',
             expires_at: '{{ $json.expires_at }}'
