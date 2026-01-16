@@ -1,5 +1,5 @@
 -- ====================================
--- 腳踏車保養紀錄系統 - 資料庫 Migration
+-- 腳踏車保養紀錄系統 - 資料庫 Migration (等冪版本)
 -- 請在 Zeabur Supabase Studio SQL Editor 中執行此腳本
 -- ====================================
 
@@ -27,12 +27,18 @@ INSERT INTO maintenance_types (id, name, description, default_interval_km, icon,
   ('bar_tape', '把帶更換', '建議每 4,000 公里更換', 4000, 'grip-horizontal', 10)
 ON CONFLICT (id) DO NOTHING;
 
+-- 新增保養項目 (針對使用者的新需求)
+INSERT INTO maintenance_types (id, name, description, default_interval_km, icon, sort_order) VALUES
+  ('chain_oil', '鏈條上油', '定期清潔與上油', 500, 'droplets', 0),
+  ('gear_replacement', '器材更換', '零件損壞更換', 0, 'package', 11)
+ON CONFLICT (id) DO NOTHING;
+
 -- 3. 建立保養紀錄表
 CREATE TABLE IF NOT EXISTS bike_maintenance (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   bike_id TEXT NOT NULL REFERENCES bikes(id) ON DELETE CASCADE,
   athlete_id BIGINT NOT NULL,
-  maintenance_type TEXT NOT NULL REFERENCES maintenance_types(id),
+  maintenance_type TEXT NOT NULL, -- 取消 REFERENCES 以支援多選與自訂字串
   service_date DATE NOT NULL DEFAULT CURRENT_DATE,
   mileage_at_service DOUBLE PRECISION NOT NULL,
   cost NUMERIC(10,2),
@@ -43,20 +49,28 @@ CREATE TABLE IF NOT EXISTS bike_maintenance (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 確認 other 欄位存在
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bike_maintenance' AND column_name='other') THEN
+    ALTER TABLE bike_maintenance ADD COLUMN other TEXT;
+  END IF;
+END $$;
+
 -- 4. 建立索引
 CREATE INDEX IF NOT EXISTS idx_bike_maintenance_bike_id ON bike_maintenance(bike_id);
 CREATE INDEX IF NOT EXISTS idx_bike_maintenance_athlete_id ON bike_maintenance(athlete_id);
-CREATE INDEX IF NOT EXISTS idx_bike_maintenance_type ON bike_maintenance(maintenance_type);
 
 -- 5. 啟用 RLS
 ALTER TABLE maintenance_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bike_maintenance ENABLE ROW LEVEL SECURITY;
 
--- 6. RLS 政策：maintenance_types 所有人可讀
+-- 6. RLS 政策 (先刪除後建立以防報錯)
+DROP POLICY IF EXISTS "Allow public read on maintenance_types" ON maintenance_types;
 CREATE POLICY "Allow public read on maintenance_types" ON maintenance_types
   FOR SELECT USING (true);
 
--- 7. RLS 政策：bike_maintenance 所有人可操作（簡化版）
+DROP POLICY IF EXISTS "Allow all on bike_maintenance" ON bike_maintenance;
 CREATE POLICY "Allow all on bike_maintenance" ON bike_maintenance
   FOR ALL USING (true) WITH CHECK (true);
 
