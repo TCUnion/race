@@ -176,16 +176,23 @@ const StravaConnect: React.FC = () => {
                 return;
             }
 
-            // 視窗關閉檢查
-            if (authWindowRef.current && authWindowRef.current.closed) {
-                const found = checkStoredData();
-                if (!found) {
+            // 用 try-catch 處理 COOP (Cross-Origin-Opener-Policy) 錯誤
+            try {
+                if (authWindowRef.current && authWindowRef.current.closed) {
+                    console.log('StravaConnect: 授權視窗已關閉，檢查暫存資料');
+                    const found = checkStoredData();
+                    if (found) {
+                        console.log('StravaConnect: 成功從暫存取得資料');
+                    }
                     stopPolling();
-                    // 不顯示錯誤，可能是透過 postMessage 接收
+                    return;
                 }
-                return;
+            } catch (e) {
+                // COOP 阻擋了 window.closed 檢查，這是正常的
+                // 繼續依賴 postMessage 或 localStorage 輪詢
             }
 
+            // 無論視窗檢查是否成功，都持續檢查 localStorage
             checkStoredData();
         }, CONFIG.pollingInterval);
     };

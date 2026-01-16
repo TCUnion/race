@@ -176,17 +176,31 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const startPolling = () => {
     const startTime = Date.now();
     pollingTimerRef.current = setInterval(() => {
+      // 超時檢查
       if (Date.now() - startTime > CONFIG.pollingTimeout) {
+        console.log('Navbar: 授權超時，停止輪詢');
         stopPolling();
         return;
       }
 
-      if (authWindowRef.current && authWindowRef.current.closed) {
-        checkStoredData();
-        stopPolling();
-        return;
+      // 用 try-catch 處理 COOP (Cross-Origin-Opener-Policy) 錯誤
+      // 當授權視窗來自不同 origin 時，無法檢查 window.closed 狀態
+      try {
+        if (authWindowRef.current && authWindowRef.current.closed) {
+          console.log('Navbar: 授權視窗已關閉，檢查暫存資料');
+          const found = checkStoredData();
+          if (found) {
+            console.log('Navbar: 成功從暫存取得資料');
+          }
+          stopPolling();
+          return;
+        }
+      } catch (e) {
+        // COOP 阻擋了 window.closed 檢查，這是正常的
+        // 繼續依賴 postMessage 或 localStorage 輪詢
       }
 
+      // 無論視窗檢查是否成功，都持續檢查 localStorage
       checkStoredData();
     }, CONFIG.pollingInterval);
   };
