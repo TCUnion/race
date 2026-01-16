@@ -53,21 +53,39 @@ BEGIN
   END IF;
 END $$;
 
--- 4. 建立索引
+-- 4. 建立自訂保養里程設定表
+CREATE TABLE IF NOT EXISTS bike_maintenance_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bike_id TEXT NOT NULL REFERENCES bikes(id) ON DELETE CASCADE,
+  maintenance_type_id TEXT NOT NULL REFERENCES maintenance_types(id) ON DELETE CASCADE,
+  custom_interval_km INTEGER NOT NULL,
+  athlete_id BIGINT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(bike_id, maintenance_type_id)
+);
+
+-- 5. 建立索引
 CREATE INDEX IF NOT EXISTS idx_bike_maintenance_bike_id ON bike_maintenance(bike_id);
 CREATE INDEX IF NOT EXISTS idx_bike_maintenance_athlete_id ON bike_maintenance(athlete_id);
+CREATE INDEX IF NOT EXISTS idx_bike_maintenance_settings_bike_id ON bike_maintenance_settings(bike_id);
 
--- 5. 啟用 RLS
+-- 6. 啟用 RLS
 ALTER TABLE maintenance_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bike_maintenance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bike_maintenance_settings ENABLE ROW LEVEL SECURITY;
 
--- 6. RLS 政策 (先刪除後建立以防報錯)
+-- 7. RLS 政策 (先刪除後建立以防報錯)
 DROP POLICY IF EXISTS "Allow public read on maintenance_types" ON maintenance_types;
 CREATE POLICY "Allow public read on maintenance_types" ON maintenance_types
   FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow all on bike_maintenance" ON bike_maintenance;
 CREATE POLICY "Allow all on bike_maintenance" ON bike_maintenance
+  FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on bike_maintenance_settings" ON bike_maintenance_settings;
+CREATE POLICY "Allow all on bike_maintenance_settings" ON bike_maintenance_settings
   FOR ALL USING (true) WITH CHECK (true);
 
 -- ====================================

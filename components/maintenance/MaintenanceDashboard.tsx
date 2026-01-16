@@ -13,7 +13,10 @@ import {
   DollarSign,
   MapPin,
   Trash2,
-  X
+  X,
+  Edit2,
+  Check,
+  Save
 } from 'lucide-react';
 
 // 保養狀態顏色
@@ -44,6 +47,7 @@ const MaintenanceDashboard: React.FC = () => {
     error,
     addMaintenanceRecord,
     deleteMaintenanceRecord,
+    updateMaintenanceSetting,
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount
@@ -52,10 +56,32 @@ const MaintenanceDashboard: React.FC = () => {
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'reminders' | 'history'>('reminders');
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [editInterval, setEditInterval] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectedBike = bikes.find(b => b.id === selectedBikeId);
   const reminders = selectedBike ? getMaintenanceReminders(selectedBike) : [];
   const bikeRecords = selectedBike ? getRecordsByBike(selectedBike.id) : [];
+
+  const handleStartEdit = (typeId: string, currentInterval: number) => {
+    setEditingTypeId(typeId);
+    setEditInterval(currentInterval.toString());
+  };
+
+  const handleSaveInterval = async (bikeId: string, typeId: string) => {
+    if (!editInterval || isNaN(parseInt(editInterval))) return;
+
+    setIsSaving(true);
+    try {
+      await updateMaintenanceSetting(bikeId, typeId, parseInt(editInterval));
+      setEditingTypeId(null);
+    } catch (err) {
+      console.error('儲存里程失敗:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // 新增保養紀錄表單狀態
   const [formData, setFormData] = useState({
@@ -280,7 +306,43 @@ const MaintenanceDashboard: React.FC = () => {
                             </div>
                             <div className="flex justify-between text-xs opacity-40">
                               <span>0 km</span>
-                              <span>{reminder.type.default_interval_km.toLocaleString()} km</span>
+                              <div className="flex items-center gap-1 group/interval">
+                                {editingTypeId === reminder.type.id ? (
+                                  <div className="flex items-center gap-1 bg-black/40 rounded-lg p-1 -m-1">
+                                    <input
+                                      type="number"
+                                      value={editInterval}
+                                      onChange={(e) => setEditInterval(e.target.value)}
+                                      className="w-16 bg-transparent border-none text-right font-mono font-bold text-white focus:ring-0 p-0 text-xs"
+                                      autoFocus
+                                    />
+                                    <button
+                                      onClick={() => handleSaveInterval(selectedBike.id, reminder.type.id)}
+                                      disabled={isSaving}
+                                      className="text-green-400 hover:text-green-300 transition-colors"
+                                    >
+                                      {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingTypeId(null)}
+                                      className="text-red-400 hover:text-red-300 transition-colors"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <span>{reminder.nextServiceMileage.toLocaleString()} km (每 {((reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0))).toLocaleString()} km)</span>
+                                    <button
+                                      onClick={() => handleStartEdit(reminder.type.id, (reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0)))}
+                                      className="opacity-0 group-hover/interval:opacity-100 p-0.5 hover:bg-white/10 rounded transition-all"
+                                      title="編輯里程間隔"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>

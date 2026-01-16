@@ -43,6 +43,15 @@ export interface BikeMaintenanceRecord {
   maintenance_type_info?: MaintenanceType;
 }
 
+// 自訂保養里程設定（對應 bike_maintenance_settings 表）
+export interface MaintenanceSetting {
+  id: string;
+  bike_id: string;
+  maintenance_type_id: string;
+  custom_interval_km: number;
+  athlete_id: number;
+}
+
 // 保養狀態
 export type MaintenanceStatus = 'ok' | 'due_soon' | 'overdue';
 
@@ -80,6 +89,7 @@ export const useMaintenance = () => {
   const [bikes, setBikes] = useState<StravaBike[]>([]);
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [records, setRecords] = useState<BikeMaintenanceRecord[]>([]);
+  const [settings, setSettings] = useState<MaintenanceSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,8 +114,8 @@ export const useMaintenance = () => {
         return;
       }
 
-      // 並行載入腳踏車、保養類型、保養紀錄
-      const [bikesResult, typesResult, recordsResult] = await Promise.all([
+      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定
+      const [bikesResult, typesResult, recordsResult, settingsResult] = await Promise.all([
         supabase
           .from('bikes')
           .select('*')
@@ -120,16 +130,22 @@ export const useMaintenance = () => {
           .from('bike_maintenance')
           .select('*')
           .eq('athlete_id', athleteId)
-          .order('service_date', { ascending: false })
+          .order('service_date', { ascending: false }),
+        supabase
+          .from('bike_maintenance_settings')
+          .select('*')
+          .eq('athlete_id', athleteId)
       ]);
 
       if (bikesResult.error) throw bikesResult.error;
       if (typesResult.error) throw typesResult.error;
       if (recordsResult.error) throw recordsResult.error;
+      if (settingsResult.error) throw settingsResult.error;
 
       setBikes(bikesResult.data || []);
       setMaintenanceTypes(typesResult.data || []);
       setRecords(recordsResult.data || []);
+      setSettings(settingsResult.data || []);
     } catch (err: any) {
       console.error('載入保養資料失敗:', err);
       setError(err.message);
@@ -152,6 +168,38 @@ export const useMaintenance = () => {
       if (error) throw error;
 
       setRecords(prev => [data, ...prev]);
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  // 更新自訂保養里程
+  const updateMaintenanceSetting = async (bikeId: string, typeId: string, intervalKm: number) => {
+    try {
+      const athleteId = getAthleteId();
+      if (!athleteId) throw new Error('Athlete ID not found');
+
+      const { data, error } = await supabase
+        .from('bike_maintenance_settings')
+        .upsert({
+          bike_id: bikeId,
+          maintenance_type_id: typeId,
+          custom_interval_km: intervalKm,
+          athlete_id: athleteId
+        }, {
+          onConflict: 'bike_id,maintenance_type_id'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSettings(prev => {
+        const remaining = prev.filter(s => !(s.bike_id === bikeId && s.maintenance_type_id === typeId));
+        return [...remaining, data];
+      });
       return data;
     } catch (err: any) {
       setError(err.message);
@@ -191,10 +239,14 @@ export const useMaintenance = () => {
       const lastService = bikeRecords.find(r => r.maintenance_type === type.id);
       const lastServiceMileage = lastService?.mileage_at_service || 0;
 
+      // 檢查是否有自訂里程設定
+      const setting = settings.find(s => s.bike_id === bike.id && s.maintenance_type_id === type.id);
+      const intervalKm = setting ? setting.custom_interval_km : type.default_interval_km;
+
       const { status, percentageUsed, mileageSinceService } = calculateMaintenanceStatus(
         currentMileageKm,
         lastServiceMileage,
-        type.default_interval_km
+        intervalKm
       );
 
       return {
@@ -230,6 +282,7 @@ export const useMaintenance = () => {
     error,
     addMaintenanceRecord,
     deleteMaintenanceRecord,
+    updateMaintenanceSetting,
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount,
