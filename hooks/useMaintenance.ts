@@ -38,6 +38,7 @@ export interface BikeMaintenanceRecord {
   is_diy: boolean;
   created_at: string;
   updated_at: string;
+  other?: string; // 其他資訊欄位
   // 關聯資料
   maintenance_type_info?: MaintenanceType;
 }

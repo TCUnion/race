@@ -95,6 +95,7 @@ export interface MaintenanceRecord {
   description: string;
   service_type: 'Shop' | 'DIY';
   items: MaintenanceItem[];
+  other?: string; // 其他資訊欄位
   created_at: string;
 }
 

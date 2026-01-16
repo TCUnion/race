@@ -59,11 +59,12 @@ const MaintenanceDashboard: React.FC = () => {
 
   // 新增保養紀錄表單狀態
   const [formData, setFormData] = useState({
-    maintenance_type: '',
+    maintenance_type: [] as string[],
     service_date: new Date().toISOString().split('T')[0],
     cost: '',
     shop_name: '',
     notes: '',
+    other: '',
     is_diy: false
   });
 
@@ -75,24 +76,37 @@ const MaintenanceDashboard: React.FC = () => {
     if (!athleteData) return;
     const athlete = JSON.parse(athleteData);
 
+    // 取得選取的保養類型，若勾選全車保養，合併其他選項
+    const selectedTypes = formData.maintenance_type as string[];
+    let maintenanceTypeValue = '';
+    if (selectedTypes.includes('full')) {
+      // 合併所有其他選取的項目（排除 full 本身）
+      const merged = selectedTypes.filter(t => t !== 'full').join(', ');
+      maintenanceTypeValue = merged ? `全車保養 (${merged})` : '全車保養';
+    } else {
+      maintenanceTypeValue = selectedTypes.join(', ');
+    }
+
     await addMaintenanceRecord({
       bike_id: selectedBike.id,
       athlete_id: Number(athlete.id),
-      maintenance_type: formData.maintenance_type,
+      maintenance_type: maintenanceTypeValue,
       service_date: formData.service_date,
       mileage_at_service: selectedBike.converted_distance || (selectedBike.distance / 1000),
       cost: formData.cost ? parseFloat(formData.cost) : undefined,
       shop_name: formData.shop_name || undefined,
       notes: formData.notes || undefined,
+      other: formData.other || undefined,
       is_diy: formData.is_diy
     });
 
     setFormData({
-      maintenance_type: '',
+      maintenance_type: [],
       service_date: new Date().toISOString().split('T')[0],
       cost: '',
       shop_name: '',
       notes: '',
+      other: '',
       is_diy: false
     });
     setIsAddModalOpen(false);
@@ -152,8 +166,8 @@ const MaintenanceDashboard: React.FC = () => {
                   key={bike.id}
                   onClick={() => setSelectedBikeId(bike.id)}
                   className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected
-                      ? 'bg-orange-600/20 border-orange-500/50 shadow-lg shadow-orange-900/20'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    ? 'bg-orange-600/20 border-orange-500/50 shadow-lg shadow-orange-900/20'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
                     }`}
                 >
                   <div className="flex items-start justify-between">
@@ -212,8 +226,8 @@ const MaintenanceDashboard: React.FC = () => {
                   <button
                     onClick={() => setActiveTab('reminders')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'reminders'
-                        ? 'bg-orange-600 text-white'
-                        : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
                   >
                     保養提醒
@@ -221,8 +235,8 @@ const MaintenanceDashboard: React.FC = () => {
                   <button
                     onClick={() => setActiveTab('history')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'history'
-                        ? 'bg-orange-600 text-white'
-                        : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
                   >
                     歷史紀錄
@@ -259,7 +273,7 @@ const MaintenanceDashboard: React.FC = () => {
                             <div className="h-2 bg-black/20 rounded-full overflow-hidden">
                               <div
                                 className={`h-full transition-all ${reminder.status === 'overdue' ? 'bg-red-500' :
-                                    reminder.status === 'due_soon' ? 'bg-yellow-500' : 'bg-green-500'
+                                  reminder.status === 'due_soon' ? 'bg-yellow-500' : 'bg-green-500'
                                   }`}
                                 style={{ width: `${Math.min(reminder.percentageUsed, 100)}%` }}
                               />
@@ -355,18 +369,52 @@ const MaintenanceDashboard: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養項目</label>
-                <select
-                  value={formData.maintenance_type}
-                  onChange={e => setFormData(prev => ({ ...prev, maintenance_type: e.target.value }))}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                >
-                  <option value="">請選擇</option>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養項目（可多選）</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {/* 全車保養選項 */}
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      value="full"
+                      checked={formData.maintenance_type.includes('full')}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setFormData(prev => {
+                          const types = prev.maintenance_type.filter((t: string) => t !== 'full');
+                          if (checked) types.push('full');
+                          return { ...prev, maintenance_type: types };
+                        });
+                      }}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
+                    />
+                    <span className="text-white">全車保養</span>
+                  </label>
+                  {/* 其他保養項目 */}
                   {maintenanceTypes.map(type => (
-                    <option key={type.id} value={type.id}>{type.name}</option>
+                    <label key={type.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        value={type.id}
+                        checked={formData.maintenance_type.includes(type.id)}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setFormData(prev => {
+                            const types = [...prev.maintenance_type];
+                            if (checked) {
+                              if (!types.includes(type.id)) types.push(type.id);
+                            } else {
+                              const idx = types.indexOf(type.id);
+                              if (idx > -1) types.splice(idx, 1);
+                            }
+                            return { ...prev, maintenance_type: types };
+                          });
+                        }}
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
+                      />
+                      <span className="text-white">{type.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
 
               <div>
@@ -411,7 +459,16 @@ const MaintenanceDashboard: React.FC = () => {
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
                 />
               </div>
-
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">其他（選填）</label>
+                <input
+                  type="text"
+                  value={formData.other || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, other: e.target.value }))}
+                  placeholder="其他資訊"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
