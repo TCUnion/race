@@ -38,6 +38,7 @@ const CONFIG = {
     'https://n8n.criterium.tw',
     'https://criterium.tw',
     'https://strava.criterium.tw',
+    'https://strava.criterium.tw',
     'https://race.criterium.tw',
     'https://tcu.criterium.tw',
     'https://www.criterium.tw',
@@ -127,7 +128,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     // 同步 Token 到後端
     if (athleteData.access_token) {
       try {
-        await fetch('https://race.criterium.tw/api/auth/strava-token', {
+        await fetch('https://strava.criterium.tw/api/auth/strava-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -119,7 +119,7 @@ const StravaConnect: React.FC = () => {
             try {
                 // FIXME: 確保後端 URL 正確，這裡先假定在同個 domain 或使用相對路徑
                 // 如果是 GitHub Pages 部署，這裡可能需要絕對路徑或是透過 API Proxy
-                await fetch('https://race.criterium.tw/api/auth/strava-token', {
+                await fetch('https://strava.criterium.tw/api/auth/strava-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
