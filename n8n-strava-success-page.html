@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strava 授權成功</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fc4c02 0%, #e34402 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+        }
+
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: pop 0.5s ease-out;
+        }
+
+        .checkmark svg {
+            width: 40px;
+            height: 40px;
+            color: #fc4c02;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .countdown {
+            margin-top: 20px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="checkmark">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+            </svg>
+        </div>
+        <h1>授權成功！</h1>
+        <p>您的 Strava 帳號已成功連結</p>
+        <p class="countdown">視窗將在 <span id="timer">3</span> 秒後自動關閉...</p>
+    </div>
+
+    <script>
+        // ========== 核心：傳送資料給父視窗 ==========
+        // 這段腳本會透過 postMessage 將選手資料傳回給開啟此視窗的頁面
+
+        const athleteData = {
+            id: '{{ $json.athlete_id }}',
+            firstname: '{{ $json.firstname }}',
+            lastname: '{{ $json.lastname }}',
+            profile: '{{ $json.profile }}',
+            profile_medium: '{{ $json.profile_medium }}',
+            access_token: '{{ $json.access_token }}',
+            refresh_token: '{{ $json.refresh_token }}',
+            expires_at: {{ $json.expires_at }}
+    };
+
+        console.log('準備傳送授權資料:', athleteData);
+
+        // 方法 1: postMessage（主要方法）
+        if (window.opener) {
+            try {
+                window.opener.postMessage({
+                    type: 'STRAVA_AUTH_SUCCESS',
+                    athlete: athleteData
+                }, '*');
+                console.log('postMessage 已發送');
+            } catch (e) {
+                console.error('postMessage 發送失敗:', e);
+            }
+        } else {
+            console.warn('找不到 opener 視窗');
+        }
+
+        // 方法 2: localStorage 暫存（備用方法）
+        // 這個方法適用於同源情況，作為備用
+        try {
+            localStorage.setItem('strava_athlete_meta_temp', JSON.stringify(athleteData));
+            console.log('localStorage 暫存已設置');
+        } catch (e) {
+            console.warn('localStorage 設置失敗（跨域限制）:', e);
+        }
+
+        // 倒數計時並關閉視窗
+        let seconds = 3;
+        const timerEl = document.getElementById('timer');
+        const countdown = setInterval(() => {
+            seconds--;
+            timerEl.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                window.close();
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>
