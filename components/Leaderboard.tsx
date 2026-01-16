@@ -274,7 +274,7 @@ const Leaderboard: React.FC = () => {
       </div>
 
       {/* 全局篩選與排序 */}
-      <div className="w-full sticky top-[90px] z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-tsu-blue/5 mb-16">
+      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-tsu-blue/5 mb-16 z-30">
         <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-center">
           <div className="flex-1 relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-tsu-blue transition-colors" />
