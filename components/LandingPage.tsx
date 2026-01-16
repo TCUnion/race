@@ -285,15 +285,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       </li>
                     ))}
                   </ul>
-                  <a
-                    href={segment.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all shadow-md active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">link</span>
-                    <span>在 Strava 查看路段</span>
-                  </a>
+                  {segment?.link && (
+                    <a
+                      href={segment.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-bold text-xs uppercase hover:brightness-110 transition-all shadow-md active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">link</span>
+                      <span>在 Strava 查看路段</span>
+                    </a>
+                  )}
                 </div>
               )}
             </section>
