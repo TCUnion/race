@@ -231,6 +231,29 @@ export const useMaintenance = () => {
     }
   };
 
+  // 更新保養紀錄
+  const updateMaintenanceRecord = async (
+    id: string,
+    updates: Partial<Omit<BikeMaintenanceRecord, 'id' | 'created_at' | 'updated_at'>>
+  ) => {
+    try {
+      const { data, error } = await supabase
+        .from('bike_maintenance')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setRecords(prev => prev.map(r => r.id === id ? data : r));
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   // 更新腳踏車資訊
   const updateBike = async (bikeId: string, updates: Partial<StravaBike>) => {
     try {
@@ -263,7 +286,11 @@ export const useMaintenance = () => {
 
     return maintenanceTypes.map(type => {
       // 找到此類型的最後一次保養紀錄
-      const lastService = bikeRecords.find(r => r.maintenance_type === type.id);
+      const lastService = bikeRecords.find(r =>
+        r.maintenance_type === type.id ||
+        r.maintenance_type.includes(type.id) ||
+        r.maintenance_type.includes('全車保養')
+      );
       const lastServiceMileage = lastService?.mileage_at_service || 0;
 
       // 檢查是否有自訂里程設定
@@ -309,6 +336,7 @@ export const useMaintenance = () => {
     error,
     addMaintenanceRecord,
     deleteMaintenanceRecord,
+    updateMaintenanceRecord,
     updateMaintenanceSetting,
     updateBike,
     getRecordsByBike,
