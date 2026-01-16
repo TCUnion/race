@@ -1,5 +1,5 @@
 -- ====================================
--- 腳踏車保養紀錄系統 - 資料庫 Migration (等冪版本)
+-- 腳踏車保養紀錄系統 - 資料庫 Migration (等冪版本 v1.1)
 -- 請在 Zeabur Supabase Studio SQL Editor 中執行此腳本
 -- ====================================
 
@@ -16,22 +16,15 @@ CREATE TABLE IF NOT EXISTS maintenance_types (
 -- 2. 插入預設保養項目
 INSERT INTO maintenance_types (id, name, description, default_interval_km, icon, sort_order) VALUES
   ('chain', '鏈條更換', '建議每 3,000 公里更換', 3000, 'link', 1),
-  ('brake_pads', '煞車皮更換', '建議每 5,000 公里更換', 5000, 'disc', 2),
+  ('brake_pads', '來令片/煞車皮更換', '建議每 5,000 公里更換', 5000, 'disc', 2),
   ('tires', '輪胎更換', '建議每 8,000 公里更換', 8000, 'circle', 3),
-  ('derailleur', '變速調整', '建議每 1,000 公里調整', 1000, 'settings', 4),
-  ('full_service', '全車保養', '建議每 2,000 公里保養', 2000, 'wrench', 5),
-  ('pedals', '踏板保養', '建議每 5,000 公里保養', 5000, 'footprints', 6),
-  ('wheels', '輪框檢查', '建議每 3,000 公里檢查', 3000, 'target', 7),
-  ('cables', '線組更換', '建議每 6,000 公里更換', 6000, 'cable', 8),
-  ('cassette', '飛輪更換', '建議每 10,000 公里更換', 10000, 'cog', 9),
-  ('bar_tape', '把帶更換', '建議每 4,000 公里更換', 4000, 'grip-horizontal', 10)
-ON CONFLICT (id) DO NOTHING;
-
--- 新增保養項目 (針對使用者的新需求)
-INSERT INTO maintenance_types (id, name, description, default_interval_km, icon, sort_order) VALUES
-  ('chain_oil', '鏈條上油', '定期清潔與上油', 500, 'droplets', 0),
-  ('gear_replacement', '器材更換', '零件損壞更換', 0, 'package', 11)
-ON CONFLICT (id) DO NOTHING;
+  ('bar_tape', '把帶更換', '建議每 4,000 公里更換', 4000, 'grip-horizontal', 10),
+  ('full_service', '全車保養', '全車清潔與功能檢查', 2000, 'wrench', 5),
+  ('gear_replacement', '器材更換', '零件損壞更換', 0, 'package', 11),
+  ('chain_oil', '鏈條上油', '定期清潔與上油', 500, 'droplets', 0)
+ON CONFLICT (id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  description = EXCLUDED.description;
 
 -- 3. 建立保養紀錄表
 CREATE TABLE IF NOT EXISTS bike_maintenance (
@@ -48,6 +41,9 @@ CREATE TABLE IF NOT EXISTS bike_maintenance (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- 重要：移除舊版的外鍵約束，以支援多選項目（如：全車保養 (鏈條, 煞車)）
+ALTER TABLE bike_maintenance DROP CONSTRAINT IF EXISTS bike_maintenance_maintenance_type_fkey;
 
 -- 確認 other 欄位存在
 DO $$ 
