@@ -260,17 +260,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {/* Dashboard Header */}
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 text-tsu-blue-light">
               <MapPin className="w-3.5 h-3.5" />
               <span className="text-[10px] font-bold uppercase tracking-widest">TSU Challenge Series</span>
             </div>
-            <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight">
-              個人儀表板
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-normal">
-              追蹤您參與的所有路段挑戰。
-            </p>
+            <div className="flex items-center gap-5">
+              {athlete && (
+                <div className="relative shrink-0">
+                  <img
+                    src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+                    alt={athlete.firstname}
+                    className="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white dark:border-slate-800 shadow-xl object-cover"
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-tsu-blue text-white rounded-full p-1.5 shadow-lg border-2 border-white dark:border-slate-900">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                </div>
+              )}
+              <div>
+                <h1 className="text-slate-900 dark:text-white text-2xl md:text-4xl font-black leading-tight tracking-tight uppercase italic">
+                  {athlete ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : '個人儀表板'}
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-bold uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  {athlete ? `Strava Athlete #${athlete.id}` : '載入中...'}
+                </p>
+              </div>
+            </div>
           </div>
           <div className="flex flex-col gap-3 w-full md:w-auto">
             <div className="flex flex-col sm:flex-row gap-3">

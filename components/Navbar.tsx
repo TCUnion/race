@@ -261,24 +261,18 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </nav>
 
           {athlete ? (
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
-              <div className="text-right">
-                <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">
-                  {(athlete.firstname || athlete.lastname)
-                    ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim()
-                    : (athlete.firstName || athlete.lastName)
-                      ? `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim()
-                      : athlete.id}
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col items-end">
+                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter transition-all">
+                  {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : athlete.id}
                 </p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider flex items-center justify-end gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                  Connected
-                </p>
+                <p className="text-[8px] text-green-500 font-bold uppercase tracking-widest leading-none">Connected</p>
               </div>
               <img
                 src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                alt={athlete.firstname || athlete.firstName || 'Profile'}
-                className="w-10 h-10 rounded-full border-2 border-strava-orange hover:scale-110 transition-transform cursor-pointer"
+                alt={athlete.firstname || 'Profile'}
+                className="w-10 h-10 rounded-full border-2 border-tsu-blue shadow-md cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => onNavigate(ViewType.DASHBOARD)}
               />
             </div>
           ) : (
