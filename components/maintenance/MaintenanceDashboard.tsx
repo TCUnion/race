@@ -1,138 +1,437 @@
 import React, { useState } from 'react';
-import { useMaintenance } from '../../hooks/useMaintenance';
-import VehicleCard from './VehicleCard';
-import MaintenanceTable from './MaintenanceTable';
-import AddRecordModal from './AddRecordModal';
-import AddVehicleModal from './AddVehicleModal';
-import { Plus, Car, ArrowLeft, Loader2, Wrench, X, Calendar } from 'lucide-react';
+import { useMaintenance, StravaBike, MaintenanceReminder } from '../../hooks/useMaintenance';
+import {
+  Wrench,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Plus,
+  Bike,
+  ChevronRight,
+  Calendar,
+  DollarSign,
+  MapPin,
+  Trash2,
+  X
+} from 'lucide-react';
+
+// 保養狀態顏色
+const statusColors = {
+  ok: 'bg-green-500/20 text-green-400 border-green-500/30',
+  due_soon: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  overdue: 'bg-red-500/20 text-red-400 border-red-500/30'
+};
+
+const statusIcons = {
+  ok: CheckCircle2,
+  due_soon: Clock,
+  overdue: AlertTriangle
+};
+
+const statusLabels = {
+  ok: '正常',
+  due_soon: '即將到期',
+  overdue: '已超期'
+};
 
 const MaintenanceDashboard: React.FC = () => {
-  const { vehicles, loading, error, addMaintenanceRecord, addVehicle, refresh } = useMaintenance();
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
-  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
-  const [activeVehicleIdForModal, setActiveVehicleIdForModal] = useState<string | null>(null);
+  const {
+    bikes,
+    maintenanceTypes,
+    records,
+    loading,
+    error,
+    addMaintenanceRecord,
+    deleteMaintenanceRecord,
+    getRecordsByBike,
+    getMaintenanceReminders,
+    getAlertCount
+  } = useMaintenance();
 
-  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+  const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'reminders' | 'history'>('reminders');
 
-  const handleOpenRecordModal = (id: string) => {
-    setActiveVehicleIdForModal(id);
-    setIsRecordModalOpen(true);
+  const selectedBike = bikes.find(b => b.id === selectedBikeId);
+  const reminders = selectedBike ? getMaintenanceReminders(selectedBike) : [];
+  const bikeRecords = selectedBike ? getRecordsByBike(selectedBike.id) : [];
+
+  // 新增保養紀錄表單狀態
+  const [formData, setFormData] = useState({
+    maintenance_type: '',
+    service_date: new Date().toISOString().split('T')[0],
+    cost: '',
+    shop_name: '',
+    notes: '',
+    is_diy: false
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBike) return;
+
+    const athleteData = localStorage.getItem('strava_athlete_meta');
+    if (!athleteData) return;
+    const athlete = JSON.parse(athleteData);
+
+    await addMaintenanceRecord({
+      bike_id: selectedBike.id,
+      athlete_id: Number(athlete.id),
+      maintenance_type: formData.maintenance_type,
+      service_date: formData.service_date,
+      mileage_at_service: selectedBike.converted_distance || (selectedBike.distance / 1000),
+      cost: formData.cost ? parseFloat(formData.cost) : undefined,
+      shop_name: formData.shop_name || undefined,
+      notes: formData.notes || undefined,
+      is_diy: formData.is_diy
+    });
+
+    setFormData({
+      maintenance_type: '',
+      service_date: new Date().toISOString().split('T')[0],
+      cost: '',
+      shop_name: '',
+      notes: '',
+      is_diy: false
+    });
+    setIsAddModalOpen(false);
   };
 
   if (loading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-100 p-6 rounded-2xl text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+          <h3 className="text-lg font-bold mb-2">載入失敗</h3>
+          <p className="text-red-200/60">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-900/40">
-              <Wrench className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">車輛保養紀錄</h1>
-          </div>
-          <p className="text-blue-200/50 font-medium">追蹤您愛車的每一次保養細節與費用</p>
+      {/* 標題 */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="bg-orange-600 p-2.5 rounded-2xl shadow-lg shadow-orange-900/40">
+          <Wrench className="w-6 h-6 text-white" />
         </div>
-        
-        {!selectedVehicleId && (
-          <button 
-            onClick={() => setIsVehicleModalOpen(true)}
-            className="flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-2xl font-bold hover:bg-blue-50 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            新增車輛
-          </button>
-        )}
+        <div>
+          <h1 className="text-2xl font-extrabold text-white">腳踏車保養紀錄</h1>
+          <p className="text-orange-200/50 text-sm">根據 Strava 里程追蹤保養狀態</p>
+        </div>
       </div>
 
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-100 p-4 rounded-2xl mb-8 flex items-center gap-3">
-          <div className="bg-red-500 rounded-full p-1">
-            <X className="w-4 h-4 text-white" />
-          </div>
-          {error}
-        </div>
-      )}
-
-      {selectedVehicleId && selectedVehicle ? (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <button
-            onClick={() => setSelectedVehicleId(null)}
-            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 font-bold group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            返回列表
-          </button>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <VehicleCard
-                vehicle={selectedVehicle}
-                onViewDetails={() => {}}
-                onAddRecord={handleOpenRecordModal}
-              />
-            </div>
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex justify-between items-end">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-500" />
-                  保養歷史明細
-                </h2>
-              </div>
-              <MaintenanceTable records={selectedVehicle.maintenance_records || []} />
-            </div>
-          </div>
+      {bikes.length === 0 ? (
+        <div className="text-center py-16 bg-white/5 border border-white/10 rounded-3xl">
+          <Bike className="w-16 h-16 text-orange-200/20 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">尚無腳踏車資料</h3>
+          <p className="text-orange-200/40">請確認您的 Strava 帳號已連結並設定腳踏車</p>
         </div>
       ) : (
-        <>
-          {vehicles.length === 0 ? (
-            <div className="text-center py-24 bg-white/5 border border-white/10 rounded-[2.5rem] border-dashed">
-              <Car className="w-16 h-16 text-blue-200/10 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">尚未新增任何車輛</h3>
-              <p className="text-blue-200/40 mb-8">開始記錄您的第一台愛車，輕鬆管理保養時程</p>
-              <button 
-                onClick={() => setIsVehicleModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-xl shadow-blue-900/40"
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* 左側：腳踏車列表 */}
+          <div className="lg:col-span-1 space-y-4">
+            <h2 className="text-sm font-bold text-orange-200/60 uppercase tracking-wider mb-4">
+              我的腳踏車
+            </h2>
+            {bikes.map(bike => {
+              const alerts = getAlertCount(bike);
+              const isSelected = selectedBikeId === bike.id;
+              return (
+                <button
+                  key={bike.id}
+                  onClick={() => setSelectedBikeId(bike.id)}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected
+                      ? 'bg-orange-600/20 border-orange-500/50 shadow-lg shadow-orange-900/20'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold text-white">{bike.name}</h3>
+                      <p className="text-sm text-orange-200/50">
+                        {(bike.converted_distance || bike.distance / 1000).toLocaleString()} km
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {alerts.overdue > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {alerts.overdue}
+                        </span>
+                      )}
+                      {alerts.dueSoon > 0 && (
+                        <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {alerts.dueSoon}
+                        </span>
+                      )}
+                      <ChevronRight className={`w-4 h-4 text-orange-200/40 ${isSelected ? 'rotate-90' : ''}`} />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 右側：保養詳情 */}
+          <div className="lg:col-span-3">
+            {selectedBike ? (
+              <div className="space-y-6">
+                {/* 車輛資訊卡 */}
+                <div className="bg-gradient-to-br from-orange-600/20 to-orange-900/20 border border-orange-500/30 rounded-3xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">{selectedBike.name}</h2>
+                      <p className="text-orange-200/60">
+                        總里程：<span className="text-white font-mono font-bold">
+                          {(selectedBike.converted_distance || selectedBike.distance / 1000).toLocaleString()}
+                        </span> km
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsAddModalOpen(true)}
+                      className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      新增保養
+                    </button>
+                  </div>
+                </div>
+
+                {/* 標籤切換 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setActiveTab('reminders')}
+                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'reminders'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
+                      }`}
+                  >
+                    保養提醒
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('history')}
+                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'history'
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
+                      }`}
+                  >
+                    歷史紀錄
+                  </button>
+                </div>
+
+                {/* 保養提醒列表 */}
+                {activeTab === 'reminders' && (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {reminders.map(reminder => {
+                      const StatusIcon = statusIcons[reminder.status];
+                      return (
+                        <div
+                          key={reminder.type.id}
+                          className={`p-4 rounded-2xl border ${statusColors[reminder.status]}`}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-bold text-white">{reminder.type.name}</h4>
+                              <p className="text-sm opacity-60">{reminder.type.description}</p>
+                            </div>
+                            <div className={`flex items-center gap-1 text-sm font-bold`}>
+                              <StatusIcon className="w-4 h-4" />
+                              {statusLabels[reminder.status]}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="opacity-60">距上次保養</span>
+                              <span className="font-mono font-bold">
+                                {reminder.mileageSinceService.toLocaleString()} km
+                              </span>
+                            </div>
+                            <div className="h-2 bg-black/20 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all ${reminder.status === 'overdue' ? 'bg-red-500' :
+                                    reminder.status === 'due_soon' ? 'bg-yellow-500' : 'bg-green-500'
+                                  }`}
+                                style={{ width: `${Math.min(reminder.percentageUsed, 100)}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs opacity-40">
+                              <span>0 km</span>
+                              <span>{reminder.type.default_interval_km.toLocaleString()} km</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 歷史紀錄列表 */}
+                {activeTab === 'history' && (
+                  <div className="space-y-3">
+                    {bikeRecords.length === 0 ? (
+                      <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/10">
+                        <Calendar className="w-12 h-12 text-orange-200/20 mx-auto mb-3" />
+                        <p className="text-orange-200/40">尚無保養紀錄</p>
+                      </div>
+                    ) : (
+                      bikeRecords.map(record => {
+                        const type = maintenanceTypes.find(t => t.id === record.maintenance_type);
+                        return (
+                          <div
+                            key={record.id}
+                            className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="bg-orange-600/20 p-2 rounded-xl">
+                                <Wrench className="w-5 h-5 text-orange-400" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-white">{type?.name || record.maintenance_type}</h4>
+                                <div className="flex items-center gap-3 text-sm text-orange-200/50">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {record.service_date}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {record.mileage_at_service.toLocaleString()} km
+                                  </span>
+                                  {record.cost && (
+                                    <span className="flex items-center gap-1">
+                                      <DollarSign className="w-3 h-3" />
+                                      ${record.cost}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => deleteMaintenanceRecord(record.id)}
+                              className="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white/5 border border-white/10 rounded-3xl">
+                <Bike className="w-16 h-16 text-orange-200/20 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">請選擇一台腳踏車</h3>
+                <p className="text-orange-200/40">從左側列表選擇要查看的腳踏車</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 新增保養紀錄 Modal */}
+      {isAddModalOpen && selectedBike && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">新增保養紀錄</h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-all"
               >
-                立即新增車輛
+                <X className="w-5 h-5 text-white/60" />
               </button>
             </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {vehicles.map(vehicle => (
-                <VehicleCard
-                  key={vehicle.id}
-                  vehicle={vehicle}
-                  onViewDetails={(id) => setSelectedVehicleId(id)}
-                  onAddRecord={handleOpenRecordModal}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養項目</label>
+                <select
+                  value={formData.maintenance_type}
+                  onChange={e => setFormData(prev => ({ ...prev, maintenance_type: e.target.value }))}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="">請選擇</option>
+                  {maintenanceTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
+                <input
+                  type="date"
+                  value={formData.service_date}
+                  onChange={e => setFormData(prev => ({ ...prev, service_date: e.target.value }))}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
                 />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+              </div>
 
-      {activeVehicleIdForModal && (
-        <AddRecordModal
-          vehicleId={activeVehicleIdForModal}
-          isOpen={isRecordModalOpen}
-          onClose={() => setIsRecordModalOpen(false)}
-          onSubmit={addMaintenanceRecord}
-        />
-      )}
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">費用 (選填)</label>
+                <input
+                  type="number"
+                  value={formData.cost}
+                  onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
+                  placeholder="0"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
 
-      <AddVehicleModal
-        isOpen={isVehicleModalOpen}
-        onClose={() => setIsVehicleModalOpen(false)}
-        onSubmit={addVehicle}
-      />
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">店家名稱 (選填)</label>
+                <input
+                  type="text"
+                  value={formData.shop_name}
+                  onChange={e => setFormData(prev => ({ ...prev, shop_name: e.target.value }))}
+                  placeholder="例：永興車行"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 (選填)</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
+                />
+              </div>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_diy}
+                  onChange={e => setFormData(prev => ({ ...prev, is_diy: e.target.checked }))}
+                  className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
+                />
+                <span className="text-white">自己 DIY 保養</span>
+              </label>
+
+              <button
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
+              >
+                儲存紀錄
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
