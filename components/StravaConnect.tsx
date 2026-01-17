@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, RefreshCw } from 'lucide-react';
+import Check from 'lucide-react/dist/esm/icons/check';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import StravaLogo from './StravaLogo';
 
 interface StravaAthlete {
