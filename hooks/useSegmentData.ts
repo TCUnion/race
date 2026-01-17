@@ -211,21 +211,26 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 return;
             }
 
-            // 1. 直接從 Supabase 抓取所有成績資料
+            // 1. & 2. 並行請求：直接從 Supabase 抓取所有成績資料 與 報名資料
             const segmentIds = activeSegments.map(s => s.id);
-            const { data: allEfforts, error: effortsError } = await supabase
-                .from('segment_efforts')
-                .select('*')
-                .in('segment_id', segmentIds)
-                .order('elapsed_time', { ascending: true });
+            const [effortsResult, registrationsResult] = await Promise.all([
+                supabase
+                    .from('segment_efforts')
+                    .select('*')
+                    .in('segment_id', segmentIds)
+                    .order('elapsed_time', { ascending: true }),
+                supabase
+                    .from('registrations')
+                    .select('segment_id, strava_athlete_id, number, team, athlete_name, athlete_profile')
+                    .in('segment_id', segmentIds)
+            ]);
+
+            const { data: allEfforts, error: effortsError } = effortsResult;
+            const { data: allRegData, error: regError } = registrationsResult;
 
             if (effortsError) throw effortsError;
-
-            // 2. 抓取所有報名資料（用於補強車隊、號碼布與大頭照）
-            const { data: allRegData } = await supabase
-                .from('registrations')
-                .select('segment_id, strava_athlete_id, number, team, athlete_name, athlete_profile')
-                .in('segment_id', segmentIds);
+            // 報名資料讀取失敗不應阻擋顯示，僅記 log
+            if (regError) console.error('Fetch registrations error:', regError);
 
             // 建立報名資料地圖
             const regMapBySegment: Record<number, Map<number, any>> = {};

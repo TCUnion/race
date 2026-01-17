@@ -2,22 +2,20 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import SegmentMap from './SegmentMap';
 import { useSegmentData, formatTime, LeaderboardEntry, StravaSegment, SegmentStats } from '../hooks/useSegmentData';
-import {
-  Trophy,
-  Map as MapIcon,
-  Search,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  ExternalLink,
-  BarChart3,
-  Zap,
-  Dna,
-  RefreshCw,
-  SearchX,
-  Users
-} from 'lucide-react';
+import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import MapIcon from 'lucide-react/dist/esm/icons/map';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3';
+import Zap from 'lucide-react/dist/esm/icons/zap';
+import Dna from 'lucide-react/dist/esm/icons/dna';
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import SearchX from 'lucide-react/dist/esm/icons/search-x';
+import Users from 'lucide-react/dist/esm/icons/users';
 import StravaLogo from './StravaLogo';
 
 const CONFIG = {
