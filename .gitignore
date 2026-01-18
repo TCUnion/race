@@ -30,3 +30,10 @@ lib/supabase.ts
 n8n-workflows/*.json
 backend/.env
 
+
+# AI & Agent artifacts
+.agent/
+.claude/
+.codex/
+.gemini/
+brain/

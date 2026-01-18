@@ -112,3 +112,19 @@ export interface Vehicle {
   created_at: string;
   maintenance_records?: MaintenanceRecord[];
 }
+
+export interface Wheelset {
+  id: string;
+  athlete_id: string;
+  bike_id?: string;
+  name: string;
+  brand?: string;
+  model?: string;
+  tire_brand?: string;
+  tire_specs?: string;
+  tire_type?: string;
+  distance: number; // in meters
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

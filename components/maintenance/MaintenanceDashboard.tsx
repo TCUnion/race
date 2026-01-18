@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMaintenance, StravaBike, MaintenanceReminder, MaintenanceType } from '../../hooks/useMaintenance';
+import { Wheelset } from '../../types';
 import {
   Wrench,
   Loader2,
@@ -41,6 +42,7 @@ const statusLabels = {
 const MaintenanceDashboard: React.FC = () => {
   const {
     bikes,
+    wheelsets,
     maintenanceTypes,
     records,
     loading,
@@ -49,9 +51,14 @@ const MaintenanceDashboard: React.FC = () => {
     deleteMaintenanceRecord,
     updateMaintenanceRecord,
     updateMaintenanceSetting,
+    updateBike,
+    addWheelset,
+    updateWheelset,
+    deleteWheelset,
     getRecordsByBike,
     getMaintenanceReminders,
-    getAlertCount
+    getAlertCount,
+    refresh: fetchDataintenance
   } = useMaintenance();
 
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
@@ -61,6 +68,42 @@ const MaintenanceDashboard: React.FC = () => {
   const [editInterval, setEditInterval] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [selectedHistoryType, setSelectedHistoryType] = useState<MaintenanceType | null>(null);
+
+  // 輪組編輯狀態
+  const [editingWheelset, setEditingWheelset] = useState<Wheelset | null>(null);
+  const [wheelsetFormData, setWheelsetFormData] = useState({
+    name: '',
+    brand: '',
+    model: '',
+    tire_brand: '',
+    tire_specs: '',
+    tire_type: ''
+  });
+
+  // 當 editingWheelset 改變時，更新表單資料
+  React.useEffect(() => {
+    if (editingWheelset) {
+      setWheelsetFormData({
+        name: editingWheelset.name,
+        brand: editingWheelset.brand || '',
+        model: editingWheelset.model || '',
+        tire_brand: editingWheelset.tire_brand || '',
+        tire_specs: editingWheelset.tire_specs || '',
+        tire_type: editingWheelset.tire_type || ''
+      });
+    }
+  }, [editingWheelset]);
+
+  const handleUpdateWheelset = async () => {
+    if (!editingWheelset) return;
+    try {
+      await updateWheelset(editingWheelset.id, wheelsetFormData);
+      setEditingWheelset(null);
+    } catch (err) {
+      console.error('更新輪組失敗:', err);
+      alert('更新失敗，請稍後再試');
+    }
+  };
 
   const selectedBike = bikes.find(b => b.id === selectedBikeId);
   const reminders = selectedBike ? getMaintenanceReminders(selectedBike) : [];
@@ -194,8 +237,6 @@ const MaintenanceDashboard: React.FC = () => {
     remarks: '',
     price: ''
   });
-
-  const { updateBike } = useMaintenance();
 
   const handleEditClick = (bike: StravaBike) => {
     setEditFormData({
@@ -385,12 +426,102 @@ const MaintenanceDashboard: React.FC = () => {
                       新增保養
                     </button>
                   </div>
+
+                  {/* 輪組設定區塊 */}
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                      <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
+                      輪組設定
+                    </h3>
+                    <div className="space-y-3">
+                      {wheelsets.filter(ws => ws.bike_id === selectedBike.id).map(ws => (
+                        <div key={ws.id} className="flex flex-col gap-2 bg-black/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="radio"
+                                name="active_wheelset"
+                                checked={selectedBike.active_wheelset_id === ws.id}
+                                onChange={async () => {
+                                  try {
+                                    await updateBike(selectedBike.id, { active_wheelset_id: ws.id });
+                                  } catch (err) {
+                                    console.error('更新預設輪組失敗:', err);
+                                    alert('更新失敗，請稍後再試');
+                                  }
+                                }}
+                                className="w-4 h-4 text-orange-600 border-white/30 focus:ring-orange-500 focus:ring-offset-0 bg-transparent"
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-white font-medium text-lg">{ws.name}</p>
+                                  {selectedBike.active_wheelset_id === ws.id && (
+                                    <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full">使用中</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex gap-3 text-xs text-orange-200/40">
+                                    <span>{ws.brand || '---'} / {ws.model || '---'}</span>
+                                    <span>•</span>
+                                    <span>里程: {ws.distance.toLocaleString()} m</span>
+                                  </div>
+                                  {(ws.tire_brand || ws.tire_specs || ws.tire_type) && (
+                                    <div className="text-xs text-orange-200/30 flex gap-2">
+                                      <span className="text-orange-500/50">輪胎:</span>
+                                      <span>{ws.tire_brand || ''} {ws.tire_specs || ''}</span>
+                                      {ws.tire_type && <span>({ws.tire_type})</span>}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setEditingWheelset(ws)}
+                                className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+                                title="編輯詳情"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`確定要刪除輪組 "${ws.name}" 嗎？`)) {
+                                    deleteWheelset(ws.id);
+                                  }
+                                }}
+                                className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                title="刪除輪組"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <button
+                        onClick={async () => {
+                          const existingCount = wheelsets.filter(ws => ws.bike_id === selectedBike.id).length;
+                          const name = `輪組 ${existingCount + 1}`;
+                          await addWheelset({
+                            athlete_id: String(selectedBike.athlete_id),
+                            bike_id: selectedBike.id,
+                            name,
+                            distance: 0,
+                            is_active: false
+                          });
+                        }}
+                        className="w-full py-2 border border-dashed border-white/20 rounded-xl text-orange-200/60 hover:text-white hover:border-orange-500/50 hover:bg-orange-500/10 transition-all flex items-center justify-center gap-2 text-sm"
+                      >
+                        <Plus className="w-4 h-4" /> 直接新增輪組
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 標籤切換 */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setActiveTab('reminders')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'reminders'
                       ? 'bg-orange-600 text-white'
                       : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
@@ -915,6 +1046,123 @@ const MaintenanceDashboard: React.FC = () => {
                     </div>
                   ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 輪組編輯 Modal */}
+      {editingWheelset && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">編輯輪組資訊</h3>
+              <button
+                onClick={() => setEditingWheelset(null)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-orange-200/60 mb-1">
+                  名稱 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={wheelsetFormData.name}
+                  onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, name: e.target.value })}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                  placeholder="輸入輪組名稱"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-orange-200/60 mb-1">品牌</label>
+                <input
+                  type="text"
+                  value={wheelsetFormData.brand}
+                  onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, brand: e.target.value })}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                  placeholder="例如: Zipp, Shimano"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-orange-200/60 mb-1">型號</label>
+                <input
+                  type="text"
+                  value={wheelsetFormData.model}
+                  onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, model: e.target.value })}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                  placeholder="例如: 404 Firecrest, Dura-Ace C50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-orange-200/60 mb-1">目前里程 (m)</label>
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white/60 font-mono">
+                  {editingWheelset.distance.toLocaleString()} m
+                </div>
+                <p className="text-xs text-orange-200/40 mt-1">里程會隨對應單車自動累計，不可手動修改。</p>
+              </div>
+
+              <div className="pt-4 border-t border-white/10">
+                <h4 className="text-sm font-bold text-white mb-3">輪胎資訊</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">輪胎品牌</label>
+                    <input
+                      type="text"
+                      value={wheelsetFormData.tire_brand}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, tire_brand: e.target.value })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                      placeholder="例如: Continental, Vittoria"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">規格</label>
+                    <input
+                      type="text"
+                      value={wheelsetFormData.tire_specs}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, tire_specs: e.target.value })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                      placeholder="例如: 700x25c"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">類型</label>
+                    <select
+                      value={wheelsetFormData.tire_type}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, tire_type: e.target.value })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500 transition-colors appearance-none"
+                    >
+                      <option value="">請選擇</option>
+                      <option value="內胎 (Tube)">內胎 (Tube)</option>
+                      <option value="無內胎 (Tubeless)">無內胎 (Tubeless)</option>
+                      <option value="管胎 (Tubular)">管胎 (Tubular)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-white/10 bg-white/5 flex gap-3">
+              <button
+                onClick={() => setEditingWheelset(null)}
+                className="flex-1 px-4 py-2 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-white transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleUpdateWheelset}
+                disabled={!wheelsetFormData.name}
+                className="flex-1 px-4 py-2 rounded-xl font-bold bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                儲存變更
+              </button>
             </div>
           </div>
         </div>
