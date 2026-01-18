@@ -77,6 +77,7 @@ const AdminPanel: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [segments, setSegments] = useState<any[]>([]);
 
@@ -87,6 +88,17 @@ const AdminPanel: React.FC = () => {
             if (session) {
                 fetchSegments();
                 fetchSiteSettings();
+            } else {
+                // 嘗試從 localStorage 讀取記住的登入資訊
+                const savedEmail = localStorage.getItem('admin_email');
+                const savedPassword = localStorage.getItem('admin_password');
+                if (savedEmail) {
+                    setEmail(savedEmail);
+                    setRememberMe(true);
+                }
+                if (savedPassword) {
+                    setPassword(savedPassword);
+                }
             }
         });
 
@@ -186,7 +198,7 @@ const AdminPanel: React.FC = () => {
         let query = supabase
             .from('registrations')
             .select('*, segments(name, strava_id)')
-            .order('created_at', { ascending: false });
+            .order('registered_at', { ascending: false });
 
         if (filterSegmentId) {
             query = query.eq('segment_id', filterSegmentId);
@@ -267,6 +279,14 @@ const AdminPanel: React.FC = () => {
             setError(error.message);
             setLoading(false);
         } else {
+            // 處理「記住我」邏輯
+            if (rememberMe) {
+                localStorage.setItem('admin_email', email);
+                localStorage.setItem('admin_password', password);
+            } else {
+                localStorage.removeItem('admin_email');
+                localStorage.removeItem('admin_password');
+            }
             // 登入後重整資料
             fetchSegments();
         }
@@ -308,30 +328,6 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    const handleClearAllData = async () => {
-        if (!confirm('！！！極度危險！！！\n\n您確定要清空所有路段與報名資料嗎？\n此操作將刪除資料庫中的所有紀錄且無法復原！')) {
-            if (!confirm('請再次確認：您真的要刪除所有資料嗎？')) return;
-        }
-
-        try {
-            setLoading(true);
-            // 由於 RLS 限制，客戶端可能無法執行 TRUNCATE，我們改用循環刪除或透過 SQL Webhook
-            // 這裡嘗試直接刪除所有
-            const { error: regError } = await supabase.from('registrations').delete().neq('id', 0);
-            if (regError) throw regError;
-
-            const { error: segError } = await supabase.from('segments').delete().neq('id', 0);
-            if (segError) throw segError;
-
-            alert('所有數據已清空');
-            fetchSegments();
-            fetchRegistrations();
-        } catch (err: any) {
-            alert('清理失敗: ' + err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     if (loading && !session) {
         return (
@@ -366,6 +362,16 @@ const AdminPanel: React.FC = () => {
                             required
                         />
                     </div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            className="w-4 h-4 rounded border-slate-300 text-tsu-blue focus:ring-tsu-blue"
+                        />
+                        <label htmlFor="rememberMe" className="text-sm font-bold text-slate-500 cursor-pointer">記住密碼</label>
+                    </div>
                     {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
                     <button
                         type="submit"
@@ -391,12 +397,6 @@ const AdminPanel: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex gap-4">
-                    <button
-                        onClick={handleClearAllData}
-                        className="px-6 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold rounded-xl border border-red-200 dark:border-red-800 hover:bg-red-600 hover:text-white transition-all text-xs"
-                    >
-                        清空所有數據
-                    </button>
                     <button
                         onClick={handleLogout}
                         className="px-6 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all"

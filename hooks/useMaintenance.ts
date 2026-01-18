@@ -22,6 +22,7 @@ export interface StravaBike {
   remarks?: string;
   price?: number;
   active_wheelset_id?: string;
+  power_meter?: string;
 }
 
 // 保養類型（對應 maintenance_types 表）
@@ -266,7 +267,16 @@ export const useMaintenance = () => {
   };
 
   // 更新腳踏車資訊
-  const updateBike = async (bikeId: string, updates: Partial<StravaBike>) => {
+  const updateBike = async (bikeId: string, updates: {
+    brand?: string;
+    model?: string;
+    groupset_name?: string;
+    power_meter?: string;
+    shop_name?: string;
+    remarks?: string;
+    price?: number;
+    active_wheelset_id?: string;
+  }) => {
     try {
       const { data, error } = await supabase
         .from('bikes')
@@ -337,6 +347,20 @@ export const useMaintenance = () => {
 
   useEffect(() => {
     fetchData();
+
+    // 監聽來自 StravaConnect 的登入狀態變更事件
+    const handleAuthChange = () => {
+      console.log('useMaintenance: 偵測到登入狀態變更，重新載入資料...');
+      fetchData();
+    };
+
+    window.addEventListener('strava-auth-changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('strava-auth-changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, [fetchData]);
 
 

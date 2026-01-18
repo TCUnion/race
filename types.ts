@@ -125,6 +125,7 @@ export interface Wheelset {
   tire_type?: string;
   distance: number; // in meters
   is_active: boolean;
+  active_date?: string;
   created_at: string;
   updated_at: string;
 }
