@@ -50,6 +50,12 @@ export interface BikeMaintenanceRecord {
   created_at: string;
   updated_at: string;
   other?: string; // 其他資訊欄位
+  parts_details?: {
+    type_id: string;
+    brand: string;
+    model: string;
+    other: string;
+  }[];
   // 關聯資料
   maintenance_type_info?: MaintenanceType;
 }
