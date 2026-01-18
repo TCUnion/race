@@ -1,5 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { Wheelset } from '../types';
 
 // Strava 腳踏車型別（對應 bikes 表）
 export interface StravaBike {
@@ -19,6 +21,8 @@ export interface StravaBike {
   shop_name?: string;
   remarks?: string;
   price?: number;
+  active_wheelset_id?: string;
+  power_meter?: string;
 }
 
 // 保養類型（對應 maintenance_types 表）
@@ -94,11 +98,13 @@ const calculateMaintenanceStatus = (
 
 export const useMaintenance = () => {
   const [bikes, setBikes] = useState<StravaBike[]>([]);
+  const [wheelsets, setWheelsets] = useState<Wheelset[]>([]);
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [records, setRecords] = useState<BikeMaintenanceRecord[]>([]);
   const [settings, setSettings] = useState<MaintenanceSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
 
   // 取得 athlete_id
   const getAthleteId = useCallback((): string | null => {
@@ -122,13 +128,17 @@ export const useMaintenance = () => {
       }
 
       // 並行載入腳踏車、保養類型、保養紀錄、自訂設定
-      const [bikesResult, typesResult, recordsResult, settingsResult] = await Promise.all([
+      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult] = await Promise.all([
         supabase
           .from('bikes')
           .select('*')
           .eq('athlete_id', athleteId)
           .eq('retired', false)
           .order('primary_gear', { ascending: false }),
+        supabase
+          .from('wheelsets')
+          .select('*')
+          .eq('athlete_id', athleteId),
         supabase
           .from('maintenance_types')
           .select('*')
@@ -145,11 +155,13 @@ export const useMaintenance = () => {
       ]);
 
       if (bikesResult.error) throw bikesResult.error;
+      if (wheelsetsResult.error) throw wheelsetsResult.error;
       if (typesResult.error) throw typesResult.error;
       if (recordsResult.error) throw recordsResult.error;
       if (settingsResult.error) throw settingsResult.error;
 
       setBikes(bikesResult.data || []);
+      setWheelsets(wheelsetsResult.data || []);
       setMaintenanceTypes(typesResult.data || []);
       setRecords(recordsResult.data || []);
       setSettings(settingsResult.data || []);
@@ -255,7 +267,16 @@ export const useMaintenance = () => {
   };
 
   // 更新腳踏車資訊
-  const updateBike = async (bikeId: string, updates: Partial<StravaBike>) => {
+  const updateBike = async (bikeId: string, updates: {
+    brand?: string;
+    model?: string;
+    groupset_name?: string;
+    power_meter?: string;
+    shop_name?: string;
+    remarks?: string;
+    price?: number;
+    active_wheelset_id?: string;
+  }) => {
     try {
       const { data, error } = await supabase
         .from('bikes')
@@ -326,10 +347,63 @@ export const useMaintenance = () => {
 
   useEffect(() => {
     fetchData();
+
+    // 監聽來自 StravaConnect 的登入狀態變更事件
+    const handleAuthChange = () => {
+      console.log('useMaintenance: 偵測到登入狀態變更，重新載入資料...');
+      fetchData();
+    };
+
+    window.addEventListener('strava-auth-changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('strava-auth-changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, [fetchData]);
+
+
+
+  // Wheelset CRUD
+  const addWheelset = async (wheelset: Omit<Wheelset, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase.from('wheelsets').insert([wheelset]).select().single();
+      if (error) throw error;
+      setWheelsets(prev => [data, ...prev]);
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const updateWheelset = async (id: string, updates: Partial<Wheelset>) => {
+    try {
+      const { data, error } = await supabase.from('wheelsets').update(updates).eq('id', id).select().single();
+      if (error) throw error;
+      setWheelsets(prev => prev.map(w => (w.id === id ? data : w)));
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const deleteWheelset = async (id: string) => {
+    try {
+      const { error } = await supabase.from('wheelsets').delete().eq('id', id);
+      if (error) throw error;
+      setWheelsets(prev => prev.filter(w => w.id !== id));
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
 
   return {
     bikes,
+    wheelsets,
     maintenanceTypes,
     records,
     loading,
@@ -339,9 +413,13 @@ export const useMaintenance = () => {
     updateMaintenanceRecord,
     updateMaintenanceSetting,
     updateBike,
+    addWheelset,
+    updateWheelset,
+    deleteWheelset,
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount,
     refresh: fetchData
   };
 };
+
