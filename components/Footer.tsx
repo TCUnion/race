@@ -40,6 +40,13 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Privacy</a>
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="#">Terms</a>
             <a className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors" href="/privacy-policy.html">Privacy</a>
+            <span className="text-slate-300 dark:text-slate-800">•</span>
+            <button
+              onClick={() => onNavigate?.(ViewType.ADMIN)}
+              className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-tsu-blue uppercase transition-colors"
+            >
+              Admin
+            </button>
           </div>
         </div>
       </div>

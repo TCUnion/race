@@ -23,50 +23,6 @@ import {
   FileText
 } from 'lucide-react';
 import { exportToCSV, parseCSV, downloadFile } from '../../lib/csvUtils';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  TouchSensor,
-  MouseSensor
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-// 排序使用的卡片組件
-function SortableItem({ id, children, className, onClick }: { id: string, children: React.ReactNode, className?: string, onClick?: () => void }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={className} onClick={onClick}>
-      {children}
-    </div>
-  );
-}
 
 // 保養狀態顏色
 const statusColors = {
@@ -169,91 +125,17 @@ const MaintenanceDashboard: React.FC = () => {
 
   // 處理與過濾保養項目
   const displayMaintenanceTypes = maintenanceTypes
-    .filter(type => type.id !== 'full_service')
+    .filter(type =>
+      type.id !== 'full_service' &&
+      type.id !== 'wheel_check' &&
+      !type.name.includes('輪框檢查')
+    )
     .map(type => {
       if (type.id === 'gear_replacement' || type.name === '器材更換') {
         return { ...type, name: '其他' };
       }
       return type;
     });
-
-  // 拖曳排序狀態與邏輯
-  const [reminderOrder, setReminderOrder] = useState<string[]>([]);
-
-  // 設定感測器，支援滑鼠與觸控（延遲啟動以解決點擊衝突）
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // 讀取/儲存排序
-  React.useEffect(() => {
-    if (selectedBike) {
-      const savedOrder = localStorage.getItem(`maintenance_order_${selectedBike.id}`);
-      if (savedOrder) {
-        try {
-          setReminderOrder(JSON.parse(savedOrder));
-        } catch (e) {
-          console.error('Failed to parse reminder order', e);
-        }
-      } else {
-        setReminderOrder([]);
-      }
-    }
-  }, [selectedBike?.id]);
-
-  // 計算排序後的 reminders
-  const sortedReminders = React.useMemo(() => {
-    if (!reminders.length) return [];
-    if (!reminderOrder.length) return reminders;
-
-    const orderMap = new Map<string, number>(reminderOrder.map((id, index) => [id, index]));
-    return [...reminders].sort((a, b) => {
-      const indexA = (orderMap.get(a.type.id) ?? 999) as number;
-      const indexB = (orderMap.get(b.type.id) ?? 999) as number;
-      return indexA - indexB;
-    });
-  }, [reminders, reminderOrder]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (active.id !== over?.id) {
-      setReminderOrder((items) => {
-        // 如果目前沒有排序記錄，先用當前 sortedReminders 建立基準
-        const currentIds = items.length ? items : sortedReminders.map(r => r.type.id);
-
-        // 確保所有 ID 都存在（防止新項目加入時的問題）
-        const allIds = new Set([...currentIds, ...reminders.map(r => r.type.id)]);
-        const fullList = Array.from(allIds).sort((a, b) => {
-          const idxA = currentIds.indexOf(a);
-          const idxB = currentIds.indexOf(b);
-          // 如果都在列表裡，按列表序；如果不在（新項目），放後面
-          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-          if (idxA !== -1) return -1;
-          if (idxB !== -1) return 1;
-          return 0;
-        });
-
-        const oldIndex = fullList.indexOf(active.id as string);
-        const newIndex = fullList.indexOf(over!.id as string);
-
-        const newOrder = arrayMove(fullList, oldIndex, newIndex);
-
-        if (selectedBike) {
-          localStorage.setItem(`maintenance_order_${selectedBike.id}`, JSON.stringify(newOrder));
-        }
-
-        return newOrder;
-      });
-    }
-  };
 
   const handleStartEdit = (typeId: string, currentInterval: number) => {
     setEditingTypeId(typeId);
@@ -965,75 +847,77 @@ const MaintenanceDashboard: React.FC = () => {
 
                 {/* 保養提醒列表 */}
                 {activeTab === 'reminders' && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={sortedReminders.map(r => r.type.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {sortedReminders.map(reminder => {
-                          const isReplacement = reminder.type.name === '器材更換';
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {reminders.map(reminder => {
+                      const isReplacement = reminder.type.name === '器材更換';
 
-                          if (isReplacement) {
-                            return (
-                              <SortableItem
-                                key={reminder.type.id}
-                                id={reminder.type.id}
-                                onClick={() => setSelectedHistoryType(reminder.type)}
-                                className="p-3 rounded-xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="font-bold text-white text-sm group-hover:text-orange-400 transition-colors">
-                                    {reminder.type.name}
-                                  </h4>
-                                  <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors" />
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                  <span className="opacity-50">最近一次</span>
-                                  <span className="font-mono font-bold text-white">
-                                    {reminder.lastService?.service_date || '尚無紀錄'}
-                                  </span>
-                                </div>
-                              </SortableItem>
-                            );
-                          }
-
-                          const StatusIcon = statusIcons[reminder.status];
-                          const intervalKm = reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0);
-                          return (
-                            <SortableItem
-                              key={reminder.type.id}
-                              id={reminder.type.id}
-                              onClick={() => setSelectedHistoryType(reminder.type)}
-                              className={`p-3 rounded-xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02]`}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-bold text-white text-sm">{reminder.type.name}</h4>
-                                <div className={`flex items-center gap-1 text-xs font-bold`}>
-                                  <StatusIcon className="w-3.5 h-3.5" />
-                                  {statusLabels[reminder.status]}
-                                </div>
+                      if (isReplacement) {
+                        return (
+                          <div
+                            key={reminder.type.id}
+                            onClick={() => setSelectedHistoryType(reminder.type)}
+                            className="p-4 rounded-2xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h4 className="font-bold text-white group-hover:text-orange-400 transition-colors">
+                                  {reminder.type.name}
+                                </h4>
+                                <p className="text-sm text-orange-200/40">{reminder.type.description}</p>
                               </div>
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className="text-xs opacity-50">已行駛</span>
-                                <span className="font-mono font-bold text-sm">
-                                  {reminder.mileageSinceService.toLocaleString()} km
+                              <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/60 transition-colors" />
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="opacity-60">最近一次更換</span>
+                                <span className="font-mono font-bold text-white">
+                                  {reminder.lastService?.service_date || '尚無紀錄'}
                                 </span>
                               </div>
-                              <div className="h-1.5 bg-black/20 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full transition-all ${reminder.status === 'overdue' ? 'bg-red-500' :
-                                    reminder.status === 'due_soon' ? 'bg-yellow-500' : 'bg-green-500'
-                                    }`}
-                                  style={{ width: `${Math.min(reminder.percentageUsed, 100)}%` }}
-                                />
+                              <div className="text-xs text-center p-1.5 rounded-lg bg-black/20 text-orange-200/40 font-medium">
+                                點擊查看更換歷史
                               </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const StatusIcon = statusIcons[reminder.status];
+                      return (
+                        <div
+                          key={reminder.type.id}
+                          onClick={() => setSelectedHistoryType(reminder.type)}
+                          className={`p-4 rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02]`}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-bold text-white">{reminder.type.name}</h4>
+                              <p className="text-sm opacity-60">{reminder.type.description}</p>
+                            </div>
+                            <div className={`flex items-center gap-1 text-sm font-bold`}>
+                              <StatusIcon className="w-4 h-4" />
+                              {statusLabels[reminder.status]}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="opacity-60">距上次保養</span>
+                              <span className="font-mono font-bold">
+                                {reminder.mileageSinceService.toLocaleString()} km
+                              </span>
+                            </div>
+                            <div className="h-2 bg-black/20 rounded-full overflow-hidden">
                               <div
-                                className="flex items-center justify-end gap-1 mt-1 text-xs opacity-40 group/interval"
+                                className={`h-full transition-all ${reminder.status === 'overdue' ? 'bg-red-500' :
+                                  reminder.status === 'due_soon' ? 'bg-yellow-500' : 'bg-green-500'
+                                  }`}
+                                style={{ width: `${Math.min(reminder.percentageUsed, 100)}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs opacity-40">
+                              <span>0 km</span>
+                              <div
+                                className="flex items-center gap-1 group/interval"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {editingTypeId === reminder.type.id ? (
@@ -1042,7 +926,7 @@ const MaintenanceDashboard: React.FC = () => {
                                       type="number"
                                       value={editInterval}
                                       onChange={(e) => setEditInterval(e.target.value)}
-                                      className="w-14 bg-transparent border-none text-right font-mono font-bold text-white focus:ring-0 p-0 text-xs"
+                                      className="w-16 bg-transparent border-none text-right font-mono font-bold text-white focus:ring-0 p-0 text-xs"
                                       autoFocus
                                     />
                                     <button
@@ -1061,9 +945,9 @@ const MaintenanceDashboard: React.FC = () => {
                                   </div>
                                 ) : (
                                   <>
-                                    <span>每 {intervalKm.toLocaleString()} km</span>
+                                    <span>{reminder.nextServiceMileage.toLocaleString()} km (每 {((reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0))).toLocaleString()} km)</span>
                                     <button
-                                      onClick={() => handleStartEdit(reminder.type.id, intervalKm)}
+                                      onClick={() => handleStartEdit(reminder.type.id, (reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0)))}
                                       className="opacity-0 group-hover/interval:opacity-100 p-0.5 hover:bg-white/10 rounded transition-all"
                                       title="編輯里程間隔"
                                     >
@@ -1072,12 +956,12 @@ const MaintenanceDashboard: React.FC = () => {
                                   </>
                                 )}
                               </div>
-                            </SortableItem>
-                          );
-                        })}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
 
                 {/* 歷史紀錄列表 */}

@@ -1,5 +1,5 @@
 
-import { Participant, Activity, SegmentStats } from './types';
+import { Participant, Activity } from './types';
 
 export const MOCK_LEADERBOARD: Participant[] = [
   {
@@ -52,7 +52,8 @@ export const MOCK_ACTIVITIES: Activity[] = [
   }
 ];
 
-export const MOCK_SEGMENT_STATS: SegmentStats = {
+
+export const MOCK_SEGMENT_STATS = {
   distance: '12.2 km',
   grade: '8.5%',
   ascent: '1,036 m'

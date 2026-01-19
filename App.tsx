@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ViewType, isAthleteAdmin } from './types';
+import { ViewType } from './types';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import Leaderboard from './components/Leaderboard';
@@ -14,32 +14,6 @@ import { useSEO } from './hooks/useSEO';
 const App: React.FC = () => {
   useSEO();
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.LANDING);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  // 監聽管理員狀態
-  React.useEffect(() => {
-    const checkAdmin = () => {
-      const savedData = localStorage.getItem('strava_athlete_meta');
-      if (savedData) {
-        try {
-          const athlete = JSON.parse(savedData);
-          setIsAdmin(isAthleteAdmin(athlete.id));
-        } catch (e) {
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdmin();
-    window.addEventListener('strava-auth-changed', checkAdmin);
-    window.addEventListener('storage', checkAdmin);
-    return () => {
-      window.removeEventListener('strava-auth-changed', checkAdmin);
-      window.removeEventListener('storage', checkAdmin);
-    };
-  }, []);
 
   const renderView = () => {
     switch (currentView) {
@@ -50,10 +24,6 @@ const App: React.FC = () => {
       case ViewType.LEADERBOARD:
         return <Leaderboard />;
       case ViewType.ADMIN:
-        if (!isAdmin) {
-          // 如果不是管理員，自動導向首頁
-          return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
-        }
         return <AdminPanel />;
       case ViewType.REGISTER:
         return <RegisterPage onNavigate={setCurrentView} />;
