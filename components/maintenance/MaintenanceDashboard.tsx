@@ -164,7 +164,8 @@ const MaintenanceDashboard: React.FC = () => {
     shop_name: '',
     notes: '',
     other: '',
-    is_diy: false
+    is_diy: false,
+    wheelset_id: ''
   });
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -273,7 +274,8 @@ const MaintenanceDashboard: React.FC = () => {
       notes: formData.notes || undefined,
       other: formData.other || undefined,
       is_diy: formData.is_diy,
-      parts_details: parts_details
+      parts_details: parts_details,
+      wheelset_id: formData.wheelset_id || undefined
     };
 
     try {
@@ -282,6 +284,18 @@ const MaintenanceDashboard: React.FC = () => {
       } else {
         await addMaintenanceRecord(recordData);
       }
+
+      // 如果勾選了輪胎更換且有選擇輪組，連動更新輪組的輪胎資訊
+      if (selectedTypes.includes('tires') && formData.wheelset_id) {
+        const tireDetail = formData.details['tires'];
+        if (tireDetail && (tireDetail.brand || tireDetail.model)) {
+          await updateWheelset(formData.wheelset_id, {
+            tire_brand: tireDetail.brand,
+            model: tireDetail.model
+          });
+        }
+      }
+
       resetForm();
     } catch (err) {
       console.error('儲存紀錄失敗:', err);
@@ -1416,6 +1430,32 @@ const MaintenanceDashboard: React.FC = () => {
                   )}
                 </div>
 
+                {/* 輪組選擇 - 僅在勾選輪胎更換時顯示 */}
+                {formData.maintenance_type.includes('tires') && (
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">關聯輪組 (選填)</label>
+                    <div className="relative">
+                      <select
+                        value={formData.wheelset_id}
+                        onChange={e => setFormData(prev => ({ ...prev, wheelset_id: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none appearance-none cursor-pointer"
+                      >
+                        <option value="" className="bg-gray-900">未指定輪組</option>
+                        {wheelsets
+                          .filter(ws => !selectedBikeId || ws.bike_id === selectedBikeId)
+                          .map(ws => (
+                            <option key={ws.id} value={ws.id} className="bg-gray-900">
+                              {ws.name} ({ws.brand} {ws.model}) {ws.is_active ? ' [作用中]' : ''}
+                            </option>
+                          ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <ChevronRight className="w-4 h-4 text-white/20 rotate-90" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
@@ -1630,12 +1670,20 @@ const MaintenanceDashboard: React.FC = () => {
                                   </div>
                                 )}
 
-                                {(record.shop_name || record.cost) && (
-                                  <div className="flex items-center gap-3 text-[11px] text-white/40 px-1">
-                                    {record.shop_name && <span>店家: {record.shop_name}</span>}
-                                    {record.cost && <span>費用: ${record.cost.toLocaleString()}</span>}
-                                  </div>
-                                )}
+                                <div className="flex flex-col gap-1 px-1">
+                                  {(record.shop_name || record.cost) && (
+                                    <div className="flex items-center gap-3 text-[11px] text-white/40">
+                                      {record.shop_name && <span>店家: {record.shop_name}</span>}
+                                      {record.cost && <span>費用: ${record.cost.toLocaleString()}</span>}
+                                    </div>
+                                  )}
+                                  {record.wheelset_id && (
+                                    <div className="flex items-center gap-2 text-[11px] text-orange-400">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                                      <span>紀錄輪組: {wheelsets.find(ws => ws.id === record.wheelset_id)?.name || '未知輪組'}</span>
+                                    </div>
+                                  )}
+                                </div>
 
                                 {(detail?.other || record.notes) && (
                                   <div className="bg-white/5 p-2 px-3 rounded-lg border-l-2 border-orange-500/30">

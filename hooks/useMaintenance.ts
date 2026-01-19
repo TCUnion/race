@@ -61,6 +61,7 @@ export interface BikeMaintenanceRecord {
   created_at: string;
   updated_at: string;
   other?: string; // 其他資訊欄位
+  wheelset_id?: string; // 關聯的輪組 ID
   parts_details?: {
     type_id: string;
     brand: string;
@@ -394,35 +395,69 @@ export const useMaintenance = () => {
   const getMaintenanceReminders = useCallback((bike: StravaBike): MaintenanceReminder[] => {
     const currentMileageKm = bike.converted_distance || (bike.distance / 1000);
     const bikeRecords = getRecordsByBike(bike.id);
-
     return maintenanceTypes.map(type => {
-      // 找到此類型的最後一次保養紀錄
-      const lastService = bikeRecords.find(r =>
-        r.maintenance_type === type.id ||
-        r.maintenance_type.includes(type.id) ||
-        r.maintenance_type.includes('全車保養')
-      );
+      // 檢查是否為輪胎更換，若是則優先查看關聯輪組的最後保養里程
+      const isTires = type.id === 'tires';
 
-      let lastServiceMileage = lastService?.mileage_at_service || 0;
+      // 找出此類型的最後一次保養紀錄
+      // 如果是輪胎，則必須符合目前作用中輪組（如果有的話）或是沒有指定輪組的紀錄
+      const lastService = bikeRecords.find(r => {
+        const isTypeMatch = r.maintenance_type === type.id ||
+          r.maintenance_type.includes(type.id) ||
+          r.maintenance_type.includes('全車保養');
+
+        if (!isTypeMatch) return false;
+
+        // 如果是輪胎更換，且該紀錄有指定輪組，則必須匹配目前單車的作用中輪組
+        if (isTires && bike.active_wheelset_id && r.wheelset_id) {
+          return r.wheelset_id === bike.active_wheelset_id;
+        }
+
+        return true;
+      });
+
+      const lastServiceMileage = lastService?.mileage_at_service || 0;
       let calculatedMileageSinceService = 0;
 
-      // 核心修改 logic: 使用活動紀錄推算里程
-      if (lastService && lastService.service_date) {
-        // 如果有保養紀錄，計算該日期之後累積的里程
-        calculatedMileageSinceService = calculateMileageSinceDate(bike.id, lastService.service_date);
+      // 核心修改 logic: 
+      // 如果是輪胎更換且有作用中輪組，我們使用輪組的累積里程
+      if (isTires && bike.active_wheelset_id) {
+        const activeWheelset = wheelsets.find(ws => ws.id === bike.active_wheelset_id);
+        if (activeWheelset) {
+          if (lastService && lastService.service_date) {
+            // 計算該輪組自上次保養日期以後的里程增量
+            // 注意：這裡假設活動紀錄中有記錄輪組 ID 或者我們能推算出來。
+            // 目前系統活動紀錄只記了 bike_id。
+            // 但我們可以推算：在該日期之後，且該單車 active_wheelset_id 為此輪組時的里程。
+            // 簡化起見：我們假設輪胎保養是跟隨「輪組」的。
+            // 如果 lastService 有記錄當時的輪組里程，最準確。
+            // 但目前 `mileage_at_service` 存的是單車里程。
+
+            // 方案：我們改用 calculateMetricsSinceDate，但邏輯不變，因為輪胎里程通常跟隨輪組。
+            // 如果使用者換了輪組，新輪組的里程應該從 0 開始算起。
+            // 這裡我們暫時維持使用活動紀錄推算（假設該段時間都是用這個輪組）。
+            calculatedMileageSinceService = calculateMileageSinceDate(bike.id, lastService.service_date);
+          } else {
+            // 如果沒有保養紀錄，則使用輪組本身的累積里程
+            calculatedMileageSinceService = activeWheelset.distance / 1000;
+          }
+        } else {
+          // 找不到輪組資訊，回退到單車邏輯
+          calculatedMileageSinceService = lastService && lastService.service_date
+            ? calculateMileageSinceDate(bike.id, lastService.service_date)
+            : currentMileageKm;
+        }
       } else {
-        // 如果沒有保養紀錄，使用車子總里程
-        calculatedMileageSinceService = currentMileageKm;
+        // 非輪胎更換，維持原有邏輯
+        calculatedMileageSinceService = lastService && lastService.service_date
+          ? calculateMileageSinceDate(bike.id, lastService.service_date)
+          : currentMileageKm;
       }
 
       // 檢查是否有自訂里程設定
       const setting = settings.find(s => s.bike_id === bike.id && s.maintenance_type_id === type.id);
       const intervalKm = setting ? setting.custom_interval_km : type.default_interval_km;
 
-      // 使用計算出的里程進行狀態判斷
-      // 注意：calculateMaintenanceStatus 預設是做減法 (current - last)。
-      // 這裡我們我們已經把 "current - last" 算好了 (calculatedMileageSinceService)。
-      // 為了復用函式，我們可以傳入 (calculatedMileageSinceService, 0, intervalKm)
       const { status, percentageUsed } = calculateMaintenanceStatus(
         calculatedMileageSinceService,
         0,
