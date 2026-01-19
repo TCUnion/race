@@ -8,6 +8,17 @@ export enum ViewType {
   MAINTENANCE = 'MAINTENANCE',
 }
 
+export const ADMIN_ATHLETE_ID = 2838277;
+
+/**
+ * 檢查是否為管理員
+ * @param athleteId Strava Athlete ID
+ */
+export const isAthleteAdmin = (athleteId: string | number | undefined | null): boolean => {
+  if (!athleteId) return false;
+  return Number(athleteId) === ADMIN_ATHLETE_ID;
+};
+
 export enum RaceStatus {
   AWAITING = 'AWAITING',
   IN_PROGRESS = 'IN_PROGRESS',
