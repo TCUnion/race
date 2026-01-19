@@ -1589,13 +1589,21 @@ const MaintenanceDashboard: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
-                {bikeRecords.filter(r => r.maintenance_type === selectedHistoryType.id || r.maintenance_type.includes(selectedHistoryType.id)).length === 0 ? (
+                {bikeRecords.filter(r =>
+                  r.maintenance_type === selectedHistoryType.id ||
+                  r.maintenance_type.split(', ').includes(selectedHistoryType.id) ||
+                  r.maintenance_type.includes('全車保養')
+                ).length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-white/30">尚無相關紀錄</p>
                   </div>
                 ) : (
                   bikeRecords
-                    .filter(r => r.maintenance_type === selectedHistoryType.id || r.maintenance_type.includes(selectedHistoryType.id))
+                    .filter(r =>
+                      r.maintenance_type === selectedHistoryType.id ||
+                      r.maintenance_type.split(', ').includes(selectedHistoryType.id) ||
+                      r.maintenance_type.includes('全車保養')
+                    )
                     .map(record => (
                       <div
                         key={record.id}
@@ -1630,7 +1638,7 @@ const MaintenanceDashboard: React.FC = () => {
                             // 獲取該類型在該單車的所有紀錄（已按日期排序：由新到舊）
                             const typedRecords = bikeRecords.filter(r =>
                               r.maintenance_type === selectedHistoryType?.id ||
-                              r.maintenance_type.includes(selectedHistoryType?.id || '') ||
+                              r.maintenance_type.split(', ').includes(selectedHistoryType?.id || '') ||
                               r.maintenance_type.includes('全車保養')
                             );
 
