@@ -461,7 +461,34 @@ const MaintenanceDashboard: React.FC = () => {
   const handleExportCSV = () => {
     if (!selectedBike) return;
     const bikeRecords = getRecordsByBike(selectedBike.id);
-    const csvContent = exportToCSV(bikeRecords);
+
+    // 轉換保養項目名稱為中文
+    const exportRecords = bikeRecords.map(record => {
+      let displayName = record.maintenance_type;
+
+      // 嘗試解析顯示名稱邏輯 (與列表顯示共用)
+      if (record.maintenance_type === '全車保養' || record.maintenance_type.startsWith('全車保養')) {
+        displayName = '全車保養';
+      } else {
+        const typeIds = record.maintenance_type.split(',').map(s => s.trim());
+        const names = typeIds.map(id => {
+          const t = maintenanceTypes.find(type => type.id === id);
+          return t ? t.name : id;
+        });
+        displayName = names.join(' + ');
+      }
+
+      if (displayName.includes('gear_replacement')) {
+        displayName = displayName.replace('gear_replacement', '器材更換');
+      }
+
+      return {
+        ...record,
+        maintenance_type: displayName
+      };
+    });
+
+    const csvContent = exportToCSV(exportRecords);
     const fileName = `maintenance_records_${selectedBike.name}_${new Date().toISOString().split('T')[0]}.csv`;
     downloadFile(csvContent, fileName);
   };
@@ -493,13 +520,33 @@ const MaintenanceDashboard: React.FC = () => {
           const athlete = JSON.parse(athleteData);
 
           // 批次匯入 (使用 Promise.all 並行執行提升速度)
-          const importPromises = parsedRecords.map(record =>
-            addMaintenanceRecord({
+          const importPromises = parsedRecords.map(record => {
+            let typeId = record.maintenance_type;
+
+            // 1. 嘗試直接對應 ID (如果 CSV 是舊版或英文)
+            // 2. 嘗試反向查找中文名稱
+            const foundType = maintenanceTypes.find(t => t.name === record.maintenance_type);
+            if (foundType) {
+              typeId = foundType.id;
+            } else if (record.maintenance_type === '全車保養') {
+              typeId = 'full_service';
+            } else if (record.maintenance_type.includes(' + ')) {
+              // 處理組合項目 (例如: 鍊條上油 + 飛輪清潔)
+              const names = record.maintenance_type.split(' + ');
+              const ids = names.map(name => {
+                const t = maintenanceTypes.find(type => type.name === name);
+                return t ? t.id : name; // 找不到則保留原值
+              });
+              typeId = ids.join(',');
+            }
+
+            return addMaintenanceRecord({
               ...record,
+              maintenance_type: typeId,
               bike_id: selectedBike.id,
               athlete_id: String(athlete.id)
-            })
-          );
+            });
+          });
 
           await Promise.all(importPromises);
           alert('匯入成功！');
@@ -1113,10 +1160,10 @@ const MaintenanceDashboard: React.FC = () => {
                                             <span>{reminder.nextServiceMileage.toLocaleString()} km (每 {((reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0))).toLocaleString()} km)</span>
                                             <button
                                               onClick={() => handleStartEdit(reminder.type.id, (reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0)))}
-                                              className="opacity-0 group-hover/interval:opacity-100 p-0.5 hover:bg-white/10 rounded transition-all"
+                                              className="p-1.5 bg-orange-500/90 hover:bg-orange-500 text-white shadow-sm rounded-lg transition-all"
                                               title="編輯里程間隔"
                                             >
-                                              <Edit2 className="w-3 h-3" />
+                                              <Edit2 className="w-3.5 h-3.5" />
                                             </button>
                                           </>
                                         )}
@@ -1135,86 +1182,108 @@ const MaintenanceDashboard: React.FC = () => {
 
                 {/* 歷史紀錄列表 */}
                 {activeTab === 'history' && (
-                  <div className="space-y-3">
-                    {bikeRecords.length === 0 ? (
-                      <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/10">
-                        <Calendar className="w-12 h-12 text-orange-200/20 mx-auto mb-3" />
-                        <p className="text-orange-200/40">尚無保養紀錄</p>
-                      </div>
-                    ) : (
-                      bikeRecords.map(record => {
-                        let displayName = record.maintenance_type;
+                  <div className="overflow-hidden bg-white/5 border border-white/10 rounded-2xl">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-white/5 text-orange-200/80 uppercase font-medium">
+                          <tr>
+                            <th className="px-4 py-3 whitespace-nowrap">日期</th>
+                            <th className="px-4 py-3 whitespace-nowrap">保養項目</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">里程 (km)</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">金額</th>
+                            <th className="px-4 py-3 whitespace-nowrap">地點/店家</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-center">DIY</th>
+                            <th className="px-4 py-3 whitespace-nowrap">備註/詳情</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10">
+                          {bikeRecords.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} className="px-4 py-12 text-center text-orange-200/40">
+                                <Calendar className="w-12 h-12 text-orange-200/20 mx-auto mb-3" />
+                                尚無保養紀錄
+                              </td>
+                            </tr>
+                          ) : (
+                            bikeRecords.map(record => {
+                              let displayName = record.maintenance_type;
 
-                        // 嘗試解析顯示名稱
-                        if (record.maintenance_type === '全車保養' || record.maintenance_type.startsWith('全車保養')) {
-                          displayName = '全車保養';
-                        } else {
-                          // 解析逗號分隔的 ID
-                          const typeIds = record.maintenance_type.split(',').map(s => s.trim());
-                          const names = typeIds.map(id => {
-                            const t = maintenanceTypes.find(type => type.id === id);
-                            return t ? t.name : id; // 找不到就顯示 ID
-                          });
-                          // 如果有多個，用 " + " 連接
-                          displayName = names.join(' + ');
-                        }
+                              // 嘗試解析顯示名稱
+                              if (record.maintenance_type === '全車保養' || record.maintenance_type.startsWith('全車保養')) {
+                                displayName = '全車保養';
+                              } else {
+                                // 解析逗號分隔的 ID
+                                const typeIds = record.maintenance_type.split(',').map(s => s.trim());
+                                const names = typeIds.map(id => {
+                                  const t = maintenanceTypes.find(type => type.id === id);
+                                  return t ? t.name : id; // 找不到就顯示 ID
+                                });
+                                // 如果有多個，用 " + " 連接
+                                displayName = names.join(' + ');
+                              }
 
-                        // 如果名稱是 gear_replacement，轉換為 "器材更換"
-                        if (displayName.includes('gear_replacement')) {
-                          displayName = displayName.replace('gear_replacement', '器材更換');
-                        }
+                              // 如果名稱是 gear_replacement，轉換為 "器材更換"
+                              if (displayName.includes('gear_replacement')) {
+                                displayName = displayName.replace('gear_replacement', '器材更換');
+                              }
 
-                        return (
-                          <div
-                            key={record.id}
-                            className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="bg-orange-600/20 p-2 rounded-xl">
-                                <Wrench className="w-5 h-5 text-orange-400" />
-                              </div>
-                              <div>
-                                <h4 className="font-bold text-white max-w-[200px] truncate" title={displayName}>{displayName}</h4>
-                                <div className="flex items-center gap-3 text-sm text-orange-200/50">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
+                              return (
+                                <tr key={record.id} className="hover:bg-white/5 transition-colors group">
+                                  <td className="px-4 py-3 font-medium text-white whitespace-nowrap tabular-nums">
                                     {record.service_date}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {record.mileage_at_service.toLocaleString()} km
-                                  </span>
-                                  {record.cost && (
-                                    <span className="flex items-center gap-1">
-                                      <DollarSign className="w-3 h-3" />
-                                      ${record.cost}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleEditMaintenance(record)}
-                                className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (confirm('確定要刪除此筆保養紀錄嗎？')) {
-                                    deleteMaintenanceRecord(record.id);
-                                  }
-                                }}
-                                className="p-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-all"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-orange-100 font-medium">
+                                    {displayName}
+                                  </td>
+                                  <td className="px-4 py-3 text-right text-orange-200/70 tabular-nums">
+                                    {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                                  </td>
+                                  <td className="px-4 py-3 text-right text-orange-200/70 tabular-nums">
+                                    {record.cost ? `$${record.cost}` : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-orange-200/70">
+                                    {record.shop_name || '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    {record.is_diy ? (
+                                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400">是</span>
+                                    ) : (
+                                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-orange-500/10 text-orange-400">否</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-orange-200/60 max-w-xs truncate" title={record.notes}>
+                                    {record.notes || '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={() => handleEditMaintenance(record)}
+                                        className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                                        title="編輯"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          if (confirm('確定要刪除此筆保養紀錄嗎？')) {
+                                            deleteMaintenanceRecord(record.id);
+                                          }
+                                        }}
+                                        className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                                        title="刪除"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1639,7 +1708,7 @@ const MaintenanceDashboard: React.FC = () => {
                       value={formData.service_date}
                       onChange={e => setFormData(prev => ({ ...prev, service_date: e.target.value }))}
                       required
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                      className="w-full bg-white/5 border border-white/20 hover:border-orange-500/50 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none transition-colors"
                     />
                   </div>
 
@@ -1652,7 +1721,7 @@ const MaintenanceDashboard: React.FC = () => {
                         value={formData.cost}
                         onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
                         placeholder="0"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                        className="w-full bg-white/5 border border-white/20 hover:border-orange-500/50 rounded-xl pl-8 pr-4 py-3 text-white focus:border-orange-500 focus:outline-none transition-colors appearance-none"
                       />
                     </div>
                   </div>

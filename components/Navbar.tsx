@@ -243,11 +243,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md transition-all duration-300">
+    <header className="sticky top-0 z-50 border-b border-solid border-slate-800 bg-[#242424]/95 backdrop-blur-md transition-all duration-300">
       <div className="flex items-center justify-between px-6 md:px-20 py-4">
         <div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNavigate(ViewType.LANDING)}>
           <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto transform transition-transform group-hover:scale-110" />
-          <h2 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors">TCU STRAVA RANK</h2>
+          <h2 className="text-white text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors">TCU STRAVA RANK</h2>
         </div>
 
         {/* Desktop Navigation */}
@@ -255,32 +255,32 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <nav className="flex items-center gap-8">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               探索活動
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               排行榜
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               個人儀表板
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               保養紀錄
             </button>
             {isAdmin && (
               <button
                 onClick={() => handleNavigate(ViewType.ADMIN)}
-                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-500 dark:text-red-400 hover:text-red-600'}`}
+                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-400 hover:text-red-600'}`}
               >
                 ADMIN
               </button>
@@ -290,7 +290,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           {athlete ? (
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
               <div className="flex flex-col items-end">
-                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter transition-all">
+                <p className="text-[10px] font-black text-white uppercase tracking-tighter transition-all">
                   {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : athlete.id}
                 </p>
                 <p className="text-[8px] text-green-500 font-bold uppercase tracking-widest leading-none">Connected</p>
