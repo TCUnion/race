@@ -62,7 +62,10 @@ const MaintenanceDashboard: React.FC = () => {
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount,
-    refresh: fetchDataintenance
+    calculateMetricsSinceDate,
+    calculateMetricsBetweenDates,
+    calculateTotalDistanceAtDate,
+    refresh: fetchData
   } = useMaintenance();
 
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
@@ -103,7 +106,11 @@ const MaintenanceDashboard: React.FC = () => {
   const handleUpdateWheelset = async () => {
     if (!editingWheelset) return;
     try {
-      await updateWheelset(editingWheelset.id, wheelsetFormData);
+      const updates = { ...wheelsetFormData };
+      if (updates.active_date === '') {
+        updates.active_date = undefined;
+      }
+      await updateWheelset(editingWheelset.id, updates);
       setEditingWheelset(null);
     } catch (err) {
       console.error('更新輪組失敗:', err);
@@ -151,6 +158,7 @@ const MaintenanceDashboard: React.FC = () => {
   // 新增保養紀錄表單狀態
   const [formData, setFormData] = useState({
     maintenance_type: [] as string[],
+    details: {} as Record<string, { brand: string; model: string; other: string }>,
     service_date: new Date().toISOString().split('T')[0],
     cost: '',
     shop_name: '',
@@ -160,10 +168,12 @@ const MaintenanceDashboard: React.FC = () => {
   });
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [targetType, setTargetType] = useState<any>(null);
 
   const resetForm = () => {
     setFormData({
       maintenance_type: [],
+      details: {},
       service_date: new Date().toISOString().split('T')[0],
       cost: '',
       shop_name: '',
@@ -172,6 +182,7 @@ const MaintenanceDashboard: React.FC = () => {
       is_diy: false
     });
     setEditingRecordId(null);
+    setTargetType(null);
     setIsAddModalOpen(false);
   };
 
@@ -189,14 +200,26 @@ const MaintenanceDashboard: React.FC = () => {
       typeList = record.maintenance_type.split(', ');
     }
 
+    const detailsMap: Record<string, { brand: string; model: string; other: string }> = {};
+    if (record.parts_details && Array.isArray(record.parts_details)) {
+      record.parts_details.forEach((d: any) => {
+        detailsMap[d.type_id] = {
+          brand: d.brand || '',
+          model: d.model || '',
+          other: d.other || ''
+        };
+      });
+    }
+
     setFormData({
       maintenance_type: typeList,
+      details: detailsMap,
       service_date: record.service_date,
       cost: record.cost ? record.cost.toString() : '',
       shop_name: record.shop_name || '',
       notes: record.notes || '',
       other: record.other || '',
-      is_diy: record.is_diy
+      is_diy: record.is_diy || false
     });
     setEditingRecordId(record.id);
     setIsAddModalOpen(true);
@@ -212,15 +235,32 @@ const MaintenanceDashboard: React.FC = () => {
 
     const selectedTypes = formData.maintenance_type as string[];
 
-    // 強制核對：必須勾選所有可見的保養項目
-    if (selectedTypes.length < displayMaintenanceTypes.length) {
-      alert('為了確保紀錄完整性，新增保養時須勾選所有保養項目');
+    // 移除不合理的強制檢查
+    if (selectedTypes.length === 0) {
+      alert('請至少選擇一個保養項目');
       return;
     }
 
-    let maintenanceTypeValue = '全車保養';
-    // 取得所有項目的名稱列表並在備註中備註（可選）
-    const typeNames = maintenanceTypes.map(t => t.name).join(', ');
+    // 決定維修類型字串
+    let maintenanceTypeValue = '';
+    // 如果勾選了所有顯示的項目，則標記為全車保養
+    if (selectedTypes.length >= displayMaintenanceTypes.length) {
+      maintenanceTypeValue = '全車保養';
+    } else {
+      // 否則儲存為逗號分隔的 ID 列表 (例如: "chain_lube, tire_change")
+      maintenanceTypeValue = selectedTypes.join(', ');
+    }
+
+    // 準備 parts_details
+    const parts_details = selectedTypes.map(typeId => {
+      const detail = formData.details[typeId] || { brand: '', model: '', other: '' };
+      return {
+        type_id: typeId,
+        brand: detail.brand,
+        model: detail.model,
+        other: detail.other
+      };
+    });
 
     const recordData = {
       bike_id: selectedBike.id,
@@ -232,7 +272,8 @@ const MaintenanceDashboard: React.FC = () => {
       shop_name: formData.shop_name || undefined,
       notes: formData.notes || undefined,
       other: formData.other || undefined,
-      is_diy: formData.is_diy
+      is_diy: formData.is_diy,
+      parts_details: parts_details
     };
 
     try {
@@ -496,6 +537,174 @@ const MaintenanceDashboard: React.FC = () => {
                 </button>
               );
             })}
+
+            {/* 輪組設定區塊 (從右側移至於此) */}
+            {selectedBike && (
+              <div className="mt-8 pt-8 border-t border-white/10">
+                <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                  <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
+                  輪組設定
+                </h3>
+                <div className="space-y-3">
+                  {/* 專屬輪組列表 */}
+                  {wheelsets.filter(ws => ws.bike_id === selectedBike.id).map(ws => (
+                    <div key={ws.id} className="flex flex-col gap-2 bg-black/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                      {/* 輪組項目內容 (與原本相同) */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="active_wheelset"
+                            checked={selectedBike.active_wheelset_id === ws.id}
+                            onChange={async () => {
+                              try {
+                                await updateBike(selectedBike.id, { active_wheelset_id: ws.id });
+                              } catch (err) {
+                                console.error('更新預設輪組失敗:', err);
+                                alert('更新失敗，請稍後再試');
+                              }
+                            }}
+                            className="w-4 h-4 text-orange-600 border-white/30 focus:ring-orange-500 focus:ring-offset-0 bg-transparent"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-medium text-lg">{ws.name}</p>
+                              {selectedBike.active_wheelset_id === ws.id && (
+                                <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full">使用中</span>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex flex-wrap gap-2 text-xs text-orange-200/40">
+                                <span>{ws.brand || '---'} / {ws.model || '---'}</span>
+                                <span>•</span>
+                                <span>里程: {ws.distance.toLocaleString()} m</span>
+                                {ws.active_date && (
+                                  <>
+                                    <span>•</span>
+                                    <span>啟用: {ws.active_date}</span>
+                                  </>
+                                )}
+                              </div>
+                              {(ws.tire_brand || ws.tire_specs || ws.tire_type) && (
+                                <div className="text-xs text-orange-200/30 flex gap-2">
+                                  <span className="text-orange-500/50">輪胎:</span>
+                                  <span>{ws.tire_brand || ''} {ws.tire_specs || ''}</span>
+                                  {ws.tire_type && <span>({ws.tire_type})</span>}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingWheelset(ws)}
+                            className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+                            title="編輯詳情"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 通用輪組列表 */}
+                  {wheelsets.filter(ws => !ws.bike_id).length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                      <h4 className="text-sm font-bold text-orange-200/60 mb-2">通用輪組庫</h4>
+                      {wheelsets.filter(ws => !ws.bike_id).map(ws => (
+                        <div key={ws.id} className="flex flex-col gap-2 bg-black/20 p-3 mb-2 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="radio"
+                                name="active_wheelset"
+                                checked={selectedBike.active_wheelset_id === ws.id}
+                                onChange={async () => {
+                                  try {
+                                    await updateBike(selectedBike.id, { active_wheelset_id: ws.id });
+                                  } catch (err) {
+                                    console.error('更新預設輪組失敗:', err);
+                                    alert('更新失敗，請稍後再試');
+                                  }
+                                }}
+                                className="w-4 h-4 text-orange-600 border-white/30 focus:ring-orange-500 focus:ring-offset-0 bg-transparent"
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-white font-medium text-lg">{ws.name}</p>
+                                  {selectedBike.active_wheelset_id === ws.id && (
+                                    <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full">使用中</span>
+                                  )}
+                                  <span className="text-[10px] bg-white/10 text-white/50 px-1.5 py-0.5 rounded">通用</span>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex flex-wrap gap-2 text-xs text-orange-200/40">
+                                    <span>{ws.brand || '---'} / {ws.model || '---'}</span>
+                                    <span>•</span>
+                                    <span>里程: {ws.distance.toLocaleString()} m</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setEditingWheelset(ws)}
+                                className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+                                title="編輯詳情"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button
+                      onClick={async () => {
+                        const existingCount = wheelsets.filter(ws => ws.bike_id === selectedBike.id).length;
+                        const newItem = await addWheelset({
+                          athlete_id: JSON.parse(localStorage.getItem('strava_athlete_meta') || '{}').id,
+                          bike_id: selectedBike.id,
+                          name: `輪組 ${existingCount + 1}`,
+                          brand: '',
+                          model: '',
+                          distance: 0,
+                          is_active: false
+                        });
+                        setEditingWheelset(newItem);
+                      }}
+                      className="py-3 border-2 border-dashed border-white/10 rounded-xl text-orange-200/40 hover:text-white hover:border-orange-500/50 hover:bg-orange-500/5 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                    >
+                      <Plus className="w-4 h-4" />
+                      新增專屬
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const existingCount = wheelsets.filter(ws => !ws.bike_id).length;
+                        const newItem = await addWheelset({
+                          athlete_id: JSON.parse(localStorage.getItem('strava_athlete_meta') || '{}').id,
+                          bike_id: null,
+                          name: `通用輪組 ${existingCount + 1}`,
+                          brand: '',
+                          model: '',
+                          distance: 0,
+                          is_active: false
+                        });
+                        setEditingWheelset(newItem);
+                      }}
+                      className="py-3 border-2 border-dashed border-white/10 rounded-xl text-orange-200/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                    >
+                      <Plus className="w-4 h-4" />
+                      新增通用
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 右側：保養詳情 */}
@@ -567,102 +776,6 @@ const MaintenanceDashboard: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* 輪組設定區塊 */}
-                  <div className="mt-6 pt-6 border-t border-white/10">
-                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-                      <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
-                      輪組設定
-                    </h3>
-                    <div className="space-y-3">
-                      {wheelsets.filter(ws => ws.bike_id === selectedBike.id).map(ws => (
-                        <div key={ws.id} className="flex flex-col gap-2 bg-black/20 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-all">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="radio"
-                                name="active_wheelset"
-                                checked={selectedBike.active_wheelset_id === ws.id}
-                                onChange={async () => {
-                                  try {
-                                    await updateBike(selectedBike.id, { active_wheelset_id: ws.id });
-                                  } catch (err) {
-                                    console.error('更新預設輪組失敗:', err);
-                                    alert('更新失敗，請稍後再試');
-                                  }
-                                }}
-                                className="w-4 h-4 text-orange-600 border-white/30 focus:ring-orange-500 focus:ring-offset-0 bg-transparent"
-                              />
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-white font-medium text-lg">{ws.name}</p>
-                                  {selectedBike.active_wheelset_id === ws.id && (
-                                    <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full">使用中</span>
-                                  )}
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex gap-3 text-xs text-orange-200/40">
-                                    <span>{ws.brand || '---'} / {ws.model || '---'}</span>
-                                    <span>•</span>
-                                    <span>里程: {ws.distance.toLocaleString()} m</span>
-                                    {ws.active_date && (
-                                      <>
-                                        <span>•</span>
-                                        <span>啟用: {ws.active_date}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  {(ws.tire_brand || ws.tire_specs || ws.tire_type) && (
-                                    <div className="text-xs text-orange-200/30 flex gap-2">
-                                      <span className="text-orange-500/50">輪胎:</span>
-                                      <span>{ws.tire_brand || ''} {ws.tire_specs || ''}</span>
-                                      {ws.tire_type && <span>({ws.tire_type})</span>}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setEditingWheelset(ws)}
-                                className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
-                                title="編輯詳情"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (confirm(`確定要刪除輪組 "${ws.name}" 嗎？`)) {
-                                    deleteWheelset(ws.id);
-                                  }
-                                }}
-                                className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                                title="刪除輪組"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      <button
-                        onClick={async () => {
-                          const existingCount = wheelsets.filter(ws => ws.bike_id === selectedBike.id).length;
-                          const name = `輪組 ${existingCount + 1}`;
-                          await addWheelset({
-                            athlete_id: String(selectedBike.athlete_id),
-                            bike_id: selectedBike.id,
-                            name,
-                            distance: 0,
-                            is_active: false
-                          });
-                        }}
-                        className="w-full py-2 border border-dashed border-white/20 rounded-xl text-orange-200/60 hover:text-white hover:border-orange-500/50 hover:bg-orange-500/10 transition-all flex items-center justify-center gap-2 text-sm"
-                      >
-                        <Plus className="w-4 h-4" /> 直接新增輪組
-                      </button>
-                    </div>
-                  </div>
                 </div>
 
                 {/* 標籤切換 */}
@@ -844,7 +957,27 @@ const MaintenanceDashboard: React.FC = () => {
                       </div>
                     ) : (
                       bikeRecords.map(record => {
-                        const type = maintenanceTypes.find(t => t.id === record.maintenance_type);
+                        let displayName = record.maintenance_type;
+
+                        // 嘗試解析顯示名稱
+                        if (record.maintenance_type === '全車保養' || record.maintenance_type.startsWith('全車保養')) {
+                          displayName = '全車保養';
+                        } else {
+                          // 解析逗號分隔的 ID
+                          const typeIds = record.maintenance_type.split(',').map(s => s.trim());
+                          const names = typeIds.map(id => {
+                            const t = maintenanceTypes.find(type => type.id === id);
+                            return t ? t.name : id; // 找不到就顯示 ID
+                          });
+                          // 如果有多個，用 " + " 連接
+                          displayName = names.join(' + ');
+                        }
+
+                        // 如果名稱是 gear_replacement，轉換為 "器材更換"
+                        if (displayName.includes('gear_replacement')) {
+                          displayName = displayName.replace('gear_replacement', '器材更換');
+                        }
+
                         return (
                           <div
                             key={record.id}
@@ -855,7 +988,7 @@ const MaintenanceDashboard: React.FC = () => {
                                 <Wrench className="w-5 h-5 text-orange-400" />
                               </div>
                               <div>
-                                <h4 className="font-bold text-white">{type?.name || record.maintenance_type}</h4>
+                                <h4 className="font-bold text-white max-w-[200px] truncate" title={displayName}>{displayName}</h4>
                                 <div className="flex items-center gap-3 text-sm text-orange-200/50">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
@@ -1083,7 +1216,7 @@ const MaintenanceDashboard: React.FC = () => {
       {
         isAddModalOpen && selectedBike && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-xl p-6">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">
                   {editingRecordId ? '編輯保養紀錄' : '新增保養紀錄'}
@@ -1101,49 +1234,186 @@ const MaintenanceDashboard: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-bold text-orange-200/60">保養項目</label>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-4 bg-white/5 rounded-2xl border border-white/10 max-h-[30vh] overflow-y-auto">
-                    {/* 全車保養（全選/取消全選） */}
-                    <label className="flex items-center space-x-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={formData.maintenance_type.length === displayMaintenanceTypes.length && displayMaintenanceTypes.length > 0}
-                        onChange={e => {
-                          const checked = e.target.checked;
-                          setFormData(prev => ({
-                            ...prev,
-                            maintenance_type: checked ? displayMaintenanceTypes.map(t => t.id) : []
-                          }));
-                        }}
-                        className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
-                      />
-                      <span className="text-white font-bold group-hover:text-orange-400 transition-colors underline underline-offset-4 decoration-orange-500/50">全車保養 (全選)</span>
-                    </label>
-                    {/* 其他保養項目 */}
-                    {displayMaintenanceTypes.map(type => (
-                      <label key={type.id} className="flex items-center space-x-3 cursor-pointer group">
+
+                  {targetType ? (
+                    <div className="space-y-3">
+                      <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                        <span className="text-white font-bold">{targetType.name}</span>
+                        <span className="text-xs text-orange-200/40 ml-auto">單一項目保養</span>
+                      </div>
+
+                      {/* 單一項目的詳細資訊輸入 */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <div>
+                          <label className="text-xs text-orange-200/50 mb-1 block">品牌</label>
+                          <input
+                            type="text"
+                            placeholder="品牌"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                            value={formData.details[targetType.id]?.brand || ''}
+                            onChange={e => setFormData(prev => ({
+                              ...prev,
+                              details: {
+                                ...prev.details,
+                                [targetType.id]: {
+                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                  brand: e.target.value
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-orange-200/50 mb-1 block">型號</label>
+                          <input
+                            type="text"
+                            placeholder="型號"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                            value={formData.details[targetType.id]?.model || ''}
+                            onChange={e => setFormData(prev => ({
+                              ...prev,
+                              details: {
+                                ...prev.details,
+                                [targetType.id]: {
+                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                  model: e.target.value
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-orange-200/50 mb-1 block">其他</label>
+                          <input
+                            type="text"
+                            placeholder="其他規格"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                            value={formData.details[targetType.id]?.other || ''}
+                            onChange={e => setFormData(prev => ({
+                              ...prev,
+                              details: {
+                                ...prev.details,
+                                [targetType.id]: {
+                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                  other: e.target.value
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-y-3 p-4 bg-white/5 rounded-2xl border border-white/10 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                      {/* 全車保養（全選/取消全選） */}
+                      <label className="flex items-center space-x-3 cursor-pointer group pb-3 border-b border-white/5">
                         <input
                           type="checkbox"
-                          value={type.id}
-                          checked={formData.maintenance_type.includes(type.id)}
+                          checked={formData.maintenance_type.length === displayMaintenanceTypes.length && displayMaintenanceTypes.length > 0}
                           onChange={e => {
                             const checked = e.target.checked;
-                            setFormData(prev => {
-                              const types = [...prev.maintenance_type];
-                              if (checked) {
-                                if (!types.includes(type.id)) types.push(type.id);
-                              } else {
-                                const idx = types.indexOf(type.id);
-                                if (idx > -1) types.splice(idx, 1);
-                              }
-                              return { ...prev, maintenance_type: types };
-                            });
+                            setFormData(prev => ({
+                              ...prev,
+                              maintenance_type: checked ? displayMaintenanceTypes.map(t => t.id) : []
+                            }));
                           }}
                           className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
                         />
-                        <span className="text-white group-hover:text-orange-200 transition-colors">{type.name}</span>
+                        <span className="text-white font-bold group-hover:text-orange-400 transition-colors underline underline-offset-4 decoration-orange-500/50">全車保養 (全選)</span>
                       </label>
-                    ))}
-                  </div>
+
+                      {/* 其他保養項目列表 */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {displayMaintenanceTypes.map(type => {
+                          const isSelected = formData.maintenance_type.includes(type.id);
+                          return (
+                            <div key={type.id} className={`flex flex-col gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-orange-500/10 border border-orange-500/30' : 'hover:bg-white/5 border border-transparent'}`}>
+                              <label className="flex items-center space-x-3 cursor-pointer group">
+                                <input
+                                  type="checkbox"
+                                  value={type.id}
+                                  checked={isSelected}
+                                  onChange={e => {
+                                    const checked = e.target.checked;
+                                    setFormData(prev => {
+                                      const types = [...prev.maintenance_type];
+                                      if (checked) {
+                                        if (!types.includes(type.id)) types.push(type.id);
+                                      } else {
+                                        const idx = types.indexOf(type.id);
+                                        if (idx > -1) types.splice(idx, 1);
+                                      }
+                                      return { ...prev, maintenance_type: types };
+                                    });
+                                  }}
+                                  className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
+                                />
+                                <span className={`font-bold transition-colors ${isSelected ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>{type.name}</span>
+                              </label>
+
+                              {/* 詳細資訊輸入區塊 - 僅在選取時顯示 */}
+                              {isSelected && (
+                                <div className="grid grid-cols-1 gap-2 pl-8 animate-in slide-in-from-top-2 fade-in duration-200">
+                                  <input
+                                    type="text"
+                                    placeholder="品牌 (例：Shimano)"
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 focus:outline-none placeholder:text-white/20"
+                                    value={formData.details[type.id]?.brand || ''}
+                                    onChange={e => setFormData(prev => ({
+                                      ...prev,
+                                      details: {
+                                        ...prev.details,
+                                        [type.id]: {
+                                          ...(prev.details[type.id] || { brand: '', model: '', other: '' }),
+                                          brand: e.target.value
+                                        }
+                                      }
+                                    }))}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="型號 (例：Dura-Ace)"
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 focus:outline-none placeholder:text-white/20"
+                                    value={formData.details[type.id]?.model || ''}
+                                    onChange={e => setFormData(prev => ({
+                                      ...prev,
+                                      details: {
+                                        ...prev.details,
+                                        [type.id]: {
+                                          ...(prev.details[type.id] || { brand: '', model: '', other: '' }),
+                                          model: e.target.value
+                                        }
+                                      }
+                                    }))}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="其他 (選填)"
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 focus:outline-none placeholder:text-white/20"
+                                    value={formData.details[type.id]?.other || ''}
+                                    onChange={e => setFormData(prev => ({
+                                      ...prev,
+                                      details: {
+                                        ...prev.details,
+                                        [type.id]: {
+                                          ...(prev.details[type.id] || { brand: '', model: '', other: '' }),
+                                          other: e.target.value
+                                        }
+                                      }
+                                    }))}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1240,12 +1510,29 @@ const MaintenanceDashboard: React.FC = () => {
                   <h3 className="text-xl font-bold text-white">{selectedHistoryType.name}紀錄</h3>
                   <p className="text-orange-200/50 text-sm">歷史更換清單</p>
                 </div>
-                <button
-                  onClick={() => setSelectedHistoryType(null)}
-                  className="p-2 hover:bg-white/10 rounded-xl transition-all"
-                >
-                  <X className="w-5 h-5 text-white/60" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setTargetType(selectedHistoryType);
+                      setFormData(prev => ({
+                        ...prev,
+                        maintenance_type: [selectedHistoryType.id]
+                      }));
+                      setIsAddModalOpen(true);
+                      setSelectedHistoryType(null);
+                    }}
+                    className="p-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all flex items-center gap-1.5 px-3"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm font-bold">新增紀錄</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedHistoryType(null)}
+                    className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                  >
+                    <X className="w-5 h-5 text-white/60" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
@@ -1285,21 +1572,93 @@ const MaintenanceDashboard: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        <div className="text-sm text-orange-200/60 space-y-1">
-                          {record.maintenance_type !== selectedHistoryType.id && !record.maintenance_type.includes('全車保養') && (
-                            <p className="text-white/80">{record.maintenance_type}</p>
-                          )}
-                          <p>里程：{record.mileage_at_service.toLocaleString()} km</p>
-                          {record.cost && <p>費用：${record.cost}</p>}
-                          {record.shop_name && <p>店家：{record.shop_name}</p>}
-                          {record.notes && <p className="text-white/50 pt-1 border-t border-white/5 mt-1">{record.notes}</p>}
+                        <div className="space-y-3 mt-3">
+                          {(() => {
+                            // 獲取該類型在該單車的所有紀錄（已按日期排序：由新到舊）
+                            const typedRecords = bikeRecords.filter(r =>
+                              r.maintenance_type === selectedHistoryType?.id ||
+                              r.maintenance_type.includes(selectedHistoryType?.id || '') ||
+                              r.maintenance_type.includes('全車保養')
+                            );
+
+                            // 找出當前紀錄在過濾後列表中的索引
+                            const recordIndex = typedRecords.findIndex(r => r.id === record.id);
+                            // 下一筆紀錄（時間更早的）即為上一個維護週期起點
+                            const previousRecord = typedRecords[recordIndex + 1];
+
+                            // 計算區間數據：
+                            // 如果有「上一次」保養，計算 (上次日期, 這次日期]
+                            // 如果沒有（是最早的一筆），則計算 (該紀錄日期, 到現在為止]？ 
+                            // 不，如果是歷史清單，顯示該紀錄對應的週期更有意義。
+                            // User 的需求是「以上次計算」，所以最舊的那筆顯示自啟用起算的增量。
+                            const stats = previousRecord
+                              ? calculateMetricsBetweenDates(selectedBike.id, previousRecord.service_date, record.service_date)
+                              : calculateMetricsSinceDate(selectedBike.id, record.service_date);
+
+                            return (
+                              <div className="flex items-center gap-4 text-[11px] font-mono bg-white/5 p-2 px-3 rounded-lg border border-white/5">
+                                <span className="text-orange-200/40">{previousRecord ? '週期增量:' : '累積使用:'}</span>
+                                <span className="text-orange-300">{stats.distanceKm.toFixed(1)} km</span>
+                                <span className="text-white/10">|</span>
+                                <span className="text-orange-300">{stats.movingTimeHours.toFixed(1)} hr</span>
+                                <span className="text-white/10">|</span>
+                                <span className="text-orange-300">{stats.days} 天</span>
+                              </div>
+                            );
+                          })()}
+
+                          {/* 顯示詳細零件資訊 */}
+                          {(() => {
+                            const detail = record.parts_details?.find(d => d.type_id === selectedHistoryType.id);
+                            if (!detail && !record.notes && !record.shop_name && !record.cost) return null;
+                            return (
+                              <div className="space-y-2">
+                                {detail && (
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    {detail.brand && (
+                                      <div className="flex flex-col bg-white/5 p-2 rounded-lg">
+                                        <span className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">品牌 Brand</span>
+                                        <span className="text-white/90 font-medium">{detail.brand}</span>
+                                      </div>
+                                    )}
+                                    {detail.model && (
+                                      <div className="flex flex-col bg-white/5 p-2 rounded-lg">
+                                        <span className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">型號 Model</span>
+                                        <span className="text-white/90 font-medium">{detail.model}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(record.shop_name || record.cost) && (
+                                  <div className="flex items-center gap-3 text-[11px] text-white/40 px-1">
+                                    {record.shop_name && <span>店家: {record.shop_name}</span>}
+                                    {record.cost && <span>費用: ${record.cost.toLocaleString()}</span>}
+                                  </div>
+                                )}
+
+                                {(detail?.other || record.notes) && (
+                                  <div className="bg-white/5 p-2 px-3 rounded-lg border-l-2 border-orange-500/30">
+                                    <span className="text-white/30 text-[9px] uppercase block mb-1">備註 Remarks</span>
+                                    <p className="text-white/70 text-xs italic leading-relaxed">
+                                      {detail?.other || record.notes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          <div className="text-[10px] text-white/20 pt-1 border-t border-white/5">
+                            保養當下里程: {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
+                          </div>
                         </div>
                       </div>
                     ))
                 )}
               </div>
             </div>
-          </div>
+          </div >
         )
       }
       {/* 輪組編輯 Modal */}
@@ -1332,6 +1691,26 @@ const MaintenanceDashboard: React.FC = () => {
                 </div>
 
                 <div>
+                  <label className="flex items-center space-x-3 cursor-pointer p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all">
+                    <input
+                      type="checkbox"
+                      checked={!wheelsetFormData.bike_id}
+                      onChange={(e) => {
+                        setWheelsetFormData({
+                          ...wheelsetFormData,
+                          bike_id: e.target.checked ? null : (selectedBike?.id || null)
+                        });
+                      }}
+                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
+                    />
+                    <div>
+                      <span className="text-white font-bold block">設為通用輪組</span>
+                      <span className="text-xs text-orange-200/40 block">如果不勾選，則此輪組僅會顯示在當前車輛下</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-orange-200/60 mb-1">品牌</label>
                   <input
                     type="text"
@@ -1354,7 +1733,14 @@ const MaintenanceDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <p className="text-xs text-orange-200/40 mt-1">里程會隨對應單車自動累計，不可手動修改。</p>
+                  <label className="block text-sm font-medium text-orange-200/60 mb-1">初始里程 (m)</label>
+                  <input
+                    type="number"
+                    value={wheelsetFormData.distance}
+                    onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, distance: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                  />
+                  <p className="text-xs text-orange-200/40 mt-1">設定初始里程後，新騎乘紀錄將會自動累加。</p>
                 </div>
 
                 <div>
@@ -1409,24 +1795,40 @@ const MaintenanceDashboard: React.FC = () => {
 
               <div className="p-4 border-t border-white/10 bg-white/5 flex gap-3">
                 <button
+                  onClick={() => {
+                    if (confirm(`確定要刪除輪組 "${wheelsetFormData.name}" 嗎？這項動作無法復原。`)) {
+                      if (editingWheelset) {
+                        deleteWheelset(editingWheelset.id);
+                        setEditingWheelset(null);
+                      }
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl font-bold bg-red-600/10 hover:bg-red-600/20 text-red-500 hover:text-red-400 transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  刪除
+                </button>
+                <div className="flex-1"></div>
+                <button
                   onClick={() => setEditingWheelset(null)}
-                  className="flex-1 px-4 py-2 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-white transition-all"
+                  className="px-4 py-2 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-white transition-all"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleUpdateWheelset}
                   disabled={!wheelsetFormData.name}
-                  className="flex-1 px-4 py-2 rounded-xl font-bold bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all flex items-center justify-center gap-2"
+                  className="px-4 py-2 rounded-xl font-bold bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  儲存變更
+                  儲存
                 </button>
               </div>
             </div>
           </div>
-        )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
