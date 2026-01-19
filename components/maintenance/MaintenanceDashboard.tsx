@@ -75,6 +75,7 @@ const MaintenanceDashboard: React.FC = () => {
   const [editInterval, setEditInterval] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [selectedHistoryType, setSelectedHistoryType] = useState<MaintenanceType | null>(null);
+  const [returnToHistoryType, setReturnToHistoryType] = useState<MaintenanceType | null>(null);
 
   // 輪組編輯狀態
   const [editingWheelset, setEditingWheelset] = useState<Wheelset | null>(null);
@@ -161,10 +162,11 @@ const MaintenanceDashboard: React.FC = () => {
     details: {} as Record<string, { brand: string; model: string; other: string }>,
     service_date: new Date().toISOString().split('T')[0],
     cost: '',
-    shop_name: '',
+    shop_name: 'seh STUDIO',
     notes: '',
     other: '',
-    is_diy: false
+    is_diy: false,
+    wheelset_id: ''
   });
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -176,7 +178,7 @@ const MaintenanceDashboard: React.FC = () => {
       details: {},
       service_date: new Date().toISOString().split('T')[0],
       cost: '',
-      shop_name: '',
+      shop_name: 'seh STUDIO',
       notes: '',
       other: '',
       is_diy: false
@@ -187,18 +189,11 @@ const MaintenanceDashboard: React.FC = () => {
   };
 
   const handleEditMaintenance = (record: any) => {
-    let typeList: string[] = [];
-    if (record.maintenance_type.startsWith('全車保養')) {
-      typeList.push('full');
-      const match = record.maintenance_type.match(/\((.*)\)/);
-      if (match) {
-        // 嘗試解析括號內的項目
-        const others = match[1].split(', ');
-        typeList.push(...others);
-      }
-    } else {
-      typeList = record.maintenance_type.split(', ');
+    if (selectedHistoryType) {
+      setReturnToHistoryType(selectedHistoryType);
+      setSelectedHistoryType(null);
     }
+    const typeList = record.maintenance_type.split(', ');
 
     const detailsMap: Record<string, { brand: string; model: string; other: string }> = {};
     if (record.parts_details && Array.isArray(record.parts_details)) {
@@ -219,8 +214,18 @@ const MaintenanceDashboard: React.FC = () => {
       shop_name: record.shop_name || '',
       notes: record.notes || '',
       other: record.other || '',
-      is_diy: record.is_diy || false
+      is_diy: record.is_diy || false,
+      wheelset_id: record.wheelset_id || ''
     });
+
+    // 如果是單一保養項目，自動設定 targetType 進入顯示專用模式
+    if (typeList.length === 1 && !typeList[0].includes('full')) {
+      const singleType = displayMaintenanceTypes.find(t => t.id === typeList[0]);
+      if (singleType) {
+        setTargetType(singleType);
+      }
+    }
+
     setEditingRecordId(record.id);
     setIsAddModalOpen(true);
   };
@@ -242,14 +247,8 @@ const MaintenanceDashboard: React.FC = () => {
     }
 
     // 決定維修類型字串
-    let maintenanceTypeValue = '';
-    // 如果勾選了所有顯示的項目，則標記為全車保養
-    if (selectedTypes.length >= displayMaintenanceTypes.length) {
-      maintenanceTypeValue = '全車保養';
-    } else {
-      // 否則儲存為逗號分隔的 ID 列表 (例如: "chain_lube, tire_change")
-      maintenanceTypeValue = selectedTypes.join(', ');
-    }
+    // 儲存為逗號分隔的 ID 列表 (例如: "chain_lube, tire_change")
+    const maintenanceTypeValue = selectedTypes.join(', ');
 
     // 準備 parts_details
     const parts_details = selectedTypes.map(typeId => {
@@ -273,7 +272,8 @@ const MaintenanceDashboard: React.FC = () => {
       notes: formData.notes || undefined,
       other: formData.other || undefined,
       is_diy: formData.is_diy,
-      parts_details: parts_details
+      parts_details: parts_details,
+      wheelset_id: formData.wheelset_id || undefined
     };
 
     try {
@@ -282,7 +282,24 @@ const MaintenanceDashboard: React.FC = () => {
       } else {
         await addMaintenanceRecord(recordData);
       }
+
+      // 如果勾選了輪胎更換且有選擇輪組，連動更新輪組的輪胎資訊
+      if (selectedTypes.includes('tires') && formData.wheelset_id) {
+        const tireDetail = formData.details['tires'];
+        if (tireDetail && (tireDetail.brand || tireDetail.model)) {
+          await updateWheelset(formData.wheelset_id, {
+            tire_brand: tireDetail.brand,
+            model: tireDetail.model
+          });
+        }
+      }
+
       resetForm();
+      if (returnToHistoryType) {
+        setSelectedHistoryType(returnToHistoryType);
+        setReturnToHistoryType(null);
+      }
+      fetchData();
     } catch (err) {
       console.error('儲存紀錄失敗:', err);
     }
@@ -1240,55 +1257,58 @@ const MaintenanceDashboard: React.FC = () => {
                       <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                         <span className="text-white font-bold">{targetType.name}</span>
-                        <span className="text-xs text-orange-200/40 ml-auto">單一項目保養</span>
+                        <div className="flex gap-2 ml-auto">
+                          <span className="text-[10px] px-2 py-0.5 bg-orange-500/20 text-orange-200 rounded-full border border-orange-500/30 uppercase tracking-wider font-bold">單一項目</span>
+                        </div>
                       </div>
 
                       {/* 單一項目的詳細資訊輸入 */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div>
-                          <label className="text-xs text-orange-200/50 mb-1 block">品牌</label>
-                          <input
-                            type="text"
-                            placeholder="品牌"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                            value={formData.details[targetType.id]?.brand || ''}
-                            onChange={e => setFormData(prev => ({
-                              ...prev,
-                              details: {
-                                ...prev.details,
-                                [targetType.id]: {
-                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                  brand: e.target.value
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">品牌 Brand</label>
+                            <input
+                              type="text"
+                              placeholder="品牌"
+                              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                              value={formData.details[targetType.id]?.brand || ''}
+                              onChange={e => setFormData(prev => ({
+                                ...prev,
+                                details: {
+                                  ...prev.details,
+                                  [targetType.id]: {
+                                    ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                    brand: e.target.value
+                                  }
                                 }
-                              }
-                            }))}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-orange-200/50 mb-1 block">型號</label>
-                          <input
-                            type="text"
-                            placeholder="型號"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                            value={formData.details[targetType.id]?.model || ''}
-                            onChange={e => setFormData(prev => ({
-                              ...prev,
-                              details: {
-                                ...prev.details,
-                                [targetType.id]: {
-                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                  model: e.target.value
+                              }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">型號 Model</label>
+                            <input
+                              type="text"
+                              placeholder="型號"
+                              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                              value={formData.details[targetType.id]?.model || ''}
+                              onChange={e => setFormData(prev => ({
+                                ...prev,
+                                details: {
+                                  ...prev.details,
+                                  [targetType.id]: {
+                                    ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                    model: e.target.value
+                                  }
                                 }
-                              }
-                            }))}
-                          />
+                              }))}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-xs text-orange-200/50 mb-1 block">其他</label>
-                          <input
-                            type="text"
-                            placeholder="其他規格"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                        <div className="flex flex-col">
+                          <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">備註 / 其他規格 Remarks</label>
+                          <textarea
+                            placeholder="其他規格說明..."
+                            className="flex-1 w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all resize-none min-h-[100px]"
                             value={formData.details[targetType.id]?.other || ''}
                             onChange={e => setFormData(prev => ({
                               ...prev,
@@ -1416,6 +1436,32 @@ const MaintenanceDashboard: React.FC = () => {
                   )}
                 </div>
 
+                {/* 輪組選擇 - 僅在勾選輪胎更換時顯示 */}
+                {formData.maintenance_type.includes('tires') && (
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">關聯輪組 (選填)</label>
+                    <div className="relative">
+                      <select
+                        value={formData.wheelset_id}
+                        onChange={e => setFormData(prev => ({ ...prev, wheelset_id: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none appearance-none cursor-pointer"
+                      >
+                        <option value="" className="bg-gray-900">未指定輪組</option>
+                        {wheelsets
+                          .filter(ws => !selectedBikeId || ws.bike_id === selectedBikeId)
+                          .map(ws => (
+                            <option key={ws.id} value={ws.id} className="bg-gray-900">
+                              {ws.name} ({ws.brand} {ws.model}) {ws.is_active ? ' [作用中]' : ''}
+                            </option>
+                          ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <ChevronRight className="w-4 h-4 text-white/20 rotate-90" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
@@ -1450,7 +1496,7 @@ const MaintenanceDashboard: React.FC = () => {
                       type="text"
                       value={formData.shop_name}
                       onChange={e => setFormData(prev => ({ ...prev, shop_name: e.target.value }))}
-                      placeholder="例：永興車行"
+                      placeholder="seh STUDIO"
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -1504,7 +1550,7 @@ const MaintenanceDashboard: React.FC = () => {
       {
         selectedHistoryType && selectedBike && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-6xl p-6 max-h-[80vh] flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-bold text-white">{selectedHistoryType.name}紀錄</h3>
@@ -1535,50 +1581,44 @@ const MaintenanceDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
-                {bikeRecords.filter(r => r.maintenance_type === selectedHistoryType.id || r.maintenance_type.includes(selectedHistoryType.id)).length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-white/30">尚無相關紀錄</p>
-                  </div>
-                ) : (
-                  bikeRecords
-                    .filter(r => r.maintenance_type === selectedHistoryType.id || r.maintenance_type.includes(selectedHistoryType.id))
-                    .map(record => (
-                      <div
-                        key={record.id}
-                        className="p-4 bg-white/5 border border-white/10 rounded-xl"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-white font-bold">{record.service_date}</span>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedHistoryType(null); // 先關閉此 Modal
-                                handleEditMaintenance(record); // 開啟編輯 Modal
-                              }}
-                              className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm('確定要刪除此筆紀錄嗎？')) {
-                                  deleteMaintenanceRecord(record.id);
-                                }
-                              }}
-                              className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="space-y-3 mt-3">
-                          {(() => {
+              {/* 表格呈現模式 */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-white/10">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse relative">
+                    <thead className="sticky top-0 z-10 bg-[#0f172a] shadow-sm">
+                      <tr className="text-xs text-orange-200/60 uppercase tracking-wider">
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">日期</th>
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">週期里程</th>
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">時數</th>
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">天數</th>
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">品牌/型號</th>
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">保養方式</th>
+                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">備註/詳情</th>
+                        <th className="p-4 font-bold text-right whitespace-nowrap bg-[#0f172a]">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-sm bg-slate-900/50">
+                      {bikeRecords
+                        .filter(r =>
+                          r.maintenance_type === selectedHistoryType.id ||
+                          r.maintenance_type.split(', ').includes(selectedHistoryType.id)
+                        ).length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="text-center py-12 text-white/30">
+                            尚無相關紀錄
+                          </td>
+                        </tr>
+                      ) : (
+                        bikeRecords
+                          .filter(r =>
+                            r.maintenance_type === selectedHistoryType.id ||
+                            r.maintenance_type.split(', ').includes(selectedHistoryType.id)
+                          )
+                          .map(record => {
                             // 獲取該類型在該單車的所有紀錄（已按日期排序：由新到舊）
                             const typedRecords = bikeRecords.filter(r =>
                               r.maintenance_type === selectedHistoryType?.id ||
-                              r.maintenance_type.includes(selectedHistoryType?.id || '') ||
-                              r.maintenance_type.includes('全車保養')
+                              r.maintenance_type.split(', ').includes(selectedHistoryType?.id || '')
                             );
 
                             // 找出當前紀錄在過濾後列表中的索引
@@ -1586,76 +1626,95 @@ const MaintenanceDashboard: React.FC = () => {
                             // 下一筆紀錄（時間更早的）即為上一個維護週期起點
                             const previousRecord = typedRecords[recordIndex + 1];
 
-                            // 計算區間數據：
-                            // 如果有「上一次」保養，計算 (上次日期, 這次日期]
-                            // 如果沒有（是最早的一筆），則計算 (該紀錄日期, 到現在為止]？ 
-                            // 不，如果是歷史清單，顯示該紀錄對應的週期更有意義。
-                            // User 的需求是「以上次計算」，所以最舊的那筆顯示自啟用起算的增量。
                             const stats = previousRecord
                               ? calculateMetricsBetweenDates(selectedBike.id, previousRecord.service_date, record.service_date)
                               : calculateMetricsSinceDate(selectedBike.id, record.service_date);
 
-                            return (
-                              <div className="flex items-center gap-4 text-[11px] font-mono bg-white/5 p-2 px-3 rounded-lg border border-white/5">
-                                <span className="text-orange-200/40">{previousRecord ? '週期增量:' : '累積使用:'}</span>
-                                <span className="text-orange-300">{stats.distanceKm.toFixed(1)} km</span>
-                                <span className="text-white/10">|</span>
-                                <span className="text-orange-300">{stats.movingTimeHours.toFixed(1)} hr</span>
-                                <span className="text-white/10">|</span>
-                                <span className="text-orange-300">{stats.days} 天</span>
-                              </div>
-                            );
-                          })()}
-
-                          {/* 顯示詳細零件資訊 */}
-                          {(() => {
                             const detail = record.parts_details?.find(d => d.type_id === selectedHistoryType.id);
-                            if (!detail && !record.notes && !record.shop_name && !record.cost) return null;
+
                             return (
-                              <div className="space-y-2">
-                                {detail && (
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    {detail.brand && (
-                                      <div className="flex flex-col bg-white/5 p-2 rounded-lg">
-                                        <span className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">品牌 Brand</span>
-                                        <span className="text-white/90 font-medium">{detail.brand}</span>
+                              <tr key={record.id} className="hover:bg-white/5 transition-colors group">
+                                <td className="p-4 text-white font-bold whitespace-nowrap align-top">
+                                  {record.service_date}
+                                  <div className="text-[10px] text-white/30 font-mono mt-1">
+                                    {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
+                                  </div>
+                                </td>
+                                <td className="p-4 align-top">
+                                  <span className="text-orange-300 font-mono">{stats.distanceKm.toFixed(1)} km</span>
+                                  {!previousRecord && <span className="text-[10px] text-white/30 block">累積</span>}
+                                </td>
+                                <td className="p-4 text-white/80 font-mono align-top">
+                                  {stats.movingTimeHours.toFixed(1)} hr
+                                </td>
+                                <td className="p-4 text-white/80 font-mono align-top">
+                                  {stats.days} 天
+                                </td>
+                                <td className="p-4 align-top">
+                                  <div className="flex flex-col gap-0.5">
+                                    {detail?.brand ? <span className="text-white font-medium">{detail.brand}</span> : <span className="text-white/20">-</span>}
+                                    {detail?.model && <span className="text-xs text-white/50">{detail.model}</span>}
+                                  </div>
+                                </td>
+                                <td className="p-4 align-top">
+                                  {record.is_diy ? (
+                                    <span className="text-orange-400 font-bold border border-orange-500/30 bg-orange-500/10 px-2 py-1 rounded text-xs">DIY</span>
+                                  ) : (
+                                    record.shop_name ? (
+                                      <span className="text-white font-medium">{record.shop_name}</span>
+                                    ) : (
+                                      <span className="text-white/20">-</span>
+                                    )
+                                  )}
+                                </td>
+                                <td className="p-4 max-w-[200px] align-top">
+                                  <div className="space-y-1">
+                                    {record.cost && (
+                                      <div className="flex flex-wrap gap-2 text-xs text-orange-200/60">
+                                        <span>💰 ${record.cost.toLocaleString()}</span>
                                       </div>
                                     )}
-                                    {detail.model && (
-                                      <div className="flex flex-col bg-white/5 p-2 rounded-lg">
-                                        <span className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">型號 Model</span>
-                                        <span className="text-white/90 font-medium">{detail.model}</span>
+                                    {(detail?.other || record.notes) && (
+                                      <div className="text-xs text-white/60 truncate" title={detail?.other || record.notes}>
+                                        {detail?.other || record.notes}
                                       </div>
                                     )}
+                                    {!record.cost && !detail?.other && !record.notes && (
+                                      <span className="text-white/20">-</span>
+                                    )}
                                   </div>
-                                )}
-
-                                {(record.shop_name || record.cost) && (
-                                  <div className="flex items-center gap-3 text-[11px] text-white/40 px-1">
-                                    {record.shop_name && <span>店家: {record.shop_name}</span>}
-                                    {record.cost && <span>費用: ${record.cost.toLocaleString()}</span>}
+                                </td>
+                                <td className="p-4 text-right align-top">
+                                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => {
+                                        handleEditMaintenance(record);
+                                      }}
+                                      className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                      title="編輯"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (confirm('確定要刪除此筆紀錄嗎？')) {
+                                          deleteMaintenanceRecord(record.id);
+                                        }
+                                      }}
+                                      className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                      title="刪除"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
                                   </div>
-                                )}
-
-                                {(detail?.other || record.notes) && (
-                                  <div className="bg-white/5 p-2 px-3 rounded-lg border-l-2 border-orange-500/30">
-                                    <span className="text-white/30 text-[9px] uppercase block mb-1">備註 Remarks</span>
-                                    <p className="text-white/70 text-xs italic leading-relaxed">
-                                      {detail?.other || record.notes}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
+                                </td>
+                              </tr>
                             );
-                          })()}
-
-                          <div className="text-[10px] text-white/20 pt-1 border-t border-white/5">
-                            保養當下里程: {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                )}
+                          })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div >

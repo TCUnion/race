@@ -123,8 +123,8 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
 
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
           {[
-            { label: '參賽人數', value: stats.totalAthletes || '-', color: 'text-slate-900', icon: Users },
-            { label: '完成人數', value: stats.completedAthletes || '-', color: 'text-tsu-blue', icon: Trophy },
+            { label: '參賽人數', value: stats.totalAthletes ?? '-', color: 'text-slate-900', icon: Users },
+            { label: '完成人數', value: stats.completedAthletes ?? '-', color: 'text-tsu-blue', icon: Trophy },
             { label: '最快時間', value: formatTime(stats.bestTime), color: 'text-red-500', icon: Zap },
             { label: '平均時間', value: formatTime(stats.avgTime), color: 'text-slate-900', icon: Dna },
             { label: '最高功率', value: stats.maxPower ? `${stats.maxPower} W` : '-', color: 'text-orange-500', icon: Zap },

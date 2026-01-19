@@ -1,5 +1,5 @@
 {
-    "name": "Strava-路段成績同步(精準時間版) v6-權限修正嘗試",
+    "name": "Strava-路段成績同步(全球排行榜版) v7",
     "nodes": [
         {
             "parameters": {},
@@ -8,7 +8,7 @@
             "type": "n8n-nodes-base.manualTrigger",
             "typeVersion": 1,
             "position": [
-                0,
+                -200,
                 240
             ]
         },
@@ -28,7 +28,7 @@
             "type": "n8n-nodes-base.scheduleTrigger",
             "typeVersion": 1.1,
             "position": [
-                0,
+                -200,
                 400
             ]
         },
@@ -50,7 +50,7 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                220,
+                20,
                 320
             ],
             "credentials": {
@@ -59,67 +59,19 @@
                     "name": "zeabur"
                 }
             }
-        },
-        {
-            "parameters": {
-                "operation": "select",
-                "table": "registrations",
-                "filters": {
-                    "conditions": [
-                        {
-                            "key": "segment_id",
-                            "value": "={{ $json.id }}"
-                        }
-                    ]
-                }
-            },
-            "id": "get-registrations",
-            "name": "2. 讀取該路段報名名單",
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [
-                440,
-                320
-            ],
-            "credentials": {
-                "supabaseApi": {
-                    "id": "EUkgZj6J4zKucp2d",
-                    "name": "zeabur"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "jsCode": "// 攜帶路段資訊\nconst segment = $node[\"1. 讀取啟用的路段\"].json;\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    challenge_segment_id: segment.id,\n    challenge_start_date: segment.start_date,\n    challenge_end_date: segment.end_date\n  }\n}));"
-            },
-            "id": "carry-segment-info",
-            "name": "攜帶路段資訊",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                620,
-                320
-            ]
         },
         {
             "parameters": {
                 "operation": "select",
                 "table": "strava_tokens",
-                "filters": {
-                    "conditions": [
-                        {
-                            "key": "athlete_id",
-                            "value": "={{ $json.strava_athlete_id }}"
-                        }
-                    ]
-                }
+                "returnAll": true
             },
-            "id": "get-tokens",
-            "name": "3. 取得選手 Token",
+            "id": "get-all-tokens",
+            "name": "2. 讀取所有授權選手 (全球模式)",
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                800,
+                240,
                 320
             ],
             "credentials": {
@@ -129,211 +81,190 @@
                 }
             }
         },
-        "parameters": {
-            "jsCode": "// 攜帶所有資訊並過濾掉沒有 Token 的 Item\nreturn items.filter(i => i.json.access_token).map(item => {\n  // 透過 itemMatching 找回對應的報名資訊（包含名字）\n  const regInfo = $(\"攜帶路段資訊\").itemMatching(item).json;\n  \n  return {\n    json: {\n      ...item.json,\n      athlete_name: regInfo.athlete_name,\n      challenge_segment_id: regInfo.challenge_segment_id,\n      challenge_start_date: regInfo.challenge_start_date,\n      challenge_end_date: regInfo.challenge_end_date\n    }\n  };\n});"
+        {
+            "parameters": {
+                "jsCode": "// 將路段資訊與所有選手進行交叉組合\n// 這樣每個路段都會去抓所有選手的成績\nconst segments = $(\"1. 讀取啟用的路段\").all();\nconst tokens = items;\n\nlet results = [];\nsegments.forEach(seg => {\n  tokens.forEach(token => {\n    results.push({\n      json: {\n        ...token.json,\n        challenge_segment_id: seg.json.id,\n        challenge_strava_id: seg.json.strava_id || seg.json.id,\n        challenge_start_date: seg.json.start_date,\n        challenge_end_date: seg.json.end_date\n      }\n    });\n  });\n});\nreturn results;"
+            },
+            "id": "cross-join-data",
+            "name": "3. 交叉組合賽段與選手",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                320
+            ]
         },
-        "id": "carry-all-info",
-        "name": "匯總所有資訊",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-            980,
-            320
-        ]
-    },
-    {
-        "parameters": {
-            "url": "=https://www.strava.com/api/v3/segment_efforts",
-            "sendHeaders": true,
-            "headerParameters": {
-                "parameters": [
-                    {
-                        "name": "Authorization",
-                        "value": "=Bearer {{ $json.access_token }}"
-                    }
+        {
+            "parameters": {
+                "url": "=https://www.strava.com/api/v3/segment_efforts",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $json.access_token }}"
+                        }
+                    ]
+                },
+                "sendQueryParameters": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "segment_id",
+                            "value": "={{ $json.challenge_strava_id }}"
+                        },
+                        {
+                            "name": "athlete_id",
+                            "value": "={{ $json.athlete_id }}"
+                        },
+                        {
+                            "name": "start_date_local",
+                            "value": "={{ $json.challenge_start_date }}"
+                        },
+                        {
+                            "name": "end_date_local",
+                            "value": "={{ $json.challenge_end_date }}"
+                        },
+                        {
+                            "name": "per_page",
+                            "value": "50"
+                        }
+                    ]
+                }
+            },
+            "id": "strava-api",
+            "name": "4. Strava 抓取努力紀錄",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                680,
+                320
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// 取得當前處理項目的原始資訊 (主要為了拿正確的名字與 Segment 內部 ID)\nconst originalInfo = $node[\"3. 交叉組合賽段與選手\"].json;\n\nlet rawData = item.json;\nif (!rawData) return [];\nif (!Array.isArray(rawData)) rawData = [rawData];\n\n// 過濾無效資料並轉換\nreturn rawData\n  .filter(e => e && e.id)\n  .map(e => ({\n    json: {\n      id: e.id,\n      segment_id: originalInfo.challenge_segment_id,\n      athlete_id: originalInfo.athlete_id,\n      athlete_name: (e.athlete?.firstname || \"\") + \" \" + (e.athlete?.lastname || \"\"),\n      elapsed_time: e.elapsed_time,\n      moving_time: e.moving_time,\n      start_date: e.start_date_local,\n      average_watts: e.average_watts,\n      device_watts: e.device_watts === true,\n      average_heartrate: e.average_heartrate,\n      max_heartrate: e.max_heartrate\n    }\n  }));"
+            },
+            "id": "transform-data",
+            "name": "5. 資料結構轉換",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                900,
+                320
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "upsert",
+                "table": "segment_efforts",
+                "columns": [
+                    "id",
+                    "segment_id",
+                    "athlete_id",
+                    "athlete_name",
+                    "elapsed_time",
+                    "moving_time",
+                    "start_date",
+                    "average_watts",
+                    "device_watts",
+                    "average_heartrate",
+                    "max_heartrate"
                 ]
             },
-            "sendQueryParameters": true,
-            "queryParameters": {
-                "parameters": [
-                    {
-                        "name": "segment_id",
-                        "value": "={{ $json.challenge_segment_id }}"
-                    },
-                    {
-                        "name": "athlete_id",
-                        "value": "={{ $json.athlete_id }}"
-                    },
-                    {
-                        "name": "start_date_local",
-                        "value": "={{ $json.challenge_start_date }}"
-                    },
-                    {
-                        "name": "end_date_local",
-                        "value": "={{ $json.challenge_end_date }}"
-                    },
-                    {
-                        "name": "per_page",
-                        "value": "50"
-                    }
-                ]
-            }
-        },
-        "id": "strava-api",
-        "name": "4. Strava 抓取努力紀錄",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.1,
-        "position": [
-            1160,
-            320
-        ]
-    },
-    {
-        "parameters": {
-            "jsCode": "// 取得路段資訊\nconst segment = $(\"1. 讀取啟用的路段\").first().json;\n\n// 遍歷所有傳入的 items（來自 Strava API 的回傳）\nreturn items.flatMap(item => {\n  // 透過 itemMatching 獲取關聯的選手資訊 (從「匯總所有資訊」讀取名字)\n  const athlete = $(\"匯總所有資訊\").itemMatching(item).json;\n\n  let rawData = item.json;\n  // 容錯：處理 Strava API 回傳可能是單一物件或陣列的情況\n  if (!Array.isArray(rawData)) rawData = [rawData];\n\n  // 過濾無效資料並轉換\n  return rawData\n    .filter(e => e && e.id)\n    .map(e => ({\n      json: {\n        id: e.id,\n        segment_id: segment.id,\n        athlete_id: athlete.athlete_id,\n        athlete_name: athlete.athlete_name || \"Unknown\",\n        elapsed_time: e.elapsed_time,\n        moving_time: e.moving_time,\n        start_date: e.start_date_local,\n        average_watts: e.average_watts,\n        device_watts: e.device_watts === true,\n        average_heartrate: e.average_heartrate,\n        max_heartrate: e.max_heartrate\n      }\n    }));\n});"
-        },
-        "id": "transform-data",
-        "name": "5. 資料結構轉換",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-            1380,
-            320
-        ]
-    },
-    {
-        "parameters": {
-            "operation": "upsert",
-            "table": "segment_efforts",
-            "columns": [
-                "id",
-                "segment_id",
-                "athlete_id",
-                "athlete_name",
-                "elapsed_time",
-                "moving_time",
-                "start_date",
-                "average_watts",
-                "device_watts",
-                "average_heartrate",
-                "max_heartrate"
-            ]
-        },
-        "id": "upsert-efforts",
-        "name": "6. 存入成績資料表",
-        "type": "n8n-nodes-base.supabase",
-        "typeVersion": 1,
-        "position": [
-            1600,
-            320
-        ],
-        "credentials": {
-            "supabaseApi": {
-                "id": "EUkgZj6J4zKucp2d",
-                "name": "zeabur"
+            "id": "upsert-efforts",
+            "name": "6. 存入成績資料表",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1120,
+                320
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "EUkgZj6J4zKucp2d",
+                    "name": "zeabur"
+                }
             }
         }
+    ],
+    "connections": {
+        "手動執行": {
+            "main": [
+                [
+                    {
+                        "node": "1. 讀取啟用的路段",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "定時執行 (30分)": {
+            "main": [
+                [
+                    {
+                        "node": "1. 讀取啟用的路段",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "1. 讀取啟用的路段": {
+            "main": [
+                [
+                    {
+                        "node": "2. 讀取所有授權選手 (全球模式)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "2. 讀取所有授權選手 (全球模式)": {
+            "main": [
+                [
+                    {
+                        "node": "3. 交叉組合賽段與選手",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "3. 交叉組合賽段與選手": {
+            "main": [
+                [
+                    {
+                        "node": "4. Strava 抓取努力紀錄",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "4. Strava 抓取努力紀錄": {
+            "main": [
+                [
+                    {
+                        "node": "5. 資料結構轉換",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "5. 資料結構轉換": {
+            "main": [
+                [
+                    {
+                        "node": "6. 存入成績資料表",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
     }
-],
-"connections": {
-    "手動執行": {
-        "main": [
-            [
-                {
-                    "node": "1. 讀取啟用的路段",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "定時執行 (30分)": {
-        "main": [
-            [
-                {
-                    "node": "1. 讀取啟用的路段",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "1. 讀取啟用的路段": {
-        "main": [
-            [
-                {
-                    "node": "2. 讀取該路段報名名單",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "2. 讀取該路段報名名單": {
-        "main": [
-            [
-                {
-                    "node": "攜帶路段資訊",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "攜帶路段資訊": {
-        "main": [
-            [
-                {
-                    "node": "3. 取得選手 Token",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "3. 取得選手 Token": {
-        "main": [
-            [
-                {
-                    "node": "匯總所有資訊",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "匯總所有資訊": {
-        "main": [
-            [
-                {
-                    "node": "4. Strava 抓取努力紀錄",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "4. Strava 抓取努力紀錄": {
-        "main": [
-            [
-                {
-                    "node": "5. 資料結構轉換",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    },
-    "5. 資料結構轉換": {
-        "main": [
-            [
-                {
-                    "node": "6. 存入成績資料表",
-                    "type": "main",
-                    "index": 0
-                }
-            ]
-        ]
-    }
-}
 }

@@ -248,6 +248,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             // 3. 處理每個路段的排行榜
             activeSegments.forEach(seg => {
                 const segmentEfforts = (allEfforts || []).filter(e => Number(e.segment_id) === Number(seg.id));
+                // console.log(`[useSegmentData] Segment ${seg.id} (${seg.name}) matched efforts: ${segmentEfforts.length}`);
                 const regMap = regMapBySegment[seg.id] || new Map();
 
                 // 每個選手只保留「最佳成績」
