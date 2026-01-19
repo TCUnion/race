@@ -220,8 +220,18 @@ const MaintenanceDashboard: React.FC = () => {
       shop_name: record.shop_name || '',
       notes: record.notes || '',
       other: record.other || '',
-      is_diy: record.is_diy || false
+      is_diy: record.is_diy || false,
+      wheelset_id: record.wheelset_id || ''
     });
+
+    // 如果是單一保養項目，自動設定 targetType 進入顯示專用模式
+    if (typeList.length === 1 && !typeList[0].includes('full')) {
+      const singleType = displayMaintenanceTypes.find(t => t.id === typeList[0]);
+      if (singleType) {
+        setTargetType(singleType);
+      }
+    }
+
     setEditingRecordId(record.id);
     setIsAddModalOpen(true);
   };
@@ -1254,55 +1264,58 @@ const MaintenanceDashboard: React.FC = () => {
                       <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                         <span className="text-white font-bold">{targetType.name}</span>
-                        <span className="text-xs text-orange-200/40 ml-auto">單一項目保養</span>
+                        <div className="flex gap-2 ml-auto">
+                          <span className="text-[10px] px-2 py-0.5 bg-orange-500/20 text-orange-200 rounded-full border border-orange-500/30 uppercase tracking-wider font-bold">單一項目</span>
+                        </div>
                       </div>
 
                       {/* 單一項目的詳細資訊輸入 */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div>
-                          <label className="text-xs text-orange-200/50 mb-1 block">品牌</label>
-                          <input
-                            type="text"
-                            placeholder="品牌"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                            value={formData.details[targetType.id]?.brand || ''}
-                            onChange={e => setFormData(prev => ({
-                              ...prev,
-                              details: {
-                                ...prev.details,
-                                [targetType.id]: {
-                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                  brand: e.target.value
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">品牌 Brand</label>
+                            <input
+                              type="text"
+                              placeholder="品牌"
+                              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                              value={formData.details[targetType.id]?.brand || ''}
+                              onChange={e => setFormData(prev => ({
+                                ...prev,
+                                details: {
+                                  ...prev.details,
+                                  [targetType.id]: {
+                                    ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                    brand: e.target.value
+                                  }
                                 }
-                              }
-                            }))}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-orange-200/50 mb-1 block">型號</label>
-                          <input
-                            type="text"
-                            placeholder="型號"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                            value={formData.details[targetType.id]?.model || ''}
-                            onChange={e => setFormData(prev => ({
-                              ...prev,
-                              details: {
-                                ...prev.details,
-                                [targetType.id]: {
-                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                  model: e.target.value
+                              }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">型號 Model</label>
+                            <input
+                              type="text"
+                              placeholder="型號"
+                              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                              value={formData.details[targetType.id]?.model || ''}
+                              onChange={e => setFormData(prev => ({
+                                ...prev,
+                                details: {
+                                  ...prev.details,
+                                  [targetType.id]: {
+                                    ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
+                                    model: e.target.value
+                                  }
                                 }
-                              }
-                            }))}
-                          />
+                              }))}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-xs text-orange-200/50 mb-1 block">其他</label>
-                          <input
-                            type="text"
-                            placeholder="其他規格"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                        <div className="flex flex-col">
+                          <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">備註 / 其他規格 Remarks</label>
+                          <textarea
+                            placeholder="其他規格說明..."
+                            className="flex-1 w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all resize-none min-h-[100px]"
                             value={formData.details[targetType.id]?.other || ''}
                             onChange={e => setFormData(prev => ({
                               ...prev,
