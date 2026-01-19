@@ -188,18 +188,7 @@ const MaintenanceDashboard: React.FC = () => {
   };
 
   const handleEditMaintenance = (record: any) => {
-    let typeList: string[] = [];
-    if (record.maintenance_type.startsWith('全車保養')) {
-      typeList.push('full');
-      const match = record.maintenance_type.match(/\((.*)\)/);
-      if (match) {
-        // 嘗試解析括號內的項目
-        const others = match[1].split(', ');
-        typeList.push(...others);
-      }
-    } else {
-      typeList = record.maintenance_type.split(', ');
-    }
+    const typeList = record.maintenance_type.split(', ');
 
     const detailsMap: Record<string, { brand: string; model: string; other: string }> = {};
     if (record.parts_details && Array.isArray(record.parts_details)) {
@@ -253,14 +242,8 @@ const MaintenanceDashboard: React.FC = () => {
     }
 
     // 決定維修類型字串
-    let maintenanceTypeValue = '';
-    // 如果勾選了所有顯示的項目，則標記為全車保養
-    if (selectedTypes.length >= displayMaintenanceTypes.length) {
-      maintenanceTypeValue = '全車保養';
-    } else {
-      // 否則儲存為逗號分隔的 ID 列表 (例如: "chain_lube, tire_change")
-      maintenanceTypeValue = selectedTypes.join(', ');
-    }
+    // 儲存為逗號分隔的 ID 列表 (例如: "chain_lube, tire_change")
+    const maintenanceTypeValue = selectedTypes.join(', ');
 
     // 準備 parts_details
     const parts_details = selectedTypes.map(typeId => {
@@ -1591,8 +1574,7 @@ const MaintenanceDashboard: React.FC = () => {
               <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
                 {bikeRecords.filter(r =>
                   r.maintenance_type === selectedHistoryType.id ||
-                  r.maintenance_type.split(', ').includes(selectedHistoryType.id) ||
-                  r.maintenance_type.includes('全車保養')
+                  r.maintenance_type.split(', ').includes(selectedHistoryType.id)
                 ).length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-white/30">尚無相關紀錄</p>
@@ -1601,8 +1583,7 @@ const MaintenanceDashboard: React.FC = () => {
                   bikeRecords
                     .filter(r =>
                       r.maintenance_type === selectedHistoryType.id ||
-                      r.maintenance_type.split(', ').includes(selectedHistoryType.id) ||
-                      r.maintenance_type.includes('全車保養')
+                      r.maintenance_type.split(', ').includes(selectedHistoryType.id)
                     )
                     .map(record => (
                       <div
@@ -1638,8 +1619,7 @@ const MaintenanceDashboard: React.FC = () => {
                             // 獲取該類型在該單車的所有紀錄（已按日期排序：由新到舊）
                             const typedRecords = bikeRecords.filter(r =>
                               r.maintenance_type === selectedHistoryType?.id ||
-                              r.maintenance_type.split(', ').includes(selectedHistoryType?.id || '') ||
-                              r.maintenance_type.includes('全車保養')
+                              r.maintenance_type.split(', ').includes(selectedHistoryType?.id || '')
                             );
 
                             // 找出當前紀錄在過濾後列表中的索引
