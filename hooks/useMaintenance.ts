@@ -461,9 +461,10 @@ export const useMaintenance = () => {
       // 找出此類型的最後一次保養紀錄
       // 如果是輪胎，則必須符合目前作用中輪組（如果有的話）或是沒有指定輪組的紀錄
       const lastService = bikeRecords.find(r => {
-        const isTypeMatch = r.maintenance_type === type.id ||
-          r.maintenance_type.includes(type.id) ||
-          r.maintenance_type.includes('全車保養');
+        const types = r.maintenance_type.split(', ').map(t => t.trim());
+        const isTypeMatch = types.includes(type.id) ||
+          types.includes('full_service') ||
+          types.includes('全車保養');
 
         if (!isTypeMatch) return false;
 

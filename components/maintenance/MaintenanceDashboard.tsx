@@ -441,7 +441,7 @@ const MaintenanceDashboard: React.FC = () => {
         if (tireDetail && (tireDetail.brand || tireDetail.model)) {
           await updateWheelset(formData.wheelset_id, {
             tire_brand: tireDetail.brand,
-            model: tireDetail.model
+            tire_specs: tireDetail.model
           });
         }
       }
