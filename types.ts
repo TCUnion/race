@@ -74,6 +74,12 @@ export interface SegmentData {
   end_date?: string;
 }
 
+export interface SegmentStats {
+  distance: string;
+  grade: string;
+  ascent: string;
+}
+
 export interface LeaderboardStats {
   total_athletes: number;
   completed_athletes: number;
