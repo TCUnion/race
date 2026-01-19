@@ -1,12 +1,24 @@
 import React from 'react';
-import { Share2, FileText, LifeBuoy, Bike } from 'lucide-react';
+import { Share2, FileText, LifeBuoy, Bike, MessageCircle, Globe } from 'lucide-react';
 import { ViewType } from '../types';
+import { useSiteSettings } from '../hooks/useSiteSettings';  // [NEW] Import hook
 
 interface FooterProps {
   onNavigate?: (view: ViewType) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const { getSetting } = useSiteSettings(); // [NEW] Use hook
+
+  // Helper to get link or #
+  const getLink = (key: string) => getSetting(key) || '#';
+
+  // Helper to check if link exists to decide formatting (optional, here we just show placeholders if empty or make them clickable)
+  // But per request to "add options", we render them. 
+  // If we want to hide empty ones, we can check `getSetting(key)`. 
+  // For now, let's render them all but they might be empty links if not set. 
+  // User asked "how these work", implying they want them functional.
+
   return (
     <footer className="py-12 border-t border-slate-800 bg-[#242424]">
       <div className="max-w-[1200px] mx-auto px-6 md:px-10 lg:px-20">
@@ -26,9 +38,12 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           <div className="flex gap-8">
-            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><Share2 className="w-5 h-5" /></a>
-            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><FileText className="w-5 h-5" /></a>
-            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href="#"><LifeBuoy className="w-5 h-5" /></a>
+
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href={getLink('footer_link_share') || '#'} target="_blank" rel="noopener noreferrer" title="分享"><Share2 className="w-5 h-5" /></a>
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href={getLink('footer_link_doc') || '#'} target="_blank" rel="noopener noreferrer" title="文件"><FileText className="w-5 h-5" /></a>
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href={getLink('footer_link_support') || '#'} target="_blank" rel="noopener noreferrer" title="客服"><LifeBuoy className="w-5 h-5" /></a>
+            <a className="text-slate-400 hover:text-[#06c755] transition-colors" href={getLink('footer_link_line') || '#'} target="_blank" rel="noopener noreferrer" title="Line"><MessageCircle className="w-5 h-5" /></a>
+            <a className="text-slate-400 hover:text-tsu-blue transition-colors" href={getLink('footer_link_web') || '#'} target="_blank" rel="noopener noreferrer" title="官網"><Globe className="w-5 h-5" /></a>
           </div>
         </div>
 

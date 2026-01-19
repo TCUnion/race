@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database } from 'lucide-react';
+import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // 宣告全域變數 (由 vite.config.ts 注入)
@@ -546,7 +546,7 @@ const AdminPanel: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {siteSettings.map((setting) => (
+                        {siteSettings.filter(s => !s.key.startsWith('footer_link_')).map((setting) => (
                             <div key={setting.key} className="flex flex-col gap-2">
                                 <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between">
                                     {setting.key.replace(/_/g, ' ')}
@@ -570,6 +570,50 @@ const AdminPanel: React.FC = () => {
                                 )}
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                {/* 頁尾連結設定區塊 */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
+                            <Share2 className="w-5 h-5 text-tsu-blue" />
+                            頁尾連結設定
+                        </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {siteSettings.filter(s => s.key.startsWith('footer_link_')).map((setting) => {
+                            // 根據 key 決定圖示
+                            const getIcon = (key: string) => {
+                                if (key === 'footer_link_share') return <Share2 className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_doc') return <FileText className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_support') return <LifeBuoy className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_line') return <MessageCircle className="w-4 h-4 text-[#06c755]" />;
+                                if (key === 'footer_link_web') return <Globe className="w-4 h-4 text-tsu-blue" />;
+                                return null;
+                            };
+                            return (
+                                <div key={setting.key} className="flex flex-col gap-2">
+                                    <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between items-center">
+                                        <span className="flex items-center gap-2">
+                                            {getIcon(setting.key)}
+                                            {setting.key.replace(/_/g, ' ')}
+                                        </span>
+                                        <span className="text-slate-300 font-normal normal-case">
+                                            Last updated: {setting.updated_at ? new Date(setting.updated_at).toLocaleString() : '剛剛'}
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        placeholder="https://..."
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
