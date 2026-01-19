@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ViewType } from '../types';
+import { ViewType, isAthleteAdmin } from '../types';
 import {
   Menu,
   X,
@@ -9,7 +9,8 @@ import {
   BarChart3,
   Wrench,
   UserCircle,
-  RefreshCw
+  RefreshCw,
+  Settings // 新增 Settings 圖示
 } from 'lucide-react';
 import StravaLogo from './StravaLogo';
 
@@ -273,6 +274,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               保養紀錄
             </button>
+            {athlete && isAthleteAdmin(athlete.id) && (
+              <button
+                onClick={() => handleNavigate(ViewType.ADMIN)}
+                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.ADMIN ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-red-500 hover:text-red-400 animate-pulse'}`}
+              >
+                管理後台
+              </button>
+            )}
           </nav>
 
           {athlete ? (
@@ -352,6 +361,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               <Wrench className="w-5 h-5 mr-3" />
               保養紀錄
             </button>
+            {athlete && isAthleteAdmin(athlete.id) && (
+              <button
+                onClick={() => handleNavigate(ViewType.ADMIN)}
+                className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.ADMIN ? 'bg-red-500/10 text-red-500' : 'text-red-500'}`}
+              >
+                <Settings className="w-5 h-5 mr-3" />
+                管理後台
+              </button>
+            )}
 
             <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
               {athlete ? (
