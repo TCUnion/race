@@ -1,5 +1,5 @@
 {
-    "name": "Strava-路段成績同步系統-修正版v2",
+    "name": "Strava-路段成績同步-修正版v3",
     "nodes": [
         {
             "parameters": {
@@ -162,7 +162,7 @@
                     "parameters": [
                         {
                             "name": "segment_id",
-                            "value": "={{ $node[\"split-segments\"].json.id }}"
+                            "value": "={{ $node[\"split-segments\"].json.strava_id || $node[\"split-segments\"].json.id }}"
                         },
                         {
                             "name": "athlete_id",

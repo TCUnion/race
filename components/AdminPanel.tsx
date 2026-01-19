@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2 } from 'lucide-react';
+import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // 🚀 深度搜索 Polyline 函式 (地毯式搜尋)
@@ -189,6 +189,83 @@ const AdminPanel: React.FC = () => {
             fetchSegments();
         } catch (err: any) {
             alert('更新失敗: ' + err.message);
+        }
+    };
+    const handleSyncEfforts = async (seg: any) => {
+        if (!confirm(`確定要同步「${seg.name}」的詳細成績數據嗎？\n這可能需要幾秒鐘的時間。`)) return;
+
+        try {
+            const sid = seg.strava_id;
+            if (!sid) {
+                alert('缺少 Strava ID，無法同步');
+                return;
+            }
+
+            // 顯示載入提示（簡易版）
+            const btn = document.getElementById(`sync-btn-${seg.id}`);
+            if (btn) btn.classList.add('animate-spin');
+
+            const response = await fetch('https://n8n.criterium.tw/webhook/segment_effor_syn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ segment_id: sid })
+            });
+
+            if (btn) btn.classList.remove('animate-spin');
+
+            if (response.ok) {
+                alert('同步請求已發送！資料庫將在後台更新。');
+            } else {
+                throw new Error(`伺服器回傳錯誤: ${response.status}`);
+            }
+        } catch (err: any) {
+            alert('同步失敗: ' + err.message);
+            const btn = document.getElementById(`sync-btn-${seg.id}`);
+            if (btn) btn.classList.remove('animate-spin');
+        }
+    };
+
+    const handleBulkSync = async () => {
+        const targetSegments = segments.filter(s => s.strava_id);
+        if (!confirm(`確定要同步所有 ${targetSegments.length} 個路段的詳細成績數據嗎？\n這將會依序觸發同步請求，請勿頻繁操作。`)) return;
+
+        try {
+            let successCount = 0;
+            // 讓使用者知道開始了
+            const originalText = document.getElementById('bulk-sync-btn')?.innerHTML;
+            const btn = document.getElementById('bulk-sync-btn');
+            if (btn) {
+                btn.innerHTML = '<span class="animate-spin">⏳</span>'; // 簡易 Loading
+                btn.setAttribute('disabled', 'true');
+            }
+
+            // 使用 Promise.all 並行請求，或用迴圈序列請求。考量 n8n 負載，用序列請求比較保險。
+            for (const seg of targetSegments) {
+                try {
+                    // 觸發個別同步
+                    await fetch('https://n8n.criterium.tw/webhook/segment_effor_syn', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ segment_id: seg.strava_id })
+                    });
+                    successCount++;
+                } catch (e) {
+                    console.error(`Segment ${seg.name} sync failed`, e);
+                }
+                // 稍微延遲避免瞬間爆發 (雖然後端應該扛得住，但前端保險起見)
+                await new Promise(r => setTimeout(r, 30000));
+            }
+
+            alert(`已成功發送 ${successCount} 個路段的同步請求！`);
+
+            if (btn && originalText) {
+                btn.innerHTML = originalText;
+                btn.removeAttribute('disabled');
+            }
+        } catch (err: any) {
+            alert('批量同步發生異常: ' + err.message);
+            const btn = document.getElementById('bulk-sync-btn');
+            if (btn) btn.removeAttribute('disabled');
         }
     };
 
@@ -455,7 +532,18 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black">路段管理</h3>
-                        <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">{segments.length} 個路段</span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                id="bulk-sync-btn"
+                                onClick={handleBulkSync}
+                                className="flex items-center gap-1 bg-tsu-blue/10 hover:bg-tsu-blue/20 text-tsu-blue px-3 py-1 rounded-lg text-xs font-bold transition-all border border-tsu-blue/20"
+                                title="同步所有路段成績"
+                            >
+                                <Database className="w-4 h-4" />
+                                <span>全部同步</span>
+                            </button>
+                            <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">{segments.length} 個路段</span>
+                        </div>
                     </div>
 
                     {editingSegment ? (
@@ -605,6 +693,14 @@ const AdminPanel: React.FC = () => {
                                             title="重新整理路段資料與地圖"
                                         >
                                             <RefreshCw className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            id={`sync-btn-${seg.id}`}
+                                            onClick={() => handleSyncEfforts(seg)}
+                                            className="text-slate-400 hover:text-tsu-blue transition-colors"
+                                            title="同步詳細成績至 DB"
+                                        >
+                                            <Database className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={async () => {
