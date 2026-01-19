@@ -9,7 +9,8 @@ import {
   BarChart3,
   Wrench,
   UserCircle,
-  RefreshCw
+  RefreshCw,
+  Shield // Add Shield icon for Admin
 } from 'lucide-react';
 import StravaLogo from './StravaLogo';
 
@@ -56,6 +57,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
+
+  // Check if current user is Admin (Athlete ID 2838277)
+  const isAdmin = athlete?.id?.toString() === '2838277';
 
   // 初始化時從 localStorage 讀取
   useEffect(() => {
@@ -273,6 +277,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               保養紀錄
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => handleNavigate(ViewType.ADMIN)}
+                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-500 dark:text-red-400 hover:text-red-600'}`}
+              >
+                ADMIN
+              </button>
+            )}
           </nav>
 
           {athlete ? (
@@ -352,6 +364,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               <Wrench className="w-5 h-5 mr-3" />
               保養紀錄
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => handleNavigate(ViewType.ADMIN)}
+                className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.ADMIN ? 'bg-red-500/10 text-red-600' : 'text-red-500 dark:text-red-400'}`}
+              >
+                <Shield className="w-5 h-5 mr-3" />
+                ADMIN
+              </button>
+            )}
 
             <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
               {athlete ? (

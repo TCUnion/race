@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+// 宣告全域變數 (由 vite.config.ts 注入)
+declare const __APP_VERSION__: string;
+
 // 🚀 深度搜索 Polyline 函式 (地毯式搜尋)
 const findPolyline = (obj: any): string => {
     if (!obj || typeof obj !== 'object') return "";
@@ -119,6 +122,7 @@ const AdminPanel: React.FC = () => {
     const [registrations, setRegistrations] = useState<any[]>([]);
     const [siteSettings, setSiteSettings] = useState<any[]>([]);
     const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [isUpdatingVersion, setIsUpdatingVersion] = useState(false);
 
     const fetchSegments = async () => {
         const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
@@ -397,11 +401,35 @@ const AdminPanel: React.FC = () => {
                 }))
             );
             if (error) throw error;
-            alert('SEO 設定已儲存');
+            alert('設定已儲存');
         } catch (err: any) {
             alert('儲存失敗: ' + err.message);
         } finally {
             setIsSavingSettings(false);
+        }
+    };
+
+    const handleVersionUpdate = async () => {
+        const currentVersion = siteSettings.find(s => s.key === 'app_version')?.value || 'v1.0.0';
+        const newVersion = prompt('請輸入新版本號:', currentVersion);
+        if (!newVersion || newVersion === currentVersion) return;
+
+        setIsUpdatingVersion(true);
+        try {
+            const { error } = await supabase
+                .from('site_settings')
+                .upsert({
+                    key: 'app_version',
+                    value: newVersion,
+                    updated_at: new Date().toISOString()
+                });
+            if (error) throw error;
+            alert(`版本已更新至 ${newVersion}`);
+            fetchSiteSettings();
+        } catch (err: any) {
+            alert('更新版本失敗: ' + err.message);
+        } finally {
+            setIsUpdatingVersion(false);
         }
     };
 
@@ -472,6 +500,23 @@ const AdminPanel: React.FC = () => {
                     <p className="text-slate-500 dark:text-slate-400 font-bold mt-1">
                         目前登入身份: {session.user.email}
                     </p>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-tsu-blue/10 text-tsu-blue px-2 py-0.5 rounded-full">
+                            Settings: {siteSettings.find(s => s.key === 'app_version')?.value || 'v1.0.0'}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <History className="w-3 h-3" />
+                            Build: {__APP_VERSION__}
+                        </span>
+                        <button
+                            onClick={handleVersionUpdate}
+                            disabled={isUpdatingVersion}
+                            className="text-slate-400 hover:text-tsu-blue transition-colors"
+                            title="更新偏好版本資訊"
+                        >
+                            <Edit2 className="w-3 h-3" />
+                        </button>
+                    </div>
                 </div>
                 <div className="flex gap-4">
                     <button

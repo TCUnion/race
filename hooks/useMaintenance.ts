@@ -34,6 +34,7 @@ export interface StravaActivity {
   moving_time: number; // 使用秒
   start_date: string;
   gear_id: string; // 對應 bikes.id
+  total_elevation_gain: number; // 總爬升 (公尺)
 }
 
 // 保養類型（對應 maintenance_types 表）
@@ -44,6 +45,8 @@ export interface MaintenanceType {
   default_interval_km: number;
   icon?: string;
   sort_order: number;
+  estimated_lifespan_km?: number; // 預估壽命 (公里) - 可覆蓋預設
+  climbing_lifespan_m?: number;   // 爬升壽命 (公尺)
 }
 
 // 保養紀錄（對應 bike_maintenance 表）
@@ -93,6 +96,8 @@ export interface MaintenanceReminder {
   nextServiceMileage: number;
   status: MaintenanceStatus;
   percentageUsed: number;
+  climbingSinceService: number; // 新增：累積爬升
+  usageByClimbing: number;      // 新增：爬升使用率
 }
 
 // 計算保養狀態
@@ -114,12 +119,21 @@ const calculateMaintenanceStatus = (
   return { status, percentageUsed, mileageSinceService };
 };
 
+// App Settings (for storing user preferences like column order)
+export interface AppSetting {
+  athlete_id: string;
+  key: string;
+  value: any;
+  updated_at: string;
+}
+
 export const useMaintenance = () => {
   const [bikes, setBikes] = useState<StravaBike[]>([]);
   const [wheelsets, setWheelsets] = useState<Wheelset[]>([]);
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [records, setRecords] = useState<BikeMaintenanceRecord[]>([]);
   const [settings, setSettings] = useState<MaintenanceSetting[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSetting[]>([]); // New state for app settings
   const [activities, setActivities] = useState<StravaActivity[]>([]); // 新增活動資料狀態
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,8 +160,8 @@ export const useMaintenance = () => {
         return;
       }
 
-      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、活動紀錄
-      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, activitiesResult] = await Promise.all([
+      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、活動紀錄、App設定
+      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, activitiesResult, appSettingsResult] = await Promise.all([
         supabase
           .from('bikes')
           .select('*')
@@ -174,11 +188,15 @@ export const useMaintenance = () => {
         // 載入最近一年的活動紀錄用於計算里程
         supabase
           .from('strava_activities')
-          .select('id, athlete_id, name, distance, moving_time, start_date, gear_id')
+          .select('id, athlete_id, name, distance, moving_time, start_date, gear_id, total_elevation_gain')
           .eq('athlete_id', athleteId)
           // 抓取過去 365 天的資料
           .gte('start_date', new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString())
-          .order('start_date', { ascending: false })
+          .order('start_date', { ascending: false }),
+        supabase
+          .from('app_settings')
+          .select('*')
+          .eq('athlete_id', athleteId)
       ]);
 
       if (bikesResult.error) throw bikesResult.error;
@@ -194,6 +212,7 @@ export const useMaintenance = () => {
       setRecords(recordsResult.data || []);
       setSettings(settingsResult.data || []);
       setActivities(activitiesResult.data || []);
+      setAppSettings(appSettingsResult.data || []);
     } catch (err: any) {
       console.error('載入保養資料失敗:', err);
       // 如果 strava_activities 表不存在，不要因此阻擋其他資料顯示
@@ -229,6 +248,44 @@ export const useMaintenance = () => {
       throw err;
     }
   };
+
+  // App Settings CRUD
+  const updateAppSetting = async (key: string, value: any) => {
+    try {
+      const athleteId = getAthleteId();
+      if (!athleteId) throw new Error('Athlete ID not found');
+
+      const { data, error } = await supabase
+        .from('app_settings')
+        .upsert({
+          athlete_id: athleteId,
+          key,
+          value,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'athlete_id,key'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setAppSettings(prev => {
+        const remaining = prev.filter(s => s.key !== key);
+        return [...remaining, data];
+      });
+      return data;
+    } catch (err: any) {
+      console.error('Failed to update app setting', err);
+      // Fallback to local state update for UI responsiveness if needed, but preferable to show error
+      throw err;
+    }
+  };
+
+  const getAppSetting = useCallback((key: string): any | null => {
+    const setting = appSettings.find(s => s.key === key);
+    return setting ? setting.value : null;
+  }, [appSettings]);
 
   // 更新自訂保養里程
   const updateMaintenanceSetting = async (bikeId: string, typeId: string, intervalKm: number) => {
@@ -352,6 +409,7 @@ export const useMaintenance = () => {
 
     const totalMeters = validActivities.reduce((sum, a) => sum + a.distance, 0);
     const totalMovingTimeSeconds = validActivities.reduce((sum, a) => sum + (a.moving_time || 0), 0);
+    const totalElevationGain = validActivities.reduce((sum, a) => sum + (a.total_elevation_gain || 0), 0);
 
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -359,6 +417,7 @@ export const useMaintenance = () => {
     return {
       distanceKm: totalMeters / 1000,
       movingTimeHours: totalMovingTimeSeconds / 3600,
+      elevationGain: totalElevationGain,
       days: totalDays
     };
   }, [activities]);
@@ -418,6 +477,7 @@ export const useMaintenance = () => {
 
       const lastServiceMileage = lastService?.mileage_at_service || 0;
       let calculatedMileageSinceService = 0;
+      let calculatedClimbingSinceService = 0;
 
       // 核心修改 logic: 
       // 如果是輪胎更換且有作用中輪組，我們使用輪組的累積里程
@@ -425,53 +485,75 @@ export const useMaintenance = () => {
         const activeWheelset = wheelsets.find(ws => ws.id === bike.active_wheelset_id);
         if (activeWheelset) {
           if (lastService && lastService.service_date) {
-            // 計算該輪組自上次保養日期以後的里程增量
-            // 注意：這裡假設活動紀錄中有記錄輪組 ID 或者我們能推算出來。
-            // 目前系統活動紀錄只記了 bike_id。
-            // 但我們可以推算：在該日期之後，且該單車 active_wheelset_id 為此輪組時的里程。
-            // 簡化起見：我們假設輪胎保養是跟隨「輪組」的。
-            // 如果 lastService 有記錄當時的輪組里程，最準確。
-            // 但目前 `mileage_at_service` 存的是單車里程。
-
-            // 方案：我們改用 calculateMetricsSinceDate，但邏輯不變，因為輪胎里程通常跟隨輪組。
-            // 如果使用者換了輪組，新輪組的里程應該從 0 開始算起。
-            // 這裡我們暫時維持使用活動紀錄推算（假設該段時間都是用這個輪組）。
-            calculatedMileageSinceService = calculateMileageSinceDate(bike.id, lastService.service_date);
+            // 使用日期推算
+            const metrics = calculateMetricsSinceDate(bike.id, lastService.service_date);
+            calculatedMileageSinceService = metrics.distanceKm;
+            calculatedClimbingSinceService = metrics.elevationGain;
           } else {
-            // 如果沒有保養紀錄，則使用輪組本身的累積里程
+            // 如果沒有保養紀錄，則使用輪組本身的累積里程 (輪組爬升暫時無法從 wheelsets 表取得，設為 0 或需擴充 DB)
             calculatedMileageSinceService = activeWheelset.distance / 1000;
+            // calculatedClimbingSinceService = 0; // 暫不支援輪組獨立爬升追蹤 Without DB change
+            // 為了避免誤差，暫時用該單車近期活動推算 (雖不精確但比 0 好) 
+            // 但如果輪組剛換上？
+            // 這裡先保持 0，後續可考慮擴充 wheelsets table
           }
         } else {
           // 找不到輪組資訊，回退到單車邏輯
-          calculatedMileageSinceService = lastService && lastService.service_date
-            ? calculateMileageSinceDate(bike.id, lastService.service_date)
-            : currentMileageKm;
+          if (lastService && lastService.service_date) {
+            const metrics = calculateMetricsSinceDate(bike.id, lastService.service_date);
+            calculatedMileageSinceService = metrics.distanceKm;
+            calculatedClimbingSinceService = metrics.elevationGain;
+          } else {
+            calculatedMileageSinceService = currentMileageKm;
+            // 這裡無法得知單車總爬升 (因為 bikes 表沒存)，所以僅能從活動紀錄抓，若無活動紀錄則為 0
+            // 但通常會有 lastService，若無，則是新車?
+            // 實務上：total elevation gain of bike is needed if no service record. 
+            // But we only have activities for 1 year. 
+            // So if no service record, we likely can't calc full climbing lifetime.
+          }
         }
       } else {
         // 非輪胎更換，維持原有邏輯
-        calculatedMileageSinceService = lastService && lastService.service_date
-          ? calculateMileageSinceDate(bike.id, lastService.service_date)
-          : currentMileageKm;
+        if (lastService && lastService.service_date) {
+          const metrics = calculateMetricsSinceDate(bike.id, lastService.service_date);
+          calculatedMileageSinceService = metrics.distanceKm;
+          calculatedClimbingSinceService = metrics.elevationGain;
+        } else {
+          calculatedMileageSinceService = currentMileageKm;
+          // 同上，無 lastService 時無法準確得知 total climbing
+        }
       }
 
-      // 檢查是否有自訂里程設定
+      // 檢查是否有自訂里程設定 -> 優先順序: 自訂 > 預估(DB) > 預設(DB)
       const setting = settings.find(s => s.bike_id === bike.id && s.maintenance_type_id === type.id);
-      const intervalKm = setting ? setting.custom_interval_km : type.default_interval_km;
+      const intervalKm = setting ? setting.custom_interval_km : (type.estimated_lifespan_km || type.default_interval_km);
 
-      const { status, percentageUsed } = calculateMaintenanceStatus(
-        calculatedMileageSinceService,
-        0,
-        intervalKm
-      );
+      const climbingLimit = type.climbing_lifespan_m || Infinity;
+
+      // 計算兩種使用率
+      const usageByDistance = (calculatedMileageSinceService / intervalKm) * 100;
+      const usageByClimbing = climbingLimit !== Infinity ? (calculatedClimbingSinceService / climbingLimit) * 100 : 0;
+
+      // 取最大值作為主要判斷依據
+      const percentageUsed = Math.max(usageByDistance, usageByClimbing);
+
+      let status: MaintenanceStatus = 'ok';
+      if (percentageUsed >= 100) {
+        status = 'overdue';
+      } else if (percentageUsed >= 85) {
+        status = 'due_soon';
+      }
 
       return {
         type,
         lastService,
-        currentMileage: currentMileageKm, // 雖然我們用了動態計算，但顯示目前總里程還是保持原樣較好
-        mileageSinceService: calculatedMileageSinceService, // 這是實際顯示在 UI "距上次保養" 的數值
-        nextServiceMileage: lastServiceMileage + intervalKm, // 這是推估的下次保養總里程點
+        currentMileage: currentMileageKm,
+        mileageSinceService: calculatedMileageSinceService,
+        nextServiceMileage: lastServiceMileage + intervalKm, // 這是基於里程的預估
         status,
-        percentageUsed
+        percentageUsed,
+        climbingSinceService: calculatedClimbingSinceService,
+        usageByClimbing
       };
     });
   }, [maintenanceTypes, getRecordsByBike, calculateMileageSinceDate, settings]); // added dependencies
@@ -560,6 +642,9 @@ export const useMaintenance = () => {
     calculateMetricsSinceDate,
     calculateMetricsBetweenDates,
     calculateTotalDistanceAtDate,
-    refresh: fetchData
+    refresh: fetchData,
+    updateAppSetting,
+    getAppSetting,
+    appSettings
   };
 };
