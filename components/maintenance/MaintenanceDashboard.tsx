@@ -62,7 +62,10 @@ const MaintenanceDashboard: React.FC = () => {
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount,
-    refresh: fetchDataintenance
+    calculateMetricsSinceDate,
+    calculateMetricsBetweenDates,
+    calculateTotalDistanceAtDate,
+    refresh: fetchData
   } = useMaintenance();
 
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
@@ -232,15 +235,21 @@ const MaintenanceDashboard: React.FC = () => {
 
     const selectedTypes = formData.maintenance_type as string[];
 
-    // 強制核對：必須勾選所有可見的保養項目
-    if (selectedTypes.length < displayMaintenanceTypes.length) {
-      alert('為了確保紀錄完整性，新增保養時須勾選所有保養項目');
+    // 移除不合理的強制檢查
+    if (selectedTypes.length === 0) {
+      alert('請至少選擇一個保養項目');
       return;
     }
 
-    let maintenanceTypeValue = '全車保養';
-    // 取得所有項目的名稱列表並在備註中備註（可選）
-    const typeNames = maintenanceTypes.map(t => t.name).join(', ');
+    // 決定維修類型字串
+    let maintenanceTypeValue = '';
+    // 如果勾選了所有顯示的項目，則標記為全車保養
+    if (selectedTypes.length >= displayMaintenanceTypes.length) {
+      maintenanceTypeValue = '全車保養';
+    } else {
+      // 否則儲存為逗號分隔的 ID 列表 (例如: "chain_lube, tire_change")
+      maintenanceTypeValue = selectedTypes.join(', ');
+    }
 
     // 準備 parts_details
     const parts_details = selectedTypes.map(typeId => {
@@ -948,7 +957,27 @@ const MaintenanceDashboard: React.FC = () => {
                       </div>
                     ) : (
                       bikeRecords.map(record => {
-                        const type = maintenanceTypes.find(t => t.id === record.maintenance_type);
+                        let displayName = record.maintenance_type;
+
+                        // 嘗試解析顯示名稱
+                        if (record.maintenance_type === '全車保養' || record.maintenance_type.startsWith('全車保養')) {
+                          displayName = '全車保養';
+                        } else {
+                          // 解析逗號分隔的 ID
+                          const typeIds = record.maintenance_type.split(',').map(s => s.trim());
+                          const names = typeIds.map(id => {
+                            const t = maintenanceTypes.find(type => type.id === id);
+                            return t ? t.name : id; // 找不到就顯示 ID
+                          });
+                          // 如果有多個，用 " + " 連接
+                          displayName = names.join(' + ');
+                        }
+
+                        // 如果名稱是 gear_replacement，轉換為 "器材更換"
+                        if (displayName.includes('gear_replacement')) {
+                          displayName = displayName.replace('gear_replacement', '器材更換');
+                        }
+
                         return (
                           <div
                             key={record.id}
@@ -959,7 +988,7 @@ const MaintenanceDashboard: React.FC = () => {
                                 <Wrench className="w-5 h-5 text-orange-400" />
                               </div>
                               <div>
-                                <h4 className="font-bold text-white">{type?.name || record.maintenance_type}</h4>
+                                <h4 className="font-bold text-white max-w-[200px] truncate" title={displayName}>{displayName}</h4>
                                 <div className="flex items-center gap-3 text-sm text-orange-200/50">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
@@ -1543,14 +1572,86 @@ const MaintenanceDashboard: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        <div className="text-sm text-orange-200/60 space-y-1">
-                          {record.maintenance_type !== selectedHistoryType.id && !record.maintenance_type.includes('全車保養') && (
-                            <p className="text-white/80">{record.maintenance_type}</p>
-                          )}
-                          <p>里程：{record.mileage_at_service.toLocaleString()} km</p>
-                          {record.cost && <p>費用：${record.cost}</p>}
-                          {record.shop_name && <p>店家：{record.shop_name}</p>}
-                          {record.notes && <p className="text-white/50 pt-1 border-t border-white/5 mt-1">{record.notes}</p>}
+                        <div className="space-y-3 mt-3">
+                          {(() => {
+                            // 獲取該類型在該單車的所有紀錄（已按日期排序：由新到舊）
+                            const typedRecords = bikeRecords.filter(r =>
+                              r.maintenance_type === selectedHistoryType?.id ||
+                              r.maintenance_type.includes(selectedHistoryType?.id || '') ||
+                              r.maintenance_type.includes('全車保養')
+                            );
+
+                            // 找出當前紀錄在過濾後列表中的索引
+                            const recordIndex = typedRecords.findIndex(r => r.id === record.id);
+                            // 下一筆紀錄（時間更早的）即為上一個維護週期起點
+                            const previousRecord = typedRecords[recordIndex + 1];
+
+                            // 計算區間數據：
+                            // 如果有「上一次」保養，計算 (上次日期, 這次日期]
+                            // 如果沒有（是最早的一筆），則計算 (該紀錄日期, 到現在為止]？ 
+                            // 不，如果是歷史清單，顯示該紀錄對應的週期更有意義。
+                            // User 的需求是「以上次計算」，所以最舊的那筆顯示自啟用起算的增量。
+                            const stats = previousRecord
+                              ? calculateMetricsBetweenDates(selectedBike.id, previousRecord.service_date, record.service_date)
+                              : calculateMetricsSinceDate(selectedBike.id, record.service_date);
+
+                            return (
+                              <div className="flex items-center gap-4 text-[11px] font-mono bg-white/5 p-2 px-3 rounded-lg border border-white/5">
+                                <span className="text-orange-200/40">{previousRecord ? '週期增量:' : '累積使用:'}</span>
+                                <span className="text-orange-300">{stats.distanceKm.toFixed(1)} km</span>
+                                <span className="text-white/10">|</span>
+                                <span className="text-orange-300">{stats.movingTimeHours.toFixed(1)} hr</span>
+                                <span className="text-white/10">|</span>
+                                <span className="text-orange-300">{stats.days} 天</span>
+                              </div>
+                            );
+                          })()}
+
+                          {/* 顯示詳細零件資訊 */}
+                          {(() => {
+                            const detail = record.parts_details?.find(d => d.type_id === selectedHistoryType.id);
+                            if (!detail && !record.notes && !record.shop_name && !record.cost) return null;
+                            return (
+                              <div className="space-y-2">
+                                {detail && (
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    {detail.brand && (
+                                      <div className="flex flex-col bg-white/5 p-2 rounded-lg">
+                                        <span className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">品牌 Brand</span>
+                                        <span className="text-white/90 font-medium">{detail.brand}</span>
+                                      </div>
+                                    )}
+                                    {detail.model && (
+                                      <div className="flex flex-col bg-white/5 p-2 rounded-lg">
+                                        <span className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">型號 Model</span>
+                                        <span className="text-white/90 font-medium">{detail.model}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(record.shop_name || record.cost) && (
+                                  <div className="flex items-center gap-3 text-[11px] text-white/40 px-1">
+                                    {record.shop_name && <span>店家: {record.shop_name}</span>}
+                                    {record.cost && <span>費用: ${record.cost.toLocaleString()}</span>}
+                                  </div>
+                                )}
+
+                                {(detail?.other || record.notes) && (
+                                  <div className="bg-white/5 p-2 px-3 rounded-lg border-l-2 border-orange-500/30">
+                                    <span className="text-white/30 text-[9px] uppercase block mb-1">備註 Remarks</span>
+                                    <p className="text-white/70 text-xs italic leading-relaxed">
+                                      {detail?.other || record.notes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          <div className="text-[10px] text-white/20 pt-1 border-t border-white/5">
+                            保養當下里程: {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
+                          </div>
                         </div>
                       </div>
                     ))

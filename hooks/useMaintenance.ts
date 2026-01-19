@@ -25,6 +25,17 @@ export interface StravaBike {
   power_meter?: string;
 }
 
+// Strava 活動紀錄（對應 strava_activities 表）
+export interface StravaActivity {
+  id: number;
+  athlete_id: number;
+  name: string;
+  distance: number;
+  moving_time: number; // 使用秒
+  start_date: string;
+  gear_id: string; // 對應 bikes.id
+}
+
 // 保養類型（對應 maintenance_types 表）
 export interface MaintenanceType {
   id: string;
@@ -108,6 +119,7 @@ export const useMaintenance = () => {
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [records, setRecords] = useState<BikeMaintenanceRecord[]>([]);
   const [settings, setSettings] = useState<MaintenanceSetting[]>([]);
+  const [activities, setActivities] = useState<StravaActivity[]>([]); // 新增活動資料狀態
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
@@ -133,8 +145,8 @@ export const useMaintenance = () => {
         return;
       }
 
-      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定
-      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult] = await Promise.all([
+      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、活動紀錄
+      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, activitiesResult] = await Promise.all([
         supabase
           .from('bikes')
           .select('*')
@@ -157,7 +169,15 @@ export const useMaintenance = () => {
         supabase
           .from('bike_maintenance_settings')
           .select('*')
+          .eq('athlete_id', athleteId),
+        // 載入最近一年的活動紀錄用於計算里程
+        supabase
+          .from('strava_activities')
+          .select('id, athlete_id, name, distance, moving_time, start_date, gear_id')
           .eq('athlete_id', athleteId)
+          // 抓取過去 365 天的資料
+          .gte('start_date', new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString())
+          .order('start_date', { ascending: false })
       ]);
 
       if (bikesResult.error) throw bikesResult.error;
@@ -165,15 +185,22 @@ export const useMaintenance = () => {
       if (typesResult.error) throw typesResult.error;
       if (recordsResult.error) throw recordsResult.error;
       if (settingsResult.error) throw settingsResult.error;
+      if (activitiesResult.error) throw activitiesResult.error;
 
       setBikes(bikesResult.data || []);
       setWheelsets(wheelsetsResult.data || []);
       setMaintenanceTypes(typesResult.data || []);
       setRecords(recordsResult.data || []);
       setSettings(settingsResult.data || []);
+      setActivities(activitiesResult.data || []);
     } catch (err: any) {
       console.error('載入保養資料失敗:', err);
-      setError(err.message);
+      // 如果 strava_activities 表不存在，不要因此阻擋其他資料顯示
+      if (err.message?.includes('strava_activities')) {
+        console.warn('無法載入活動紀錄，將使用預設里程計算:', err);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -192,7 +219,9 @@ export const useMaintenance = () => {
 
       if (error) throw error;
 
-      setRecords(prev => [data, ...prev]);
+      setRecords(prev => [...prev, data].sort((a, b) =>
+        new Date(b.service_date).getTime() - new Date(a.service_date).getTime()
+      ));
       return data;
     } catch (err: any) {
       setError(err.message);
@@ -264,7 +293,9 @@ export const useMaintenance = () => {
 
       if (error) throw error;
 
-      setRecords(prev => prev.map(r => r.id === id ? data : r));
+      setRecords(prev => prev.map(r => r.id === id ? data : r).sort((a, b) =>
+        new Date(b.service_date).getTime() - new Date(a.service_date).getTime()
+      ));
       return data;
     } catch (err: any) {
       setError(err.message);
@@ -306,6 +337,59 @@ export const useMaintenance = () => {
     return records.filter(r => r.bike_id === bikeId);
   }, [records]);
 
+  // 新增：計算兩段日期之間的數據 (User Request: 區間保養數據)
+  const calculateMetricsBetweenDates = useCallback((bikeId: string, startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const validActivities = activities.filter(a => {
+      if (a.gear_id !== bikeId) return false;
+      const activityDate = new Date(a.start_date);
+      // 區間定義：(開始日期, 結束日期]
+      return activityDate > start && activityDate <= end;
+    });
+
+    const totalMeters = validActivities.reduce((sum, a) => sum + a.distance, 0);
+    const totalMovingTimeSeconds = validActivities.reduce((sum, a) => sum + (a.moving_time || 0), 0);
+
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    return {
+      distanceKm: totalMeters / 1000,
+      movingTimeHours: totalMovingTimeSeconds / 3600,
+      days: totalDays
+    };
+  }, [activities]);
+
+  // 重構：根據日期從活動紀錄計算里程與時間 (至今)
+  const calculateMetricsSinceDate = useCallback((bikeId: string, startDate: string) => {
+    const now = new Date().toISOString();
+    return calculateMetricsBetweenDates(bikeId, startDate, now);
+  }, [calculateMetricsBetweenDates]);
+
+  const calculateMileageSinceDate = useCallback((bikeId: string, startDate: string) => {
+    return calculateMetricsSinceDate(bikeId, startDate).distanceKm;
+  }, [calculateMetricsSinceDate]);
+
+  // 新增：回推計算特定日期的總里程 (User Request: 保養當下里程)
+  const calculateTotalDistanceAtDate = useCallback((bike: StravaBike, targetDate: string) => {
+    const currentTotalKm = bike.converted_distance || (bike.distance / 1000);
+    const target = new Date(targetDate);
+
+    // 找出 targetDate 之後的所有活動里程
+    const laterActivities = activities.filter(a => {
+      if (a.gear_id !== bike.id) return false;
+      const activityDate = new Date(a.start_date);
+      return activityDate > target;
+    });
+
+    const accumulatedKmSinceTarget = laterActivities.reduce((sum, a) => sum + a.distance, 0) / 1000;
+
+    // 歷史里程 = 目前總里程 - 從那時到現在累積的里程
+    return Math.max(0, currentTotalKm - accumulatedKmSinceTarget);
+  }, [activities]);
+
   // 計算保養提醒
   const getMaintenanceReminders = useCallback((bike: StravaBike): MaintenanceReminder[] => {
     const currentMileageKm = bike.converted_distance || (bike.distance / 1000);
@@ -318,29 +402,44 @@ export const useMaintenance = () => {
         r.maintenance_type.includes(type.id) ||
         r.maintenance_type.includes('全車保養')
       );
-      const lastServiceMileage = lastService?.mileage_at_service || 0;
+
+      let lastServiceMileage = lastService?.mileage_at_service || 0;
+      let calculatedMileageSinceService = 0;
+
+      // 核心修改 logic: 使用活動紀錄推算里程
+      if (lastService && lastService.service_date) {
+        // 如果有保養紀錄，計算該日期之後累積的里程
+        calculatedMileageSinceService = calculateMileageSinceDate(bike.id, lastService.service_date);
+      } else {
+        // 如果沒有保養紀錄，使用車子總里程
+        calculatedMileageSinceService = currentMileageKm;
+      }
 
       // 檢查是否有自訂里程設定
       const setting = settings.find(s => s.bike_id === bike.id && s.maintenance_type_id === type.id);
       const intervalKm = setting ? setting.custom_interval_km : type.default_interval_km;
 
-      const { status, percentageUsed, mileageSinceService } = calculateMaintenanceStatus(
-        currentMileageKm,
-        lastServiceMileage,
+      // 使用計算出的里程進行狀態判斷
+      // 注意：calculateMaintenanceStatus 預設是做減法 (current - last)。
+      // 這裡我們我們已經把 "current - last" 算好了 (calculatedMileageSinceService)。
+      // 為了復用函式，我們可以傳入 (calculatedMileageSinceService, 0, intervalKm)
+      const { status, percentageUsed } = calculateMaintenanceStatus(
+        calculatedMileageSinceService,
+        0,
         intervalKm
       );
 
       return {
         type,
         lastService,
-        currentMileage: currentMileageKm,
-        mileageSinceService,
-        nextServiceMileage: lastServiceMileage + type.default_interval_km,
+        currentMileage: currentMileageKm, // 雖然我們用了動態計算，但顯示目前總里程還是保持原樣較好
+        mileageSinceService: calculatedMileageSinceService, // 這是實際顯示在 UI "距上次保養" 的數值
+        nextServiceMileage: lastServiceMileage + intervalKm, // 這是推估的下次保養總里程點
         status,
         percentageUsed
       };
     });
-  }, [maintenanceTypes, getRecordsByBike]);
+  }, [maintenanceTypes, getRecordsByBike, calculateMileageSinceDate, settings]); // added dependencies
 
   // 取得需要注意的保養項目數量
   const getAlertCount = useCallback((bike: StravaBike): { dueSoon: number; overdue: number } => {
@@ -369,9 +468,7 @@ export const useMaintenance = () => {
     };
   }, [fetchData]);
 
-
-
-  // Wheelset CRUD
+  // Wheelset CRUD (省略，保持不變)
   const addWheelset = async (wheelset: Omit<Wheelset, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase.from('wheelsets').insert([wheelset]).select().single();
@@ -425,7 +522,9 @@ export const useMaintenance = () => {
     getRecordsByBike,
     getMaintenanceReminders,
     getAlertCount,
+    calculateMetricsSinceDate,
+    calculateMetricsBetweenDates,
+    calculateTotalDistanceAtDate,
     refresh: fetchData
   };
 };
-
