@@ -16,9 +16,23 @@
 }
 
 @theme {
+  /* 品牌主題色 */
   --color-brand-primary: #f97316;
   --color-brand-secondary: #ea580c;
+
+  /* TCU / Strava 自訂顏色 - 從 tailwind.config.js 移植 */
+  --color-tsu-blue: #0056A4;
+  --color-tsu-blue-light: #007bff;
+  --color-strava-orange: #FC6100;
+  --color-strava-grey-dark: #242428;
+  --color-strava-grey-light: #A1A1A1;
+  --color-background-dark: #0f172a;
+  --color-background-black: #121212;
+
+  /* 字體設定 */
   --font-display: "Outfit", sans-serif;
+  --font-sans: "Chakra Petch", "Noto Sans TC", sans-serif;
+  --font-body: "Chakra Petch", "Noto Sans TC", sans-serif;
 }
 
 /* Custom Scrollbar for Webkit browsers */
