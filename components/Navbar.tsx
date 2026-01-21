@@ -10,8 +10,10 @@ import {
   Wrench,
   UserCircle,
   RefreshCw,
-  Shield // Add Shield icon for Admin
+  Shield,
+  UserCheck
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
 
 interface StravaAthlete {
@@ -53,6 +55,7 @@ const CONFIG = {
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [athlete, setAthlete] = useState<StravaAthlete | null>(null);
+  const [isBound, setIsBound] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -88,6 +91,37 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       window.removeEventListener('storage', loadAthlete);
     };
   }, []);
+
+  // 檢查綁定狀態
+  useEffect(() => {
+    const checkBindingStatus = async () => {
+      if (!athlete?.id) {
+        setIsBound(null);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('tcu_members')
+          .select('*')
+          .eq('strava_id', athlete.id.toString())
+          .maybeSingle();
+
+        if (error) throw error;
+        setIsBound(!!data);
+      } catch (e) {
+        console.error('Navbar: 檢查綁定狀態失敗', e);
+        setIsBound(false); // 預設為未綁定以顯示提醒
+      }
+    };
+
+    checkBindingStatus();
+
+    // 監聽綁定成功事件
+    const handleBindingSuccess = () => checkBindingStatus();
+    window.addEventListener('tcu-binding-success', handleBindingSuccess);
+    return () => window.removeEventListener('tcu-binding-success', handleBindingSuccess);
+  }, [athlete?.id]);
 
   // 監聽 postMessage
   useEffect(() => {
@@ -255,7 +289,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <nav className="flex items-center gap-8">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               探索活動
             </button>
@@ -276,6 +310,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               保養紀錄
+            </button>
+            <button
+              onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
+              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.MEMBER_BINDING
+                ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1'
+                : 'text-slate-400 hover:text-tsu-blue'
+                } ${isBound === false ? 'ring-2 ring-tsu-blue animate-glow-blue' : ''}`}
+            >
+              TCU 綁定
             </button>
             {isAdmin && (
               <button
@@ -363,6 +406,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               <Wrench className="w-5 h-5 mr-3" />
               保養紀錄
+            </button>
+            <button
+              onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
+              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.MEMBER_BINDING
+                ? 'bg-tsu-blue/10 text-tsu-blue'
+                : 'text-slate-600 dark:text-slate-300'
+                } ${isBound === false ? 'ring-2 ring-tsu-blue animate-glow-blue ring-inset mx-2' : ''}`}
+            >
+              <UserCheck className="w-5 h-5 mr-3" />
+              TCU 綁定
             </button>
             {isAdmin && (
               <button

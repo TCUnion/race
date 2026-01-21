@@ -33,6 +33,32 @@
   --font-display: "Outfit", sans-serif;
   --font-sans: "Chakra Petch", "Noto Sans TC", sans-serif;
   --font-body: "Chakra Petch", "Noto Sans TC", sans-serif;
+
+  /* 動畫設定 */
+  --animate-glow-blue: glow-pulse-blue 2s infinite ease-in-out;
+
+  @keyframes glow-pulse-blue {
+    0% {
+      box-shadow: 0 0 0px rgba(0, 86, 164, 0);
+      text-shadow: 0 0 0px rgba(0, 86, 164, 0);
+    }
+
+    50% {
+      box-shadow: 0 0 15px rgba(0, 86, 164, 0.5);
+      text-shadow: 0 0 10px rgba(0, 86, 164, 0.4);
+    }
+
+    100% {
+      box-shadow: 0 0 0px rgba(0, 86, 164, 0);
+      text-shadow: 0 0 0px rgba(0, 86, 164, 0);
+    }
+  }
+}
+
+/* 發光動畫輔助類別 */
+.animate-glow-blue {
+  animation: var(--animate-glow-blue);
+  border-radius: 6px;
 }
 
 /* Custom Scrollbar for Webkit browsers */
