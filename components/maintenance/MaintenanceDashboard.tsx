@@ -878,7 +878,7 @@ const MaintenanceDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 mt-2">
                     <button
                       onClick={async () => {
                         const existingCount = wheelsets.filter(ws => ws.bike_id === selectedBike.id).length;
@@ -893,10 +893,10 @@ const MaintenanceDashboard: React.FC = () => {
                         });
                         setEditingWheelset(newItem);
                       }}
-                      className="py-3 border-2 border-dashed border-white/10 rounded-xl text-orange-200/40 hover:text-white hover:border-orange-500/50 hover:bg-orange-500/5 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                      className="py-2.5 sm:py-3 border-2 border-dashed border-white/10 rounded-xl text-orange-200/40 hover:text-white hover:border-orange-500/50 hover:bg-orange-500/5 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-bold"
                     >
                       <Plus className="w-4 h-4" />
-                      新增專屬
+                      <span className="hidden xs:inline">新增</span>專屬輪組
                     </button>
                     <button
                       onClick={async () => {
@@ -912,10 +912,10 @@ const MaintenanceDashboard: React.FC = () => {
                         });
                         setEditingWheelset(newItem);
                       }}
-                      className="py-3 border-2 border-dashed border-white/10 rounded-xl text-orange-200/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                      className="py-2.5 sm:py-3 border-2 border-dashed border-white/10 rounded-xl text-orange-200/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm font-bold"
                     >
                       <Plus className="w-4 h-4" />
-                      新增通用
+                      <span className="hidden xs:inline">新增</span>通用輪組
                     </button>
                   </div>
                 </div>

@@ -548,10 +548,10 @@ const AdminPanel: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {siteSettings.filter(s => !s.key.startsWith('footer_link_')).map((setting) => (
                             <div key={setting.key} className="flex flex-col gap-2">
-                                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between">
-                                    {setting.key.replace(/_/g, ' ')}
-                                    <span className="text-slate-300 font-normal normal-case">
-                                        Last updated: {setting.updated_at ? new Date(setting.updated_at).toLocaleString() : '剛剛'}
+                                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-col sm:flex-row sm:justify-between gap-1">
+                                    <span className="break-all">{setting.key.replace(/_/g, ' ')}</span>
+                                    <span className="text-slate-300 font-normal normal-case text-[9px] sm:text-[10px] whitespace-nowrap">
+                                        {setting.updated_at ? new Date(setting.updated_at).toLocaleDateString() : '剛剛'}
                                     </span>
                                 </label>
                                 {setting.key.includes('description') || setting.key.includes('keywords') ? (
@@ -595,13 +595,13 @@ const AdminPanel: React.FC = () => {
                             };
                             return (
                                 <div key={setting.key} className="flex flex-col gap-2">
-                                    <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex justify-between items-center">
+                                    <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-col sm:flex-row sm:justify-between gap-1">
                                         <span className="flex items-center gap-2">
                                             {getIcon(setting.key)}
-                                            {setting.key.replace(/_/g, ' ')}
+                                            <span className="break-all">{setting.key.replace(/_/g, ' ')}</span>
                                         </span>
-                                        <span className="text-slate-300 font-normal normal-case">
-                                            Last updated: {setting.updated_at ? new Date(setting.updated_at).toLocaleString() : '剛剛'}
+                                        <span className="text-slate-300 font-normal normal-case text-[9px] sm:text-[10px] whitespace-nowrap">
+                                            {setting.updated_at ? new Date(setting.updated_at).toLocaleDateString() : '剛剛'}
                                         </span>
                                     </label>
                                     <input

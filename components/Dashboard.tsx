@@ -311,19 +311,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {/* Segment Selector */}
         <section className="flex flex-col gap-4">
           <h2 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">您可以點擊切換路段詳情</h2>
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {registeredSegments.map((reg) => (
               <button
                 key={reg.id}
                 onClick={() => setCurrentSegmentId(reg.segment_id)}
-                className={`flex flex-col items-start gap-1 p-4 rounded-2xl border-2 transition-all min-w-[200px] ${currentSegmentId === reg.segment_id ? 'border-tsu-blue bg-tsu-blue/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                className={`flex flex-col items-start gap-1 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all w-full ${currentSegmentId === reg.segment_id ? 'border-tsu-blue bg-tsu-blue/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
               >
                 <div className="flex justify-between w-full items-center">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">#{reg.segments?.strava_id}</span>
                   {currentSegmentId === reg.segment_id && <CheckCircle2 className="w-4 h-4 text-tsu-blue" />}
                 </div>
-                <h3 className="text-sm font-black text-slate-900 dark:text-white">{reg.segments?.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
+                <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white text-left break-words leading-tight w-full">{reg.segments?.name}</h3>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${reg.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
                     {reg.status === 'approved' ? '已核准' : '審核中'}
                   </span>
