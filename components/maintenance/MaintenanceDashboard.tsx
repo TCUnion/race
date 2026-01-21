@@ -1091,16 +1091,15 @@ const MaintenanceDashboard: React.FC = () => {
                               ) : (
                                 <div
                                   onClick={() => setSelectedHistoryType(reminder.type)}
-                                  className={`p-4 rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full`}
+                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full`}
                                 >
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                      <h4 className="font-bold text-white">{reminder.type.name}</h4>
-                                      <p className="text-sm opacity-60">{reminder.type.description}</p>
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-bold text-white text-sm sm:text-base">{reminder.type.name}</h4>
+                                      <p className="text-xs sm:text-sm opacity-60 truncate">{reminder.type.description}</p>
                                     </div>
-                                    <div className={`flex items-center gap-1 text-sm font-bold`}>
-                                      <div className="p-1 rounded hover:bg-black/10 cursor-move active:cursor-grabbing" title="拖曳排序" onClick={e => e.stopPropagation()}>
-                                        {/* Simple drag handle indicator */}
+                                    <div className={`flex items-center gap-1 text-xs sm:text-sm font-bold shrink-0`}>
+                                      <div className="p-1 rounded hover:bg-black/10 cursor-move active:cursor-grabbing hidden sm:block" title="拖曳排序" onClick={e => e.stopPropagation()}>
                                         <div className="flex flex-col gap-[2px]">
                                           <div className="w-3 h-[2px] bg-current opacity-30"></div>
                                           <div className="w-3 h-[2px] bg-current opacity-30"></div>
@@ -1108,7 +1107,7 @@ const MaintenanceDashboard: React.FC = () => {
                                         </div>
                                       </div>
                                       <StatusIcon className="w-4 h-4" />
-                                      {statusLabels[reminder.status]}
+                                      <span className="whitespace-nowrap">{statusLabels[reminder.status]}</span>
                                     </div>
                                   </div>
                                   <div className="space-y-2">

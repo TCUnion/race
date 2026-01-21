@@ -767,29 +767,29 @@ const AdminPanel: React.FC = () => {
                     ) : (
                         <div className="space-y-4">
                             {segments.map((seg) => (
-                                <div key={seg.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center group hover:border-tsu-blue border border-transparent transition-all">
-                                    <div className="flex-1">
-                                        <p className="font-bold">{seg.name}</p>
+                                <div key={seg.id} className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 group hover:border-tsu-blue border border-transparent transition-all">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-sm sm:text-base break-words">{seg.name}</p>
                                         <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">ID: {seg.id}</p>
                                         {seg.description && (
-                                            <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{seg.description}</p>
+                                            <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 sm:line-clamp-1">{seg.description}</p>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
                                         <button
                                             onClick={() => handleRefreshSegment(seg)}
-                                            className="text-slate-400 hover:text-tsu-blue transition-colors"
+                                            className="text-slate-400 hover:text-tsu-blue transition-colors p-1"
                                             title="重新整理路段資料與地圖"
                                         >
-                                            <RefreshCw className="w-5 h-5" />
+                                            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
                                         <button
                                             id={`sync-btn-${seg.id}`}
                                             onClick={() => handleSyncEfforts(seg)}
-                                            className="text-slate-400 hover:text-tsu-blue transition-colors"
+                                            className="text-slate-400 hover:text-tsu-blue transition-colors p-1"
                                             title="同步詳細成績至 DB"
                                         >
-                                            <Database className="w-5 h-5" />
+                                            <Database className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
                                         <button
                                             onClick={async () => {
@@ -804,15 +804,15 @@ const AdminPanel: React.FC = () => {
                                                     alert('更新失敗: ' + err.message);
                                                 }
                                             }}
-                                            className={`px-2 py-0.5 ${seg.is_active ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'} text-[10px] font-bold rounded-full transition-colors cursor-pointer`}
+                                            className={`px-2 py-0.5 ${seg.is_active ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'} text-[10px] font-bold rounded-full transition-colors cursor-pointer whitespace-nowrap`}
                                         >
                                             {seg.is_active ? '啟用' : '停用'}
                                         </button>
                                         <button
                                             onClick={() => setEditingSegment(seg)}
-                                            className="text-slate-400 hover:text-tsu-blue transition-colors"
+                                            className="text-slate-400 hover:text-tsu-blue transition-colors p-1"
                                         >
-                                            <Edit2 className="w-5 h-5" />
+                                            <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
                                         <button
                                             onClick={async () => {
@@ -841,9 +841,9 @@ const AdminPanel: React.FC = () => {
                                                     alert('刪除失敗: ' + err.message);
                                                 }
                                             }}
-                                            className="text-slate-400 hover:text-red-500 transition-colors"
+                                            className="text-slate-400 hover:text-red-500 transition-colors p-1"
                                         >
-                                            <Trash2 className="w-5 h-5" />
+                                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
                                     </div>
                                 </div>
