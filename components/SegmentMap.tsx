@@ -89,24 +89,42 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
                     opacity: 0.9,
                 }).addTo(mapInstanceRef.current);
 
-                // 自動縮放到路線範圍
-                mapInstanceRef.current.fitBounds(polylineLayerRef.current.getBounds(), {
-                    padding: [20, 20],
+                // 強制地圖重新計算容器尺寸後再 fitBounds
+                // 這解決了容器尺寸變化時路線無法完整顯示的問題
+                const map = mapInstanceRef.current;
+                const polylineLayer = polylineLayerRef.current;
+
+                // 立即嘗試一次 fitBounds
+                map.invalidateSize();
+                map.fitBounds(polylineLayer.getBounds(), {
+                    padding: [30, 30],
+                    maxZoom: 14,
                 });
+
+                // 延遲再次調整，確保 CSS 動畫/響應式佈局完成後正確顯示
+                setTimeout(() => {
+                    if (map && polylineLayer) {
+                        map.invalidateSize();
+                        map.fitBounds(polylineLayer.getBounds(), {
+                            padding: [30, 30],
+                            maxZoom: 14,
+                        });
+                    }
+                }, 300);
 
                 // 添加起點和終點標記
                 const startIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: '<div style="width:12px;height:12px;background:#22c55e;border:2px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>',
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6],
+                    html: '<div style="width:14px;height:14px;background:#22c55e;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7],
                 });
 
                 const endIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: '<div style="width:12px;height:12px;background:#ef4444;border:2px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>',
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6],
+                    html: '<div style="width:14px;height:14px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7],
                 });
 
                 L.marker(latlngs[0], { icon: startIcon }).addTo(mapInstanceRef.current);
