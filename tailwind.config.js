@@ -31,6 +31,7 @@ export default {
             animation: {
                 'fade-in': 'fade-in 0.5s ease-out',
                 'slide-up': 'slide-up 0.5s ease-out',
+                'glow-blue': 'glow-pulse-blue 2s infinite ease-in-out',
             },
             keyframes: {
                 'fade-in': {
@@ -41,9 +42,19 @@ export default {
                     '0%': { transform: 'translateY(10px)', opacity: '0' },
                     '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
+                'glow-pulse-blue': {
+                    '0%': { 'box-shadow': '0 0 0px rgba(0, 86, 164, 0)', 'text-shadow': '0 0 0px rgba(0, 86, 164, 0)' },
+                    '50%': { 'box-shadow': '0 0 15px rgba(0, 86, 164, 0.5)', 'text-shadow': '0 0 10px rgba(0, 86, 164, 0.4)' },
+                    '100%': { 'box-shadow': '0 0 0px rgba(0, 86, 164, 0)', 'text-shadow': '0 0 0px rgba(0, 86, 164, 0)' },
+                },
             },
         }
     },
+    safelist: [
+        'animate-glow-blue',
+        'ring-2',
+        'ring-tsu-blue'
+    ],
     plugins: [
         forms,
         containerQueries,

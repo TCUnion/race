@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
 import RegisterPage from './components/RegisterPage';
+import MemberBindingCard from './components/MemberBindingCard';
 import MaintenanceDashboard from './components/maintenance/MaintenanceDashboard';
 import { useSEO } from './hooks/useSEO';
 
@@ -29,6 +30,17 @@ const App: React.FC = () => {
         return <RegisterPage onNavigate={setCurrentView} />;
       case ViewType.MAINTENANCE:
         return <MaintenanceDashboard />;
+      case ViewType.MEMBER_BINDING:
+        return (
+          <div className="flex flex-col items-center w-full py-20 px-4">
+            <div className="w-full max-w-2xl">
+              <MemberBindingCard
+                athlete={JSON.parse(localStorage.getItem('strava_athlete_meta') || 'null')}
+                onBindingSuccess={() => setCurrentView(ViewType.DASHBOARD)}
+              />
+            </div>
+          </div>
+        );
       default:
         return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
     }

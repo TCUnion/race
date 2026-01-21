@@ -6,6 +6,7 @@ export enum ViewType {
   ADMIN = 'ADMIN',
   REGISTER = 'REGISTER',
   MAINTENANCE = 'MAINTENANCE',
+  MEMBER_BINDING = 'MEMBER_BINDING',
 }
 
 export enum RaceStatus {
