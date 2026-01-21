@@ -85,27 +85,31 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
   };
 
   return (
-    <div className="w-full mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full mb-8 sm:mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* 標題與統計 */}
-      <div className="w-full py-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 mb-6 p-6 md:p-8">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-          <div className={`flex items-center gap-4 border-l-8 ${barColor} pl-6`}>
-            <div>
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter font-display">
+      <div className="w-full py-6 sm:py-8 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 mb-4 sm:mb-6 p-4 sm:p-6 md:p-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-8">
+          <div className={`flex items-start gap-3 sm:gap-4 border-l-4 sm:border-l-8 ${barColor} pl-3 sm:pl-6 w-full`}>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter font-display break-words leading-tight">
                 {segment.name}
               </h2>
-              <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1">
+              <div className="flex flex-wrap items-center gap-y-1 gap-x-2 sm:gap-x-3 mt-1">
                 <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                   {segment.activity_type}
                 </span>
                 <span className="text-slate-400 text-xs font-bold flex items-center gap-1">
                   <MapIcon className="w-3 h-3" />
-                  {(segment.distance / 1000).toFixed(2)}km · {segment.average_grade}% Avg
+                  {(segment.distance / 1000).toFixed(2)}km
+                </span>
+                <span className="text-slate-400 text-xs font-bold hidden sm:inline">
+                  · {segment.average_grade}% Avg
                 </span>
                 {segment.start_date && (
-                  <span className="text-amber-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                  <span className="text-amber-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
                     <RefreshCw className="w-3 h-3" />
-                    {formatDate(segment.start_date)} - {formatDate(segment.end_date)}
+                    <span className="hidden xs:inline">{formatDate(segment.start_date)} - </span>
+                    {formatDate(segment.end_date)}
                   </span>
                 )}
               </div>
@@ -121,19 +125,19 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6 sm:mb-8">
           {[
-            { label: '參賽人數', value: stats.totalAthletes ?? '-', color: 'text-slate-900', icon: Users },
-            { label: '完成人數', value: stats.completedAthletes ?? '-', color: 'text-tsu-blue', icon: Trophy },
-            { label: '最快時間', value: formatTime(stats.bestTime), color: 'text-red-500', icon: Zap },
-            { label: '平均時間', value: formatTime(stats.avgTime), color: 'text-slate-900', icon: Dna },
-            { label: '最高功率', value: stats.maxPower ? `${stats.maxPower} W` : '-', color: 'text-orange-500', icon: Zap },
-            { label: '平均速度', value: stats.avgSpeed ? `${(stats.avgSpeed * 3.6).toFixed(1)} km/h` : '-', color: 'text-slate-900', icon: BarChart3 },
+            { label: '參賽', value: stats.totalAthletes ?? '-', color: 'text-slate-900', icon: Users },
+            { label: '完成', value: stats.completedAthletes ?? '-', color: 'text-tsu-blue', icon: Trophy },
+            { label: '最快', value: formatTime(stats.bestTime), color: 'text-red-500', icon: Zap },
+            { label: '均時', value: formatTime(stats.avgTime), color: 'text-slate-900', icon: Dna },
+            { label: '功率', value: stats.maxPower ? `${stats.maxPower}W` : '-', color: 'text-orange-500', icon: Zap },
+            { label: '速度', value: stats.avgSpeed ? `${(stats.avgSpeed * 3.6).toFixed(1)}` : '-', color: 'text-slate-900', icon: BarChart3 },
           ].map((stat, i) => (
-            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:border-tsu-blue/30 transition-all cursor-pointer">
-              <stat.icon className="w-4 h-4 text-slate-300 group-hover:text-tsu-blue mb-2 transition-colors" />
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</span>
-              <span className={`text-base font-black italic ${stat.color} dark:text-white`}>
+            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:border-tsu-blue/30 transition-all cursor-pointer">
+              <stat.icon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-300 group-hover:text-tsu-blue mb-1 sm:mb-2 transition-colors" />
+              <span className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider sm:tracking-widest mb-0.5 sm:mb-1">{stat.label}</span>
+              <span className={`text-sm sm:text-base font-black italic ${stat.color} dark:text-white`}>
                 {stat.value}
               </span>
             </div>
@@ -141,10 +145,10 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
         </div>
 
         {/* 地圖區域 */}
-        <div className="w-full h-[220px] mb-8 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 relative group">
+        <div className="w-full h-[180px] sm:h-[220px] mb-6 sm:mb-8 bg-slate-100 dark:bg-slate-800 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 relative group">
           <SegmentMap polyline={segment.polyline} />
-          <div className="absolute bottom-4 right-4 z-10 opacity-70 group-hover:opacity-100 transition-all pointer-events-none">
-            <StravaLogo className="h-6 w-auto grayscale group-hover:grayscale-0 transition-all" />
+          <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-10 opacity-70 group-hover:opacity-100 transition-all pointer-events-none">
+            <StravaLogo className="h-5 sm:h-6 w-auto grayscale group-hover:grayscale-0 transition-all" />
           </div>
         </div>
 
@@ -255,60 +259,60 @@ const Leaderboard: React.FC = () => {
   return (
     <div className="flex flex-col items-center w-full pb-20 px-4 md:px-6 lg:px-8 max-w-[1200px] mx-auto animate-fade-in">
       {/* 頁面標題 */}
-      <div className="w-full py-16 text-center">
-        <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-6 italic uppercase tracking-tighter font-display">
-          Global <span className="text-tsu-blue">Leaderboard</span>
+      <div className="w-full py-8 sm:py-16 text-center">
+        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-4 sm:mb-6 italic uppercase tracking-tighter font-display">
+          <span className="block sm:inline">Global</span> <span className="text-tsu-blue">Leaderboard</span>
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm font-black uppercase tracking-[0.3em] flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-          <span>Real-time Scoring</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 hidden md:block"></span>
-          <span>Multi-segment Tracking</span>
+        <p className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-2 px-4">
+          <span>Real-time</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 hidden sm:block"></span>
+          <span className="hidden sm:inline">Multi-segment Tracking</span>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-300 hidden md:block"></span>
           <span className="flex items-center gap-2">
-            <span className="text-[10px] opacity-60">Verified by</span>
+            <span className="text-[10px] opacity-60 hidden sm:inline">Verified by</span>
             <StravaLogo className="h-4 w-auto grayscale opacity-50" />
           </span>
         </p>
       </div>
 
       {/* 全局篩選與排序 */}
-      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-tsu-blue/5 mb-16 z-30">
-        <div className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-center">
+      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-tsu-blue/5 mb-8 sm:mb-16 z-30">
+        <div className="flex flex-col gap-4 sm:gap-6">
           <div className="flex-1 relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-tsu-blue transition-colors" />
             <input
               type="text"
-              placeholder="Search athlete or bib number..."
+              placeholder="搜尋選手..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tsu-blue focus:ring-4 focus:ring-tsu-blue/10 rounded-2xl text-sm font-bold transition-all text-slate-900 dark:text-white"
+              className="w-full h-12 sm:h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tsu-blue focus:ring-4 focus:ring-tsu-blue/10 rounded-xl sm:rounded-2xl text-sm font-bold transition-all text-slate-900 dark:text-white"
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative group min-w-[180px]">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="relative group flex-1 sm:min-w-[160px] sm:max-w-[200px]">
               <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-tsu-blue transition-colors" />
               <select
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
-                className="w-full h-14 pl-10 pr-10 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tsu-blue focus:ring-4 focus:ring-tsu-blue/10 rounded-2xl text-xs font-black uppercase tracking-widest appearance-none cursor-pointer dark:text-white text-slate-900"
+                className="w-full h-12 sm:h-14 pl-10 pr-10 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tsu-blue focus:ring-4 focus:ring-tsu-blue/10 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-widest appearance-none cursor-pointer dark:text-white text-slate-900"
               >
-                <option value="">All Teams</option>
+                <option value="">全部車隊</option>
                 {teams.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800 p-1 rounded-2xl flex border border-slate-100 dark:border-slate-700 min-w-[200px]">
+            <div className="bg-slate-50 dark:bg-slate-800 p-1 rounded-xl sm:rounded-2xl flex border border-slate-100 dark:border-slate-700 flex-1 sm:min-w-[180px] sm:max-w-[240px]">
               {[
-                { id: 'time', label: 'Time' },
-                { id: 'power', label: 'Power' },
-                { id: 'speed', label: 'Speed' }
+                { id: 'time', label: '時間' },
+                { id: 'power', label: '功率' },
+                { id: 'speed', label: '速度' }
               ].map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => setSortBy(opt.id)}
-                  className={`flex-1 h-12 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === opt.id ? 'bg-white dark:bg-slate-700 text-tsu-blue shadow-md' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                  className={`flex-1 h-10 sm:h-12 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all ${sortBy === opt.id ? 'bg-white dark:bg-slate-700 text-tsu-blue shadow-md' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
                 >
                   {opt.label}
                 </button>
@@ -317,10 +321,10 @@ const Leaderboard: React.FC = () => {
 
             <button
               onClick={() => refresh()}
-              className="h-14 px-8 rounded-2xl bg-tsu-blue text-white font-black uppercase text-xs tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-tsu-blue/20 flex items-center justify-center gap-3"
+              className="h-12 sm:h-14 px-6 sm:px-8 rounded-xl sm:rounded-2xl bg-tsu-blue text-white font-black uppercase text-xs tracking-[0.15em] sm:tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-tsu-blue/20 flex items-center justify-center gap-2 sm:gap-3"
             >
               <RefreshCw className="w-4 h-4" />
-              Refresh
+              刷新
             </button>
           </div>
         </div>
