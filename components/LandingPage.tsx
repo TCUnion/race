@@ -138,11 +138,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               </>
             )}
 
-            <div className="flex flex-col gap-4 max-w-4xl transform transition-all duration-700 delay-100">
-              <h1 className="text-white text-5xl md:text-7xl font-black leading-none tracking-tighter uppercase italic drop-shadow-2xl font-display">
+            <div className="flex flex-col gap-4 max-w-4xl transform transition-all duration-700 delay-100 px-2">
+              <h1 className="text-white text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black leading-tight tracking-tighter uppercase italic drop-shadow-2xl font-display break-words">
                 {segment?.description || '台中經典挑戰：136檢定'}
               </h1>
-              <p className="text-slate-300 text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto">
+              <p className="text-slate-300 text-sm sm:text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto">
                 連結你的 Strava，挑戰經典路段，與全台頂尖好手一決高下。
               </p>
             </div>
@@ -204,21 +204,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
           <div className="lg:col-span-2 space-y-8">
             {/* Map Section */}
             <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+              <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-2 bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <MapIcon className="w-5 h-5 text-tsu-blue" />
-                  <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
+                  <MapIcon className="w-5 h-5 text-tsu-blue flex-shrink-0" />
+                  <h2 className="text-slate-900 dark:text-white text-base sm:text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
                 </div>
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                   {segment ? `Segment #${segment.strava_id}` : 'Loading...'}
                 </span>
               </div>
-              <div className="p-6">
-                <div className="w-full aspect-video rounded-xl overflow-hidden relative shadow-inner">
+              <div className="p-4 sm:p-6">
+                <div className="w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden relative shadow-inner">
                   <SegmentMap polyline={segment?.polyline} />
                 </div>
-                <div className="flex justify-between items-center mt-4">
-                  <div className="flex items-center gap-4 text-sm">
+                <div className="flex flex-wrap justify-between items-center gap-2 mt-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
                     {segment && (
                       <>
                         <span className="flex items-center gap-1">
@@ -233,8 +233,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-all group cursor-pointer">
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Powered by</span>
-                    <StravaLogo className="h-5 w-auto grayscale group-hover:grayscale-0 transition-all" />
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter hidden sm:inline">Powered by</span>
+                    <StravaLogo className="h-4 sm:h-5 w-auto grayscale group-hover:grayscale-0 transition-all" />
                   </div>
                 </div>
               </div>

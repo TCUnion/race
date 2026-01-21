@@ -244,10 +244,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-solid border-slate-800 bg-[#242424]/95 backdrop-blur-md transition-all duration-300">
-      <div className="flex items-center justify-between px-6 md:px-20 py-4">
-        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNavigate(ViewType.LANDING)}>
-          <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto transform transition-transform group-hover:scale-110" />
-          <h2 className="text-white text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors">TCU STRAVA RANK</h2>
+      <div className="flex items-center justify-between px-4 sm:px-6 md:px-20 py-4 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 flex-shrink" onClick={() => handleNavigate(ViewType.LANDING)}>
+          <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto flex-shrink-0 transform transition-transform group-hover:scale-110" />
+          <h2 className="hidden min-[270px]:block text-white text-base sm:text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors truncate">TCU STRAVA RANK</h2>
         </div>
 
         {/* Desktop Navigation */}
@@ -321,13 +321,13 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
 
         {/* Mobile Toggle */}
-        <div className="md:hidden flex items-center">
+        <div className="md:hidden flex items-center flex-shrink-0">
           <button
             type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="text-slate-900 dark:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            {isMenuOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
+            {isMenuOpen ? <X className="w-7 h-7 sm:w-8 sm:h-8" /> : <Menu className="w-7 h-7 sm:w-8 sm:h-8" />}
           </button>
         </div>
       </div>
