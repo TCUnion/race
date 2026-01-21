@@ -1,6 +1,6 @@
 {
-    "name": "TCU Segment Challenge - 台中經典挑戰",
-    "short_name": "TCU Challenge",
+    "name": "TCU小幫手",
+    "short_name": "TCU小幫手",
     "description": "連結 Strava，挑戰台中經典 136 路段",
     "start_url": "/",
     "display": "standalone",
