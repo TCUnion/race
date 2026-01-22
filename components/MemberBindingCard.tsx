@@ -190,6 +190,9 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                 setStep('success');
                 setSuccess('綁定成功！');
                 setLocalMemberData(result.member_data || data); // 使用回傳的最新資料
+
+                // 主動觸發全局狀態刷新
+                if (refreshBinding) refreshBinding();
                 window.dispatchEvent(new Event('tcu-binding-success'));
                 // onBindingSuccess(); // 移除自動跳轉，改由按鈕觸發
             }

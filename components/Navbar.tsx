@@ -205,9 +205,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.MEMBER_BINDING
                 ? (isBound === false ? 'text-yellow-400 border-b-2 border-yellow-400 pb-1' : 'text-tsu-blue border-b-2 border-tsu-blue pb-1')
                 : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tsu-blue')
-                } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''}`}
+                } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''} ${isBound === null ? 'opacity-50 grayscale pointer-events-none' : ''}`}
             >
-              {isBound ? 'TCU 會員資料' : 'TCU 綁定'}
+              {isBound === true ? 'TCU 會員資料' : 'TCU 綁定'}
             </button>
             {isBound && (
               <button
@@ -375,8 +375,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   setIsMenuOpen(false);
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${currentView === ViewType.TEAM_DASHBOARD
-                    ? 'bg-tsu-blue/10 text-tsu-blue'
-                    : 'text-slate-500 hover:bg-slate-50'
+                  ? 'bg-tsu-blue/10 text-tsu-blue'
+                  : 'text-slate-500 hover:bg-slate-50'
                   }`}
               >
                 <Users2 className="w-5 h-5" />

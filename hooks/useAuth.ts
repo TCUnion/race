@@ -87,7 +87,17 @@ export const useAuth = () => {
         const handleAuthChange = () => loadAthleteFromStorage();
         window.addEventListener('strava-auth-changed', handleAuthChange);
         window.addEventListener('storage', handleAuthChange);
-        window.addEventListener('tcu-binding-success', () => athlete && checkBindingStatus(athlete.id));
+        window.addEventListener('tcu-binding-success', async () => {
+            console.log('useAuth: Detected tcu-binding-success event');
+            // 立即嘗試更新
+            if (athlete?.id) {
+                await checkBindingStatus(athlete.id);
+            }
+            // 500ms 後再次嘗試，確保資料庫寫入完成並同步
+            setTimeout(() => {
+                if (athlete?.id) checkBindingStatus(athlete.id);
+            }, 500);
+        });
 
         return () => {
             window.removeEventListener('strava-auth-changed', handleAuthChange);
