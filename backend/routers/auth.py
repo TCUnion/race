@@ -112,8 +112,8 @@ async def proxy_member_binding(request: Request):
         )
         
         try:
-            # 設定 15 秒 timeout
-            with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=15) as response:
+            # 設定 30 秒 timeout 以應對 n8n 處理較慢的情況
+            with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=30) as response:
                 status = response.getcode()
                 res_data = response.read().decode('utf-8')
                 print(f"[DEBUG] n8n response status: {status}, data: {res_data}")
@@ -122,9 +122,8 @@ async def proxy_member_binding(request: Request):
                     return {"success": True, "message": "Webhook received with empty response"}
                 
                 try:
-                    # 嘗試解析 JSON，如果解析失敗則回傳原始字串
+                    # 嘗試解析 JSON
                     parsed_res = json.loads(res_data)
-                    # 確保 res_data 至少包含 success 元件
                     if isinstance(parsed_res, dict):
                          return parsed_res
                     return {"success": True, "message": "Webhook received", "data": parsed_res}
@@ -134,17 +133,13 @@ async def proxy_member_binding(request: Request):
         except urllib.error.HTTPError as e:
             error_content = e.read().decode('utf-8')
             print(f"[DEBUG] n8n HTTP Error {e.code}: {error_content}")
-            return {"success": False, "message": f"n8n 服務回傳錯誤 ({e.code})，請稍後再試"}
+            return {"success": False, "message": f"n8n 服務回傳錯誤 ({e.code})"}
         except Exception as e:
-            import socket
-            if isinstance(e, socket.timeout):
-                 print("[DEBUG] n8n Webhook Timed Out")
-                 return {"success": False, "message": "n8n 服務連線超時，請檢查網路狀態"}
-            print(f"[DEBUG] Proxy error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Proxy failed: {str(e)}")
+            print(f"[DEBUG] Proxy connection error: {str(e)}")
+            return {"success": False, "message": f"與轉發服務連線失敗: {str(e)}"}
     except Exception as e:
-        print(f"[DEBUG] General error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+        print(f"[DEBUG] General error in proxy_member_binding: {str(e)}")
+        return {"success": False, "message": f"處理請求時發生錯誤: {str(e)}"}
 
 
 # ========== 綁定確認 (OTP 驗證後寫入 strava_bindings) ==========

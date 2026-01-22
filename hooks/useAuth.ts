@@ -47,7 +47,7 @@ export const useAuth = () => {
         try {
             // 使用新的 binding-status API 查詢 strava_bindings 表格
             // 使用新的 binding-status API 查詢 strava_bindings 表格
-            const response = await fetch(`${API_BASE_URL}/api/auth/binding-status/${athleteId}`);
+            const response = await fetch(`/api/auth/binding-status/${athleteId}`);
             // 檢查回應是否為 JSON (避免 404/500 返回 HTML 導致 SyntaxError)
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
