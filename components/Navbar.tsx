@@ -66,7 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     // 同步 Token 到後端
     if (athleteData.access_token) {
       try {
-        await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
+        await fetch(`/api/auth/strava-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

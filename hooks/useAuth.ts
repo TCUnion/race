@@ -48,11 +48,18 @@ export const useAuth = () => {
             // 使用新的 binding-status API 查詢 strava_bindings 表格
             // 使用新的 binding-status API 查詢 strava_bindings 表格
             const response = await fetch(`/api/auth/binding-status/${athleteId}`);
-            // 檢查回應是否為 JSON (避免 404/500 返回 HTML 導致 SyntaxError)
+
+            // 檢查是否為 JSON (避免 404/500 返回 HTML 導致 SyntaxError)
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+                    console.error("Detected HTML fallback on API route. Proxy configuration might be missing.");
+                    throw new Error("伺服器設定錯誤：API 路由未正確轉發 (得到 HTML)。");
+                }
                 throw new Error("Received non-JSON response from server");
             }
+
             const data = await response.json();
 
             if (data.isBound) {
