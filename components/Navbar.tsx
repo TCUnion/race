@@ -11,11 +11,15 @@ import {
   UserCircle,
   RefreshCw,
   Shield,
-  UserCheck
+  UserCheck,
+  Zap,
+  Sparkles,
+  Users2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
 import { useAuth, StravaAthlete } from '../hooks/useAuth';
+import { API_BASE_URL } from '../lib/api_config';
 
 interface NavbarProps {
   currentView: ViewType;
@@ -62,7 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     // 同步 Token 到後端
     if (athleteData.access_token) {
       try {
-        await fetch('/api/auth/strava-token', {
+        await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -205,6 +209,24 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               {isBound ? 'TCU 會員資料' : 'TCU 綁定'}
             </button>
+            {isBound && (
+              <button
+                onClick={() => onNavigate(ViewType.TEAM_DASHBOARD)}
+                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              >
+                <Users2 className="w-3 h-3" />
+                我的車隊
+              </button>
+            )}
+            {isBound && (
+              <button
+                onClick={() => handleNavigate(ViewType.AI_COACH)}
+                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.AI_COACH ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              >
+                <Zap className="w-3 h-3" />
+                AI 功率訓練教室
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => handleNavigate(ViewType.ADMIN)}
@@ -346,6 +368,31 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               <UserCheck className="w-5 h-5 mr-3" />
               {isBound ? 'TCU 會員資料' : 'TCU 綁定'}
             </button>
+            {isBound && (
+              <button
+                onClick={() => {
+                  onNavigate(ViewType.TEAM_DASHBOARD);
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${currentView === ViewType.TEAM_DASHBOARD
+                    ? 'bg-tsu-blue/10 text-tsu-blue'
+                    : 'text-slate-500 hover:bg-slate-50'
+                  }`}
+              >
+                <Users2 className="w-5 h-5" />
+                <span>我的車隊</span>
+              </button>
+            )}
+
+            {isBound && (
+              <button
+                onClick={() => handleNavigate(ViewType.AI_COACH)}
+                className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.AI_COACH ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+              >
+                <Zap className="w-5 h-5 mr-3" />
+                AI 功率訓練教室
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => handleNavigate(ViewType.ADMIN)}

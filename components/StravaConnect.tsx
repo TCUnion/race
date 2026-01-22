@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Check from 'lucide-react/dist/esm/icons/check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import { API_BASE_URL } from '../lib/api_config';
 import StravaLogo from './StravaLogo';
 
 interface StravaAthlete {
@@ -120,7 +121,7 @@ const StravaConnect: React.FC = () => {
             try {
                 // 使用相對路徑，讓 Vite Proxy (開發環境) 或 Zeabur Reverse Proxy (正式環境) 自動處理
 
-                await fetch('/api/auth/strava-token', {
+                await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

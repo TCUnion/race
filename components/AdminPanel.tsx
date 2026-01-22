@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { API_BASE_URL } from '../lib/api_config';
 import StravaLogo from './StravaLogo';
 
 // 宣告全域變數 (由 vite.config.ts 注入)
@@ -392,30 +393,72 @@ const AdminPanel: React.FC = () => {
 
     const fetchAllMembers = async () => {
         try {
-            // 1. 抓取會員基本資料 (移除引發錯誤的 Join 語法)
+            // 1. 抓取會員基本資料
             const { data: members, error: mError } = await supabase
                 .from('tcu_members')
-                .select('real_name, email, team, tcu_id, member_type, status, strava_id')
+                .select('real_name, email, team, tcu_id, member_type, status, account') // 補上 account 欄位
                 .order('real_name');
 
             if (mError) throw mError;
 
-            // 2. 抓取 Strava 選手資料進行前端 Join
-            const { data: athletes, error: aError } = await supabase
-                .from('athletes')
-                .select('id, firstname, lastname');
+            // 2. 抓取 Binding 資料 (真理來源)
+            const { data: bindings, error: bError } = await supabase
+                .from('strava_bindings')
+                .select('strava_id, tcu_member_email, tcu_account');
 
-            // 如果抓取失敗則不影響基礎列表顯示
-            const athleteMap = new Map();
-            if (!aError && athletes) {
-                athletes.forEach(a => athleteMap.set(a.id.toString(), a));
+            // 建立 Search Maps
+            const accountMap = new Map(); // key: account, value: strava_id
+            const emailMap = new Map();   // key: email, value: strava_id
+
+            if (!bError && bindings) {
+                bindings.forEach(b => {
+                    if (b.tcu_account) {
+                        accountMap.set(b.tcu_account, b.strava_id);
+                    }
+                    if (b.tcu_member_email) {
+                        emailMap.set(b.tcu_member_email, b.strava_id);
+                    }
+                });
             }
 
-            // 3. 排序與資料合併：已綁定 (strava_id 不為空) 優先
-            const sorted = (members || []).map(m => ({
-                ...m,
-                athletes: m.strava_id ? athleteMap.get(m.strava_id) : null
-            })).sort((a, b) => {
+            // 3. 抓取 Strava 選手資料
+            // 收集所有 unique strava ids
+            const stravaIds = Array.from(new Set(bindings?.map(b => b.strava_id) || []));
+
+            let athleteMap = new Map();
+            if (stravaIds.length > 0) {
+                const { data: athletes, error: aError } = await supabase
+                    .from('athletes')
+                    .select('id, firstname, lastname')
+                    .in('id', stravaIds);
+
+                if (!aError && athletes) {
+                    athletes.forEach(a => athleteMap.set(a.id.toString(), a));
+                }
+            }
+
+            // 4. 合併與排序
+            const sorted = (members || []).map(m => {
+                // 邏輯修正：嚴格優先使用 account 對應
+                // 如果該會員 record 有 account，則只看 accountMap 是否有對應
+                // 如果 record 沒有 account (較少見)，才 fallback 到 email
+
+                let stravaId = null;
+
+                if (m.account && accountMap.has(m.account)) {
+                    stravaId = accountMap.get(m.account);
+                } else if (!m.account && emailMap.has(m.email)) {
+                    // 只有在會員資料本身沒有 account 欄位時，才允許用 email 寬鬆匹配
+                    stravaId = emailMap.get(m.email);
+                }
+                // 注意：如果 m.account 存在但沒對應到 binding，就算 email 相同也不視為綁定 (解決多重帳號共用 email 問題)
+
+                return {
+                    ...m,
+                    strava_id: stravaId,
+                    athletes: stravaId ? athleteMap.get(stravaId.toString()) : null
+                };
+            }).sort((a, b) => {
                 const aBound = !!a.strava_id;
                 const bBound = !!b.strava_id;
                 if (aBound && !bBound) return -1;
@@ -449,15 +492,15 @@ const AdminPanel: React.FC = () => {
                 tokens.forEach(t => tokenMap.set(t.athlete_id.toString(), t));
             }
 
-            // 3. 抓取會員綁定資訊
-            const { data: members, error: mError } = await supabase
-                .from('tcu_members')
+            // 3. 抓取會員綁定資訊 (改從 strava_bindings 抓取，這是新的 Single Source of Truth)
+            const { data: bindings, error: bError } = await supabase
+                .from('strava_bindings')
                 .select('strava_id');
 
             const boundSet = new Set();
-            if (!mError && members) {
-                members.forEach(m => {
-                    if (m.strava_id) boundSet.add(m.strava_id.toString());
+            if (!bError && bindings) {
+                bindings.forEach(b => {
+                    if (b.strava_id) boundSet.add(b.strava_id.toString());
                 });
             }
 
@@ -513,7 +556,7 @@ const AdminPanel: React.FC = () => {
             }
 
             // 呼叫後端 API 進行解綁（包含權限驗證）
-            const response = await fetch('/api/auth/unbind', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/unbind`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

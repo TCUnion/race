@@ -7,6 +7,8 @@ export enum ViewType {
   REGISTER = 'REGISTER',
   MAINTENANCE = 'MAINTENANCE',
   MEMBER_BINDING = 'MEMBER_BINDING',
+  AI_COACH = 'AI_COACH',
+  TEAM_DASHBOARD = 'TEAM_DASHBOARD',
 }
 
 export enum RaceStatus {

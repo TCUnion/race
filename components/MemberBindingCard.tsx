@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { API_BASE_URL } from '../lib/api_config';
+import { useAuth } from '../hooks/useAuth';
 import {
     UserCheck,
     Mail,
@@ -27,7 +29,7 @@ import {
     Clock,
     Info
 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+
 
 interface MemberBindingCardProps {
     onBindingSuccess: () => void;
@@ -101,7 +103,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
     const triggerOtp = async (email: string, name: string, inputId: string) => {
         try {
-            const response = await fetch('/api/auth/member-binding', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/member-binding`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

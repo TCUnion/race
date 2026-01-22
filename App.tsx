@@ -10,6 +10,8 @@ import AdminPanel from './components/AdminPanel';
 import RegisterPage from './components/RegisterPage';
 import MemberBindingCard from './components/MemberBindingCard';
 import MaintenanceDashboard from './components/maintenance/MaintenanceDashboard';
+import ACPowerTraining from './components/ACPowerTraining';
+import TeamDashboard from './components/TeamDashboard';
 import { useSEO } from './hooks/useSEO';
 
 const App: React.FC = () => {
@@ -40,6 +42,10 @@ const App: React.FC = () => {
             </div>
           </div>
         );
+      case ViewType.AI_COACH:
+        return <ACPowerTraining />;
+      case ViewType.TEAM_DASHBOARD:
+        return <TeamDashboard />;
       default:
         return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
     }

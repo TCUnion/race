@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+        "zeabur-supabase-db": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://supabase_admin:i2M6I38mQAh14ax5UbvGgPH0NK7o9kjW@tpe1.clusters.zeabur.com:22992/postgres"
+            ]
+        }
+    }
+}

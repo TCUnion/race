@@ -37,3 +37,9 @@ backend/.env
 .codex/
 .gemini/
 brain/
+
+# Python bytecode
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
