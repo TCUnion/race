@@ -525,8 +525,7 @@ const AdminPanel: React.FC = () => {
             const result = await response.json();
 
             if (result.success) {
-                alert('已成功解除綁定');
-                // 重新整理列表
+                // 重新整理列表（不顯示提示，靜默執行）
                 await fetchAllMembers();
             } else {
                 throw new Error(result.message || '解除綁定失敗');
