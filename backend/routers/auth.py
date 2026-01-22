@@ -208,15 +208,16 @@ async def unbind_member(request: Request):
         res = supabase.table("strava_bindings").delete().eq("tcu_member_email", email).execute()
         print(f"[DEBUG] Delete result: {res.data}")
 
-        # 4. 清除 tcu_members 中的 OTP 資料（保持會員狀態乾淨）
+        # 4. 清除 tcu_members 中的綁定和 OTP 資料（保持會員狀態乾淨）
         try:
             supabase.table("tcu_members").update({
+                "strava_id": None,
                 "otp_code": None,
                 "otp_expires_at": None
             }).eq("email", email).execute()
-            print(f"[DEBUG] OTP data cleared for email: {email}")
+            print(f"[DEBUG] strava_id and OTP data cleared for email: {email}")
         except Exception as otp_error:
-            print(f"[DEBUG] Failed to clear OTP (non-critical): {otp_error}")
+            print(f"[DEBUG] Failed to clear member data (non-critical): {otp_error}")
 
         return {"success": True, "message": "Unbound successfully"}
     except Exception as e:
