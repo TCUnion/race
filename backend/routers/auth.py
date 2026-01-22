@@ -189,7 +189,16 @@ async def confirm_binding(request: Request):
 
 
 # ========== Admin 權限定義 ==========
-ADMIN_ATHLETE_IDS = ["2838277"]
+import os
+
+# ========== Admin 權限定義 ==========
+# 從環境變數讀取 Admin IDs (逗號分隔)，預設為空
+admin_ids_str = os.getenv("ADMIN_ATHLETE_IDS", "")
+ADMIN_ATHLETE_IDS = [x.strip() for x in admin_ids_str.split(",") if x.strip()]
+if not ADMIN_ATHLETE_IDS:
+    # Fallback only for dev/migration safety if env var is missing, but better to enforce env var
+    # print("[WARN] ADMIN_ATHLETE_IDS not set in environment.")
+    pass
 
 @router.post("/unbind")
 async def unbind_member(request: Request):
