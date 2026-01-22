@@ -77,11 +77,12 @@ async def proxy_member_binding(request: Request):
         if action == "generate_otp":
             if bindings:
                 existing_binding = bindings[0]
-                existing_strava_id = existing_binding.get("strava_id")
-                print(f"[DEBUG] Existing binding found. strava_id: '{existing_strava_id}', incoming: '{strava_id}'")
+                existing_strava_id = str(existing_binding.get("strava_id"))
+                incoming_strava_id = str(strava_id)
+                print(f"[DEBUG] Existing binding found. strava_id: '{existing_strava_id}', incoming: '{incoming_strava_id}'")
                 
                 # 已綁定相同 Strava ID -> 直接成功
-                if existing_strava_id == str(strava_id):
+                if existing_strava_id == incoming_strava_id:
                     print("[DEBUG] Already bound to same Strava ID, returning already_bound")
                     return {"success": True, "message": "Already bound successfully", "already_bound": True}
                 
@@ -89,7 +90,7 @@ async def proxy_member_binding(request: Request):
                 print(f"[DEBUG] Already bound to DIFFERENT Strava ID: {existing_strava_id}")
                 return {
                     "success": False, 
-                    "message": "此會員身份已綁定其他 Strava 帳號。如有疑問，請洽 TCU Line@ 官方：https://page.line.me/criterium"
+                    "message": f"此會員身份已綁定其他 Strava 帳號 (ID: {existing_strava_id})。如有疑問，請洽 TCU Line@ 官方：https://page.line.me/criterium"
                 }
             else:
                 print("[DEBUG] No existing binding, proceeding to n8n webhook...")
@@ -121,18 +122,24 @@ async def proxy_member_binding(request: Request):
                     return {"success": True, "message": "Webhook received with empty response"}
                 
                 try:
-                    return json.loads(res_data)
+                    # 嘗試解析 JSON，如果解析失敗則回傳原始字串
+                    parsed_res = json.loads(res_data)
+                    # 確保 res_data 至少包含 success 元件
+                    if isinstance(parsed_res, dict):
+                         return parsed_res
+                    return {"success": True, "message": "Webhook received", "data": parsed_res}
                 except json.JSONDecodeError:
+                    print(f"[DEBUG] n8n response is not JSON: {res_data}")
                     return {"success": True, "message": "Webhook received", "raw_response": res_data}
         except urllib.error.HTTPError as e:
             error_content = e.read().decode('utf-8')
             print(f"[DEBUG] n8n HTTP Error {e.code}: {error_content}")
-            return {"success": False, "message": f"n8n error: {error_content}"}
+            return {"success": False, "message": f"n8n 服務回傳錯誤 ({e.code})，請稍後再試"}
         except Exception as e:
             import socket
             if isinstance(e, socket.timeout):
                  print("[DEBUG] n8n Webhook Timed Out")
-                 return {"success": False, "message": "Webhook connection timed out"}
+                 return {"success": False, "message": "n8n 服務連線超時，請檢查網路狀態"}
             print(f"[DEBUG] Proxy error: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Proxy failed: {str(e)}")
     except Exception as e:
