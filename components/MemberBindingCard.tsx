@@ -103,7 +103,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
     const triggerOtp = async (email: string, name: string, inputId: string) => {
         try {
-            const response = await fetch('/api/auth/member-binding', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/member-binding`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -164,7 +164,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                 setError('驗證碼錯誤或已過期。');
             } else {
                 // 呼叫 confirm-binding API 寫入 strava_bindings 表格
-                const response = await fetch('/api/auth/confirm-binding', {
+                const response = await fetch(`${API_BASE_URL}/api/auth/confirm-binding`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -209,7 +209,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
         setIsUnbinding(true);
         try {
-            const response = await fetch('/api/auth/unbind', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/unbind`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

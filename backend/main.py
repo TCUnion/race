@@ -1,15 +1,13 @@
 
 from fastapi import FastAPI
+import os
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import leaderboard, activities, auth, teams
+from routers import leaderboard, activities, auth, teams
+from database import supabase
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173", # Vite default
-    "http://localhost:3000",
-    "*"
-]
+origins = os.getenv("CORS_ORIGINS", "*").split(",")
 
 app.add_middleware(
     CORSMiddleware,

@@ -556,7 +556,7 @@ const AdminPanel: React.FC = () => {
             }
 
             // 呼叫後端 API 進行解綁（包含權限驗證）
-            const response = await fetch(`/api/auth/unbind`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/unbind`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
