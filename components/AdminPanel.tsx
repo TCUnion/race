@@ -522,7 +522,15 @@ const AdminPanel: React.FC = () => {
                 })
             });
 
-            const result = await response.json();
+            // 處理非 OK 回應
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`伺服器錯誤 (${response.status}): ${errorText || '未知錯誤'}`);
+            }
+
+            // 安全解析 JSON（處理空回應）
+            const text = await response.text();
+            const result = text ? JSON.parse(text) : { success: true };
 
             if (result.success) {
                 // 重新整理列表（不顯示提示，靜默執行）
