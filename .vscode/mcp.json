@@ -1,8 +1,0 @@
-{
-    "mcpServers": {
-        "supabase": {
-            "type": "http",
-            "url": "https://tcusupabase.zeabur.app/mcp"
-        }
-    }
-}
