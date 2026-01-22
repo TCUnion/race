@@ -36,6 +36,7 @@
 
   /* 動畫設定 */
   --animate-glow-blue: glow-pulse-blue 2s infinite ease-in-out;
+  --animate-glow-yellow: glow-pulse-yellow 2s infinite ease-in-out;
 
   @keyframes glow-pulse-blue {
     0% {
@@ -53,11 +54,33 @@
       text-shadow: 0 0 0px rgba(0, 86, 164, 0);
     }
   }
+
+  @keyframes glow-pulse-yellow {
+    0% {
+      box-shadow: 0 0 0px rgba(234, 179, 8, 0);
+      text-shadow: 0 0 0px rgba(234, 179, 8, 0);
+    }
+
+    50% {
+      box-shadow: 0 0 15px rgba(234, 179, 8, 0.5);
+      text-shadow: 0 0 10px rgba(234, 179, 8, 0.4);
+    }
+
+    100% {
+      box-shadow: 0 0 0px rgba(234, 179, 8, 0);
+      text-shadow: 0 0 0px rgba(234, 179, 8, 0);
+    }
+  }
 }
 
 /* 發光動畫輔助類別 */
 .animate-glow-blue {
   animation: var(--animate-glow-blue);
+  border-radius: 6px;
+}
+
+.animate-glow-yellow {
+  animation: var(--animate-glow-yellow);
   border-radius: 6px;
 }
 

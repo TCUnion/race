@@ -15,17 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
-
-interface StravaAthlete {
-  id: string | number;
-  firstname?: string;
-  lastname?: string;
-  firstName?: string; // 補強相容性
-  lastName?: string;  // 補強相容性
-  profile?: string;
-  profile_medium?: string;
-  access_token?: string; // 補強同步用
-}
+import { useAuth, StravaAthlete } from '../hooks/useAuth';
 
 interface NavbarProps {
   currentView: ViewType;
@@ -34,13 +24,12 @@ interface NavbarProps {
 
 const CONFIG = {
   stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
-  storageKey: 'strava_athlete_meta',
+  storageKey: 'strava_athlete_data', // 與 useAuth 一致
   pollingInterval: 1000,
   pollingTimeout: 120000,
   allowedOrigins: [
     'https://n8n.criterium.tw',
     'https://criterium.tw',
-    'https://strava.criterium.tw',
     'https://strava.criterium.tw',
     'https://race.criterium.tw',
     'https://tcu.criterium.tw',
@@ -54,119 +43,26 @@ const CONFIG = {
 };
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
-  const [athlete, setAthlete] = useState<StravaAthlete | null>(null);
-  const [isBound, setIsBound] = useState<boolean>(false);
+  const { athlete, isBound, isAdmin, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
 
-  // Check if current user is Admin (Athlete ID 2838277)
-  const isAdmin = athlete?.id?.toString() === '2838277';
-
-  // 初始化時從 localStorage 讀取
-  useEffect(() => {
-    const loadAthlete = () => {
-      const savedData = localStorage.getItem(CONFIG.storageKey);
-      if (savedData) {
-        try {
-          setAthlete(JSON.parse(savedData));
-        } catch (e) {
-          console.error('解析 Strava 資料失敗', e);
-          setAthlete(null);
-        }
-      } else {
-        setAthlete(null);
-      }
-    };
-
-    loadAthlete();
-
-    // 監聽來自 StravaConnect 的狀態變更事件
-    window.addEventListener('strava-auth-changed', loadAthlete);
-    window.addEventListener('storage', loadAthlete);
-
-    return () => {
-      window.removeEventListener('strava-auth-changed', loadAthlete);
-      window.removeEventListener('storage', loadAthlete);
-    };
-  }, []);
-
-  // 檢查綁定狀態
-  useEffect(() => {
-    const checkBindingStatus = async () => {
-      if (!athlete?.id) {
-        setIsBound(null);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('tcu_members')
-          .select('*')
-          .eq('strava_id', athlete.id.toString())
-          .maybeSingle();
-
-        if (error) throw error;
-        setIsBound(!!data);
-      } catch (e) {
-        console.error('Navbar: 檢查綁定狀態失敗', e);
-        setIsBound(false); // 預設為未綁定以顯示提醒
-      }
-    };
-
-    checkBindingStatus();
-
-    // 監聽綁定成功事件
-    const handleBindingSuccess = () => checkBindingStatus();
-    window.addEventListener('tcu-binding-success', handleBindingSuccess);
-    return () => window.removeEventListener('tcu-binding-success', handleBindingSuccess);
-  }, [athlete?.id]);
-
-  // 監聽 postMessage
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
-      const isNullOriginSafeSuccess =
-        event.origin === "null" &&
-        event.data?.type === "STRAVA_AUTH_SUCCESS" &&
-        event.data?.athlete?.id;
-
-      if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
-        if (event.data?.type?.startsWith('STRAVA_')) {
-          console.log('Navbar: 收到 Strava 相關訊息但來源未授權:', event.origin, event.data);
-        }
-        return;
-      }
-
-      console.log('Navbar: 收到授權訊息:', event.data);
-
-      if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
-        stopPolling();
-        saveAndSetAthlete(event.data.athlete);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
+  const saveAndSetAthlete = async (athleteData: any) => {
     // 規範化資料
     const normalizedData = {
       ...athleteData,
-      firstname: athleteData.firstname || (athleteData as any).firstName || '',
-      lastname: athleteData.lastname || (athleteData as any).lastName || '',
+      firstname: athleteData.firstname || athleteData.firstName || '',
+      lastname: athleteData.lastname || athleteData.lastName || '',
       ts: Date.now()
     };
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
-    setAthlete(normalizedData);
-    setIsLoading(false);
 
     // 同步 Token 到後端
     if (athleteData.access_token) {
       try {
-        await fetch('https://strava.criterium.tw/api/auth/strava-token', {
+        await fetch('/api/auth/strava-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -181,7 +77,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       }
     }
 
+    // 發送事件通知 useAuth 內容內容內容內容內容內容。
     window.dispatchEvent(new Event('strava-auth-changed'));
+    setIsLoading(false);
   };
 
   const stopPolling = () => {
@@ -215,34 +113,32 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const startPolling = () => {
     const startTime = Date.now();
     pollingTimerRef.current = setInterval(() => {
-      // 超時檢查
       if (Date.now() - startTime > CONFIG.pollingTimeout) {
-        console.log('Navbar: 授權超時，停止輪詢');
         stopPolling();
         return;
       }
-
-      // 用 try-catch 處理 COOP (Cross-Origin-Opener-Policy) 錯誤
-      // 當授權視窗來自不同 origin 時，無法檢查 window.closed 狀態
       try {
         if (authWindowRef.current && authWindowRef.current.closed) {
-          console.log('Navbar: 授權視窗已關閉，檢查暫存資料');
-          const found = checkStoredData();
-          if (found) {
-            console.log('Navbar: 成功從暫存取得資料');
-          }
+          checkStoredData();
           stopPolling();
           return;
         }
-      } catch (e) {
-        // COOP 阻擋了 window.closed 檢查，這是正常的
-        // 繼續依賴 postMessage 或 localStorage 輪詢
-      }
-
-      // 無論視窗檢查是否成功，都持續檢查 localStorage
+      } catch (e) { }
       checkStoredData();
     }, CONFIG.pollingInterval);
   };
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!CONFIG.allowedOrigins.includes(event.origin) && event.origin !== "null") return;
+      if (event.data?.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+        stopPolling();
+        saveAndSetAthlete(event.data.athlete);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const handleNavigate = (view: ViewType) => {
     onNavigate(view);
@@ -251,29 +147,18 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
   const handleConnect = () => {
     setIsLoading(true);
-    setIsMenuOpen(false); // 開始授權時關閉選單
-
+    setIsMenuOpen(false);
     localStorage.removeItem(CONFIG.storageKey + '_temp');
-
-    const width = 600;
-    const height = 700;
+    const width = 600, height = 700;
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
-    const returnUrl = encodeURIComponent(window.location.href);
-    const url = `${CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
-
-    authWindowRef.current = window.open(
-      url,
-      'strava_auth',
-      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
-    );
-
+    const url = `${CONFIG.stravaAuthUrl}?return_url=${encodeURIComponent(window.location.href)}`;
+    authWindowRef.current = window.open(url, 'strava_auth', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`);
     if (!authWindowRef.current) {
       window.location.href = url;
-      return;
+    } else {
+      startPolling();
     }
-
-    startPolling();
   };
 
   return (
@@ -314,11 +199,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.MEMBER_BINDING
-                ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1'
-                : 'text-slate-400 hover:text-tsu-blue'
-                } ${isBound === false ? 'ring-2 ring-tsu-blue animate-glow-blue' : ''}`}
+                ? (isBound === false ? 'text-yellow-400 border-b-2 border-yellow-400 pb-1' : 'text-tsu-blue border-b-2 border-tsu-blue pb-1')
+                : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tsu-blue')
+                } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''}`}
             >
-              TCU 綁定
+              {isBound ? 'TCU 會員資料' : 'TCU 綁定'}
             </button>
             {isAdmin && (
               <button
@@ -330,138 +215,156 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             )}
           </nav>
 
-          {athlete ? (
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
-              <div className="flex flex-col items-end">
-                <p className="text-[10px] font-black text-white uppercase tracking-tighter transition-all">
-                  {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : athlete.id}
-                </p>
-                <p className="text-[8px] text-green-500 font-bold uppercase tracking-widest leading-none">Connected</p>
-              </div>
-              <img
-                src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                alt={athlete.firstname || 'Profile'}
-                className="w-10 h-10 rounded-full border-2 border-tsu-blue shadow-md cursor-pointer hover:scale-110 transition-transform"
-                onClick={() => onNavigate(ViewType.DASHBOARD)}
-              />
-            </div>
-          ) : (
-            <button
-              onClick={handleConnect}
-              disabled={isLoading}
-              className="group flex min-w-[140px] cursor-pointer items-center justify-center gap-2 rounded-lg px-5 h-10 bg-strava-orange text-white text-xs font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-strava-orange/20 disabled:opacity-70 disabled:cursor-wait"
-            >
-              {isLoading ? (
+          <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-tsu-blue">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <StravaLogo className="h-4 w-auto" color="white" />
-                  <span>Connect</span>
-                </>
-              )}
-            </button>
-          )}
+                <span className="text-[10px] font-black uppercase tracking-widest">授權中</span>
+              </div>
+            ) : athlete ? (
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-800 group">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-tsu-blue transition-colors">
+                    {athlete.firstname} {athlete.lastname}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {isAdmin && <Shield className="w-2 h-2 text-red-500" />}
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+                      {isAdmin ? 'TCU ADMIN' : isBound ? 'TCU MEMBER' : 'Guest'}
+                    </span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <img
+                    src={athlete.profile || "/placeholder-avatar.png"}
+                    alt="Athlete"
+                    className="w-8 h-8 rounded-full border-2 border-slate-800 group-hover:border-tsu-blue transition-all cursor-pointer"
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  />
+                  {isBound && (
+                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-[#242424]">
+                      <UserCheck className="w-2 h-2 text-white" />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-[10px] font-black text-slate-500 hover:text-red-500 uppercase tracking-widest transition-colors"
+                >
+                  登出
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleConnect}
+                className="group relative flex items-center gap-2 bg-white hover:bg-tsu-blue text-black hover:text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-white/5 active:shadow-none"
+              >
+                <StravaLogo className="w-4 h-4 transition-transform group-hover:rotate-12" />
+                <span>連結 STRAVA</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Mobile Toggle */}
-        <div className="md:hidden flex items-center flex-shrink-0">
+        {/* Mobile Menu Button */}
+        <div className="flex md:hidden items-center gap-4">
+          {!athlete && !isLoading && (
+            <button
+              onClick={handleConnect}
+              className="bg-white text-black p-2 rounded-full shadow-lg active:scale-95"
+            >
+              <StravaLogo className="w-5 h-5" />
+            </button>
+          )}
           <button
-            type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-slate-900 dark:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="text-white hover:text-tsu-blue transition-colors p-1"
           >
-            {isMenuOpen ? <X className="w-7 h-7 sm:w-8 sm:h-8" /> : <Menu className="w-7 h-7 sm:w-8 sm:h-8" />}
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xl animate-in slide-in-from-top duration-300 overflow-hidden">
-          <nav className="flex flex-col p-4 space-y-2">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-[#1a1a1a] border-b border-slate-800 animate-in slide-in-from-top duration-300">
+          <nav className="flex flex-col p-4 gap-2">
+            {athlete && (
+              <div className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-2xl mb-4 border border-slate-800">
+                <img src={athlete.profile} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-tsu-blue" />
+                <div className="flex-1">
+                  <div className="text-white font-black uppercase text-sm">{athlete.firstname} {athlete.lastname}</div>
+                  <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                    {isAdmin && <Shield className="w-3 h-3 text-red-500" />}
+                    {isAdmin ? 'Administrator' : isBound ? 'TCU Certified' : 'Strava Connected'}
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-slate-400 hover:text-red-500 p-2"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.LANDING ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LANDING ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <Compass className="w-5 h-5 mr-3" />
               探索活動
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.LEADERBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LEADERBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <BarChart3 className="w-5 h-5 mr-3" />
               排行榜
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.DASHBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.DASHBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
-              <UserCircle className="w-5 h-5 mr-3" />
+              <LayoutDashboard className="w-5 h-5 mr-3" />
               個人儀表板
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <Wrench className="w-5 h-5 mr-3" />
               保養紀錄
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
-              className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.MEMBER_BINDING
-                ? 'bg-tsu-blue/10 text-tsu-blue'
-                : 'text-slate-600 dark:text-slate-300'
-                } ${isBound === false ? 'ring-2 ring-tsu-blue animate-glow-blue ring-inset mx-2' : ''}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.MEMBER_BINDING
+                ? (isBound === false ? 'bg-yellow-400/10 text-yellow-400' : 'bg-tsu-blue/10 text-tsu-blue')
+                : (isBound === false ? 'text-yellow-400/90 hover:bg-yellow-400/5' : 'text-slate-400 hover:bg-slate-800')
+                } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow ring-inset mx-2' : ''}`}
             >
               <UserCheck className="w-5 h-5 mr-3" />
-              TCU 綁定
+              {isBound ? 'TCU 會員資料' : 'TCU 綁定'}
             </button>
             {isAdmin && (
               <button
                 onClick={() => handleNavigate(ViewType.ADMIN)}
-                className={`flex items-center px-4 py-3 rounded-xl text-left font-bold transition-all active:scale-[0.98] ${currentView === ViewType.ADMIN ? 'bg-red-500/10 text-red-600' : 'text-red-500 dark:text-red-400'}`}
+                className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.ADMIN ? 'bg-red-600/10 text-red-600' : 'text-red-400 hover:bg-red-600/5'}`}
               >
                 <Shield className="w-5 h-5 mr-3" />
-                ADMIN
+                ADMIN PANEL
               </button>
             )}
 
-            <div className="pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
-              {athlete ? (
-                <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                  <img
-                    src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                    alt={athlete.firstname || 'Profile'}
-                    className="w-12 h-12 rounded-full border-2 border-strava-orange"
-                  />
-                  <div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase transition-all">
-                      {(athlete.firstname || athlete.lastname) ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : athlete.id}
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                      Athlete Connected
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={handleConnect}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 bg-strava-orange text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-strava-orange/20 active:scale-[0.98] transition-all"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <StravaLogo className="h-5 w-auto" color="white" />
-                      <span>Connect Strava</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            {!athlete && !isLoading && (
+              <button
+                onClick={handleConnect}
+                className="mt-4 flex items-center justify-center gap-3 bg-white text-black py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl active:scale-95"
+              >
+                <StravaLogo theme="dark" className="w-6 h-6" />
+                連結 STRAVA
+              </button>
+            )}
           </nav>
         </div>
       )}

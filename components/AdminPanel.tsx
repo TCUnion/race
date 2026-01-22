@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle } from 'lucide-react';
+import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import StravaLogo from './StravaLogo';
 
 // 宣告全域變數 (由 vite.config.ts 注入)
 declare const __APP_VERSION__: string;
@@ -48,32 +49,24 @@ const normalizeSegment = (raw: any): any => {
 
     return {
         id: id,
-        strava_id: id,
-        name: data.name,
-        description: data.description || data.name,
-        link: data.link || `https://www.strava.com/segments/${id}`,
-        distance: data.distance,
-        average_grade: data.average_grade,
-        maximum_grade: data.maximum_grade,
-        elevation_gain: elevation,
-        elevation_high: data.elevation_high,
-        elevation_low: data.elevation_low,
-        total_elevation_gain: elevation,
-        activity_type: data.activity_type || 'Ride',
-        climb_category: data.climb_category,
-        city: data.city,
-        state: data.state,
-        country: data.country,
-        star_count: data.star_count,
-        athlete_count: data.athlete_count,
-        kom: data.KOM || data.kom || data.kom_time,
         qom: data.QOM || data.qom || data.qom_time,
         pr_elapsed_time: data.pr_elapsed_time || data.athlete_segment_stats?.pr_elapsed_time,
         pr_date: data.pr_date || data.athlete_segment_stats?.pr_date,
         elevation_profile: data.elevation_profile,
-        polyline: findPolyline(data)
+        polyline: findPolyline(data),
+        strava_id: data.strava_id || id // 確保 strava_id 存在
     };
 };
+
+interface StravaToken {
+    id: number;
+    athleteID: string;
+    createdAt: string;
+    updatedAt: string;
+    expires_at: number;
+    name?: string;
+    isBound?: boolean;
+}
 
 const AdminPanel: React.FC = () => {
     const [session, setSession] = useState<any>(null);
@@ -123,6 +116,27 @@ const AdminPanel: React.FC = () => {
     const [siteSettings, setSiteSettings] = useState<any[]>([]);
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [isUpdatingVersion, setIsUpdatingVersion] = useState(false);
+    const [allMembers, setAllMembers] = useState<any[]>([]);
+    const [isUnbindingMember, setIsUnbindingMember] = useState<string | null>(null);
+    const [stravaTokens, setStravaTokens] = useState<StravaToken[]>([]);
+    const [isRefreshingTokens, setIsRefreshingTokens] = useState(false);
+
+    // 報名列表搜尋與分頁狀態
+    const [regSearchTerm, setRegSearchTerm] = useState('');
+    const [regPageSize, setRegPageSize] = useState(10);
+    const [regCurrentPage, setRegCurrentPage] = useState(1);
+
+    // 會員管理 - 搜尋與分頁狀態
+    const [memberSearchTerm, setMemberSearchTerm] = useState('');
+    const [memberPageSize, setMemberPageSize] = useState(10);
+    const [memberCurrentPage, setMemberCurrentPage] = useState(1);
+
+    // Strava Token 顯示與搜尋/分頁狀態
+    const [tokenSearchTerm, setTokenSearchTerm] = useState('');
+    const [tokenPageSize, setTokenPageSize] = useState(10);
+    const [tokenCurrentPage, setTokenCurrentPage] = useState(1);
+    const [tokenSortField, setTokenSortField] = useState<string>('updatedAt');
+    const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('desc');
 
     const fetchSegments = async () => {
         const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
@@ -274,8 +288,6 @@ const AdminPanel: React.FC = () => {
     };
 
     const fetchRegistrations = async (filterSegmentId: string | null = null) => {
-        console.log('Fetching registrations... Session:', session, 'Filter:', filterSegmentId);
-
         let query = supabase
             .from('registrations')
             .select('*, segments(name, strava_id)')
@@ -287,7 +299,6 @@ const AdminPanel: React.FC = () => {
 
         const { data, error } = await query;
 
-        console.log('Fetch result:', { data, error });
         if (error) {
             console.error('Fetch registrations error:', error);
             setError('讀取報名資料失敗: ' + error.message);
@@ -379,6 +390,163 @@ const AdminPanel: React.FC = () => {
         setSegments([]);
     };
 
+    const fetchAllMembers = async () => {
+        try {
+            // 1. 抓取會員基本資料 (移除引發錯誤的 Join 語法)
+            const { data: members, error: mError } = await supabase
+                .from('tcu_members')
+                .select('real_name, email, team, tcu_id, member_type, status, strava_id')
+                .order('real_name');
+
+            if (mError) throw mError;
+
+            // 2. 抓取 Strava 選手資料進行前端 Join
+            const { data: athletes, error: aError } = await supabase
+                .from('athletes')
+                .select('id, firstname, lastname');
+
+            // 如果抓取失敗則不影響基礎列表顯示
+            const athleteMap = new Map();
+            if (!aError && athletes) {
+                athletes.forEach(a => athleteMap.set(a.id.toString(), a));
+            }
+
+            // 3. 排序與資料合併：已綁定 (strava_id 不為空) 優先
+            const sorted = (members || []).map(m => ({
+                ...m,
+                athletes: m.strava_id ? athleteMap.get(m.strava_id) : null
+            })).sort((a, b) => {
+                const aBound = !!a.strava_id;
+                const bBound = !!b.strava_id;
+                if (aBound && !bBound) return -1;
+                if (!aBound && bBound) return 1;
+                return 0;
+            });
+
+            setAllMembers(sorted);
+        } catch (err: any) {
+            console.error('Fetch members error:', err);
+        }
+    };
+
+    const fetchStravaTokens = async () => {
+        setIsRefreshingTokens(true);
+        try {
+            // 1. 抓取所有運動員作為基礎
+            const { data: athletes, error: aError } = await supabase
+                .from('athletes')
+                .select('id, firstname, lastname');
+
+            if (aError) throw aError;
+
+            // 2. 抓取所有權杖資訊 (正確資料來源為 strava_tokens)
+            const { data: tokens, error: tError } = await supabase
+                .from('strava_tokens')
+                .select('athlete_id, updated_at, expires_at, created_at'); // 確保包含 created_at
+
+            const tokenMap = new Map();
+            if (!tError && tokens) {
+                tokens.forEach(t => tokenMap.set(t.athlete_id.toString(), t));
+            }
+
+            // 3. 抓取會員綁定資訊
+            const { data: members, error: mError } = await supabase
+                .from('tcu_members')
+                .select('strava_id');
+
+            const boundSet = new Set();
+            if (!mError && members) {
+                members.forEach(m => {
+                    if (m.strava_id) boundSet.add(m.strava_id.toString());
+                });
+            }
+
+            // 4. 合併資料
+            const combined = (athletes || []).map(a => {
+                const token = tokenMap.get(a.id.toString());
+                return {
+                    athleteID: a.id.toString(),
+                    name: `${a.firstname} ${a.lastname}`,
+                    createdAt: token?.created_at || null,
+                    updatedAt: token?.updated_at || null,
+                    expires_at: token?.expires_at || null,
+                    isBound: boundSet.has(a.id.toString())
+                };
+            }).sort((a, b) => {
+                // 有權杖的排前面，其次按姓名排序
+                if (a.updatedAt && !b.updatedAt) return -1;
+                if (!a.updatedAt && b.updatedAt) return 1;
+                return a.name.localeCompare(b.name, 'zh-TW');
+            });
+
+            setStravaTokens(combined);
+        } catch (err: any) {
+            console.error('Fetch strava tokens error:', err);
+        } finally {
+            setIsRefreshingTokens(false);
+        }
+    };
+
+    const handleUnbindMemberByAdmin = async (member: any, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+
+        setIsUnbindingMember(member.email);
+        try {
+            // 從 localStorage 取得管理員的 Strava Athlete ID
+            const athleteMeta = localStorage.getItem('strava_athlete_meta');
+            let adminId: string | null = null;
+
+            if (athleteMeta) {
+                try {
+                    const parsed = JSON.parse(athleteMeta);
+                    adminId = parsed.id?.toString();
+                } catch (parseError) {
+                    console.error('解析 athlete_meta 失敗:', parseError);
+                }
+            }
+
+            if (!adminId) {
+                alert('管理員資訊缺失，請重新登入 Strava 後再試。');
+                return;
+            }
+
+            // 呼叫後端 API 進行解綁（包含權限驗證）
+            const response = await fetch('/api/auth/unbind', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: member.email,
+                    admin_id: adminId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('已成功解除綁定');
+                // 重新整理列表
+                await fetchAllMembers();
+            } else {
+                throw new Error(result.message || '解除綁定失敗');
+            }
+        } catch (error: any) {
+            console.error('解除綁定失敗:', error);
+            alert(`解除綁定失敗: ${error.message || '未知錯誤'}`);
+        } finally {
+            setIsUnbindingMember(null);
+        }
+    };
+
+    useEffect(() => {
+        if (session) {
+            fetchAllMembers();
+            fetchStravaTokens();
+            fetchSiteSettings();
+        }
+    }, [session]);
+
     const fetchSiteSettings = async () => {
         const { data, error } = await supabase.from('site_settings').select('*');
         if (!error && data) {
@@ -431,6 +599,42 @@ const AdminPanel: React.FC = () => {
         } finally {
             setIsUpdatingVersion(false);
         }
+    };
+
+    // 根據搜尋條件過濾後的權杖
+    const filteredTokens = stravaTokens.filter(t =>
+        t.athleteID.toLowerCase().includes(tokenSearchTerm.toLowerCase()) ||
+        t.name.toLowerCase().includes(tokenSearchTerm.toLowerCase())
+    ).sort((a, b) => {
+        const factor = tokenSortOrder === 'asc' ? 1 : -1;
+        const valA = a[tokenSortField] || '';
+        const valB = b[tokenSortField] || '';
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return (valA - valB) * factor;
+        }
+        return String(valA).localeCompare(String(valB), 'zh-TW') * factor;
+    });
+
+    const totalTokenPages = Math.ceil(filteredTokens.length / tokenPageSize);
+    const displayedTokens = filteredTokens.slice((tokenCurrentPage - 1) * tokenPageSize, tokenCurrentPage * tokenPageSize);
+
+    const toggleTokenSort = (field: string) => {
+        if (tokenSortField === field) {
+            setTokenSortOrder(tokenSortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setTokenSortField(field);
+            setTokenSortOrder('asc');
+        }
+    };
+
+    const getExpiryColor = (expires_at: number | null) => {
+        if (!expires_at) return 'text-slate-400';
+        const now = Math.floor(Date.now() / 1000);
+        const diff = expires_at - now;
+        if (diff <= 0) return 'text-red-500 font-black bg-red-50 dark:bg-red-900/20 px-1 rounded';
+        if (diff <= 2 * 3600) return 'text-orange-500 font-black bg-orange-50 dark:bg-orange-900/20 px-1 rounded';
+        return 'text-emerald-600 dark:text-emerald-400 font-bold';
     };
 
 
@@ -529,93 +733,6 @@ const AdminPanel: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* SEO 設定區塊 - 移至最上方並設為寬版 */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-black uppercase italic italic flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-tsu-blue" />
-                            SEO & 站點設定
-                        </h3>
-                        <button
-                            onClick={handleSaveAllSettings}
-                            disabled={isSavingSettings}
-                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
-                        >
-                            {isSavingSettings ? '儲存中...' : '儲存所有設定'}
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {siteSettings.filter(s => !s.key.startsWith('footer_link_')).map((setting) => (
-                            <div key={setting.key} className="flex flex-col gap-2">
-                                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-col sm:flex-row sm:justify-between gap-1">
-                                    <span className="break-all">{setting.key.replace(/_/g, ' ')}</span>
-                                    <span className="text-slate-300 font-normal normal-case text-[9px] sm:text-[10px] whitespace-nowrap">
-                                        {setting.updated_at ? new Date(setting.updated_at).toLocaleDateString() : '剛剛'}
-                                    </span>
-                                </label>
-                                {setting.key.includes('description') || setting.key.includes('keywords') ? (
-                                    <textarea
-                                        value={setting.value || ''}
-                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tsu-blue min-h-[100px]"
-                                    />
-                                ) : (
-                                    <input
-                                        type="text"
-                                        value={setting.value || ''}
-                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 頁尾連結設定區塊 */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
-                            <Share2 className="w-5 h-5 text-tsu-blue" />
-                            頁尾連結設定
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {siteSettings.filter(s => s.key.startsWith('footer_link_')).map((setting) => {
-                            // 根據 key 決定圖示
-                            const getIcon = (key: string) => {
-                                if (key === 'footer_link_share') return <Share2 className="w-4 h-4 text-tsu-blue" />;
-                                if (key === 'footer_link_doc') return <FileText className="w-4 h-4 text-tsu-blue" />;
-                                if (key === 'footer_link_support') return <LifeBuoy className="w-4 h-4 text-tsu-blue" />;
-                                if (key === 'footer_link_line') return <MessageCircle className="w-4 h-4 text-[#06c755]" />;
-                                if (key === 'footer_link_web') return <Globe className="w-4 h-4 text-tsu-blue" />;
-                                return null;
-                            };
-                            return (
-                                <div key={setting.key} className="flex flex-col gap-2">
-                                    <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-col sm:flex-row sm:justify-between gap-1">
-                                        <span className="flex items-center gap-2">
-                                            {getIcon(setting.key)}
-                                            <span className="break-all">{setting.key.replace(/_/g, ' ')}</span>
-                                        </span>
-                                        <span className="text-slate-300 font-normal normal-case text-[9px] sm:text-[10px] whitespace-nowrap">
-                                            {setting.updated_at ? new Date(setting.updated_at).toLocaleDateString() : '剛剛'}
-                                        </span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={setting.value || ''}
-                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                        placeholder="https://..."
-                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
-                                    />
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
 
                 {/* 路段管理 */}
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -941,31 +1058,51 @@ const AdminPanel: React.FC = () => {
 
                 {/* 報名審核列表 */}
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <h3 className="text-xl font-black">報名列表</h3>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            <div className="relative flex-1 md:flex-initial">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="搜尋姓名、車隊或 ID..."
+                                    value={regSearchTerm}
+                                    onChange={(e) => {
+                                        setRegSearchTerm(e.target.value);
+                                        setRegCurrentPage(1);
+                                    }}
+                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tsu-blue/20 transition-all"
+                                />
+                            </div>
                             <select
                                 onChange={(e) => {
                                     const val = e.target.value;
-                                    setRegistrations(prev => {
-                                        // 這裡僅做前端篩選展示稍微複雜，通常我們在 fetch 時篩選
-                                        // 為了簡單起見，我們這裡重新 fetch 並帶入 filter
-                                        // 但因為 fetchRegistrations 是無參數的，我們改用 state
-                                        return prev;
-                                    });
-                                    // 重新 fetch 會比較好，從資料庫撈
                                     fetchRegistrations(val);
+                                    setRegCurrentPage(1);
                                 }}
-                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg focus:ring-tsu-blue focus:border-tsu-blue block p-2.5 font-bold"
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tsu-blue/20 transition-all font-bold"
                             >
                                 <option value="">全部路段</option>
                                 {segments.map(seg => (
                                     <option key={seg.id} value={seg.id}>{seg.name}</option>
                                 ))}
                             </select>
+                            <select
+                                value={regPageSize}
+                                onChange={(e) => {
+                                    setRegPageSize(Number(e.target.value));
+                                    setRegCurrentPage(1);
+                                }}
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tsu-blue/20 transition-all font-mono"
+                            >
+                                <option value={10}>10/page</option>
+                                <option value={20}>20/page</option>
+                                <option value={50}>50/page</option>
+                            </select>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs text-slate-400 font-mono">Count: {registrations.length}</span>
-                                <button onClick={() => fetchRegistrations()} className="text-sm text-tsu-blue hover:underline">重新整理</button>
+                                <button onClick={() => fetchRegistrations()} className="text-slate-400 hover:text-tsu-blue transition-colors p-2" title="重新整理">
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -976,71 +1113,513 @@ const AdminPanel: React.FC = () => {
                             <p className="text-slate-400 font-bold">目前無待處理報名</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
-                                    <tr>
-                                        <th className="px-4 py-3 rounded-l-lg">選手</th>
-                                        <th className="px-4 py-3">路段</th>
-                                        <th className="px-4 py-3">號碼</th>
-                                        <th className="px-4 py-3">車隊</th>
-                                        <th className="px-4 py-3">TCU ID</th>
-                                        <th className="px-4 py-3">狀態</th>
-                                        <th className="px-4 py-3 rounded-r-lg">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                    {registrations.map((reg) => (
-                                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-4 py-3 font-bold">{reg.athlete_name}</td>
-                                            <td className="px-4 py-3 text-slate-500 text-xs">{reg.segments?.name || reg.segment_id}</td>
-                                            <td className="px-4 py-3">
-                                                <button
-                                                    onClick={() => {
-                                                        const newNum = prompt('修改選手號碼:', reg.number);
-                                                        if (newNum !== null) {
-                                                            supabase.from('registrations')
-                                                                .update({ number: newNum })
-                                                                .eq('id', reg.id)
-                                                                .then(({ error }) => {
-                                                                    if (error) alert('更新失敗:' + error.message);
-                                                                    else fetchRegistrations();
-                                                                });
-                                                        }
-                                                    }}
-                                                    className="font-mono text-tsu-blue hover:underline font-bold"
-                                                >
-                                                    {reg.number || '派發'}
-                                                </button>
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
+                                        <tr>
+                                            <th className="px-4 py-3 rounded-l-lg">選手</th>
+                                            <th className="px-4 py-3">路段</th>
+                                            <th className="px-4 py-3">號碼</th>
+                                            <th className="px-4 py-3">車隊</th>
+                                            <th className="px-4 py-3">TCU ID</th>
+                                            <th className="px-4 py-3">狀態</th>
+                                            <th className="px-4 py-3 rounded-r-lg">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {registrations
+                                            .filter(reg =>
+                                                reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) ||
+                                                (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) ||
+                                                (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())
+                                            )
+                                            .slice((regCurrentPage - 1) * regPageSize, regCurrentPage * regPageSize)
+                                            .map((reg) => (
+                                                <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-4 py-3 font-bold">{reg.athlete_name}</td>
+                                                    <td className="px-4 py-3 text-slate-500 text-xs">{reg.segments?.name || reg.segment_id}</td>
+                                                    <td className="px-4 py-3">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newNum = prompt('修改選手號碼:', reg.number);
+                                                                if (newNum !== null) {
+                                                                    supabase.from('registrations')
+                                                                        .update({ number: newNum })
+                                                                        .eq('id', reg.id)
+                                                                        .then(({ error }) => {
+                                                                            if (error) alert('更新失敗:' + error.message);
+                                                                            else fetchRegistrations();
+                                                                        });
+                                                                }
+                                                            }}
+                                                            className="font-mono text-tsu-blue hover:underline font-bold"
+                                                        >
+                                                            {reg.number || '派發'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-500">{reg.team || '-'}</td>
+                                                    <td className="px-4 py-3 text-slate-500 font-mono text-xs">{reg.tcu_id || '-'}</td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${reg.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                            reg.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                                'bg-yellow-100 text-yellow-700'
+                                                            }`}>
+                                                            {reg.status || 'Pending'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (confirm('刪除報名紀錄？')) {
+                                                                    supabase.from('registrations').delete().eq('id', reg.id).then(() => fetchRegistrations());
+                                                                }
+                                                            }}
+                                                            className="text-red-400 hover:text-red-500 font-bold text-xs"
+                                                        >
+                                                            刪除
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination for Registrations */}
+                            <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-100 dark:border-slate-800 pt-8">
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                                    Showing {(regCurrentPage - 1) * regPageSize + 1} to {Math.min(regCurrentPage * regPageSize, registrations.filter(reg => reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())).length)} of {registrations.filter(reg => reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())).length} registrations
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setRegCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={regCurrentPage === 1}
+                                        className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-slate-100 transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => setRegCurrentPage(prev => prev + 1)}
+                                        disabled={regCurrentPage * regPageSize >= registrations.filter(reg => reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())).length}
+                                        className="px-4 py-2 bg-tsu-blue text-white rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-tsu-blue-dark transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* API 權杖管理 (Strava Tokens) */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div className="flex items-center gap-3">
+                            <Database className="w-5 h-5 text-tsu-blue" />
+                            <h3 className="text-xl font-black">API 權杖管理 (Strava Tokens)</h3>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            <div className="relative flex-1 md:flex-initial">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="搜尋姓名或 ID..."
+                                    value={tokenSearchTerm}
+                                    onChange={(e) => {
+                                        setTokenSearchTerm(e.target.value);
+                                        setTokenCurrentPage(1);
+                                    }}
+                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tsu-blue/20 transition-all"
+                                />
+                            </div>
+                            <select
+                                value={tokenPageSize}
+                                onChange={(e) => {
+                                    setTokenPageSize(Number(e.target.value));
+                                    setTokenCurrentPage(1);
+                                }}
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tsu-blue/20 transition-all font-mono"
+                            >
+                                <option value={10}>10/page</option>
+                                <option value={20}>20/page</option>
+                                <option value={50}>50/page</option>
+                                <option value={100}>100/page</option>
+                            </select>
+                            <button
+                                onClick={fetchStravaTokens}
+                                className="text-slate-400 hover:text-tsu-blue transition-colors p-2"
+                                title="重新整理列表"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${isRefreshingTokens ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <tr>
+                                    <th className="px-4 py-3 rounded-l-lg cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('athleteID')}>
+                                        Athlete ID {tokenSortField === 'athleteID' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('name')}>
+                                        運動員名稱 {tokenSortField === 'name' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('createdAt')}>
+                                        建立日期 {tokenSortField === 'createdAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('expires_at')}>
+                                        過期時間 {tokenSortField === 'expires_at' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
+                                        綁定狀態 {tokenSortField === 'isBound' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('updatedAt')}>
+                                        最後更新 {tokenSortField === 'updatedAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {displayedTokens
+                                    .map((token) => (
+                                        <tr key={token.athleteID} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-4 py-3 font-mono text-xs">{token.athleteID}</td>
+                                            <td className="px-4 py-3 font-bold">{token.name}</td>
+                                            <td className="px-4 py-3 text-slate-500">
+                                                {token.createdAt ? new Date(token.createdAt).toLocaleDateString('zh-TW') : '-'}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-500">{reg.team || '-'}</td>
-                                            <td className="px-4 py-3 text-slate-500 font-mono text-xs">{reg.tcu_id || '-'}</td>
-                                            <td className="px-4 py-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${reg.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                    reg.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                        'bg-yellow-100 text-yellow-700'
-                                                    }`}>
-                                                    {reg.status || 'Pending'}
+                                            <td className="px-4 py-3 text-xs">
+                                                <span className={getExpiryColor(token.expires_at)}>
+                                                    {token.expires_at
+                                                        ? new Date(token.expires_at * 1000).toLocaleString('zh-TW', {
+                                                            timeZone: 'Asia/Taipei',
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })
+                                                        : '-'}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <button
-                                                    onClick={() => {
-                                                        if (confirm('刪除報名紀錄？')) {
-                                                            supabase.from('registrations').delete().eq('id', reg.id).then(() => fetchRegistrations());
-                                                        }
-                                                    }}
-                                                    className="text-red-400 hover:text-red-500 font-bold text-xs"
-                                                >
-                                                    刪除
-                                                </button>
+                                                {token.isBound ? (
+                                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase">Bound</span>
+                                                ) : (
+                                                    <span className="px-2 py-1 bg-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase">Unbound</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="text-[10px] font-bold text-slate-400">
+                                                    {token.updatedAt ? new Date(token.updatedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '-'}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
-                                </tbody>
-                            </table>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination for Tokens */}
+                    <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-100 dark:border-slate-800 pt-8">
+                        <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                            Showing {(tokenCurrentPage - 1) * tokenPageSize + 1} to {Math.min(tokenCurrentPage * tokenPageSize, filteredTokens.length)} of {filteredTokens.length} athletes
                         </div>
-                    )}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setTokenCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={tokenCurrentPage === 1}
+                                className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-slate-100 transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setTokenCurrentPage(prev => prev + 1)}
+                                disabled={tokenCurrentPage * tokenPageSize >= filteredTokens.length}
+                                className="px-4 py-2 bg-tsu-blue text-white rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-tsu-blue-dark transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div className="flex items-center gap-3">
+                            <StravaLogo className="w-5 h-5 font-bold text-orange-500 fill-current" />
+                            <h3 className="text-xl font-black uppercase italic">Strava 綁定管理</h3>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            {/* 搜尋框 */}
+                            <div className="relative flex-1 md:w-64">
+                                <input
+                                    type="text"
+                                    placeholder="搜尋姓名或 Email..."
+                                    value={memberSearchTerm}
+                                    onChange={(e) => {
+                                        setMemberSearchTerm(e.target.value);
+                                        setMemberCurrentPage(1); // 搜尋時重設頁碼
+                                    }}
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-4 text-xs focus:ring-2 focus:ring-tsu-blue"
+                                />
+                            </div>
+
+                            {/* 每頁筆數 */}
+                            <select
+                                value={memberPageSize}
+                                onChange={(e) => {
+                                    setMemberPageSize(Number(e.target.value));
+                                    setMemberCurrentPage(1);
+                                }}
+                                className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-3 text-xs font-bold focus:ring-tsu-blue"
+                            >
+                                <option value={10}>10 筆/頁</option>
+                                <option value={100}>100 筆/頁</option>
+                                <option value={500}>500 筆/頁</option>
+                            </select>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-500 px-2 py-1 rounded-full whitespace-nowrap">
+                                    {allMembers.filter(m => m.strava_id).length} Bound
+                                </span>
+                                <button
+                                    onClick={fetchAllMembers}
+                                    className="text-slate-400 hover:text-tsu-blue transition-colors p-2"
+                                    title="重新整理列表"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 資料過濾與分頁計算 */}
+                    {(() => {
+                        const filtered = allMembers.filter(m =>
+                            m.real_name?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                            m.email?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                            (m.athletes && `${m.athletes.firstname} ${m.athletes.lastname}`.toLowerCase().includes(memberSearchTerm.toLowerCase()))
+                        );
+
+                        const totalPages = Math.ceil(filtered.length / memberPageSize);
+                        const displayedMembers = filtered.slice(
+                            (memberCurrentPage - 1) * memberPageSize,
+                            memberCurrentPage * memberPageSize
+                        );
+
+                        return (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <tr>
+                                                <th className="px-4 py-3 rounded-l-lg">Strava ID</th>
+                                                <th className="px-4 py-3">Strava Name</th>
+                                                <th className="px-4 py-3">會員資訊</th>
+                                                <th className="px-4 py-3">TCU ID / 帳號</th>
+                                                <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700">會員類別</th>
+                                                <th className="px-4 py-3 rounded-r-lg text-right">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {displayedMembers.map((m) => (
+                                                <tr key={m.email} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!m.strava_id ? 'opacity-60' : ''}`}>
+                                                    <td className="px-4 py-4">
+                                                        {m.strava_id ? (
+                                                            <a
+                                                                href={`https://www.strava.com/athletes/${m.strava_id}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-orange-500 hover:underline font-mono text-xs font-black bg-orange-50 dark:bg-orange-950/20 px-2 py-1 rounded"
+                                                            >
+                                                                {m.strava_id}
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-slate-400 font-mono text-xs italic tracking-widest">UNBOUND</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        {m.athletes ? (
+                                                            <div className="font-bold text-orange-600 dark:text-orange-400">
+                                                                {m.athletes.firstname} {m.athletes.lastname}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-slate-300 italic text-xs">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            {m.real_name}
+                                                            {!m.strava_id && <span className="text-[8px] font-black uppercase bg-slate-200 dark:bg-slate-700 text-slate-500 px-1 rounded">Offline</span>}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 font-mono">{m.email}</div>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="text-xs font-bold text-slate-600 dark:text-slate-400">{m.tcu_id}</div>
+                                                        <div className="text-[10px] text-slate-400 font-mono">{m.account ? m.account.replace(/(.{3})(.*)(.{3})/, "$1****$3") : '-'}</div>
+                                                    </td>
+                                                    <td className="px-4 py-4 border-x border-slate-100 dark:border-slate-700">
+                                                        <span className="px-2 py-0.5 bg-tsu-blue/10 text-tsu-blue text-[10px] font-bold rounded-full uppercase tracking-tighter">
+                                                            {m.member_type || '一般會員'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-right">
+                                                        {m.strava_id ? (
+                                                            <button
+                                                                onClick={(e) => handleUnbindMemberByAdmin(m, e)}
+                                                                disabled={isUnbindingMember === m.email}
+                                                                className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border border-red-100 dark:border-red-900/30 disabled:opacity-50 shadow-sm"
+                                                            >
+                                                                {isUnbindingMember === m.email ? '處理中...' : '解除綁定'}
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-300 font-black uppercase italic">No Action</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {displayedMembers.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={6} className="py-10 text-center text-slate-400 font-bold italic">
+                                                        {allMembers.length === 0 ? '載入中或無會員記錄...' : '找不到匹配的會員...'}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* 分頁導航 */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            顯示第 {(memberCurrentPage - 1) * memberPageSize + 1} 至 {Math.min(memberCurrentPage * memberPageSize, filtered.length)} 筆 / 共 {filtered.length} 筆
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setMemberCurrentPage(prev => Math.max(1, prev - 1))}
+                                                disabled={memberCurrentPage === 1}
+                                                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                            >
+                                                上一頁
+                                            </button>
+                                            <div className="flex items-center px-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                                <span className="text-xs font-black text-tsu-blue">{memberCurrentPage}</span>
+                                                <span className="text-xs font-bold text-slate-400 mx-2">/</span>
+                                                <span className="text-xs font-bold text-slate-400">{totalPages}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setMemberCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                disabled={memberCurrentPage === totalPages}
+                                                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                            >
+                                                下一頁
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
+                </div>
+
+                {/* SEO 設定區塊 - 移至最下方並設為寬版 */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
+                            <Globe className="w-5 h-5 text-tsu-blue" />
+                            SEO & 站點設定
+                        </h3>
+                        <button
+                            onClick={handleSaveAllSettings}
+                            disabled={isSavingSettings}
+                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
+                        >
+                            {isSavingSettings ? '儲存中...' : '儲存設定'}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {siteSettings.filter(s => !s.key.startsWith('footer_link_')).map((setting) => (
+                            <div key={setting.key} className="flex flex-col gap-2">
+                                <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-col sm:flex-row sm:justify-between gap-1">
+                                    <span className="break-all">{setting.key.replace(/_/g, ' ')}</span>
+                                    <span className="text-slate-300 font-normal normal-case text-[9px] sm:text-[10px] whitespace-nowrap">
+                                        {setting.updated_at ? new Date(setting.updated_at).toLocaleDateString() : '剛剛'}
+                                    </span>
+                                </label>
+                                {setting.key.includes('description') || setting.key.includes('keywords') ? (
+                                    <textarea
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tsu-blue min-h-[100px]"
+                                    />
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 頁尾連結設定區塊 */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
+                            <Share2 className="w-5 h-5 text-tsu-blue" />
+                            頁尾連結設定
+                        </h3>
+                        <button
+                            onClick={handleSaveAllSettings}
+                            disabled={isSavingSettings}
+                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
+                        >
+                            {isSavingSettings ? '儲存中...' : '儲存設定'}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {siteSettings.filter(s => s.key.startsWith('footer_link_')).map((setting) => {
+                            // 根據 key 決定圖示
+                            const getIcon = (key: string) => {
+                                if (key === 'footer_link_share') return <Share2 className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_doc') return <FileText className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_support') return <LifeBuoy className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_line') return <MessageCircle className="w-4 h-4 text-[#06c755]" />;
+                                if (key === 'footer_link_web') return <Globe className="w-4 h-4 text-tsu-blue" />;
+                                return null;
+                            };
+                            return (
+                                <div key={setting.key} className="flex flex-col gap-2">
+                                    <label className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex flex-col sm:flex-row sm:justify-between gap-1">
+                                        <span className="flex items-center gap-2">
+                                            {getIcon(setting.key)}
+                                            <span className="break-all">{setting.key.replace(/_/g, ' ')}</span>
+                                        </span>
+                                        <span className="text-slate-300 font-normal normal-case text-[9px] sm:text-[10px] whitespace-nowrap">
+                                            {setting.updated_at ? new Date(setting.updated_at).toLocaleDateString() : '剛剛'}
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={setting.value || ''}
+                                        onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
+                                        placeholder="https://..."
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>

@@ -84,17 +84,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     const loadAthlete = () => {
-      const savedData = localStorage.getItem('strava_athlete_meta');
-      if (savedData) {
+      const athleteDataString = localStorage.getItem('strava_athlete_data');
+      if (athleteDataString) {
         try {
-          const athleteData = JSON.parse(savedData);
+          const athleteData = JSON.parse(athleteDataString);
           setAthlete(athleteData);
           if (segments.length > 0) {
             fetchAllRegistrations(athleteData.id);
           }
         } catch (e) {
           console.error('Dashboard: Access token parse error', e);
-          localStorage.removeItem('strava_athlete_meta');
+          localStorage.removeItem('strava_athlete_data');
           setAthlete(null);
           setIsLoading(false);
         }

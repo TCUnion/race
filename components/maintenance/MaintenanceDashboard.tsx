@@ -386,7 +386,7 @@ const MaintenanceDashboard: React.FC = () => {
     e.preventDefault();
     if (!selectedBike) return;
 
-    const athleteData = localStorage.getItem('strava_athlete_meta');
+    const athleteData = localStorage.getItem('strava_athlete_data');
     if (!athleteData) return;
     const athlete = JSON.parse(athleteData);
 
@@ -515,7 +515,7 @@ const MaintenanceDashboard: React.FC = () => {
 
       if (confirm(`確定要匯入 ${parsedRecords.length} 筆紀錄嗎？`)) {
         try {
-          const athleteData = localStorage.getItem('strava_athlete_meta');
+          const athleteData = localStorage.getItem('strava_athlete_data');
           if (!athleteData) return;
           const athlete = JSON.parse(athleteData);
 
