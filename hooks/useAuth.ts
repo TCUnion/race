@@ -49,14 +49,17 @@ export const useAuth = () => {
             const data = await response.json();
 
             if (data.isBound) {
+                const apiMemberData = data.member_data || {};
                 setMemberData({
-                    real_name: data.member_name || '',
-                    tcu_id: data.tcu_account || '',
-                    email: data.email || '',
+                    real_name: apiMemberData.real_name || data.member_name || '',
+                    tcu_id: apiMemberData.tcu_id || data.tcu_account || '',
+                    email: apiMemberData.email || data.email || '',
                     strava_id: athleteId.toString(),
-                    account: data.tcu_account,
-                    member_name: data.member_name,
-                    bound_at: data.bound_at
+                    account: apiMemberData.account || data.tcu_account,
+                    member_name: apiMemberData.real_name || data.member_name,
+                    bound_at: data.bound_at,
+                    member_type: apiMemberData.member_type, // 確保這些欄位能被傳遞
+                    ...apiMemberData //Spread rest of the data
                 });
                 setIsBound(true);
             } else {

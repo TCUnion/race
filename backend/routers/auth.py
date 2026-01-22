@@ -166,8 +166,21 @@ async def confirm_binding(request: Request):
             "member_name": member_name
         }).execute()
         
+        # 取得完整會員資料以回傳給前端顯示 (優先使用 account)
+        if tcu_account:
+            print(f"[DEBUG] Fetching member for response by account: {tcu_account}")
+            member_res = supabase.table("tcu_members").select("*").eq("account", tcu_account).execute()
+        else:
+            member_res = supabase.table("tcu_members").select("*").eq("email", email).execute()
+            
+        member_data = member_res.data[0] if member_res.data else {}
+        
         print(f"[DEBUG] Binding confirmed. Result: {res.data}")
-        return {"success": True, "message": "Binding confirmed"}
+        return {
+            "success": True, 
+            "message": "Binding confirmed",
+            "member_data": member_data
+        }
     except Exception as e:
         print(f"[DEBUG] Confirm binding error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Confirm binding failed: {str(e)}")
@@ -237,13 +250,27 @@ async def get_binding_status(strava_id: str):
         
         if res.data:
             binding = res.data[0]
+            email = binding.get("tcu_member_email")
             print(f"[DEBUG] Binding found: {binding}")
+            
+            # 取得完整會員資料 (優先使用 tcu_account 查詢，避免同 Email 多帳號問題)
+            tcu_account = binding.get("tcu_account")
+            if tcu_account:
+                 print(f"[DEBUG] Fetching member by account: {tcu_account}")
+                 member_res = supabase.table("tcu_members").select("*").eq("account", tcu_account).execute()
+            else:
+                 print(f"[DEBUG] Fetching member by email (fallback): {email}")
+                 member_res = supabase.table("tcu_members").select("*").eq("email", email).execute()
+            
+            member_data = member_res.data[0] if member_res.data else {}
+            
             return {
                 "isBound": True,
-                "email": binding.get("tcu_member_email"),
+                "email": email,
                 "tcu_account": binding.get("tcu_account"),
                 "member_name": binding.get("member_name"),
-                "bound_at": binding.get("bound_at")
+                "bound_at": binding.get("bound_at"),
+                "member_data": member_data
             }
         else:
             print("[DEBUG] No binding found")

@@ -4,7 +4,7 @@ import { useSegmentData, formatTime } from '../hooks/useSegmentData';
 import SegmentMap from './SegmentMap';
 import { MOCK_SEGMENT_STATS } from '../constants';
 import { Activity, ViewType } from '../types';
-import MemberBindingCard from './MemberBindingCard';
+
 
 const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
   <div className={`animate-pulse bg-slate-200 dark:bg-slate-800 rounded ${className}`}></div>
@@ -338,11 +338,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </section>
 
-        {/* TCU Member Binding Section */}
-        <MemberBindingCard
-          athlete={athlete}
-          onBindingSuccess={() => athlete && fetchAllRegistrations(athlete.id)}
-        />
+
 
         {/* Selected Segment Details Title */}
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800">

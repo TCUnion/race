@@ -9,7 +9,23 @@ import {
     AlertCircle,
     ArrowRight,
     ShieldCheck,
-    RefreshCw
+    RefreshCw,
+    Users,
+    Calendar,
+    User,
+    CreditCard,
+    BadgeCheck,
+    Hash,
+    Globe,
+    MapPin,
+    Phone,
+    Heart,
+    FileText,
+    Zap,
+    Smile,
+    ExternalLink,
+    Clock,
+    Info
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -35,10 +51,10 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
     useEffect(() => {
         if (isBound) {
             setStep('success');
-        } else {
+        } else if (!localMemberData) {
             setStep('input');
         }
-    }, [isBound]);
+    }, [isBound, localMemberData]);
 
     const handleSync = async () => {
         if (!tcuId.trim()) {
@@ -171,8 +187,9 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
                 setStep('success');
                 setSuccess('綁定成功！');
+                setLocalMemberData(result.member_data || data); // 使用回傳的最新資料
                 window.dispatchEvent(new Event('tcu-binding-success'));
-                onBindingSuccess();
+                // onBindingSuccess(); // 移除自動跳轉，改由按鈕觸發
             }
         } catch (err: any) {
             console.error('驗證錯誤:', err);
@@ -212,51 +229,207 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
         }
     };
 
-    if (isBound && memberData) {
+    if ((isBound || step === 'success') && memberData) {
         return (
             <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden group">
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl"></div>
-                <div className="relative z-10 flex flex-col gap-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-emerald-500 text-white shadow-lg">
-                                <ShieldCheck className="w-6 h-6" />
+                <div className="relative z-10 flex flex-col gap-8">
+
+                    {/* Header Section */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                                <ShieldCheck className="w-8 h-8" />
                             </div>
                             <div>
-                                <h3 className="text-slate-900 dark:text-white text-xl font-black italic uppercase">TCU 官方會員資料</h3>
-                                <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest">Authenticated Identity Profile</p>
+                                <h3 className="text-slate-900 dark:text-white text-2xl font-black italic uppercase tracking-tight">TCU 會員資料</h3>
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                    <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                                        {memberData.member_type || '正式會員'}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                                        <Hash className="w-3 h-3" />
+                                        {memberData.tcu_id}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-100 dark:border-slate-800">
-                                    <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">欄位</th>
-                                    <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">內容資料</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {[
-                                    { label: '會員姓名', value: memberData.real_name },
-                                    { label: 'TCU ID', value: memberData.tcu_id },
-                                    { label: '電子郵件', value: memberData.email },
-                                    { label: '身分證號', value: memberData.account ? memberData.account.replace(/(.{3})(.*)(.{3})/, "$1****$3") : '未設定' },
-                                    { label: '會員類別', value: memberData.member_type || '正式會員' },
-                                    { label: 'Strava ID', value: memberData.strava_id },
-                                ].map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="py-4 px-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{row.label}</td>
-                                        <td className="py-4 px-4 text-sm font-black text-slate-900 dark:text-white">{row.value}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+
+                    <div className="space-y-6">
+
+                        {/* Section 1: Basic Info */}
+                        <div>
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <User className="w-4 h-4" /> 基本資料
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">真實姓名</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg font-black text-slate-900 dark:text-white">{memberData.real_name}</span>
+                                        {memberData.nickname && <span className="text-sm font-bold text-slate-500">({memberData.nickname})</span>}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">所屬車隊</p>
+                                    <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                        <Users className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-base font-bold truncate">{memberData.team || '未填寫'}</span>
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">性別 / 生日</p>
+                                    <div className="flex items-center gap-3 text-slate-900 dark:text-white">
+                                        <div className="flex items-center gap-1">
+                                            <UserCheck className="w-4 h-4 text-emerald-500" />
+                                            <span className="text-base font-bold">{memberData.gender || '未設定'}</span>
+                                        </div>
+                                        <span className="text-slate-300">|</span>
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="w-4 h-4 text-emerald-500" />
+                                            <span className="text-base font-bold font-mono">{memberData.birthday || '未設定'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">國籍 / 身分證號</p>
+                                    <div className="flex items-center gap-3 text-slate-900 dark:text-white">
+                                        <div className="flex items-center gap-1">
+                                            <Globe className="w-4 h-4 text-emerald-500" />
+                                            <span className="text-base font-bold">{memberData.nationality || 'Taiwan'}</span>
+                                        </div>
+                                        <span className="text-slate-300">|</span>
+                                        <div className="flex items-center gap-1">
+                                            <CreditCard className="w-4 h-4 text-emerald-500" />
+                                            <span className="text-base font-bold font-mono">
+                                                {memberData.account ? memberData.account.replace(/(.{3})(.*)(.{3})/, "$1****$3") : '未設定'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 2: Contact Info */}
+                        <div>
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <Phone className="w-4 h-4" /> 聯絡資訊
+                            </h4>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">電子郵件</p>
+                                            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                                <Mail className="w-4 h-4 text-emerald-500" />
+                                                <span className="text-base font-bold truncate">{memberData.email}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">通訊地址</p>
+                                            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                                <MapPin className="w-4 h-4 text-emerald-500" />
+                                                <span className="text-base font-bold truncate">{memberData.address || '未填寫'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Emergency Contact Box */}
+                                {(memberData.emergency_contact || memberData.emergency_contact_phone) && (
+                                    <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30">
+                                        <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                            <Heart className="w-3 h-3" /> 緊急聯絡人
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-4 text-slate-900 dark:text-white">
+                                            <span className="text-base font-black">{memberData.emergency_contact}</span>
+                                            {memberData.emergency_contact_relation && (
+                                                <span className="text-xs font-bold bg-white dark:bg-rose-900/40 text-rose-600 px-2 py-1 rounded-lg">
+                                                    {memberData.emergency_contact_relation}
+                                                </span>
+                                            )}
+                                            <div className="flex items-center gap-1 text-rose-600 font-mono font-bold">
+                                                <Phone className="w-3 h-3" />
+                                                {memberData.emergency_contact_phone}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section 3: Profile & Skills */}
+                        {(memberData.self_introduction || memberData.skills) && (
+                            <div>
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" /> 個人簡介 & 技能
+                                </h4>
+                                <div className="space-y-4">
+                                    {memberData.self_introduction && (
+                                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                            <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                                {memberData.self_introduction}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {memberData.skills && (
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex flex-wrap gap-2">
+                                                {memberData.skills.split('\n').map((skill: string, idx: number) => (
+                                                    <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                        <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                                        {skill}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                                                <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">若要修正能力分組，請前往</span>
+                                                <a
+                                                    href={`https://strava.criterium.tw/skill?tcu_id=${memberData.tcu_id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[10px] font-black text-tsu-blue hover:text-tsu-blue-light hover:underline flex items-center gap-1 transition-colors"
+                                                >
+                                                    能力分組修正頁面
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                     </div>
-                    <div className="flex items-center gap-2 mt-4 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">您的帳號已與上述會員資料完成連結，享有專屬賽事功能。</p>
+
+                    {/* Footer Info: Profile Edit & Update Time */}
+                    <div className="mt-2 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[10px] font-bold text-slate-400">
+                        <div className="flex items-center gap-2">
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>若需修改個人資料，請前往</span>
+                            <a
+                                href="https://www.tsu.com.tw/member-data/profile"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-tsu-blue hover:text-tsu-blue-light hover:underline transition-colors uppercase tracking-wider"
+                            >
+                                TCU 會員中心
+                            </a>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>每日會員資料更新時間 08:00</span>
+                        </div>
                     </div>
+
+                    <button
+                        onClick={onBindingSuccess}
+                        className="w-full mt-2 py-4 rounded-2xl bg-tsu-blue text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-tsu-blue/20 hover:shadow-tsu-blue/40 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                    >
+                        <span>完成 / 前往 Dashboard</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </button>
                 </div>
             </div>
         );
