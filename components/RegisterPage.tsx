@@ -16,7 +16,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     const loadAthlete = () => {
-      const savedData = localStorage.getItem('strava_athlete_meta');
+      const savedData = localStorage.getItem('strava_athlete_data');
       if (savedData) {
         try {
           const athleteData = JSON.parse(savedData);

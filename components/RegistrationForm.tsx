@@ -109,8 +109,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
             if (error) throw error;
 
             if (data) {
-                if (data.name) {
-                    setName(data.name);
+                if (data.real_name) {
+                    setName(data.real_name);
                 }
                 if (data.team) {
                     setTeam(data.team);

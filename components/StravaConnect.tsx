@@ -17,7 +17,7 @@ interface StravaAthlete {
 
 const CONFIG = {
     stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
-    storageKey: 'strava_athlete_meta',
+    storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
     pollingTimeout: 120000,
     allowedOrigins: [
@@ -118,9 +118,9 @@ const StravaConnect: React.FC = () => {
         // 同步 Token 到後端
         if (athleteData.access_token) {
             try {
-                // FIXME: 確保後端 URL 正確，這裡先假定在同個 domain 或使用相對路徑
-                // 如果是 GitHub Pages 部署，這裡可能需要絕對路徑或是透過 API Proxy
-                await fetch('https://strava.criterium.tw/api/auth/strava-token', {
+                // 使用相對路徑，讓 Vite Proxy (開發環境) 或 Zeabur Reverse Proxy (正式環境) 自動處理
+
+                await fetch('/api/auth/strava-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

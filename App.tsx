@@ -35,7 +35,6 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center w-full py-20 px-4">
             <div className="w-full max-w-2xl">
               <MemberBindingCard
-                athlete={JSON.parse(localStorage.getItem('strava_athlete_meta') || 'null')}
                 onBindingSuccess={() => setCurrentView(ViewType.DASHBOARD)}
               />
             </div>
