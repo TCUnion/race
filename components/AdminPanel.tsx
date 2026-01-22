@@ -492,11 +492,6 @@ const AdminPanel: React.FC = () => {
         e.stopPropagation();
         e.nativeEvent.stopImmediatePropagation();
 
-        // 確認操作
-        if (!window.confirm(`確定要解除 ${member.real_name || member.email} 的綁定嗎？`)) {
-            return;
-        }
-
         setIsUnbindingMember(member.email);
         try {
             // 從 localStorage 取得管理員的 Strava Athlete ID
