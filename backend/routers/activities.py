@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter
-from ..database import supabase
+from database import supabase
 
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 

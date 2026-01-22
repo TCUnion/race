@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, HTTPException, Request
-from ..database import supabase
+from database import supabase
 from datetime import datetime
 
 router = APIRouter(prefix="/api/teams", tags=["teams"])

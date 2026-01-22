@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import urllib.request
 import json
 import ssl
-from ..database import supabase
+from database import supabase
 from typing import Optional
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])

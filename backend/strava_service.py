@@ -2,7 +2,7 @@ import os
 import time
 import requests
 from typing import Optional, Dict, Any
-from .database import supabase
+from database import supabase
 
 STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")

@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from ..database import supabase
-from ..strava_service import StravaService
+from database import supabase
+from strava_service import StravaService
 import time
 
 router = APIRouter(prefix="/api/leaderboard", tags=["leaderboard"])
