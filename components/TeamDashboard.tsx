@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle } from 'lucide-react';
+import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api_config';
 import { useAuth } from '../hooks/useAuth';
 
@@ -177,7 +177,7 @@ const TeamDashboard: React.FC = () => {
                                     <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">暱稱</th>
                                     <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">年齡</th>
                                     <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">身份</th>
-                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden md:table-cell">技能</th>
+                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden md:table-cell">能力分組</th>
                                     <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden lg:table-cell">個人說明</th>
                                     <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">Strava</th>
                                 </tr>
@@ -188,14 +188,46 @@ const TeamDashboard: React.FC = () => {
                                     const isCaptain = member.member_type?.includes('隊長');
                                     const isHighlighted = isAdmin || isCaptain;
 
+                                    // Parse skills
+                                    const skillBadges = [];
+                                    if (member.skills) {
+                                        const skillMap = {
+                                            '公路賽': { color: 'bg-indigo-500', label: '公路賽' },
+                                            '公路登山': { color: 'bg-emerald-500', label: '公路登山' },
+                                            '公路繞圈': { color: 'bg-amber-500', label: '公路繞圈' },
+                                            '計時賽TT': { color: 'bg-rose-500', label: '計時賽TT' },
+                                        };
+
+                                        const parts = member.skills.split(/[,，\n]/).map((s: string) => s.trim()).filter(Boolean);
+
+                                        parts.forEach((part: string) => {
+                                            const match = part.match(/^(.*?)[：:][\s]*([A-Za-z0-9\+\-]+)$/);
+                                            if (match) {
+                                                const skillName = match[1].trim();
+                                                const grade = match[2].trim();
+                                                const config = skillMap[skillName as keyof typeof skillMap];
+
+                                                if (config) {
+                                                    skillBadges.push(
+                                                        <div key={skillName} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm shadow-sm group-hover:bg-slate-800/80 transition-colors">
+                                                            <Zap className={`w-3 h-3 ${config.color.replace('bg-', 'text-')}`} fill="currentColor" />
+                                                            <span className="text-[10px] font-medium text-slate-300">{config.label} : </span>
+                                                            <span className="text-xs font-black text-white">{grade}</span>
+                                                        </div>
+                                                    );
+                                                }
+                                            }
+                                        });
+                                    }
+
                                     return (
                                         <tr
                                             key={idx}
-                                            className={`transition-colors ${isAdmin
-                                                    ? 'bg-gradient-to-r from-purple-500/5 to-purple-500/10 dark:from-purple-500/10 dark:to-purple-500/5'
-                                                    : isCaptain
-                                                        ? 'bg-gradient-to-r from-yellow-500/5 to-yellow-500/10 dark:from-yellow-500/10 dark:to-yellow-500/5'
-                                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                            className={`transition-all border-b border-slate-100 dark:border-slate-800 last:border-0 group ${isAdmin
+                                                ? 'bg-purple-500/5 hover:bg-purple-500/10 dark:bg-purple-500/10 dark:hover:bg-purple-500/20'
+                                                : isCaptain
+                                                    ? 'bg-yellow-500/5 hover:bg-yellow-500/10 dark:bg-yellow-500/10 dark:hover:bg-yellow-500/20'
+                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                                 }`}
                                         >
                                             {/* 成員 */}
@@ -206,8 +238,8 @@ const TeamDashboard: React.FC = () => {
                                                             src={member.avatar || "https://www.strava.com/assets/users/placeholder_athlete.png"}
                                                             alt={member.real_name}
                                                             className={`w-12 h-12 rounded-xl object-cover ${isAdmin ? 'ring-2 ring-purple-500'
-                                                                    : isCaptain ? 'ring-2 ring-yellow-500'
-                                                                        : 'ring-1 ring-slate-200 dark:ring-slate-700'
+                                                                : isCaptain ? 'ring-2 ring-yellow-500'
+                                                                    : 'ring-1 ring-slate-200 dark:ring-slate-700'
                                                                 }`}
                                                         />
                                                         {isHighlighted && (
@@ -248,20 +280,20 @@ const TeamDashboard: React.FC = () => {
                                             {/* 身份 */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-black ${isAdmin
-                                                        ? 'bg-gradient-to-r from-purple-400 to-purple-600 text-white shadow-lg shadow-purple-500/30'
-                                                        : isCaptain
-                                                            ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/30'
-                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                                    ? 'bg-gradient-to-r from-purple-400 to-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                                    : isCaptain
+                                                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/30'
+                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                                                     }`}>
                                                     {member.member_type || '隊員'}
                                                 </span>
                                             </td>
 
-                                            {/* 技能 */}
+                                            {/* 能力分組 */}
                                             <td className="px-6 py-4 hidden md:table-cell">
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 max-w-[150px]">
-                                                    {member.skills || '-'}
-                                                </p>
+                                                <div className="flex flex-wrap gap-2 max-w-[400px]">
+                                                    {skillBadges.length > 0 ? skillBadges : <span className="text-sm text-slate-400">-</span>}
+                                                </div>
                                             </td>
 
                                             {/* 個人說明 */}
