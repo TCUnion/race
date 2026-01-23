@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 import os
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,8 +10,8 @@ origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="http://localhost:.*", # 支援本地所有開發埠號
-    allow_origins=origins if "*" not in origins else [], # 當有 credentials 時不能用 "*"
+    allow_origin_regex="http://localhost:.*",
+    allow_origins=origins if "*" not in origins else [],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
