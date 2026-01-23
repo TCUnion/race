@@ -35,9 +35,13 @@ jobs:
       - name: Verify Secrets and Build
         # 這是最後一道防線，若 GitHub 變數沒設好，Action 會直接噴紅燈
         run: |
+          echo "🔍 Debugging Secrets Presence:"
+          if [ -n "$VITE_SUPABASE_URL" ]; then echo "✅ VITE_SUPABASE_URL is set"; else echo "❌ VITE_SUPABASE_URL is MISSING"; fi
+          if [ -n "$VITE_SUPABASE_ANON_KEY" ]; then echo "✅ VITE_SUPABASE_ANON_KEY is set"; else echo "❌ VITE_SUPABASE_ANON_KEY is MISSING"; fi
+          if [ -n "$VITE_API_URL" ]; then echo "✅ VITE_API_URL is set"; else echo "❌ VITE_API_URL is MISSING"; fi
+
           if [ -z "$VITE_SUPABASE_ANON_KEY" ] || [ -z "$VITE_API_URL" ]; then
-            echo "❌ 嚴重錯誤: GitHub Actions 讀不到 VITE_SUPABASE_ANON_KEY 或 VITE_API_URL！"
-            echo "請確認 Settings > Secrets or Variables 裡面有設定這些變數。"
+            echo "❌ 嚴重錯誤: 部署流程缺少關鍵金鑰！由脚本攔截以防止部署壞掉的網站。"
             exit 1
           fi
           npm run build
