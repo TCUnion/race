@@ -25,9 +25,9 @@ async def get_my_team(strava_id: str):
         
         # 2. 取得成員資料 (包含 Team)
         if tcu_account:
-             member_res = supabase.table("tcu_members").select("team, real_name").eq("account", tcu_account).execute()
+             member_res = supabase.table("tcu_members").select("team, name").eq("account", tcu_account).execute()
         else:
-             member_res = supabase.table("tcu_members").select("team, real_name").eq("email", email).execute()
+             member_res = supabase.table("tcu_members").select("team, name").eq("email", email).execute()
              
         if not member_res.data:
             return {"has_team": False, "message": "TCU member not found"}
@@ -71,7 +71,7 @@ async def get_my_team(strava_id: str):
             "team_name": team_name,
             "team_data": team_data,
             "is_admin": is_admin,
-            "member_name": member.get("real_name")
+            "member_name": member.get("name")
         }
 
     except Exception as e:
@@ -85,31 +85,39 @@ async def get_team_members(team_name: str):
     取得車隊成員列表
     """
     try:
-        # 從 tcu_members 撈取
-        member_res = supabase.table("tcu_members").select("real_name, tcu_id, member_type, strava_id, education_id").eq("team", team_name).execute()
-        
-        # 可以 join athletes table 取得頭像 (如果要)
-        # 這裡簡單做，先撈 athletes 表補頭像
+        # 1. 從 tcu_members 撈取該車隊的所有成員 (使用正確的欄位名稱 'name')
+        # 注意: schema.sql 中 tcu_members 並沒有 strava_id 和 education_id，這些可能需要從 strava_bindings 補齊
+        member_res = supabase.table("tcu_members").select("name, tcu_id, member_type, account, email").eq("team", team_name).execute()
         members = member_res.data if member_res.data else []
+
+        if not members:
+            return []
+
+        # 2. 獲取這些成員的 strava_id (從 strava_bindings)
+        emails = [m["email"] for m in members if m.get("email")]
+        binding_res = supabase.table("strava_bindings").select("tcu_member_email, strava_id").in_("tcu_member_email", emails).execute()
         
-        # 收集 strava_ids
-        sids = [m["strava_id"] for m in members if m.get("strava_id")]
+        binding_map = {b["tcu_member_email"]: b["strava_id"] for b in binding_res.data}
+        
+        # 收集 strava_ids 用於抓取頭像
+        sids = [str(sid) for sid in binding_map.values()]
         
         avatar_map = {}
         if sids:
-            # 沒辦法直接 where in list via standard postgrest-py easily without constructing filter string
-            # 但 Supabase-py 支援 .in_("id", sids)
             athlete_res = supabase.table("athletes").select("id, profile, profile_medium").in_("id", sids).execute()
             if athlete_res.data:
                 for a in athlete_res.data:
                     avatar_map[str(a["id"])] = a.get("profile_medium") or a.get("profile")
                     
-        # 組合資料
+        # 3. 組合資料
         enriched_members = []
         for m in members:
-            sid = m.get("strava_id")
+            sid = binding_map.get(m.get("email"))
             enriched_members.append({
-                **m,
+                "real_name": m.get("name"), # 前端可能用到 real_name
+                "tcu_id": m.get("tcu_id"),
+                "member_type": m.get("member_type"),
+                "strava_id": sid,
                 "avatar": avatar_map.get(str(sid)) if sid else None
             })
             
