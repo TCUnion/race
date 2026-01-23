@@ -136,7 +136,7 @@ const AdminPanel: React.FC = () => {
     const [tokenSearchTerm, setTokenSearchTerm] = useState('');
     const [tokenPageSize, setTokenPageSize] = useState(10);
     const [tokenCurrentPage, setTokenCurrentPage] = useState(1);
-    const [tokenSortField, setTokenSortField] = useState<string>('updatedAt');
+    const [tokenSortField, setTokenSortField] = useState<string>('isBound');
     const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('desc');
 
     const fetchSegments = async () => {
