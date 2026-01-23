@@ -16,6 +16,7 @@ import Dna from 'lucide-react/dist/esm/icons/dna';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import SearchX from 'lucide-react/dist/esm/icons/search-x';
 import Users from 'lucide-react/dist/esm/icons/users';
+import Crown from 'lucide-react/dist/esm/icons/crown';
 import StravaLogo from './StravaLogo';
 
 const CONFIG = {
@@ -184,7 +185,10 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                         <div className="flex items-center gap-3">
                           <img src={p.profile_medium || p.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} alt={p.name} className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-tsu-blue transition-colors" />
                           <div>
-                            <div className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-tsu-blue transition-colors">{p.name}</div>
+                            <div className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-tsu-blue transition-colors flex items-center gap-1.5">
+                              {p.name}
+                              {p.is_tcu && <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" title="TCU 會員" />}
+                            </div>
                             {p.team && <span className="text-[9px] font-black text-tsu-blue/70 dark:text-tsu-blue uppercase tracking-widest">{p.team}</span>}
                           </div>
                         </div>

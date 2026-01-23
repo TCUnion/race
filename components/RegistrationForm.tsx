@@ -7,9 +7,11 @@ import {
     CheckCircle2,
     AlertCircle,
     Save,
-    RefreshCw
+    RefreshCw,
+    Crown
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 interface Segment {
     id: number; // Supabase PK
@@ -34,20 +36,36 @@ interface RegistrationFormProps {
 
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess }) => {
+    const { isBound, memberData } = useAuth();
     const [selectedSegmentIds, setSelectedSegmentIds] = useState<number[]>([]);
     const [existingRegistrations, setExistingRegistrations] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
     const [isLoadingExisting, setIsLoadingExisting] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [name, setName] = useState(() => {
-        const fname = athlete.firstname || athlete.firstName || '';
-        const lname = athlete.lastname || athlete.lastName || '';
-        return (fname && lname) ? `${fname} ${lname}`.trim() : (fname || lname || '');
-    });
+
+    // 初始化或自動填寫姓名
+    const [name, setName] = useState('');
     const [team, setTeam] = useState('');
-    const [tcuId, setTcuId] = useState('');
+
+    // 自動填入邏輯
+    useEffect(() => {
+        if (isBound && memberData) {
+            setName(memberData.real_name || '');
+            setTeam(memberData.team || '');
+        } else {
+            // 未綁定：使用 Strava 姓名
+            const fname = athlete.firstname || athlete.firstName || '';
+            const lname = athlete.lastname || athlete.lastName || '';
+            setName(`${fname} ${lname}`.trim());
+
+            // 未綁定：車隊維持空白或允許手動輸入
+            // 如果切換回未綁定狀態，清空或保留? 這裡選擇清空以避免混淆
+            // 但如果使用者手動輸入過，可能會被覆蓋。
+            // 簡化邏輯：每次狀態變更都重置。
+            setTeam('');
+        }
+    }, [isBound, memberData, athlete]);
 
     // 檢查現有報名
     useEffect(() => {
@@ -86,49 +104,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     };
 
 
-    // 同步 TCU 資料
-    const handleSyncTCU = async () => {
-        if (!tcuId.trim()) {
-            setError('請先輸入 TCU-ID / 個人身份證ID');
-            return;
-        }
 
-        setIsSyncing(true);
-        setError(null);
-        setSuccessMessage(null);
-
-
-        try {
-            // 直接查詢 Supabase tcu_members 資料表
-            const { data, error } = await supabase
-                .from('tcu_members')
-                .select('*')
-                .or(`account.eq.${tcuId.toUpperCase()},tcu_id.eq.${tcuId}`)
-                .maybeSingle();
-
-            if (error) throw error;
-
-            if (data) {
-                if (data.real_name) {
-                    setName(data.real_name);
-                }
-                if (data.team) {
-                    setTeam(data.team);
-                }
-                if (data.tcu_id) {
-                    setTcuId(data.tcu_id);
-                }
-                setSuccessMessage('TCU 資料同步成功！');
-            } else {
-                setError('查無此 TCU ID 或身份證字號');
-            }
-        } catch (err: any) {
-            console.error('同步錯誤:', err);
-            setError('同步失敗，請稍後再試');
-        } finally {
-            setIsSyncing(false);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,7 +142,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                             athlete_name: name,
                             athlete_profile: athlete.profile,
                             team: team,
-                            tcu_id: tcuId,
+                            tcu_id: memberData?.tcu_id || null, // 使用 memberData 的 ID，如果沒有則 null
                             status: 'approved',
                             updated_at: new Date().toISOString()
                         })),
@@ -262,36 +238,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     </div>
 
                     <div className="grid gap-6">
-                        {/* TCU-ID with Sync Button */}
-                        <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">TCU-ID / 個人身份證ID (選填)</label>
-                            <div className="flex gap-3">
-                                <div className="relative flex-1">
-                                    <input
-                                        type="text"
-                                        value={tcuId}
-                                        onChange={(e) => setTcuId(e.target.value)}
-                                        className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                                        placeholder="例如：TCU-zvnrqonh..."
-                                    />
-                                    <Fingerprint className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSyncTCU}
-                                    disabled={isSyncing || !tcuId.trim()}
-                                    className="px-5 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
-                                >
-                                    {isSyncing ? (
-                                        <RefreshCw className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <RefreshCw className="w-4 h-4" />
-                                    )}
-                                    <span className="hidden sm:inline">同步</span>
-                                </button>
-                            </div>
-                            <p className="text-[10px] text-slate-600 mt-2 ml-1">輸入後點擊「同步」可自動帶入會員姓名與車隊</p>
-                        </div>
+
 
                         {/* Name */}
                         <div className="group/field">
@@ -301,24 +248,33 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold"
-                                    placeholder="三義 劉德華"
+                                    readOnly={!!isBound} // 綁定會員鎖定姓名
+                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold ${isBound ? 'cursor-not-allowed opacity-90' : ''}`}
+                                    placeholder="姓名"
                                     required
                                 />
-                                <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
+                                {isBound ? (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                        <Crown className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                        <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-wider hidden sm:inline">TCU Member</span>
+                                    </div>
+                                ) : (
+                                    <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
+                                )}
                             </div>
                         </div>
 
                         {/* Team */}
                         <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 (TCU同步資料)</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 {isBound && <span className="text-tsu-blue-light">(TCU已驗證)</span>}</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={team}
-                                    readOnly
-                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white/50 placeholder:text-slate-600 focus:outline-none cursor-not-allowed font-bold"
-                                    placeholder="同步後自動帶入"
+                                    onChange={(e) => setTeam(e.target.value)}
+                                    readOnly={!!isBound} // 綁定會員鎖定車隊，未綁定可輸入
+                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none font-bold ${isBound ? 'cursor-not-allowed opacity-90' : 'focus:ring-2 focus:ring-tsu-blue-light/50'}`}
+                                    placeholder={isBound ? "已自動帶入車隊" : "請輸入車隊名稱 (選填)"}
                                 />
                                 <Users className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
                             </div>

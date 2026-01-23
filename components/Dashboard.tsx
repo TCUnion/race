@@ -299,10 +299,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <UserCheck className="w-5 h-5 text-tsu-blue-light" />
                 <span>管理報名 / 報名新路段</span>
               </button>
-              <button className="flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-tsu-blue hover:bg-tsu-blue-light text-white text-base md:text-sm font-bold transition-all shadow-lg shadow-tsu-blue/20 active:scale-95 group">
-                <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                <span>立即同步數據</span>
-              </button>
+
             </div>
             <div className="text-center md:text-right">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-widest font-bold">資料每小時自動更新</p>

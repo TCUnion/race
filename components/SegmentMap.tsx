@@ -53,6 +53,8 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
     const polylineLayerRef = useRef<L.Polyline | null>(null);
+    const markersRef = useRef<L.Marker[]>([]);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (!mapContainerRef.current) return;
@@ -72,40 +74,53 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
             }).addTo(mapInstanceRef.current);
         }
 
+        // 清除之前的計時器
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+
         // 清除舊的 polyline
         if (polylineLayerRef.current) {
             polylineLayerRef.current.remove();
             polylineLayerRef.current = null;
         }
 
+        // 清除舊的標記
+        markersRef.current.forEach(m => m.remove());
+        markersRef.current = [];
+
         // 繪製新的 polyline
         if (polyline && mapInstanceRef.current) {
             const latlngs = decodePolyline(polyline);
 
             if (latlngs.length > 0) {
+                const map = mapInstanceRef.current;
+
                 polylineLayerRef.current = L.polyline(latlngs, {
                     color: '#FC5200', // Strava 橘色
                     weight: 4,
                     opacity: 0.9,
-                }).addTo(mapInstanceRef.current);
+                }).addTo(map);
 
-                // 強制地圖重新計算容器尺寸後再 fitBounds
-                // 這解決了容器尺寸變化時路線無法完整顯示的問題
-                const map = mapInstanceRef.current;
                 const polylineLayer = polylineLayerRef.current;
 
                 // 立即嘗試一次 fitBounds
                 map.invalidateSize();
-                map.fitBounds(polylineLayer.getBounds(), {
-                    padding: [30, 30],
-                    maxZoom: 14,
-                });
+                if (polylineLayer) {
+                    map.fitBounds(polylineLayer.getBounds(), {
+                        padding: [30, 30],
+                        maxZoom: 14,
+                    });
+                }
 
                 // 延遲再次調整，確保 CSS 動畫/響應式佈局完成後正確顯示
-                setTimeout(() => {
-                    if (map && polylineLayer) {
-                        map.invalidateSize();
-                        map.fitBounds(polylineLayer.getBounds(), {
+                timerRef.current = setTimeout(() => {
+                    if (mapInstanceRef.current && polylineLayerRef.current) {
+                        const m = mapInstanceRef.current;
+                        const p = polylineLayerRef.current;
+                        m.invalidateSize();
+                        m.fitBounds(p.getBounds(), {
                             padding: [30, 30],
                             maxZoom: 14,
                         });
@@ -127,19 +142,27 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
                     iconAnchor: [7, 7],
                 });
 
-                L.marker(latlngs[0], { icon: startIcon }).addTo(mapInstanceRef.current);
-                L.marker(latlngs[latlngs.length - 1], { icon: endIcon }).addTo(mapInstanceRef.current);
+                const startMarker = L.marker(latlngs[0], { icon: startIcon }).addTo(map);
+                const endMarker = L.marker(latlngs[latlngs.length - 1], { icon: endIcon }).addTo(map);
+
+                markersRef.current = [startMarker, endMarker];
             }
         }
 
         return () => {
-            // 清理（但保留地圖實例以避免重複初始化）
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
         };
     }, [polyline]);
 
     // 組件卸載時清理地圖
     useEffect(() => {
         return () => {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+            }
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;

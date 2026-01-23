@@ -55,6 +55,7 @@ export interface LeaderboardEntry {
     average_heartrate?: number;
     activity_id?: number;
     start_date?: string;
+    is_tcu?: boolean;
 }
 
 export interface SegmentStats {
@@ -213,7 +214,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             // 1. & 2. 並行請求：直接從 Supabase 抓取所有成績資料 與 報名資料
             const segmentIds = activeSegments.map(s => s.id);
-            const [effortsResult, registrationsResult] = await Promise.all([
+            const [effortsResult, registrationsResult, athletesResult] = await Promise.all([
                 supabase
                     .from('segment_efforts')
                     .select('*')
@@ -221,16 +222,27 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     .order('elapsed_time', { ascending: true }),
                 supabase
                     .from('registrations')
-                    .select('segment_id, strava_athlete_id, number, team, athlete_name, athlete_profile')
-                    .in('segment_id', segmentIds)
+                    .select('segment_id, strava_athlete_id, number, team, athlete_name, athlete_profile, tcu_id')
+                    .in('segment_id', segmentIds),
+                supabase
+                    .from('athletes')
+                    .select('id, firstname, lastname')
             ]);
 
             const { data: allEfforts, error: effortsError } = effortsResult;
             const { data: allRegData, error: regError } = registrationsResult;
+            const { data: allAthletes, error: athletesError } = athletesResult;
 
             if (effortsError) throw effortsError;
-            // 報名資料讀取失敗不應阻擋顯示，僅記 log
+            // 報名資料與選手資料讀取失敗不應阻擋顯示，僅記 log
             if (regError) console.error('Fetch registrations error:', regError);
+            if (athletesError) console.error('Fetch athletes error:', athletesError);
+
+            // 建立選手資料地圖
+            const athleteMap = new Map<number, any>();
+            if (allAthletes) {
+                allAthletes.forEach(a => athleteMap.set(Number(a.id), a));
+            }
 
             // 建立報名資料地圖
             const regMapBySegment: Record<number, Map<number, any>> = {};
@@ -264,12 +276,23 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 const ranked = Array.from(bestEffortsMap.values())
                     .sort((a, b) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999))
                     .map((e, index) => {
-                        const reg = regMap.get(Number(e.athlete_id));
+                        const aid = Number(e.athlete_id);
+                        const reg = regMap.get(aid);
+                        const ath = athleteMap.get(aid);
+
+                        // 優先級：Strava Athletes 表名字 (First + Last) > 報名表名字 > 成績表名字 > 預設值
+                        let finalName = '';
+                        if (ath) {
+                            finalName = `${ath.firstname || ''} ${ath.lastname || ''}`.trim();
+                        }
+                        if (!finalName) {
+                            finalName = reg?.athlete_name || e.athlete_name || `選手 ${aid}`;
+                        }
+
                         return {
                             rank: index + 1,
                             athlete_id: e.athlete_id,
-                            // 優先級：報名表名字 > 成績表名字 > 預設值
-                            name: reg?.athlete_name || e.athlete_name || `選手 ${e.athlete_id}`,
+                            name: finalName,
                             profile_medium: reg?.athlete_profile || "",
                             team: reg?.team || "",
                             number: reg?.number || "",
@@ -279,7 +302,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                             average_watts: e.average_watts,
                             average_heartrate: e.average_heartrate,
                             start_date: e.start_date,
-                            activity_id: e.id
+                            activity_id: e.activity_id,
+                            is_tcu: !!reg?.tcu_id
                         };
                     });
 
