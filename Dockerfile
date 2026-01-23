@@ -10,8 +10,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ .
 
 # 設定環境變數
-ENV PORT=${WEB_PORT:-8000}
+ENV PORT=${WEB_PORT:-8080}
 ENV PYTHONPATH=/app
+
+EXPOSE 8080
 
 # 啟動命令
 CMD uvicorn main:app --host 0.0.0.0 --port $PORT
