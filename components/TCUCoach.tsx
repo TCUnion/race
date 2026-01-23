@@ -19,17 +19,29 @@ interface Message {
 }
 
 const TCUCoach: React.FC = () => {
-    const { athlete } = useAuth();
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: `嗨 ${athlete?.firstname}！我是您的專屬 AI 功率教練。\n我可以協助您分析騎乘數據、規劃訓練課表，或是解答關於功率訓練的疑問。\n\n您可以試著問我：「如何提升 FTP？」「請分析我最近的爬坡表現」`,
-            createdAt: Date.now()
-        }
-    ]);
+    const { athlete, memberData } = useAuth();
+    const displayName = memberData?.real_name || memberData?.member_name || athlete?.firstname || '選手';
+
+    const getGreetingMessage = (name: string): Message => ({
+        id: '1',
+        role: 'assistant',
+        content: `嗨 ${name}！我是您的專屬 AI 功率教練。\n我可以協助您分析騎乘數據、規劃訓練課表，或是解答關於功率訓練的疑問。\n\n您可以試著問我：「如何提升 FTP？」「請分析我最近的爬坡表現」`,
+        createdAt: Date.now()
+    });
+
+    const [messages, setMessages] = useState<Message[]>([getGreetingMessage(displayName)]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // 當 displayName 變化時（memberData 載入完成），更新問候語
+    React.useEffect(() => {
+        setMessages(prev => {
+            if (prev.length === 1 && prev[0].id === '1') {
+                return [getGreetingMessage(displayName)];
+            }
+            return prev;
+        });
+    }, [displayName]);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -99,16 +111,16 @@ const TCUCoach: React.FC = () => {
                         className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                     >
                         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${msg.role === 'assistant'
-                                ? 'bg-gradient-to-br from-tsu-blue to-indigo-600 text-white'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                            ? 'bg-gradient-to-br from-tsu-blue to-indigo-600 text-white'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                             }`}>
                             {msg.role === 'assistant' ? <Sparkles className="w-4 h-4" /> : <User className="w-4 h-4" />}
                         </div>
 
                         <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                             <div className={`px-5 py-3.5 rounded-2xl shadow-sm text-sm font-medium leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                                    ? 'bg-tsu-blue text-white rounded-tr-none'
-                                    : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
+                                ? 'bg-tsu-blue text-white rounded-tr-none'
+                                : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
                                 }`}>
                                 {msg.content}
                             </div>
@@ -154,8 +166,8 @@ const TCUCoach: React.FC = () => {
                         onClick={handleSend}
                         disabled={!input.trim() || isLoading}
                         className={`p-2.5 rounded-xl flex-shrink-0 transition-all ${!input.trim() || isLoading
-                                ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                                : 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30 hover:scale-105 active:scale-95'
+                            ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                            : 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30 hover:scale-105 active:scale-95'
                             }`}
                     >
                         <Send className="w-4 h-4" />
