@@ -109,17 +109,21 @@ async def get_team_members(team_name: str):
                 for a in athlete_res.data:
                     avatar_map[str(a["id"])] = a.get("profile_medium") or a.get("profile")
                     
-        # 3. 組合資料
+        # 3. 組合資料並排序 (隊長優先)
         enriched_members = []
         for m in members:
             sid = binding_map.get(m.get("email"))
+            role = m.get("member_type") or "隊員"
             enriched_members.append({
-                "real_name": m.get("name"), # 前端可能用到 real_name
+                "real_name": m.get("name"),
                 "tcu_id": m.get("tcu_id"),
-                "member_type": m.get("member_type"),
+                "member_type": role,
                 "strava_id": sid,
                 "avatar": avatar_map.get(str(sid)) if sid else None
             })
+            
+        # 排序：隊長在前
+        enriched_members.sort(key=lambda x: 0 if "隊長" in x["member_type"] else 1)
             
         return enriched_members
         

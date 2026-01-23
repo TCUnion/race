@@ -147,8 +147,8 @@ const TeamDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('members')}
                     className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all ${activeTab === 'members'
-                            ? 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30'
-                            : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        ? 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30'
+                        : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
                 >
                     成員列表 ({members.length})
@@ -156,8 +156,8 @@ const TeamDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('races')}
                     className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all ${activeTab === 'races'
-                            ? 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30'
-                            : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        ? 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30'
+                        : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
                 >
                     車隊賽事 ({races.length})
@@ -166,25 +166,65 @@ const TeamDashboard: React.FC = () => {
 
             {/* Content */}
             {activeTab === 'members' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {members.map((member, idx) => (
-                        <div key={idx} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 hover:border-tsu-blue/30 transition-colors">
-                            <img
-                                src={member.avatar || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                                alt={member.real_name}
-                                className="w-12 h-12 rounded-full border-2 border-slate-100 dark:border-slate-800"
-                            />
-                            <div>
-                                <h3 className="font-bold text-slate-900 dark:text-white">{member.real_name}</h3>
-                                <p className="text-xs font-bold text-slate-400 uppercase">TCU ID: {member.tcu_id}</p>
-                                {member.strava_id && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] text-orange-500 font-bold uppercase mt-1">
-                                        Bound
-                                    </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {members.map((member, idx) => {
+                        const isCaptain = member.member_type?.includes('隊長');
+                        return (
+                            <div key={idx} className={`relative bg-white dark:bg-slate-900 p-6 rounded-3xl border transition-all hover:scale-[1.02] duration-300 ${isCaptain
+                                    ? 'border-yellow-500/50 shadow-xl shadow-yellow-500/10'
+                                    : 'border-slate-100 dark:border-slate-800 hover:border-tsu-blue/30 shadow-sm'
+                                }`}>
+                                {isCaptain && (
+                                    <div className="absolute -top-3 -right-3 bg-gradient-to-br from-yellow-400 to-yellow-600 text-white p-2 rounded-xl shadow-lg transform rotate-12">
+                                        <Trophy className="w-5 h-5" />
+                                    </div>
                                 )}
+
+                                <div className="flex items-center gap-5">
+                                    <div className="relative">
+                                        <img
+                                            src={member.avatar || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+                                            alt={member.real_name}
+                                            className={`w-16 h-16 rounded-2xl object-cover ${isCaptain ? 'ring-4 ring-yellow-500/20' : 'ring-4 ring-slate-100 dark:ring-slate-800'
+                                                }`}
+                                        />
+                                        {member.strava_id && (
+                                            <div className="absolute -bottom-1 -right-1 bg-orange-500 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
+                                                <img src="https://www.strava.com/favicon.ico" alt="strava" className="w-3 h-3 grayscale brightness-200" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-black text-slate-900 dark:text-white truncate text-lg">
+                                                {member.real_name}
+                                            </h3>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2 items-center">
+                                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${isCaptain
+                                                    ? 'bg-yellow-500 text-white'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                                }`}>
+                                                {member.member_type || '隊員'}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                                                ID: {member.tcu_id}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
+                                    <span>Status</span>
+                                    <span className={member.strava_id ? 'text-green-500' : 'text-slate-300'}>
+                                        {member.strava_id ? '已綁定 Strava' : '尚未綁定'}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
