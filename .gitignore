@@ -26,7 +26,8 @@ dist-ssr
 # Security & Secrets
 .env
 .env.*
-lib/supabase.ts
+# lib/supabase.ts (不應忽略，因為已改用環境變數)
+!lib/supabase.ts
 n8n-workflows/*.json
 backend/.env
 
