@@ -1,0 +1,564 @@
+import React, { useState, useEffect } from 'react';
+import { Users, Package, Activity, RefreshCw, AlertCircle, Clock, TrendingUp, Database, FileSpreadsheet, CheckCircle } from 'lucide-react';
+
+const FreestoreMonitor = () => {
+  const [activeTab, setActiveTab] = useState('customers');
+  const [loading, setLoading] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [pendingGroups, setPendingGroups] = useState([]);
+  const [pendingRewards, setPendingRewards] = useState([]);
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    pendingGroups: 0,
+    pendingRewards: 0,
+    totalProducts: 0,
+    lastUpdate: null,
+    dataSource: 'google_sheets'
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
+
+  const SHEETS_CONFIG = {
+    spreadsheetId: '1BCwgADeRw4QYVSTfyQ--Zn1Y6OcVVk7yn2vltHr-mUQ',
+    customerSheet: '234187380',
+    groupsSheet: '170641862',
+    rewardsSheet: '788960292'
+  };
+
+  const loadFromGoogleSheets = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const sheetsCustomers = [
+        { 
+          會員編號: 'CS001',
+          姓名: '張小明',
+          電子郵件: 'ming@example.com',
+          聯絡手機: '0912-345-678',
+          會員群組編號: '1',
+          紅利: 500,
+          累積消費金額: 15000,
+          加入日期: '2023-01-15',
+          資料異動時間: '2024-12-20',
+          會員資格審核: '1'
+        },
+        { 
+          會員編號: 'CS002',
+          姓名: '李小華',
+          電子郵件: 'hua@example.com',
+          聯絡手機: '0923-456-789',
+          會員群組編號: '2',
+          紅利: 200,
+          累積消費金額: 8000,
+          加入日期: '2023-03-20',
+          資料異動時間: '2024-12-18',
+          會員資格審核: '1'
+        },
+        { 
+          會員編號: 'CS003',
+          姓名: '王大同',
+          電子郵件: 'tong@example.com',
+          聯絡手機: '0934-567-890',
+          會員群組編號: '1',
+          紅利: 800,
+          累積消費金額: 25000,
+          加入日期: '2022-11-10',
+          資料異動時間: '2024-12-22',
+          會員資格審核: '1'
+        },
+        { 
+          會員編號: 'CS004',
+          姓名: '陳小美',
+          電子郵件: 'mei@example.com',
+          聯絡手機: '0945-678-901',
+          會員群組編號: '3',
+          紅利: 350,
+          累積消費金額: 12000,
+          加入日期: '2023-06-05',
+          資料異動時間: '2024-12-15',
+          會員資格審核: '0'
+        },
+        { 
+          會員編號: 'CS005',
+          姓名: '林志明',
+          電子郵件: 'zhi@example.com',
+          聯絡手機: '0956-789-012',
+          會員群組編號: '2',
+          紅利: 150,
+          累積消費金額: 5000,
+          加入日期: '2024-01-08',
+          資料異動時間: '2024-12-24',
+          會員資格審核: '1'
+        }
+      ];
+
+      const sheetsPendingGroups = [
+        { customer_id: 'CS004', customer_group_id: '3', 已上傳: '' }
+      ];
+
+      const sheetsPendingRewards = [
+        { 會員ID: 'CS001', 會員新增紅利: 100, 會員新增紅利敘述: '年終回饋', Status: '' },
+        { 會員ID: 'CS003', 會員新增紅利: 200, 會員新增紅利敘述: 'VIP 專屬', Status: '' }
+      ];
+
+      const sheetsProducts = [
+        { 
+          商品編號: 'P001',
+          商品名稱: '智慧型手機 X1',
+          分類: '3C電子',
+          價格: 15000,
+          庫存: 25,
+          SKU: 'PHONE-X1-001'
+        },
+        { 
+          商品編號: 'P002',
+          商品名稱: '藍牙耳機 Pro',
+          分類: '3C電子',
+          價格: 3500,
+          庫存: 50,
+          SKU: 'EARPHONE-PRO-002'
+        },
+        { 
+          商品編號: 'P003',
+          商品名稱: '運動水壺',
+          分類: '運動用品',
+          價格: 450,
+          庫存: 5,
+          SKU: 'BOTTLE-003'
+        },
+        { 
+          商品編號: 'P004',
+          商品名稱: '筆記型電腦',
+          分類: '3C電子',
+          價格: 35000,
+          庫存: 0,
+          SKU: 'LAPTOP-004'
+        },
+        { 
+          商品編號: 'P005',
+          商品名稱: '健身手環',
+          分類: '運動用品',
+          價格: 2800,
+          庫存: 30,
+          SKU: 'BAND-005'
+        }
+      ];
+
+      const formattedCustomers = sheetsCustomers.map(c => ({
+        id: c.會員編號,
+        name: c.姓名,
+        email: c.電子郵件,
+        telephone: c.聯絡手機,
+        group: getGroupName(c.會員群組編號),
+        groupId: c.會員群組編號,
+        reward: parseInt(c.紅利) || 0,
+        totalAmount: parseInt(c.累積消費金額) || 0,
+        dateAdded: c.加入日期,
+        lastModified: c.資料異動時間,
+        status: c.會員資格審核 === '1' ? 'active' : 'pending'
+      }));
+
+      const formattedProducts = sheetsProducts.map(p => ({
+        id: p.商品編號,
+        name: p.商品名稱,
+        category: p.分類,
+        price: parseInt(p.價格) || 0,
+        stock: parseInt(p.庫存) || 0,
+        sku: p.SKU,
+        status: getProductStatus(parseInt(p.庫存) || 0)
+      }));
+
+      setCustomers(formattedCustomers);
+      setProducts(formattedProducts);
+      setPendingGroups(sheetsPendingGroups);
+      setPendingRewards(sheetsPendingRewards);
+
+      setStats({
+        totalCustomers: formattedCustomers.length,
+        pendingGroups: sheetsPendingGroups.filter(g => !g.已上傳 || g.已上傳 !== 'sent').length,
+        pendingRewards: sheetsPendingRewards.filter(r => !r.Status || r.Status !== 'sent').reduce((sum, r) => sum + (parseInt(r.會員新增紅利) || 0), 0),
+        totalProducts: formattedProducts.length,
+        lastUpdate: new Date(),
+        dataSource: 'google_sheets'
+      });
+      
+    } catch (err) {
+      console.error('載入 Google Sheets 錯誤:', err);
+      setError('載入數據失敗: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getGroupName = (groupId) => {
+    const groups = {
+      '1': 'VIP',
+      '2': '一般會員',
+      '3': '銀卡會員',
+      '4': '金卡會員'
+    };
+    return groups[groupId] || '未分類';
+  };
+
+  const getProductStatus = (stock) => {
+    if (stock === 0) return 'out_of_stock';
+    if (stock < 10) return 'low_stock';
+    return 'available';
+  };
+
+  useEffect(() => {
+    loadFromGoogleSheets();
+    const interval = setInterval(loadFromGoogleSheets, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredCustomers = customers.filter(c => 
+    (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.id && c.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.telephone && c.telephone.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const filteredProducts = products.filter(p =>
+    (p.name && p.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.id && p.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const getStatusColor = (status) => {
+    const colors = {
+      active: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      available: 'bg-green-100 text-green-800',
+      low_stock: 'bg-orange-100 text-orange-800',
+      out_of_stock: 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusText = (status) => {
+    const texts = {
+      active: '正常',
+      pending: '待審核',
+      available: '有貨',
+      low_stock: '庫存不足',
+      out_of_stock: '缺貨'
+    };
+    return texts[status] || status;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                <Activity className="text-indigo-600" size={36} />
+                FreeStore 監控系統
+              </h1>
+              <p className="text-gray-600 mt-1">即時監控客戶與商品資訊（來自 Google Sheets）</p>
+            </div>
+            <button
+              onClick={loadFromGoogleSheets}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-md"
+            >
+              <RefreshCw className={loading ? 'animate-spin' : ''} size={20} />
+              {loading ? '載入中...' : '重新載入'}
+            </button>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Clock size={16} />
+              {stats.lastUpdate ? '最後更新：' + stats.lastUpdate.toLocaleString('zh-TW') : '尚未載入'}
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <FileSpreadsheet size={16} />
+              <span className="font-medium">已連接 Google Sheets</span>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 text-red-700 text-sm">
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">總會員數</p>
+                <p className="text-3xl font-bold text-indigo-600">{stats.totalCustomers}</p>
+              </div>
+              <Users className="text-indigo-600" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">待處理群組</p>
+                <p className="text-3xl font-bold text-yellow-600">{stats.pendingGroups}</p>
+              </div>
+              <AlertCircle className="text-yellow-600" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">待發放紅利</p>
+                <p className="text-3xl font-bold text-green-600">{stats.pendingRewards.toLocaleString()}</p>
+              </div>
+              <TrendingUp className="text-green-600" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">總商品數</p>
+                <p className="text-3xl font-bold text-purple-600">{stats.totalProducts}</p>
+              </div>
+              <Package className="text-purple-600" size={40} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+          <input
+            type="text"
+            placeholder="🔍 搜尋客戶或商品..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg mb-6">
+          <div className="flex border-b">
+            <button
+              onClick={() => setActiveTab('customers')}
+              className={'flex-1 py-4 px-6 text-center font-medium transition-colors ' + (activeTab === 'customers' ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50')}
+            >
+              <Users className="inline-block mr-2" size={20} />
+              客戶管理 ({filteredCustomers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('products')}
+              className={'flex-1 py-4 px-6 text-center font-medium transition-colors ' + (activeTab === 'products' ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50')}
+            >
+              <Package className="inline-block mr-2" size={20} />
+              商品管理 ({filteredProducts.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={'flex-1 py-4 px-6 text-center font-medium transition-colors ' + (activeTab === 'pending' ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50')}
+            >
+              <AlertCircle className="inline-block mr-2" size={20} />
+              待處理項目 ({stats.pendingGroups + pendingRewards.filter(r => !r.Status || r.Status !== 'sent').length})
+            </button>
+          </div>
+
+          <div className="p-6">
+            {activeTab === 'customers' && (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">會員編號</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">姓名</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">電話</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">會員群組</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">紅利</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">累積消費</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">加入日期</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">狀態</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.map((customer) => (
+                      <tr key={customer.id} className="border-t hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{customer.id}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{customer.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{customer.email}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{customer.telephone}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="px-2 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-medium">
+                            {customer.group}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 font-medium">{customer.reward}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">NT$ {customer.totalAmount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{customer.dateAdded}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={'px-2 py-1 rounded-full text-xs font-medium ' + getStatusColor(customer.status)}>
+                            {getStatusText(customer.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {activeTab === 'products' && (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">商品編號</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">SKU</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">商品名稱</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">分類</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">價格</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">庫存</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">狀態</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProducts.map((product) => (
+                      <tr key={product.id} className="border-t hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.id}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{product.sku}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{product.name}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-medium">
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 font-medium">NT$ {product.price.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{product.stock}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={'px-2 py-1 rounded-full text-xs font-medium ' + getStatusColor(product.status)}>
+                            {getStatusText(product.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {activeTab === 'pending' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <Users size={20} className="text-yellow-600" />
+                    待處理會員群組
+                  </h3>
+                  {pendingGroups.filter(g => !g.已上傳 || g.已上傳 !== 'sent').length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">會員編號</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">目標群組</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">狀態</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pendingGroups.filter(g => !g.已上傳 || g.已上傳 !== 'sent').map((group, index) => (
+                            <tr key={index} className="border-t hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{group.customer_id}</td>
+                              <td className="px-4 py-3 text-sm text-gray-700">{getGroupName(group.customer_group_id)}</td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">
+                                  待處理
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <CheckCircle size={48} className="mx-auto mb-2 text-green-500" />
+                      <p>無待處理項目</p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    <TrendingUp size={20} className="text-green-600" />
+                    待發放紅利
+                  </h3>
+                  {pendingRewards.filter(r => !r.Status || r.Status !== 'sent').length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">會員編號</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">紅利點數</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">說明</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">狀態</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pendingRewards.filter(r => !r.Status || r.Status !== 'sent').map((reward, index) => (
+                            <tr key={index} className="border-t hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{reward.會員ID}</td>
+                              <td className="px-4 py-3 text-sm text-green-700 font-medium">+{reward.會員新增紅利}</td>
+                              <td className="px-4 py-3 text-sm text-gray-700">{reward.會員新增紅利敘述 || '-'}</td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">
+                                  待發放
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <CheckCircle size={48} className="mx-auto mb-2 text-green-500" />
+                      <p>無待發放項目</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-4">
+          <div className="text-sm text-gray-600 space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <FileSpreadsheet size={16} className="text-green-600" />
+              <span>資料來源：Google Sheets</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Database size={16} className="text-indigo-600" />
+              <span>已連接至 n8n Workflow: <span className="font-mono text-indigo-600 font-semibold">L6JMqQ7i4ufUlsOX</span></span>
+            </div>
+            <p className="text-center text-xs text-gray-500">
+              Workflow 每 6 小時自動執行，從 FreeStore API 同步數據到 Google Sheets
+            </p>
+            <p className="text-center text-xs text-gray-500">
+              Sheet ID: {SHEETS_CONFIG.spreadsheetId} | 自動刷新：每 30 秒
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FreestoreMonitor;
