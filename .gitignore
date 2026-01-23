@@ -45,3 +45,11 @@ brain/
 **/*.pyo
 **/*.pyd
 skills/
+
+# Security: Ignore scripts with hardcoded secrets
+check_target_data.py
+migrate_extra_tables.py
+rebuild_athletes.py
+scripts/check_user_data.js
+check_tokens_schema.js
+check_tokens_schema 2.js
