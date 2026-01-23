@@ -216,10 +216,16 @@ async def unbind_member(request: Request):
         if not email or not admin_id:
             return {"success": False, "message": "Missing email or admin_id"}
 
-        # 1. 驗證權限 (後端檢查)
-        if str(admin_id) not in ADMIN_ATHLETE_IDS:
-            print(f"[DEBUG] Permission denied for admin_id: {admin_id}")
-            return {"success": False, "message": "Permission denied: Not an administrator"}
+        # 1. 查詢現有綁定以進行權限驗證
+        binding_res = supabase.table("strava_bindings").select("*").eq("tcu_member_email", email).execute()
+        existing_binding = binding_res.data[0] if binding_res.data else None
+        
+        is_admin = str(admin_id) in ADMIN_ATHLETE_IDS
+        is_self = existing_binding and str(existing_binding.get("strava_id")) == str(admin_id)
+        
+        if not is_admin and not is_self:
+            print(f"[DEBUG] Permission denied. admin_id: {admin_id}, bound_id: {existing_binding.get('strava_id') if existing_binding else 'None'}")
+            return {"success": False, "message": "Permission denied: Not an administrator or data owner"}
 
         # 2. 檢查 Token 是否存在且合法
         token_res = supabase.table("strava_tokens").select("*").eq("athlete_id", int(admin_id)).execute()

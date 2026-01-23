@@ -309,7 +309,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-[#1a1a1a] border-b border-slate-800 animate-in slide-in-from-top duration-300">
+        <div className="md:hidden absolute top-full left-0 right-0 h-[calc(100vh-70px)] overflow-y-auto bg-[#1a1a1a] border-b border-slate-800 animate-in slide-in-from-top duration-300 pb-10">
           <nav className="flex flex-col p-4 gap-2">
             {athlete && (
               <div className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-2xl mb-4 border border-slate-800">
@@ -321,12 +321,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                     {isAdmin ? 'Administrator' : isBound ? 'TCU Certified' : 'Strava Connected'}
                   </div>
                 </div>
-                <button
-                  onClick={logout}
-                  className="text-slate-400 hover:text-red-500 p-2"
-                >
-                  <X className="w-5 h-5" />
-                </button>
               </div>
             )}
 
@@ -410,6 +404,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               >
                 <StravaLogo theme="dark" className="w-6 h-6" />
                 連結 STRAVA
+              </button>
+            )}
+
+            {athlete && (
+              <button
+                onClick={logout}
+                className="mt-4 flex items-center justify-center gap-3 bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 py-4 rounded-xl font-bold uppercase tracking-widest transition-all"
+              >
+                <span>登出系統</span>
               </button>
             )}
           </nav>
