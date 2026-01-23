@@ -21,7 +21,8 @@ def save_strava_token(req: StravaTokenRequest):
             "athlete_id": req.athlete_id,
             "access_token": req.access_token,
             "refresh_token": req.refresh_token,
-            "expires_at": req.expires_at
+            "expires_at": req.expires_at,
+            "login_time": "now()" # 記錄登入時間
         }
         # 使用 upsert
         response = supabase.table("strava_tokens").upsert(data).execute()

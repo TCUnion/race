@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.strava_tokens (
     access_token TEXT NOT NULL,
     refresh_token TEXT NOT NULL,
     expires_at BIGINT NOT NULL,
+    login_time TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -69,6 +70,7 @@ CREATE TABLE IF NOT EXISTS public.athletes (
     weight FLOAT,
     profile_medium TEXT,
     profile TEXT,
+    login_time TIMESTAMP WITH TIME ZONE,
     updated_at_db TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
