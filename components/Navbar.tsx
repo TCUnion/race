@@ -300,6 +300,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
         {/* Mobile Menu Button */}
         <div className="flex md:hidden items-center gap-2">
+          <LanguageSwitcher />
           <ThemeToggle />
           {!athlete && !isLoading && (
             <button
