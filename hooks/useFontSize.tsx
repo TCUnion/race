@@ -22,7 +22,17 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, fontSize);
-    }, [fontSize]);
+        // 強制寫入 BODY 屬性與 CSS 變數作為備援機制
+        document.body.setAttribute('data-tcu-font-size', fontSize);
+        document.documentElement.style.setProperty('--tcu-fs-active', fontSizeValue);
+
+        // 排錯接口
+        (window as any).debugTCUFontSize = {
+            current: fontSize,
+            value: fontSizeValue,
+            lastUpdate: new Date().toLocaleTimeString()
+        };
+    }, [fontSize, fontSizeValue]);
 
     function getFontSizeValue(size: FontSize): string {
         switch (size) {

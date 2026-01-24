@@ -22,7 +22,7 @@ import ThemeToggle from './ThemeToggle';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth, StravaAthlete } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
-import { useFontSize, FontSize } from '../hooks/useFontSize.tsx';
+import { useFontSize, FontSize } from '../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../lib/api_config';
 

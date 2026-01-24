@@ -10,7 +10,7 @@ import {
     Info
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useFontSize } from '../hooks/useFontSize.tsx';
+import { useFontSize } from '../hooks/useFontSize';
 
 interface Message {
     id: string;
@@ -130,7 +130,8 @@ const TCUCoach: React.FC = () => {
                                     ? 'bg-tsu-blue text-white rounded-tr-none'
                                     : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
                                     }`}
-                                style={{ fontSize: fontSizeValue }}
+                                style={{ fontSize: `var(--tcu-fs-active, ${fontSizeValue})` }}
+                                data-fs-variant={fontSize}
                             >
                                 {msg.content}
                             </div>
