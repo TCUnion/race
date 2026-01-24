@@ -71,6 +71,68 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [registrationError, setRegistrationError] = useState(false);
 
+  // 定義多組配色主題
+  const themes = [
+    {
+      id: 'tcu',
+      primary: 'tcu-blue',
+      light: 'tcu-blue-light',
+      bg: 'bg-tcu-blue-light/5',
+      border: 'border-tcu-blue',
+      text: 'text-tcu-blue',
+      textLight: 'text-tcu-blue-light',
+      shadow: 'shadow-tcu-blue/20',
+      gradient: 'from-tcu-blue to-tcu-blue-light'
+    },
+    {
+      id: 'strava',
+      primary: 'strava-orange',
+      light: 'strava-orange',
+      bg: 'bg-strava-orange/5',
+      border: 'border-strava-orange',
+      text: 'text-strava-orange',
+      textLight: 'text-strava-orange',
+      shadow: 'shadow-strava-orange/20',
+      gradient: 'from-strava-orange to-orange-400'
+    },
+    {
+      id: 'emerald',
+      primary: 'emerald-600',
+      light: 'emerald-500',
+      bg: 'bg-emerald-500/5',
+      border: 'border-emerald-500',
+      text: 'text-emerald-600',
+      textLight: 'text-emerald-500',
+      shadow: 'shadow-emerald-500/20',
+      gradient: 'from-emerald-600 to-emerald-400'
+    },
+    {
+      id: 'purple',
+      primary: 'purple-600',
+      light: 'purple-500',
+      bg: 'bg-purple-500/5',
+      border: 'border-purple-500',
+      text: 'text-purple-600',
+      textLight: 'text-purple-500',
+      shadow: 'shadow-purple-500/20',
+      gradient: 'from-purple-600 to-purple-400'
+    },
+    {
+      id: 'rose',
+      primary: 'rose-600',
+      light: 'rose-500',
+      bg: 'bg-rose-500/5',
+      border: 'border-rose-500',
+      text: 'text-rose-600',
+      textLight: 'text-rose-500',
+      shadow: 'shadow-rose-500/20',
+      gradient: 'from-rose-600 to-rose-400'
+    },
+  ];
+
+  const currentIdx = registeredSegments.findIndex(r => r.segment_id === currentSegmentId);
+  const theme = themes[currentIdx >= 0 ? currentIdx % themes.length : 0];
+
   // Failsafe: Prevent infinite loading
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -210,7 +272,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   if (isLoading && registeredSegments.length === 0 && !registrationError) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tcu-blue"></div>
+        <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-${theme.primary}`}></div>
       </div>
     );
   }
@@ -234,13 +296,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
         <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
-          <UserCheck className="w-16 h-16 text-tcu-blue mx-auto mb-4" />
+          <UserCheck className={`w-16 h-16 ${theme.text} mx-auto mb-4`} />
           <h2 className="text-xl font-black uppercase italic mb-2 text-slate-900 dark:text-white">尚未報名任何路段</h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
           <div className="flex flex-col gap-3">
             <button
               onClick={() => onNavigate(ViewType.REGISTER)}
-              className="bg-tcu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tcu-blue-light transition-all shadow-lg shadow-tcu-blue/20 w-full"
+              className={`bg-${theme.primary} text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:brightness-110 transition-all shadow-lg ${theme.shadow} w-full`}
             >
               前往報名頁面
             </button>
@@ -263,7 +325,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {/* Dashboard Header */}
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-tcu-blue-light">
+            <div className={`flex items-center gap-2 ${theme.textLight}`}>
               <MapPin className="w-3.5 h-3.5" />
               <span className="text-[10px] font-bold uppercase tracking-widest">TCU Challenge Series</span>
             </div>
@@ -275,7 +337,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     alt={athlete.firstname}
                     className="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white dark:border-slate-800 shadow-xl object-cover"
                   />
-                  <div className="absolute -bottom-1 -right-1 bg-tcu-blue text-white rounded-full p-1.5 shadow-lg border-2 border-white dark:border-slate-900">
+                  <div className={`absolute -bottom-1 -right-1 bg-${theme.primary} text-white rounded-full p-1.5 shadow-lg border-2 border-white dark:border-slate-900`}>
                     <UserCheck className="w-4 h-4" />
                   </div>
                 </div>
@@ -295,9 +357,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => onNavigate(ViewType.REGISTER)}
-                className="flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-white/5 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-tcu-blue-light text-slate-900 dark:text-white text-base md:text-sm font-bold transition-all active:scale-95 group"
+                className={`flex flex-1 sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl h-14 md:h-12 px-6 bg-white/5 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:${theme.border} text-slate-900 dark:text-white text-base md:text-sm font-bold transition-all active:scale-95 group`}
               >
-                <UserCheck className="w-5 h-5 text-tcu-blue-light" />
+                <UserCheck className={`w-5 h-5 ${theme.textLight}`} />
                 <span>管理報名 / 報名新路段</span>
               </button>
 
@@ -315,7 +377,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {registeredSegments.map((reg, idx) => (
                 <div
                   key={`dot-${reg.id}`}
-                  className={`h-1 rounded-full transition-all duration-300 ${currentSegmentId === reg.segment_id ? 'w-6 bg-tcu-blue' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${currentSegmentId === reg.segment_id ? `w-6 bg-${theme.primary}` : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
                 />
               ))}
             </div>
@@ -351,7 +413,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       }}
                       className="absolute inset-0 cursor-grab active:cursor-grabbing"
                     >
-                      <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-tcu-blue p-6 shadow-2xl flex flex-col justify-between h-full relative overflow-hidden group">
+                      <div className={`bg-white dark:bg-slate-900 rounded-3xl border-2 ${theme.border} p-6 shadow-2xl flex flex-col justify-between h-full relative overflow-hidden group transition-colors duration-500`}>
                         {/* Background Decoration */}
                         <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-5 group-hover:opacity-10 transition-opacity">
                           <Trophy className="w-32 h-32 rotate-12" />
@@ -362,7 +424,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">#{reg.segments?.strava_id}</span>
                             <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-1">{reg.segments?.name}</h3>
                           </div>
-                          <CheckCircle2 className="w-6 h-6 text-tcu-blue" />
+                          <CheckCircle2 className={`w-6 h-6 ${theme.text}`} />
                         </div>
 
                         <div className="flex items-end justify-between relative z-10">
@@ -396,9 +458,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </section>
 
 
-
-
-
         {/* Performance Cards */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {isLoading ? (
@@ -410,10 +469,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           ) : (
             <>
               {/* Best Time */}
-              <div className="flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:border-tcu-blue-light/50 transition-all duration-300">
+              <div className={`flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300 group hover:${theme.border}/50`}>
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">最佳時間</p>
-                  <Timer className="w-5 h-5 text-tcu-blue-light" />
+                  <Timer className={`w-5 h-5 ${theme.textLight} transition-colors duration-500`} />
                 </div>
                 <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">
                   {athleteEffort ? formatTime(athleteEffort.elapsed_time) : '-'}
@@ -425,10 +484,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
 
               {/* Average Speed */}
-              <div className="flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm hover:border-tcu-blue-light/50 transition-all duration-300">
+              <div className={`flex flex-col gap-2 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300 group hover:${theme.border}/50`}>
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">平均時速</p>
-                  <Gauge className="w-5 h-5 text-tcu-blue-light" />
+                  <Gauge className={`w-5 h-5 ${theme.textLight} transition-colors duration-500`} />
                 </div>
                 <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none">
                   {athleteEffort?.average_speed ? (athleteEffort.average_speed * 3.6).toFixed(1) : '-'}{' '}
@@ -441,18 +500,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
 
               {/* Current Rank */}
-              <div className="flex flex-col gap-2 rounded-2xl p-6 border-2 border-tcu-blue-light/50 bg-tcu-blue-light/5 sm:col-span-2 lg:col-span-1 shadow-inner group overflow-hidden relative">
+              <div className={`flex flex-col gap-2 rounded-2xl p-6 border-2 ${theme.border}/50 ${theme.bg} sm:col-span-2 lg:col-span-1 shadow-inner group overflow-hidden relative transition-all duration-500`}>
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <BarChart3 className="w-24 h-24 absolute -top-4 -right-4" />
                 </div>
                 <div className="flex justify-between items-start mb-1 relative z-10">
-                  <p className="text-tcu-blue-light text-xs font-bold uppercase tracking-widest">目前排名</p>
-                  <Award className="w-6 h-6 text-tcu-blue-light" />
+                  <p className={`${theme.textLight} text-xs font-bold uppercase tracking-widest transition-colors duration-500`}>目前排名</p>
+                  <Award className={`w-6 h-6 ${theme.textLight} transition-colors duration-500`} />
                 </div>
                 <p className="text-slate-900 dark:text-white tracking-tight text-5xl font-black leading-none relative z-10">
                   {athleteEffort ? `#${athleteEffort.rank}` : '-'}
                 </p>
-                <div className="flex items-center gap-1 text-tcu-blue-light mt-2 relative z-10">
+                <div className={`flex items-center gap-1 ${theme.textLight} mt-2 relative z-10`}>
                   <ChevronsUp className="w-4 h-4 font-bold" />
                   <p className="text-sm font-bold uppercase tracking-tighter">
                     {athleteEffort ? `總計 ${currentLeaderboard.length} 名挑戰者` : '努力刷新排名中'}
@@ -471,17 +530,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <h3 className="text-slate-900 dark:text-white text-lg font-bold">挑戰進度</h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm">距離 Top 10 還差 1:15</p>
               </div>
-              <p className="text-tcu-blue-light text-2xl font-black">85%</p>
+              <p className={`${theme.textLight} text-2xl font-black transition-colors duration-500`}>85%</p>
             </div>
             <div className="relative w-full h-4 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
               <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-tcu-blue to-tcu-blue-light rounded-full shadow-[0_0_12px_rgba(0,123,255,0.4)] transition-all duration-1000 ease-out"
+                className={`absolute top-0 left-0 h-full bg-gradient-to-r ${theme.gradient} rounded-full shadow-[0_0_12px_rgba(0,123,255,0.4)] transition-all duration-1000 ease-out`}
                 style={{ width: isLoading ? '0%' : '85%' }}
               ></div>
             </div>
             <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-black">
               <span>START</span>
-              <span className="text-tcu-blue-light">TOP 10 GOAL (41:00)</span>
+              <span className={theme.textLight}>TOP 10 GOAL (41:00)</span>
             </div>
           </div>
         </section>
@@ -491,7 +550,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="flex items-center justify-between">
             <h2 className="text-slate-900 dark:text-white text-xl md:text-2xl font-bold leading-tight tracking-tight">近期嘗試紀錄</h2>
             <div className="flex gap-2">
-              <button className="bg-tcu-blue/10 text-tcu-blue-light px-4 py-1.5 rounded-full text-xs font-bold hover:bg-tcu-blue/20 transition-colors">當月</button>
+              <button className={`${theme.bg} ${theme.textLight} px-4 py-1.5 rounded-full text-xs font-bold hover:brightness-95 transition-all`}>當月</button>
               <button className="text-slate-500 dark:text-slate-400 px-4 py-1.5 rounded-full text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">全部</button>
             </div>
           </div>
@@ -504,13 +563,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </>
             ) : activities.length > 0 ? (
               activities.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-tcu-blue-light/50 transition-all group shadow-sm hover:shadow-md backdrop-blur-sm">
+                <div key={activity.id} className={`flex items-center justify-between p-4 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:${theme.border}/50 transition-all group shadow-sm hover:shadow-md backdrop-blur-sm`}>
                   <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                    <div className={`flex shrink-0 size-10 md:size-12 items-center justify-center rounded-full transition-transform group-hover:scale-110 ${activity.is_pr ? 'bg-tcu-blue/10 text-tcu-blue-light shadow-inner shadow-tcu-blue/5' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <div className={`flex shrink-0 size-10 md:size-12 items-center justify-center rounded-full transition-transform group-hover:scale-110 ${activity.is_pr ? `${theme.bg} ${theme.textLight} shadow-inner` : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                       {activity.is_pr ? <Star className="w-5 h-5 fill-current" /> : <Bike className="w-5 h-5" />}
                     </div>
                     <div className="truncate">
-                      <h4 className="text-slate-900 dark:text-white font-bold truncate block text-sm md:text-base group-hover:text-tcu-blue-light transition-colors">{activity.title}</h4>
+                      <h4 className={`text-slate-900 dark:text-white font-bold truncate block text-sm md:text-base group-hover:${theme.textLight} transition-colors`}>{activity.title}</h4>
                       <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-medium">{activity.date}</p>
                     </div>
                   </div>
@@ -521,7 +580,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div>
                       <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest">Time</p>
-                      <p className="text-tcu-blue dark:text-tcu-blue-light font-black text-xl">{activity.time}</p>
+                      <p className={`${theme.text} dark:${theme.textLight} font-black text-xl transition-colors duration-500`}>{activity.time}</p>
                     </div>
                   </div>
                 </div>
@@ -549,7 +608,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
           <div className="rounded-2xl p-8 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex flex-col justify-center shadow-sm backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-6">
-              <Info className="w-6 h-6 text-tcu-blue-light" />
+              <Info className={`w-6 h-6 ${theme.textLight}`} />
               <h4 className="text-slate-900 dark:text-white font-bold text-lg">Segment 詳細資訊</h4>
             </div>
             <div className="space-y-4">
