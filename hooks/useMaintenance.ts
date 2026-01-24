@@ -183,8 +183,8 @@ export const useMaintenance = () => {
         return;
       }
 
-      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、壽命設定、活動紀錄、App設定
-      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, lifespanSettingsResult, activitiesResult, appSettingsResult] = await Promise.all([
+      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、壽命設定、活動紀錄、App設定、活動輪組
+      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, lifespanSettingsResult, activitiesResult, appSettingsResult, activityWheelsetsResult] = await Promise.all([
         supabase
           .from('bikes')
           .select('*')
@@ -692,6 +692,65 @@ export const useMaintenance = () => {
     }
   };
 
+  // 活動輪組關聯 CRUD
+  const setActivityWheelsetForActivity = async (activityId: number, wheelsetId: string) => {
+    const athleteId = getAthleteId();
+    if (!athleteId) throw new Error('未登入');
+
+    try {
+      // 使用 upsert 來新增或更新
+      const { data, error } = await supabase
+        .from('activity_wheelset')
+        .upsert({
+          activity_id: activityId,
+          wheelset_id: wheelsetId,
+          athlete_id: parseInt(athleteId)
+        }, { onConflict: 'activity_id,athlete_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 更新本地狀態
+      setActivityWheelsets(prev => {
+        const existing = prev.find(aw => aw.activity_id === activityId);
+        if (existing) {
+          return prev.map(aw => aw.activity_id === activityId ? data : aw);
+        }
+        return [...prev, data];
+      });
+
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const getActivityWheelset = useCallback((activityId: number) => {
+    return activityWheelsets.find(aw => aw.activity_id === activityId);
+  }, [activityWheelsets]);
+
+  const removeActivityWheelset = async (activityId: number) => {
+    const athleteId = getAthleteId();
+    if (!athleteId) throw new Error('未登入');
+
+    try {
+      const { error } = await supabase
+        .from('activity_wheelset')
+        .delete()
+        .eq('activity_id', activityId)
+        .eq('athlete_id', athleteId);
+
+      if (error) throw error;
+
+      setActivityWheelsets(prev => prev.filter(aw => aw.activity_id !== activityId));
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   return {
     bikes,
     wheelsets,
@@ -719,6 +778,11 @@ export const useMaintenance = () => {
     appSettings,
     lifespanSettings,
     updateLifespanSetting,
-    getLifespanSetting
+    getLifespanSetting,
+    // 活動輪組關聯
+    activityWheelsets,
+    setActivityWheelsetForActivity,
+    getActivityWheelset,
+    removeActivityWheelset
   };
 };
