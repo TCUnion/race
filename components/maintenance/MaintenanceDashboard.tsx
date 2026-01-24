@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useMaintenance, StravaBike, MaintenanceReminder, MaintenanceType } from '../../hooks/useMaintenance';
-import { Wheelset } from '../../types';
+import { useMaintenance, StravaBike, MaintenanceReminder, MaintenanceType, BikeMaintenanceRecord } from '../../hooks/useMaintenance';
+import MaintenanceTable from './MaintenanceTable';
+import { ActivityWheelsetTable } from './ActivityWheelsetTable';
+import { MaintenanceItem, MaintenanceRecord, Wheelset } from '../../types';
 import {
   Wrench,
   Loader2,
@@ -120,7 +122,12 @@ const MaintenanceDashboard: React.FC = () => {
     appSettings,
     lifespanSettings,
     updateLifespanSetting,
-    getLifespanSetting
+    getLifespanSetting,
+    activities,
+    activityWheelsets,
+    setActivityWheelsetForActivity,
+    batchSetActivityWheelsets,
+    calculateWheelsetTotalDistance
   } = useMaintenance();
 
   // 排序狀態
@@ -215,7 +222,7 @@ const MaintenanceDashboard: React.FC = () => {
 
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reminders' | 'table' | 'history'>('reminders');
+  const [activeTab, setActiveTab] = useState<'reminders' | 'wheelsets' | 'add' | 'history' | 'table' | 'activities'>('reminders');
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editInterval, setEditInterval] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
@@ -237,7 +244,8 @@ const MaintenanceDashboard: React.FC = () => {
     tire_brand: '',
     tire_specs: '',
     tire_type: '',
-    active_date: ''
+    active_date: '',
+    color: '#f97316'
   });
 
   // 當 editingWheelset 改變時，更新表單資料
@@ -250,7 +258,8 @@ const MaintenanceDashboard: React.FC = () => {
         tire_brand: editingWheelset.tire_brand || '',
         tire_specs: editingWheelset.tire_specs || '',
         tire_type: editingWheelset.tire_type || '',
-        active_date: editingWheelset.active_date || ''
+        active_date: editingWheelset.active_date || '',
+        color: editingWheelset.color || '#f97316'
       });
     }
   }, [editingWheelset]);
@@ -270,9 +279,9 @@ const MaintenanceDashboard: React.FC = () => {
     }
   };
 
-  const selectedBike = bikes.find(b => b.id === selectedBikeId);
-  const reminders = selectedBike ? getMaintenanceReminders(selectedBike) : [];
-  const bikeRecords = selectedBike ? getRecordsByBike(selectedBike.id) : [];
+  const selectedBike = React.useMemo(() => bikes.find(b => b.id === selectedBikeId), [bikes, selectedBikeId]);
+  const reminders = React.useMemo(() => selectedBike ? getMaintenanceReminders(selectedBike) : [], [selectedBike, getMaintenanceReminders]);
+  const bikeRecords = React.useMemo(() => selectedBike ? getRecordsByBike(selectedBike.id) : [], [selectedBike, getRecordsByBike]);
 
   // 處理與過濾保養項目
   const displayMaintenanceTypes = maintenanceTypes
@@ -364,19 +373,20 @@ const MaintenanceDashboard: React.FC = () => {
       shop_name: 'seh STUDIO',
       notes: '',
       other: '',
-      is_diy: false
+      is_diy: false,
+      wheelset_id: ''
     });
     setEditingRecordId(null);
     setTargetType(null);
     setIsAddModalOpen(false);
   };
 
-  const handleEditMaintenance = (record: any) => {
+  const handleEditMaintenance = (record: BikeMaintenanceRecord) => {
     if (selectedHistoryType) {
       setReturnToHistoryType(selectedHistoryType);
       setSelectedHistoryType(null);
     }
-    const typeList = record.maintenance_type.split(', ');
+    const typeList = record.maintenance_type.split(', ').map(s => s.trim());
 
     const detailsMap: Record<string, { brand: string; model: string; other: string }> = {};
     if (record.parts_details && Array.isArray(record.parts_details)) {
@@ -504,7 +514,7 @@ const MaintenanceDashboard: React.FC = () => {
         const typeIds = record.maintenance_type.split(',').map(s => s.trim());
         const names = typeIds.map(id => {
           const t = maintenanceTypes.find(type => type.id === id);
-          return t ? t.name : id;
+          return t ? t.name : id; // 找不到則顯示 ID
         });
         displayName = names.join(' + ');
       }
@@ -677,14 +687,14 @@ const MaintenanceDashboard: React.FC = () => {
     try {
       // 組合變速系統名稱：[品牌] [速別] [型號]
       const { groupset_brand, groupset_speed, groupset_model } = editFormData;
-      const combinedGroupset = `${groupset_brand} ${groupset_speed} ${groupset_model}`.trim().replace(/\s+/g, ' ');
+      const combinedGroupset = `${groupset_brand} ${groupset_speed} ${groupset_model} `.trim().replace(/\s+/g, ' ');
 
       // 組合功率計名稱：[類型] [明細]
       let combinedPower = '';
       if (editFormData.power_meter_type === '無') {
         combinedPower = '無';
       } else {
-        combinedPower = `${editFormData.power_meter_type} ${editFormData.power_meter_detail}`.trim();
+        combinedPower = `${editFormData.power_meter_type} ${editFormData.power_meter_detail} `.trim();
       }
 
       await updateBike(editFormData.id, {
@@ -700,6 +710,16 @@ const MaintenanceDashboard: React.FC = () => {
     } catch (err) {
       console.error('更新腳踏車資訊失敗:', err);
     }
+  };
+
+  const handleDeleteRecord = async (recordId: string) => {
+    if (confirm('確定要刪除此筆保養紀錄嗎？')) {
+      await deleteMaintenanceRecord(recordId);
+    }
+  };
+
+  const setEditingRecord = (record: BikeMaintenanceRecord) => {
+    handleEditMaintenance(record);
   };
 
   if (loading) {
@@ -827,7 +847,7 @@ const MaintenanceDashboard: React.FC = () => {
                               <div className="flex flex-wrap gap-2 text-xs text-orange-200/40">
                                 <span>{ws.brand || '---'} / {ws.model || '---'}</span>
                                 <span>•</span>
-                                <span>里程: {ws.distance.toLocaleString()} m</span>
+                                <span>里程: {(calculateWheelsetTotalDistance(ws) / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km</span>
                                 {ws.active_date && (
                                   <>
                                     <span>•</span>
@@ -895,7 +915,7 @@ const MaintenanceDashboard: React.FC = () => {
                                   <div className="flex flex-wrap gap-2 text-xs text-orange-200/40">
                                     <span>{ws.brand || '---'} / {ws.model || '---'}</span>
                                     <span>•</span>
-                                    <span>里程: {ws.distance.toLocaleString()} m</span>
+                                    <span>里程: {(calculateWheelsetTotalDistance(ws) / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km</span>
                                   </div>
                                 </div>
                               </div>
@@ -922,7 +942,7 @@ const MaintenanceDashboard: React.FC = () => {
                         const newItem = await addWheelset({
                           athlete_id: JSON.parse(localStorage.getItem('strava_athlete_data') || '{}').id,
                           bike_id: selectedBike.id,
-                          name: `輪組 ${existingCount + 1}`,
+                          name: `輪組 ${existingCount + 1} `,
                           brand: '',
                           model: '',
                           distance: 0,
@@ -941,7 +961,7 @@ const MaintenanceDashboard: React.FC = () => {
                         const newItem = await addWheelset({
                           athlete_id: JSON.parse(localStorage.getItem('strava_athlete_data') || '{}').id,
                           bike_id: null,
-                          name: `通用輪組 ${existingCount + 1}`,
+                          name: `通用輪組 ${existingCount + 1} `,
                           brand: '',
                           model: '',
                           distance: 0,
@@ -1009,7 +1029,7 @@ const MaintenanceDashboard: React.FC = () => {
                         <div className="flex flex-col">
                           <span className="text-orange-200/40 text-xs font-bold uppercase tracking-wider mb-1">金額</span>
                           <span className="text-white font-medium">
-                            {selectedBike.price ? `$${selectedBike.price.toLocaleString()}` : '-'}
+                            {selectedBike.price ? `$${selectedBike.price.toLocaleString()} ` : '-'}
                           </span>
                         </div>
                         {selectedBike.remarks && (
@@ -1055,10 +1075,19 @@ const MaintenanceDashboard: React.FC = () => {
                     onClick={() => setActiveTab('history')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'history'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-white/5 text-orange-200/60 hover:text-white rounded-xl border border-white/10'
+                      : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
                   >
                     歷史紀錄
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('activities')}
+                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'activities'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
+                      }`}
+                  >
+                    活動輪組
                   </button>
                   {activeTab === 'history' && selectedBike && (
                     <div className="flex gap-2 ml-auto">
@@ -1137,14 +1166,14 @@ const MaintenanceDashboard: React.FC = () => {
                               ) : (
                                 <div
                                   onClick={() => setSelectedHistoryType(reminder.type)}
-                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full`}
+                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full overflow-hidden`}
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                                     <div className="flex-1 min-w-0">
                                       <h4 className="font-bold text-white text-sm sm:text-base">{reminder.type.name}</h4>
                                       <p className="text-xs sm:text-sm opacity-60 truncate">{reminder.type.description}</p>
                                     </div>
-                                    <div className={`flex items-center gap-1 text-xs sm:text-sm font-bold shrink-0`}>
+                                    <div className="flex items-center gap-1 text-xs sm:text-sm font-bold shrink-0">
                                       <div className="p-1 rounded hover:bg-black/10 cursor-move active:cursor-grabbing hidden sm:block" title="拖曳排序" onClick={e => e.stopPropagation()}>
                                         <div className="flex flex-col gap-[2px]">
                                           <div className="w-3 h-[2px] bg-current opacity-30"></div>
@@ -1393,109 +1422,25 @@ const MaintenanceDashboard: React.FC = () => {
 
                 {/* 歷史紀錄列表 */}
                 {activeTab === 'history' && (
-                  <div className="overflow-hidden bg-white/5 border border-white/10 rounded-2xl">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-white/5 text-orange-200/80 uppercase font-medium">
-                          <tr>
-                            <th className="px-4 py-3 whitespace-nowrap">日期</th>
-                            <th className="px-4 py-3 whitespace-nowrap">保養項目</th>
-                            <th className="px-4 py-3 whitespace-nowrap text-right">里程 (km)</th>
-                            <th className="px-4 py-3 whitespace-nowrap text-right">金額</th>
-                            <th className="px-4 py-3 whitespace-nowrap">地點/店家</th>
-                            <th className="px-4 py-3 whitespace-nowrap text-center">DIY</th>
-                            <th className="px-4 py-3 whitespace-nowrap">備註/詳情</th>
-                            <th className="px-4 py-3 whitespace-nowrap text-right">操作</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10">
-                          {bikeRecords.length === 0 ? (
-                            <tr>
-                              <td colSpan={8} className="px-4 py-12 text-center text-orange-200/40">
-                                <Calendar className="w-12 h-12 text-orange-200/20 mx-auto mb-3" />
-                                尚無保養紀錄
-                              </td>
-                            </tr>
-                          ) : (
-                            bikeRecords.map(record => {
-                              let displayName = record.maintenance_type;
+                  <MaintenanceTable
+                    records={bikeRecords}
+                    onDelete={handleDeleteRecord}
+                    loading={loading}
+                    onEdit={setEditingRecord}
+                  />
+                )}
 
-                              // 嘗試解析顯示名稱
-                              if (record.maintenance_type === '全車保養' || record.maintenance_type.startsWith('全車保養')) {
-                                displayName = '全車保養';
-                              } else {
-                                // 解析逗號分隔的 ID
-                                const typeIds = record.maintenance_type.split(',').map(s => s.trim());
-                                const names = typeIds.map(id => {
-                                  const t = maintenanceTypes.find(type => type.id === id);
-                                  return t ? t.name : id; // 找不到就顯示 ID
-                                });
-                                // 如果有多個，用 " + " 連接
-                                displayName = names.join(' + ');
-                              }
-
-                              // 如果名稱是 gear_replacement，轉換為 "器材更換"
-                              if (displayName.includes('gear_replacement')) {
-                                displayName = displayName.replace('gear_replacement', '器材更換');
-                              }
-
-                              return (
-                                <tr key={record.id} className="hover:bg-white/5 transition-colors group">
-                                  <td className="px-4 py-3 font-medium text-white whitespace-nowrap tabular-nums">
-                                    {record.service_date}
-                                  </td>
-                                  <td className="px-4 py-3 text-orange-100 font-medium">
-                                    {displayName}
-                                  </td>
-                                  <td className="px-4 py-3 text-right text-orange-200/70 tabular-nums">
-                                    {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                                  </td>
-                                  <td className="px-4 py-3 text-right text-orange-200/70 tabular-nums">
-                                    {record.cost ? `$${record.cost}` : '-'}
-                                  </td>
-                                  <td className="px-4 py-3 text-orange-200/70">
-                                    {record.shop_name || '-'}
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    {record.is_diy ? (
-                                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400">是</span>
-                                    ) : (
-                                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-orange-500/10 text-orange-400">否</span>
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-3 text-orange-200/60 max-w-xs truncate" title={record.notes}>
-                                    {record.notes || '-'}
-                                  </td>
-                                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button
-                                        onClick={() => handleEditMaintenance(record)}
-                                        className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                                        title="編輯"
-                                      >
-                                        <Edit2 className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          if (confirm('確定要刪除此筆保養紀錄嗎？')) {
-                                            deleteMaintenanceRecord(record.id);
-                                          }
-                                        }}
-                                        className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                                        title="刪除"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                {/* 活動輪組列表 */}
+                {activeTab === 'activities' && (
+                  <ActivityWheelsetTable
+                    bikeId={selectedBike.id}
+                    activities={activities}
+                    wheelsets={wheelsets}
+                    activityWheelsets={activityWheelsets}
+                    setActivityWheelsetForActivity={setActivityWheelsetForActivity}
+                    // @ts-ignore - 這裡直接傳入新 Hook 函數
+                    batchSetActivityWheelsets={batchSetActivityWheelsets}
+                  />
                 )}
               </div>
             ) : (
@@ -1510,681 +1455,216 @@ const MaintenanceDashboard: React.FC = () => {
       )}
 
       {/* 編輯腳踏車 Modal */}
-      {
-        isEditModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">編輯單車資訊</h3>
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="p-2 hover:bg-white/10 rounded-xl transition-all"
-                >
-                  <X className="w-5 h-5 text-white/60" />
-                </button>
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">編輯單車資訊</h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-xl transition-all"
+              >
+                <X className="w-5 h-5 text-white/60" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">車架品牌</label>
+                <input
+                  type="text"
+                  value={editFormData.brand}
+                  onChange={e => setEditFormData(prev => ({ ...prev, brand: e.target.value }))}
+                  placeholder="例：Factor"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
               </div>
 
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">車架品牌</label>
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">車架型號</label>
+                <input
+                  type="text"
+                  value={editFormData.model}
+                  onChange={e => setEditFormData(prev => ({ ...prev, model: e.target.value }))}
+                  placeholder="例：O2"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">變速系統</label>
+                <div className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+                  <div className="flex flex-wrap gap-2">
+                    {['Shimano', 'SRAM', 'Campagnolo', '其他'].map(brand => (
+                      <label key={brand} className="flex-1 min-w-[80px]">
+                        <input
+                          type="radio"
+                          name="groupset_brand"
+                          value={brand}
+                          checked={editFormData.groupset_brand === brand}
+                          onChange={e => setEditFormData(prev => ({ ...prev, groupset_brand: e.target.value }))}
+                          className="sr-only peer"
+                        />
+                        <div className="text-center py-2 px-3 rounded-xl border border-white/10 text-sm text-white/60 peer-checked:bg-orange-600/20 peer-checked:border-orange-500 peer-checked:text-white cursor-pointer hover:bg-white/5 transition-all">
+                          {brand}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
                   <input
                     type="text"
-                    value={editFormData.brand}
-                    onChange={e => setEditFormData(prev => ({ ...prev, brand: e.target.value }))}
-                    placeholder="例：Factor"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    value={editFormData.groupset_model}
+                    onChange={e => setEditFormData(prev => ({ ...prev, groupset_model: e.target.value }))}
+                    placeholder="請輸入型號 (例：Dura-Ace)"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                   />
+
+                  <div className="flex flex-wrap gap-2">
+                    {['11速', '12速', '13速', '其他'].map(speed => (
+                      <label key={speed} className="flex-1 min-w-[70px]">
+                        <input
+                          type="radio"
+                          name="groupset_speed"
+                          value={speed}
+                          checked={editFormData.groupset_speed === speed}
+                          onChange={e => setEditFormData(prev => ({ ...prev, groupset_speed: e.target.value }))}
+                          className="sr-only peer"
+                        />
+                        <div className="text-center py-2 px-3 rounded-xl border border-white/10 text-sm text-white/60 peer-checked:bg-orange-600/20 peer-checked:border-orange-500 peer-checked:text-white cursor-pointer hover:bg-white/5 transition-all">
+                          {speed}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">車架型號</label>
-                  <input
-                    type="text"
-                    value={editFormData.model}
-                    onChange={e => setEditFormData(prev => ({ ...prev, model: e.target.value }))}
-                    placeholder="例：O2"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">功率計</label>
+                <div className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+                  <div className="flex flex-wrap gap-2">
+                    {['功率大盤', '功率踏板', '功率輪組', '其他', '無'].map(type => (
+                      <label key={type} className="flex-1 min-w-[80px]">
+                        <input
+                          type="radio"
+                          name="power_meter_type"
+                          value={type}
+                          checked={editFormData.power_meter_type === type}
+                          onChange={e => setEditFormData(prev => ({ ...prev, power_meter_type: e.target.value }))}
+                          className="sr-only peer"
+                        />
+                        <div className="text-center py-2 px-3 rounded-xl border border-white/10 text-xs text-white/60 peer-checked:bg-orange-600/20 peer-checked:border-orange-500 peer-checked:text-white cursor-pointer hover:bg-white/5 transition-all">
+                          {type}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">變速系統</label>
-                  <div className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                    {/* 品牌選擇 */}
-                    <div className="flex flex-wrap gap-2">
-                      {['Shimano', 'SRAM', 'Campagnolo', '其他'].map(brand => (
-                        <label key={brand} className="flex-1 min-w-[80px]">
-                          <input
-                            type="radio"
-                            name="groupset_brand"
-                            value={brand}
-                            checked={editFormData.groupset_brand === brand}
-                            onChange={e => setEditFormData(prev => ({ ...prev, groupset_brand: e.target.value }))}
-                            className="sr-only peer"
-                          />
-                          <div className="text-center py-2 px-3 rounded-xl border border-white/10 text-sm text-white/60 peer-checked:bg-orange-600/20 peer-checked:border-orange-500 peer-checked:text-white cursor-pointer hover:bg-white/5 transition-all">
-                            {brand}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-
-                    {/* 型號輸入 */}
+                  {editFormData.power_meter_type !== '無' && (
                     <input
                       type="text"
-                      value={editFormData.groupset_model}
-                      onChange={e => setEditFormData(prev => ({ ...prev, groupset_model: e.target.value }))}
-                      placeholder="請輸入型號 (例：Dura-Ace)"
+                      value={editFormData.power_meter_detail}
+                      onChange={e => setEditFormData(prev => ({ ...prev, power_meter_detail: e.target.value }))}
+                      placeholder="請輸入品牌型號 (例：Garmin Rally RS200)"
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                     />
-
-                    {/* 速別選擇 */}
-                    <div className="flex flex-wrap gap-2">
-                      {['11速', '12速', '13速', '其他'].map(speed => (
-                        <label key={speed} className="flex-1 min-w-[70px]">
-                          <input
-                            type="radio"
-                            name="groupset_speed"
-                            value={speed}
-                            checked={editFormData.groupset_speed === speed}
-                            onChange={e => setEditFormData(prev => ({ ...prev, groupset_speed: e.target.value }))}
-                            className="sr-only peer"
-                          />
-                          <div className="text-center py-2 px-3 rounded-xl border border-white/10 text-sm text-white/60 peer-checked:bg-orange-600/20 peer-checked:border-orange-500 peer-checked:text-white cursor-pointer hover:bg-white/5 transition-all">
-                            {speed}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">功率計</label>
-                  <div className="space-y-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                    {/* 功率計類型選擇 */}
-                    <div className="flex flex-wrap gap-2">
-                      {['功率大盤', '功率踏板', '功率輪組', '其他', '無'].map(type => (
-                        <label key={type} className="flex-1 min-w-[80px]">
-                          <input
-                            type="radio"
-                            name="power_meter_type"
-                            value={type}
-                            checked={editFormData.power_meter_type === type}
-                            onChange={e => setEditFormData(prev => ({ ...prev, power_meter_type: e.target.value }))}
-                            className="sr-only peer"
-                          />
-                          <div className="text-center py-2 px-3 rounded-xl border border-white/10 text-xs text-white/60 peer-checked:bg-orange-600/20 peer-checked:border-orange-500 peer-checked:text-white cursor-pointer hover:bg-white/5 transition-all">
-                            {type}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-
-                    {/* 品牌型號輸入 (僅當類型非 '無' 時顯示) */}
-                    {editFormData.power_meter_type !== '無' && (
-                      <input
-                        type="text"
-                        value={editFormData.power_meter_detail}
-                        onChange={e => setEditFormData(prev => ({ ...prev, power_meter_detail: e.target.value }))}
-                        placeholder="請輸入品牌型號 (例：Garmin Rally RS200)"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">購買地點</label>
-                  <input
-                    type="text"
-                    value={editFormData.shop_name}
-                    onChange={e => setEditFormData(prev => ({ ...prev, shop_name: e.target.value }))}
-                    placeholder="例：永興車行"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">金額</label>
-                  <input
-                    type="number"
-                    value={editFormData.price}
-                    onChange={e => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
-                    placeholder="0"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 / 其他</label>
-                  <textarea
-                    value={editFormData.remarks}
-                    onChange={e => setEditFormData(prev => ({ ...prev, remarks: e.target.value }))}
-                    rows={2}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
-                >
-                  儲存變更
-                </button>
-              </form>
-            </div>
-          </div>
-        )
-      }
-
-      {/* 新增保養紀錄 Modal */}
-      {
-        isAddModalOpen && selectedBike && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">
-                  {editingRecordId ? '編輯保養紀錄' : '新增保養紀錄'}
-                </h3>
-                <button
-                  onClick={resetForm}
-                  className="p-2 hover:bg-white/10 rounded-xl transition-all"
-                >
-                  <X className="w-5 h-5 text-white/60" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-bold text-orange-200/60">保養項目</label>
-                  </div>
-
-                  {targetType ? (
-                    <div className="space-y-3">
-                      <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                        <span className="text-white font-bold">{targetType.name}</span>
-                        <div className="flex gap-2 ml-auto">
-                          <span className="text-[10px] px-2 py-0.5 bg-orange-500/20 text-orange-200 rounded-full border border-orange-500/30 uppercase tracking-wider font-bold">單一項目</span>
-                        </div>
-                      </div>
-
-                      {/* 單一項目的詳細資訊輸入 */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">品牌 Brand</label>
-                            <input
-                              type="text"
-                              placeholder="品牌"
-                              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
-                              value={formData.details[targetType.id]?.brand || ''}
-                              onChange={e => setFormData(prev => ({
-                                ...prev,
-                                details: {
-                                  ...prev.details,
-                                  [targetType.id]: {
-                                    ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                    brand: e.target.value
-                                  }
-                                }
-                              }))}
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">型號 Model</label>
-                            <input
-                              type="text"
-                              placeholder="型號"
-                              className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
-                              value={formData.details[targetType.id]?.model || ''}
-                              onChange={e => setFormData(prev => ({
-                                ...prev,
-                                details: {
-                                  ...prev.details,
-                                  [targetType.id]: {
-                                    ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                    model: e.target.value
-                                  }
-                                }
-                              }))}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex flex-col">
-                          <label className="text-xs text-orange-200/50 mb-1.5 block font-bold uppercase tracking-wider">備註 / 其他規格 Remarks</label>
-                          <textarea
-                            placeholder="其他規格說明..."
-                            className="flex-1 w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all resize-none min-h-[100px]"
-                            value={formData.details[targetType.id]?.other || ''}
-                            onChange={e => setFormData(prev => ({
-                              ...prev,
-                              details: {
-                                ...prev.details,
-                                [targetType.id]: {
-                                  ...(prev.details[targetType.id] || { brand: '', model: '', other: '' }),
-                                  other: e.target.value
-                                }
-                              }
-                            }))}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-y-3 p-4 bg-white/5 rounded-2xl border border-white/10 max-h-[40vh] overflow-y-auto custom-scrollbar">
-                      {/* 全車保養（全選/取消全選） */}
-                      <label className="flex items-center space-x-3 cursor-pointer group pb-3 border-b border-white/5">
-                        <input
-                          type="checkbox"
-                          checked={formData.maintenance_type.length === displayMaintenanceTypes.length && displayMaintenanceTypes.length > 0}
-                          onChange={e => {
-                            const checked = e.target.checked;
-                            setFormData(prev => ({
-                              ...prev,
-                              maintenance_type: checked ? displayMaintenanceTypes.map(t => t.id) : []
-                            }));
-                          }}
-                          className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
-                        />
-                        <span className="text-white font-bold group-hover:text-orange-400 transition-colors underline underline-offset-4 decoration-orange-500/50">全車保養 (全選)</span>
-                      </label>
-
-                      {/* 其他保養項目列表 */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {displayMaintenanceTypes.map(type => {
-                          const isSelected = formData.maintenance_type.includes(type.id);
-                          return (
-                            <div key={type.id} className={`flex flex-col gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-orange-500/10 border border-orange-500/30' : 'hover:bg-white/5 border border-transparent'}`}>
-                              <label className="flex items-center space-x-3 cursor-pointer group">
-                                <input
-                                  type="checkbox"
-                                  value={type.id}
-                                  checked={isSelected}
-                                  onChange={e => {
-                                    const checked = e.target.checked;
-                                    setFormData(prev => {
-                                      const types = [...prev.maintenance_type];
-                                      if (checked) {
-                                        if (!types.includes(type.id)) types.push(type.id);
-                                      } else {
-                                        const idx = types.indexOf(type.id);
-                                        if (idx > -1) types.splice(idx, 1);
-                                      }
-                                      return { ...prev, maintenance_type: types };
-                                    });
-                                  }}
-                                  className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500 group-hover:border-orange-500 transition-colors"
-                                />
-                                <span className={`font-bold transition-colors ${isSelected ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>{type.name}</span>
-                              </label>
-
-                              {/* 詳細資訊輸入區塊 - 僅在選取時顯示 */}
-                              {isSelected && (
-                                <div className="grid grid-cols-1 gap-2 pl-8 animate-in slide-in-from-top-2 fade-in duration-200">
-                                  <input
-                                    type="text"
-                                    placeholder="品牌 (例：Shimano)"
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 focus:outline-none placeholder:text-white/20"
-                                    value={formData.details[type.id]?.brand || ''}
-                                    onChange={e => setFormData(prev => ({
-                                      ...prev,
-                                      details: {
-                                        ...prev.details,
-                                        [type.id]: {
-                                          ...(prev.details[type.id] || { brand: '', model: '', other: '' }),
-                                          brand: e.target.value
-                                        }
-                                      }
-                                    }))}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="型號 (例：Dura-Ace)"
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 focus:outline-none placeholder:text-white/20"
-                                    value={formData.details[type.id]?.model || ''}
-                                    onChange={e => setFormData(prev => ({
-                                      ...prev,
-                                      details: {
-                                        ...prev.details,
-                                        [type.id]: {
-                                          ...(prev.details[type.id] || { brand: '', model: '', other: '' }),
-                                          model: e.target.value
-                                        }
-                                      }
-                                    }))}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                  <input
-                                    type="text"
-                                    placeholder="其他 (選填)"
-                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:border-orange-500 focus:outline-none placeholder:text-white/20"
-                                    value={formData.details[type.id]?.other || ''}
-                                    onChange={e => setFormData(prev => ({
-                                      ...prev,
-                                      details: {
-                                        ...prev.details,
-                                        [type.id]: {
-                                          ...(prev.details[type.id] || { brand: '', model: '', other: '' }),
-                                          other: e.target.value
-                                        }
-                                      }
-                                    }))}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
                   )}
                 </div>
+              </div>
 
-                {/* 輪組選擇 - 僅在勾選輪胎更換時顯示 */}
-                {formData.maintenance_type.includes('tires') && (
-                  <div>
-                    <label className="block text-sm font-bold text-orange-200/60 mb-2">關聯輪組 (選填)</label>
-                    <div className="relative">
-                      <select
-                        value={formData.wheelset_id}
-                        onChange={e => setFormData(prev => ({ ...prev, wheelset_id: e.target.value }))}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none appearance-none cursor-pointer"
-                      >
-                        <option value="" className="bg-gray-900">未指定輪組</option>
-                        {wheelsets
-                          .filter(ws => !selectedBikeId || ws.bike_id === selectedBikeId)
-                          .map(ws => (
-                            <option key={ws.id} value={ws.id} className="bg-gray-900">
-                              {ws.name} ({ws.brand} {ws.model}) {ws.is_active ? ' [作用中]' : ''}
-                            </option>
-                          ))}
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <ChevronRight className="w-4 h-4 text-white/20 rotate-90" />
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">購買地點</label>
+                <input
+                  type="text"
+                  value={editFormData.shop_name}
+                  onChange={e => setEditFormData(prev => ({ ...prev, shop_name: e.target.value }))}
+                  placeholder="例：永興車行"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
-                    <input
-                      type="date"
-                      value={formData.service_date}
-                      onChange={e => setFormData(prev => ({ ...prev, service_date: e.target.value }))}
-                      required
-                      className="w-full bg-white/5 border border-white/20 hover:border-orange-500/50 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none transition-colors"
-                    />
-                  </div>
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">金額</label>
+                <input
+                  type="number"
+                  value={editFormData.price}
+                  onChange={e => setEditFormData(prev => ({ ...prev, price: e.target.value }))}
+                  placeholder="0"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-orange-200/60 mb-2">費用 (選填)</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">$</span>
-                      <input
-                        type="number"
-                        value={formData.cost}
-                        onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
-                        placeholder="0"
-                        className="w-full bg-white/5 border border-white/20 hover:border-orange-500/50 rounded-xl pl-8 pr-4 py-3 text-white focus:border-orange-500 focus:outline-none transition-colors appearance-none"
-                      />
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 / 其他</label>
+                <textarea
+                  value={editFormData.remarks}
+                  onChange={e => setEditFormData(prev => ({ ...prev, remarks: e.target.value }))}
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
+                />
+              </div>
 
-                <div className="flex items-end gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-bold text-orange-200/60 mb-2">店家名稱 (選填)</label>
-                    <input
-                      type="text"
-                      value={formData.shop_name}
-                      onChange={e => setFormData(prev => ({ ...prev, shop_name: e.target.value }))}
-                      placeholder="seh STUDIO"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                    />
-                  </div>
-                  <label className="flex items-center gap-2 cursor-pointer mb-3 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_diy}
-                      onChange={e => setFormData(prev => ({ ...prev, is_diy: e.target.checked }))}
-                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-orange-600 focus:ring-orange-500"
-                    />
-                    <span className="text-white font-bold text-sm">自己 DIY</span>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 (選填)</label>
-                    <input
-                      type="text"
-                      value={formData.notes}
-                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="簡單備註..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-orange-200/60 mb-2">其他（選填）</label>
-                    <input
-                      type="text"
-                      value={formData.other || ''}
-                      onChange={e => setFormData(prev => ({ ...prev, other: e.target.value }))}
-                      placeholder="其他資訊"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-orange-900/40 mt-2"
-                >
-                  {editingRecordId ? '儲存變更' : '儲存紀錄'}
-                </button>
-              </form>
-            </div>
+              <button
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-all"
+              >
+                儲存變更
+              </button>
+            </form>
           </div>
-        )
-      }
+        </div>
+      )}
 
-      {/* 歷史紀錄詳情 Modal (器材更換) */}
-      {
-        selectedHistoryType && selectedBike && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-6xl p-6 max-h-[80vh] flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-white">{selectedHistoryType.name}紀錄</h3>
-                  <p className="text-orange-200/50 text-sm">歷史更換清單</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setTargetType(selectedHistoryType);
-                      setFormData(prev => ({
-                        ...prev,
-                        maintenance_type: [selectedHistoryType.id]
-                      }));
-                      setIsAddModalOpen(true);
-                      setSelectedHistoryType(null);
-                    }}
-                    className="p-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all flex items-center gap-1.5 px-3"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-bold">新增紀錄</span>
-                  </button>
-                  <button
-                    onClick={() => setSelectedHistoryType(null)}
-                    className="p-2 hover:bg-white/10 rounded-xl transition-all"
-                  >
-                    <X className="w-5 h-5 text-white/60" />
-                  </button>
-                </div>
-              </div>
-
-              {/* 表格呈現模式 */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-white/10">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse relative">
-                    <thead className="sticky top-0 z-10 bg-[#0f172a] shadow-sm">
-                      <tr className="text-xs text-orange-200/60 uppercase tracking-wider">
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">日期</th>
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">週期里程</th>
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">時數</th>
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">天數</th>
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">品牌/型號</th>
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">保養方式</th>
-                        <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">備註/詳情</th>
-                        <th className="p-4 font-bold text-right whitespace-nowrap bg-[#0f172a]">操作</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5 text-sm bg-slate-900/50">
-                      {bikeRecords
-                        .filter(r =>
-                          r.maintenance_type === selectedHistoryType.id ||
-                          r.maintenance_type.split(', ').includes(selectedHistoryType.id)
-                        ).length === 0 ? (
-                        <tr>
-                          <td colSpan={8} className="text-center py-12 text-white/30">
-                            尚無相關紀錄
-                          </td>
-                        </tr>
-                      ) : (
-                        bikeRecords
-                          .filter(r =>
-                            r.maintenance_type === selectedHistoryType.id ||
-                            r.maintenance_type.split(', ').includes(selectedHistoryType.id)
-                          )
-                          .map(record => {
-                            // 獲取該類型在該單車的所有紀錄（已按日期排序：由新到舊）
-                            const typedRecords = bikeRecords.filter(r =>
-                              r.maintenance_type === selectedHistoryType?.id ||
-                              r.maintenance_type.split(', ').includes(selectedHistoryType?.id || '')
-                            );
-
-                            // 找出當前紀錄在過濾後列表中的索引
-                            const recordIndex = typedRecords.findIndex(r => r.id === record.id);
-                            // 下一筆紀錄（時間更早的）即為上一個維護週期起點
-                            const previousRecord = typedRecords[recordIndex + 1];
-
-                            const stats = previousRecord
-                              ? calculateMetricsBetweenDates(selectedBike.id, previousRecord.service_date, record.service_date)
-                              : calculateMetricsSinceDate(selectedBike.id, record.service_date);
-
-                            const detail = record.parts_details?.find(d => d.type_id === selectedHistoryType.id);
-
-                            return (
-                              <tr key={record.id} className="hover:bg-white/5 transition-colors group">
-                                <td className="p-4 text-white font-bold whitespace-nowrap align-top">
-                                  {record.service_date}
-                                  <div className="text-[10px] text-white/30 font-mono mt-1">
-                                    {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
-                                  </div>
-                                </td>
-                                <td className="p-4 align-top">
-                                  <span className="text-orange-300 font-mono">{stats.distanceKm.toFixed(1)} km</span>
-                                  {!previousRecord && <span className="text-[10px] text-white/30 block">累積</span>}
-                                </td>
-                                <td className="p-4 text-white/80 font-mono align-top">
-                                  {stats.movingTimeHours.toFixed(1)} hr
-                                </td>
-                                <td className="p-4 text-white/80 font-mono align-top">
-                                  {stats.days} 天
-                                </td>
-                                <td className="p-4 align-top">
-                                  <div className="flex flex-col gap-0.5">
-                                    {detail?.brand ? <span className="text-white font-medium">{detail.brand}</span> : <span className="text-white/20">-</span>}
-                                    {detail?.model && <span className="text-xs text-white/50">{detail.model}</span>}
-                                  </div>
-                                </td>
-                                <td className="p-4 align-top">
-                                  {record.is_diy ? (
-                                    <span className="text-orange-400 font-bold border border-orange-500/30 bg-orange-500/10 px-2 py-1 rounded text-xs">DIY</span>
-                                  ) : (
-                                    record.shop_name ? (
-                                      <span className="text-white font-medium">{record.shop_name}</span>
-                                    ) : (
-                                      <span className="text-white/20">-</span>
-                                    )
-                                  )}
-                                </td>
-                                <td className="p-4 max-w-[200px] align-top">
-                                  <div className="space-y-1">
-                                    {record.cost && (
-                                      <div className="flex flex-wrap gap-2 text-xs text-orange-200/60">
-                                        <span>💰 ${record.cost.toLocaleString()}</span>
-                                      </div>
-                                    )}
-                                    {(detail?.other || record.notes) && (
-                                      <div className="text-xs text-white/60 truncate" title={detail?.other || record.notes}>
-                                        {detail?.other || record.notes}
-                                      </div>
-                                    )}
-                                    {!record.cost && !detail?.other && !record.notes && (
-                                      <span className="text-white/20">-</span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-4 text-right align-top">
-                                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={() => {
-                                        handleEditMaintenance(record);
-                                      }}
-                                      className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-                                      title="編輯"
-                                    >
-                                      <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        if (confirm('確定要刪除此筆紀錄嗎？')) {
-                                          deleteMaintenanceRecord(record.id);
-                                        }
-                                      }}
-                                      className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                      title="刪除"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div >
-        )
-      }
       {/* 輪組編輯 Modal */}
-      {
-        editingWheelset && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
-              <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white">編輯輪組資訊</h3>
-                <button
-                  onClick={() => setEditingWheelset(null)}
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      {editingWheelset && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden overflow-y-auto max-h-[90vh]">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-white">編輯輪組資訊</h3>
+              <button
+                onClick={() => setEditingWheelset(null)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-orange-200/60 uppercase tracking-wider">輪組代表色 (不可重複)</label>
+                  <div className="flex gap-3 pt-1">
+                    {[
+                      { name: 'Orange', color: '#f97316' },
+                      { name: 'Blue', color: '#3b82f6' },
+                      { name: 'Green', color: '#22c55e' },
+                      { name: 'Purple', color: '#a855f7' },
+                      { name: 'Pink', color: '#ec4899' }
+                    ].map((c) => {
+                      const isTaken = wheelsets.some(ws => ws.color === c.color && ws.id !== editingWheelset?.id);
+                      const isSelected = wheelsetFormData.color === c.color;
+                      return (
+                        <button
+                          key={c.color}
+                          type="button"
+                          disabled={isTaken}
+                          onClick={() => setWheelsetFormData(prev => ({ ...prev, color: c.color }))}
+                          className={`
+                            w-8 h-8 rounded-full border-2 transition-all relative
+                            ${isSelected ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}
+                            ${isTaken ? 'opacity-20 cursor-not-allowed grayscale' : 'cursor-pointer'}
+                          `}
+                          style={{ backgroundColor: c.color }}
+                          title={isTaken ? '此顏色已被其他輪組使用' : c.name}
+                        >
+                          {isSelected && <Check className="w-4 h-4 text-white absolute inset-0 m-auto" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-orange-200/60 mb-1">
                     名稱 <span className="text-red-500">*</span>
@@ -2218,125 +1698,266 @@ const MaintenanceDashboard: React.FC = () => {
                   </label>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-orange-200/60 mb-1">品牌</label>
-                  <input
-                    type="text"
-                    value={wheelsetFormData.brand}
-                    onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, brand: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
-                    placeholder="例如: Zipp, Shimano"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-orange-200/60 mb-1">型號</label>
-                  <input
-                    type="text"
-                    value={wheelsetFormData.model}
-                    onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, model: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
-                    placeholder="例如: 404 Firecrest, Dura-Ace C50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-orange-200/60 mb-1">初始里程 (m)</label>
-                  <input
-                    type="number"
-                    value={wheelsetFormData.distance}
-                    onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, distance: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
-                  />
-                  <p className="text-xs text-orange-200/40 mt-1">設定初始里程後，新騎乘紀錄將會自動累加。</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-orange-200/60 mb-1">啟用日期</label>
-                  <input
-                    type="date"
-                    value={wheelsetFormData.active_date}
-                    onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, active_date: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500 transition-colors"
-                  />
-                </div>
-
-                <div className="pt-4 border-t border-white/10">
-                  <h4 className="text-sm font-bold text-white mb-3">輪胎資訊</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-orange-200/60 mb-1">輪胎品牌</label>
-                      <input
-                        type="text"
-                        value={wheelsetFormData.tire_brand}
-                        onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, tire_brand: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
-                        placeholder="例如: Continental, Vittoria"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-orange-200/60 mb-1">規格</label>
-                      <input
-                        type="text"
-                        value={wheelsetFormData.tire_specs}
-                        onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, tire_specs: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
-                        placeholder="例如: 700x25c"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-orange-200/60 mb-1">類型</label>
-                      <select
-                        value={wheelsetFormData.tire_type}
-                        onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, tire_type: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500 transition-colors appearance-none"
-                      >
-                        <option value="">請選擇</option>
-                        <option value="內胎 (Tube)">內胎 (Tube)</option>
-                        <option value="無內胎 (Tubeless)">無內胎 (Tubeless)</option>
-                        <option value="管胎 (Tubular)">管胎 (Tubular)</option>
-                      </select>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">品牌</label>
+                    <input
+                      type="text"
+                      value={wheelsetFormData.brand}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, brand: e.target.value })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                      placeholder="例如: Zipp"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">型號</label>
+                    <input
+                      type="text"
+                      value={wheelsetFormData.model}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, model: e.target.value })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                      placeholder="例如: 404"
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="p-4 border-t border-white/10 bg-white/5 flex gap-3">
-                <button
-                  onClick={() => {
-                    if (confirm(`確定要刪除輪組 "${wheelsetFormData.name}" 嗎？這項動作無法復原。`)) {
-                      if (editingWheelset) {
-                        deleteWheelset(editingWheelset.id);
-                        setEditingWheelset(null);
-                      }
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl font-bold bg-red-600/10 hover:bg-red-600/20 text-red-500 hover:text-red-400 transition-all flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  刪除
-                </button>
-                <div className="flex-1"></div>
-                <button
-                  onClick={() => setEditingWheelset(null)}
-                  className="px-4 py-2 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-white transition-all"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleUpdateWheelset}
-                  disabled={!wheelsetFormData.name}
-                  className="px-4 py-2 rounded-xl font-bold bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  儲存
-                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">初始里程 (km)</label>
+                    <input
+                      type="number"
+                      value={wheelsetFormData.distance / 1000}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, distance: (parseFloat(e.target.value) || 0) * 1000 })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/20 focus:outline-none focus:border-orange-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-200/60 mb-1">啟用日期</label>
+                    <input
+                      type="date"
+                      value={wheelsetFormData.active_date}
+                      onChange={(e) => setWheelsetFormData({ ...wheelsetFormData, active_date: e.target.value })}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-orange-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    onClick={() => setEditingWheelset(null)}
+                    className="flex-1 px-4 py-3 border border-white/10 rounded-xl text-white hover:bg-white/5 transition-all font-bold"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleUpdateWheelset}
+                    className="flex-1 px-4 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all font-bold shadow-lg shadow-orange-900/20"
+                  >
+                    更新資訊
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+
+      {/* 歷史紀錄詳情 Modal (器材更換) */}
+      {selectedHistoryType && selectedBike && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-6xl p-6 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">{selectedHistoryType.name}紀錄</h3>
+                <p className="text-orange-200/50 text-sm">歷史更換清單</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setTargetType(selectedHistoryType);
+                    setFormData(prev => ({
+                      ...prev,
+                      maintenance_type: [selectedHistoryType.id]
+                    }));
+                    setIsAddModalOpen(true);
+                    setSelectedHistoryType(null);
+                  }}
+                  className="p-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all flex items-center gap-1.5 px-3"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-bold">新增紀錄</span>
+                </button>
+                <button
+                  onClick={() => setSelectedHistoryType(null)}
+                  className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-white/10">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse relative">
+                  <thead className="sticky top-0 z-10 bg-[#0f172a] shadow-sm">
+                    <tr className="text-xs text-orange-200/60 uppercase tracking-wider">
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">日期</th>
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">週期里程</th>
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">時數</th>
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">天數</th>
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">品牌/型號</th>
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">保養方式</th>
+                      <th className="p-4 font-bold whitespace-nowrap bg-[#0f172a]">備註/詳情</th>
+                      <th className="p-4 font-bold text-right whitespace-nowrap bg-[#0f172a]">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-sm bg-slate-900/50">
+                    {bikeRecords
+                      .filter(r =>
+                        r.maintenance_type === selectedHistoryType.id ||
+                        r.maintenance_type.split(', ').includes(selectedHistoryType.id)
+                      ).length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center py-12 text-white/30">
+                          尚無相關紀錄
+                        </td>
+                      </tr>
+                    ) : (
+                      bikeRecords
+                        .filter(r =>
+                          r.maintenance_type === selectedHistoryType.id ||
+                          r.maintenance_type.split(', ').includes(selectedHistoryType.id)
+                        )
+                        .map(record => {
+                          const typedRecords = bikeRecords.filter(r =>
+                            r.maintenance_type === selectedHistoryType?.id ||
+                            r.maintenance_type.split(', ').includes(selectedHistoryType?.id || '')
+                          );
+                          const recordIndex = typedRecords.findIndex(r => r.id === record.id);
+                          const previousRecord = typedRecords[recordIndex + 1];
+
+                          const stats = previousRecord
+                            ? calculateMetricsBetweenDates(selectedBike.id, previousRecord.service_date, record.service_date)
+                            : calculateMetricsSinceDate(selectedBike.id, record.service_date);
+
+                          const detail = record.parts_details?.find(d => d.type_id === selectedHistoryType.id);
+
+                          return (
+                            <tr key={record.id} className="hover:bg-white/5 transition-colors group">
+                              <td className="p-4 text-white font-bold whitespace-nowrap align-top">
+                                {record.service_date}
+                                <div className="text-[10px] text-white/30 font-mono mt-1">
+                                  {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
+                                </div>
+                              </td>
+                              <td className="p-4 align-top">
+                                <span className="text-orange-300 font-mono">{stats.distanceKm.toFixed(1)} km</span>
+                                {!previousRecord && <span className="text-[10px] text-white/30 block">累積</span>}
+                              </td>
+                              <td className="p-4 text-white/80 font-mono align-top">
+                                {stats.movingTimeHours.toFixed(1)} hr
+                              </td>
+                              <td className="p-4 text-white/80 font-mono align-top">
+                                {stats.days} 天
+                              </td>
+                              <td className="p-4 align-top">
+                                <div className="flex flex-col gap-0.5">
+                                  {detail?.brand ? <span className="text-white font-medium">{detail.brand}</span> : <span className="text-white/20">-</span>}
+                                  {detail?.model && <span className="text-xs text-white/50">{detail.model}</span>}
+                                </div>
+                              </td>
+                              <td className="p-4 align-top">
+                                {record.is_diy ? (
+                                  <span className="text-orange-400 font-bold border border-orange-500/30 bg-orange-500/10 px-2 py-1 rounded text-xs">DIY</span>
+                                ) : (
+                                  record.shop_name ? (
+                                    <span className="text-white font-medium">{record.shop_name}</span>
+                                  ) : (
+                                    <span className="text-white/20">-</span>
+                                  )
+                                )}
+                              </td>
+                              <td className="p-4 max-w-[200px] align-top text-xs text-white/60">
+                                {record.notes || record.other || '-'}
+                              </td>
+                              <td className="p-4 text-right align-top">
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleEditMaintenance(record)}
+                                    className="p-1.5 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteRecord(record.id)}
+                                    className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 新增保養紀錄 Modal */}
+      {isAddModalOpen && selectedBike && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">
+                {editingRecordId ? '編輯保養紀錄' : '新增保養紀錄'}
+              </h3>
+              <button
+                onClick={resetForm}
+                className="p-2 hover:bg-white/10 rounded-xl transition-all"
+              >
+                <X className="w-5 h-5 text-white/60" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
+                  <input
+                    type="date"
+                    value={formData.service_date}
+                    onChange={e => setFormData(prev => ({ ...prev, service_date: e.target.value }))}
+                    required
+                    className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">費用</label>
+                  <input
+                    type="number"
+                    value={formData.cost}
+                    onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
+                    placeholder="0"
+                    className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-orange-900/40 mt-2"
+              >
+                儲存紀錄
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

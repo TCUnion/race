@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Wheelset } from '../types';
+import { Wheelset, StravaActivity } from '../types';
 
 // Strava 腳踏車型別（對應 bikes 表）
 export interface StravaBike {
@@ -26,16 +26,7 @@ export interface StravaBike {
 }
 
 // Strava 活動紀錄（對應 strava_activities 表）
-export interface StravaActivity {
-  id: number;
-  athlete_id: number;
-  name: string;
-  distance: number;
-  moving_time: number; // 使用秒
-  start_date: string;
-  gear_id: string; // 對應 bikes.id
-  total_elevation_gain: number; // 總爬升 (公尺)
-}
+// StravaActivity moved to types.ts
 
 // 保養類型（對應 maintenance_types 表）
 export interface MaintenanceType {
@@ -158,6 +149,7 @@ export const useMaintenance = () => {
   const [appSettings, setAppSettings] = useState<AppSetting[]>([]); // New state for app settings
   const [activities, setActivities] = useState<StravaActivity[]>([]); // 新增活動資料狀態
   const [activityWheelsets, setActivityWheelsets] = useState<ActivityWheelset[]>([]); // 活動輪組關聯
+  const [isBatchUpdating, setIsBatchUpdating] = useState(false); // 批量更新狀態
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
@@ -492,7 +484,7 @@ export const useMaintenance = () => {
       elevationGain: totalElevationGain,
       days: totalDays
     };
-  }, [activities]);
+  }, [activities, activityWheelsets]);
 
   // 重構：根據日期從活動紀錄計算里程與時間 (至今)
   const calculateMetricsSinceDate = useCallback((bikeId: string, startDate: string) => {
@@ -521,6 +513,23 @@ export const useMaintenance = () => {
     // 歷史里程 = 目前總里程 - 從那時到現在累積的里程
     return Math.max(0, currentTotalKm - accumulatedKmSinceTarget);
   }, [activities]);
+
+  // 新增：計算輪組總里程 (初始里程 + 關聯活動里程)
+  const calculateWheelsetTotalDistance = useCallback((wheelset: Wheelset) => {
+    // 1. 初始里程 (公尺)
+    const initialDistance = wheelset.distance || 0;
+
+    // 2. 累計活動里程 (公尺)
+    const linkedActivities = activityWheelsets
+      .filter(aw => aw.wheelset_id === wheelset.id)
+      .map(aw => activities.find(a => a.id === aw.activity_id))
+      .filter((a): a is StravaActivity => !!a);
+
+    const activityDistance = linkedActivities.reduce((sum, a) => sum + a.distance, 0);
+
+    // 回傳總里程 (公尺)
+    return initialDistance + activityDistance;
+  }, [activities, activityWheelsets]);
 
   // 計算保養提醒
   const getMaintenanceReminders = useCallback((bike: StravaBike): MaintenanceReminder[] => {
@@ -560,7 +569,7 @@ export const useMaintenance = () => {
           // 優先順序：1. 保養紀錄日期 2. 輪組啟用日期 3. 輪組總里程
           const referenceDate = lastService?.service_date || activeWheelset.active_date;
           if (referenceDate) {
-            // 使用參考日期計算從該日期至今的里程
+            // 使用參考日期計算從該日期至今的里程，並排除指定給其他輪組的活動
             const metrics = calculateMetricsSinceDate(bike.id, referenceDate);
             calculatedMileageSinceService = metrics.distanceKm;
             calculatedClimbingSinceService = metrics.elevationGain;
@@ -576,22 +585,17 @@ export const useMaintenance = () => {
             calculatedClimbingSinceService = metrics.elevationGain;
           } else {
             calculatedMileageSinceService = currentMileageKm;
-            // 這裡無法得知單車總爬升 (因為 bikes 表沒存)，所以僅能從活動紀錄抓，若無活動紀錄則為 0
-            // 但通常會有 lastService，若無，則是新車?
-            // 實務上：total elevation gain of bike is needed if no service record. 
-            // But we only have activities for 1 year. 
-            // So if no service record, we likely can't calc full climbing lifetime.
           }
         }
       } else {
-        // 非輪胎更換，維持原有邏輯
+        // 非輪胎類型：使用標準的保養紀錄日期計算
         if (lastService && lastService.service_date) {
           const metrics = calculateMetricsSinceDate(bike.id, lastService.service_date);
           calculatedMileageSinceService = metrics.distanceKm;
           calculatedClimbingSinceService = metrics.elevationGain;
         } else {
+          // 無保養紀錄，使用單車總里程作為距離
           calculatedMileageSinceService = currentMileageKm;
-          // 同上，無 lastService 時無法準確得知 total climbing
         }
       }
 
@@ -627,7 +631,7 @@ export const useMaintenance = () => {
         usageByClimbing
       };
     });
-  }, [maintenanceTypes, getRecordsByBike, calculateMileageSinceDate, settings]); // added dependencies
+  }, [maintenanceTypes, getRecordsByBike, calculateMetricsSinceDate, settings, wheelsets, calculateMetricsBetweenDates]); // 已修正依賴項
 
   // 取得需要注意的保養項目數量
   const getAlertCount = useCallback((bike: StravaBike): { dueSoon: number; overdue: number } => {
@@ -727,6 +731,46 @@ export const useMaintenance = () => {
     }
   };
 
+  // 批量活動輪組關聯 CRUD
+  const batchSetActivityWheelsets = async (activitiesData: { activityId: number, wheelsetId: string }[]) => {
+    const athleteId = getAthleteId();
+    if (!athleteId) throw new Error('未登入');
+
+    try {
+      const upsertData = activitiesData.map(item => ({
+        activity_id: item.activityId,
+        wheelset_id: item.wheelsetId,
+        athlete_id: parseInt(athleteId)
+      }));
+
+      const { data, error } = await supabase
+        .from('activity_wheelset')
+        .upsert(upsertData, { onConflict: 'activity_id,athlete_id' })
+        .select();
+
+      if (error) throw error;
+
+      // 更新本地狀態
+      setActivityWheelsets(prev => {
+        const newData = [...prev];
+        (data as ActivityWheelset[]).forEach(item => {
+          const idx = newData.findIndex(aw => aw.activity_id === item.activity_id);
+          if (idx > -1) {
+            newData[idx] = item;
+          } else {
+            newData.push(item);
+          }
+        });
+        return newData;
+      });
+
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   const getActivityWheelset = useCallback((activityId: number) => {
     return activityWheelsets.find(aw => aw.activity_id === activityId);
   }, [activityWheelsets]);
@@ -772,6 +816,7 @@ export const useMaintenance = () => {
     calculateMetricsSinceDate,
     calculateMetricsBetweenDates,
     calculateTotalDistanceAtDate,
+    calculateWheelsetTotalDistance,
     refresh: fetchData,
     updateAppSetting,
     getAppSetting,
@@ -779,10 +824,16 @@ export const useMaintenance = () => {
     lifespanSettings,
     updateLifespanSetting,
     getLifespanSetting,
+    activities,
     // 活動輪組關聯
     activityWheelsets,
     setActivityWheelsetForActivity,
+    batchSetActivityWheelsets,
+    isBatchUpdating,
+    setIsBatchUpdating,
     getActivityWheelset,
     removeActivityWheelset
   };
 };
+
+export type UseMaintenanceReturn = ReturnType<typeof useMaintenance>;

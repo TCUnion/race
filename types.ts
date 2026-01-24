@@ -40,6 +40,16 @@ export interface Participant {
   date: string;
   strava_activity_id?: string | number;
 }
+export interface StravaActivity {
+  id: number;
+  athlete_id: number;
+  name: string;
+  distance: number;
+  moving_time: number; // 使用秒
+  start_date: string;
+  gear_id: string; // 對應 bikes.id
+  total_elevation_gain: number; // 總爬升 (公尺)
+}
 
 export interface Activity {
   id: number | string;
@@ -129,6 +139,7 @@ export interface Wheelset {
   distance: number; // in meters
   is_active: boolean;
   active_date?: string;
+  color?: string;
   created_at: string;
   updated_at: string;
 }
