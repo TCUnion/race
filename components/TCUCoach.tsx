@@ -82,7 +82,7 @@ const TCUCoach: React.FC = () => {
             {/* Header */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm flex items-center justify-between z-10">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-tsu-blue rounded-xl shadow-lg shadow-tsu-blue/20">
+                    <div className="p-2 bg-tcu-blue rounded-xl shadow-lg shadow-tcu-blue/20">
                         <Bot className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -102,7 +102,7 @@ const TCUCoach: React.FC = () => {
                     </button>
                     <button
                         onClick={() => setMessages([messages[0]])}
-                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-tsu-blue"
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-tcu-blue"
                         title="重新開始對話"
                     >
                         <RefreshCw className="w-5 h-5" />
@@ -118,7 +118,7 @@ const TCUCoach: React.FC = () => {
                         className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                     >
                         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md ${msg.role === 'assistant'
-                            ? 'bg-gradient-to-br from-tsu-blue to-indigo-600 text-white'
+                            ? 'bg-gradient-to-br from-tcu-blue to-indigo-600 text-white'
                             : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                             }`}>
                             {msg.role === 'assistant' ? <Sparkles className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -126,14 +126,11 @@ const TCUCoach: React.FC = () => {
 
                         <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                             <div
-                                className={`px-5 py-3.5 rounded-2xl shadow-sm font-medium leading-relaxed whitespace-pre-wrap transition-[font-size,background-color,color] duration-200 ${msg.role === 'user'
-                                    ? 'bg-tsu-blue text-white rounded-tr-none'
+                                className={`px-5 py-3.5 rounded-2xl shadow-sm font-medium leading-relaxed whitespace-pre-wrap transition-all duration-200 ${msg.role === 'user'
+                                    ? 'bg-tcu-blue text-white rounded-tr-none'
                                     : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
                                     }`}
-                                style={{ fontSize: `var(--tcu-fs-active, ${fontSizeValue})` }}
-                                data-fs-variant={fontSize}
                             >
-                                <span className="text-[10px] opacity-50 block mb-1">診斷: {fontSizeValue}</span>
                                 {msg.content}
                             </div>
                             <span className="text-[10px] text-slate-400 font-bold mt-1 px-1">
@@ -145,7 +142,7 @@ const TCUCoach: React.FC = () => {
 
                 {isLoading && (
                     <div className="flex gap-4">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-tsu-blue to-indigo-600 text-white flex items-center justify-center shadow-md">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-tcu-blue to-indigo-600 text-white flex items-center justify-center shadow-md">
                             <Loader2 className="w-4 h-4 animate-spin" />
                         </div>
                         <div className="px-5 py-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-none flex items-center gap-2">
@@ -159,7 +156,7 @@ const TCUCoach: React.FC = () => {
 
             {/* Input Area */}
             <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-                <div className="relative flex items-end gap-2 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-2 transition-colors focus-within:border-tsu-blue/50 focus-within:bg-white dark:focus-within:bg-slate-800">
+                <div className="relative flex items-end gap-2 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-2 transition-colors focus-within:border-tcu-blue/50 focus-within:bg-white dark:focus-within:bg-slate-800">
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -172,14 +169,14 @@ const TCUCoach: React.FC = () => {
                         placeholder="輸入您的問題..."
                         className="w-full bg-transparent border-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none max-h-32 py-2.5 px-2"
                         rows={1}
-                        style={{ minHeight: '44px', fontSize: fontSizeValue }}
+                        style={{ minHeight: '44px' }}
                     />
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isLoading}
                         className={`p-2.5 rounded-xl flex-shrink-0 transition-all ${!input.trim() || isLoading
                             ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                            : 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30 hover:scale-105 active:scale-95'
+                            : 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30 hover:scale-105 active:scale-95'
                             }`}
                     >
                         <Send className="w-4 h-4" />
@@ -191,7 +188,7 @@ const TCUCoach: React.FC = () => {
             </div>
 
             {/* Ambient Background Glow */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-tsu-blue/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-tcu-blue/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
         </div>
     );

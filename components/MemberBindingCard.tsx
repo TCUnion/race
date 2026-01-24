@@ -395,7 +395,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                                     href={`https://strava.criterium.tw/skill?tcu_id=${memberData.tcu_id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-[10px] font-black text-tsu-blue hover:text-tsu-blue-light hover:underline flex items-center gap-1 transition-colors"
+                                                    className="text-[10px] font-black text-tcu-blue hover:text-tcu-blue-light hover:underline flex items-center gap-1 transition-colors"
                                                 >
                                                     能力分組修正頁面
                                                 </a>
@@ -417,7 +417,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                 href="https://www.tsu.com.tw/member-data/profile"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-tsu-blue hover:text-tsu-blue-light hover:underline transition-colors uppercase tracking-wider"
+                                className="text-tcu-blue hover:text-tcu-blue-light hover:underline transition-colors uppercase tracking-wider"
                             >
                                 TCU 會員中心
                             </a>
@@ -430,7 +430,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
                     <button
                         onClick={onBindingSuccess}
-                        className="w-full mt-2 py-4 rounded-2xl bg-tsu-blue text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-tsu-blue/20 hover:shadow-tsu-blue/40 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                        className="w-full mt-2 py-4 rounded-2xl bg-tcu-blue text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-tcu-blue/20 hover:shadow-tcu-blue/40 active:scale-95 transition-all flex items-center justify-center gap-2 group"
                     >
                         <span>完成 / 前往 Dashboard</span>
                         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -442,10 +442,10 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
     return (
         <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden group">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-tsu-blue/5 rounded-full blur-3xl group-hover:bg-tsu-blue/10 transition-colors"></div>
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-tcu-blue/5 rounded-full blur-3xl group-hover:bg-tcu-blue/10 transition-colors"></div>
             <div className="relative z-10 flex flex-col gap-6">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-tsu-blue text-white shadow-lg shadow-tsu-blue/20">
+                    <div className="p-2 rounded-xl bg-tcu-blue text-white shadow-lg shadow-tcu-blue/20">
                         <UserCheck className="w-6 h-6" />
                     </div>
                     <div>
@@ -459,13 +459,13 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Member TCU-ID / Account</label>
                             <div className="relative group">
-                                <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-tsu-blue transition-colors" />
+                                <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-tcu-blue transition-colors" />
                                 <input
                                     type="text"
                                     value={tcuId}
                                     onChange={(e) => setTcuId(e.target.value)}
                                     placeholder="輸入 TCU-ID 或身分證號"
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-tsu-blue transition-all"
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-tcu-blue transition-all"
                                 />
                             </div>
                         </div>
@@ -475,7 +475,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                             disabled={isSyncing || !tcuId}
                             className={`group relative overflow-hidden w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg ${isSyncing || !tcuId
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                                : 'bg-tsu-blue text-white shadow-tsu-blue/20 hover:shadow-tsu-blue/40'
+                                : 'bg-tcu-blue text-white shadow-tcu-blue/20 hover:shadow-tcu-blue/40'
                                 }`}
                         >
                             <div className="relative z-10 flex items-center justify-center gap-2">
@@ -495,8 +495,8 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="bg-tsu-blue/5 dark:bg-tsu-blue/10 border border-tsu-blue/20 rounded-2xl p-4 flex items-start gap-3">
-                            <Mail className="w-5 h-5 text-tsu-blue mt-0.5" />
+                        <div className="bg-tcu-blue/5 dark:bg-tcu-blue/10 border border-tcu-blue/20 rounded-2xl p-4 flex items-start gap-3">
+                            <Mail className="w-5 h-5 text-tcu-blue mt-0.5" />
                             <div>
                                 <p className="text-slate-900 dark:text-white text-xs font-black uppercase">驗證郵件已發送</p>
                                 <p className="text-slate-500 text-[10px] font-bold mt-1">
@@ -513,7 +513,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
                                 placeholder="000000"
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 text-center text-2xl font-black tracking-[0.5em] text-tsu-blue focus:outline-none focus:border-tsu-blue transition-all"
+                                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 text-center text-2xl font-black tracking-[0.5em] text-tcu-blue focus:outline-none focus:border-tcu-blue transition-all"
                             />
                         </div>
 

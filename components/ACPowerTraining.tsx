@@ -28,8 +28,8 @@ const ACPowerTraining: React.FC = () => {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tsu-blue/10 text-tsu-blue border border-tsu-blue/20">
-                        <Zap className="w-4 h-4 fill-tsu-blue" />
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tcu-blue/10 text-tcu-blue border border-tcu-blue/20">
+                        <Zap className="w-4 h-4 fill-tcu-blue" />
                         <span className="text-[10px] font-black uppercase tracking-widest">Premium Feature</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white uppercase italic tracking-tight">

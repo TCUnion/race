@@ -260,7 +260,7 @@ const StravaConnect: React.FC = () => {
                             alt="Profile"
                             className="w-12 h-12 rounded-full border-2 border-strava-orange shadow-sm"
                         />
-                        <div className="absolute -bottom-1 -right-1 bg-tsu-blue text-white rounded-full p-0.5 shadow-sm">
+                        <div className="absolute -bottom-1 -right-1 bg-tcu-blue text-white rounded-full p-0.5 shadow-sm">
                             <Check className="w-3 h-3" />
                         </div>
                     </div>

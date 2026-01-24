@@ -45,7 +45,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tcu-blue"></div>
       </div>
     );
   }
@@ -59,7 +59,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
           <p className="text-slate-400 text-sm mb-6">請先返回首頁連結您的 Strava 帳號。</p>
           <button
             onClick={() => onNavigate(ViewType.LANDING)}
-            className="bg-tsu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tsu-blue-light transition-all"
+            className="bg-tcu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tcu-blue-light transition-all"
           >
             返回首頁
           </button>

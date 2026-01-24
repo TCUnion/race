@@ -164,11 +164,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     return (
         <div className="max-w-xl mx-auto p-10 bg-slate-900/40 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/5 relative overflow-hidden group">
             {/* 背景裝飾 */}
-            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-tsu-blue/10 rounded-full blur-3xl group-hover:bg-tsu-blue/20 transition-colors duration-700"></div>
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-tcu-blue/10 rounded-full blur-3xl group-hover:bg-tcu-blue/20 transition-colors duration-700"></div>
 
             <div className="relative z-10">
                 <div className="flex flex-col gap-3 mb-10">
-                    <span className="text-tsu-blue-light text-[11px] font-black uppercase tracking-[0.3em]">Registration</span>
+                    <span className="text-tcu-blue-light text-[11px] font-black uppercase tracking-[0.3em]">Registration</span>
                     <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">填寫報名資料</h2>
                     <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm">
                         歡迎挑戰！請確認您的參賽資訊。報名後系統將開始追蹤您在路段的 Strava 活動紀錄。
@@ -184,7 +184,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                 alt="Profile"
                                 className="w-16 h-16 rounded-full border-2 border-strava-orange shadow-lg object-cover"
                             />
-                            <div className="absolute -bottom-1 -right-1 bg-tsu-blue text-white rounded-full p-1 shadow-md border border-slate-900">
+                            <div className="absolute -bottom-1 -right-1 bg-tcu-blue text-white rounded-full p-1 shadow-md border border-slate-900">
                                 <Check className="w-3 h-3" />
                             </div>
                         </div>
@@ -197,14 +197,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     {/* 路段選擇 */}
                     <div className="group/field">
                         <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em]">
-                            選擇挑戰路段 <span className="text-tsu-blue-light">(勾選報名)</span>
+                            選擇挑戰路段 <span className="text-tcu-blue-light">(勾選報名)</span>
                         </label>
                         <div className="grid gap-3">
                             {segments.map(seg => (
                                 <label
                                     key={seg.id}
                                     className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-300 ${selectedSegmentIds.includes(seg.id)
-                                        ? 'bg-tsu-blue/20 border-tsu-blue/50'
+                                        ? 'bg-tcu-blue/20 border-tcu-blue/50'
                                         : 'bg-white/5 border-white/10 hover:border-white/20'
                                         }`}
                                 >
@@ -215,7 +215,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         className="sr-only"
                                     />
                                     <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedSegmentIds.includes(seg.id)
-                                        ? 'bg-tsu-blue border-tsu-blue'
+                                        ? 'bg-tcu-blue border-tcu-blue'
                                         : 'border-white/30'
                                         }`}>
                                         {selectedSegmentIds.includes(seg.id) && (
@@ -242,14 +242,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
                         {/* Name */}
                         <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">選手姓名 (顯示於排行榜)</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tcu-blue-light transition-colors">選手姓名 (顯示於排行榜)</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     readOnly={!!isBound} // 綁定會員鎖定姓名
-                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tsu-blue-light/50 focus:border-tsu-blue-light/50 transition-all duration-300 font-bold ${isBound ? 'cursor-not-allowed opacity-90' : ''}`}
+                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tcu-blue-light/50 focus:border-tcu-blue-light/50 transition-all duration-300 font-bold ${isBound ? 'cursor-not-allowed opacity-90' : ''}`}
                                     placeholder="姓名"
                                     required
                                 />
@@ -266,14 +266,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
                         {/* Team */}
                         <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tsu-blue-light transition-colors">車隊名稱 {isBound && <span className="text-tsu-blue-light">(TCU已驗證)</span>}</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tcu-blue-light transition-colors">車隊名稱 {isBound && <span className="text-tcu-blue-light">(TCU已驗證)</span>}</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={team}
                                     onChange={(e) => setTeam(e.target.value)}
                                     readOnly={!!isBound} // 綁定會員鎖定車隊，未綁定可輸入
-                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none font-bold ${isBound ? 'cursor-not-allowed opacity-90' : 'focus:ring-2 focus:ring-tsu-blue-light/50'}`}
+                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none font-bold ${isBound ? 'cursor-not-allowed opacity-90' : 'focus:ring-2 focus:ring-tcu-blue-light/50'}`}
                                     placeholder={isBound ? "已自動帶入車隊" : "請輸入車隊名稱 (選填)"}
                                 />
                                 <Users className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
@@ -306,7 +306,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-tsu-blue-light hover:bg-tsu-blue text-white font-black py-5 rounded-2xl transition-all shadow-2xl shadow-tsu-blue/30 flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-sm disabled:opacity-50 active:scale-95 group/btn"
+                        className="w-full bg-tcu-blue-light hover:bg-tcu-blue text-white font-black py-5 rounded-2xl transition-all shadow-2xl shadow-tcu-blue/30 flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-sm disabled:opacity-50 active:scale-95 group/btn"
                     >
                         {isSubmitting ? (
                             <>

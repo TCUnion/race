@@ -22,9 +22,11 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, fontSize);
-        // 強制寫入 BODY 屬性與 CSS 變數作為備援機制
+        // 全局核心：直接調整 HTML 根節點大小，這會帶動所有 rem 單位
+        document.documentElement.style.fontSize = fontSizeValue;
+
+        // 輔助標記：保留 body 屬性供 CSS 微調
         document.body.setAttribute('data-tcu-font-size', fontSize);
-        document.documentElement.style.setProperty('--tcu-fs-active', fontSizeValue);
 
         // 排錯接口
         (window as any).debugTCUFontSize = {
@@ -32,16 +34,17 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             value: fontSizeValue,
             lastUpdate: new Date().toLocaleTimeString()
         };
+        console.log(`[FontSize] Global scale applied: ${fontSize} (${fontSizeValue})`);
     }, [fontSize, fontSizeValue]);
 
     function getFontSizeValue(size: FontSize): string {
         switch (size) {
-            case 'xs': return '12px';
-            case 'sm': return '16px';
-            case 'base': return '20px';
-            case 'lg': return '26px';
-            case 'xl': return '34px';
-            default: return '20px';
+            case 'xs': return '13px';   // 較小
+            case 'sm': return '14px';   // 略小
+            case 'base': return '16px'; // 標準 (1rem)
+            case 'lg': return '20px';   // 較大
+            case 'xl': return '24px';   // 特大
+            default: return '16px';
         }
     }
 

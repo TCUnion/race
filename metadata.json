@@ -1,5 +1,5 @@
 {
-  "name": "TSU Segment Challenge",
-  "description": "A comprehensive cycling challenge platform featuring segment leaderboards, personal performance dashboards, and Strava integration for the Taiwan Sports Union (TSU).",
+  "name": "TCU Segment Challenge",
+  "description": "A comprehensive cycling challenge platform featuring segment leaderboards, personal performance dashboards, and Strava integration for the Taiwan Cycling Union (TCU).",
   "requestFramePermissions": []
 }

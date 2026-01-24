@@ -691,7 +691,7 @@ const AdminPanel: React.FC = () => {
     if (loading && !session) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tsu-blue"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-tcu-blue"></div>
             </div>
         );
     }
@@ -707,7 +707,7 @@ const AdminPanel: React.FC = () => {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tsu-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tcu-blue"
                             required
                         />
                     </div>
@@ -717,7 +717,7 @@ const AdminPanel: React.FC = () => {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tsu-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tcu-blue"
                             required
                         />
                     </div>
@@ -727,7 +727,7 @@ const AdminPanel: React.FC = () => {
                             id="rememberMe"
                             checked={rememberMe}
                             onChange={(e) => setRememberMe(e.target.checked)}
-                            className="w-4 h-4 rounded border-slate-300 text-tsu-blue focus:ring-tsu-blue"
+                            className="w-4 h-4 rounded border-slate-300 text-tcu-blue focus:ring-tcu-blue"
                         />
                         <label htmlFor="rememberMe" className="text-sm font-bold text-slate-500 cursor-pointer">記住密碼</label>
                     </div>
@@ -735,7 +735,7 @@ const AdminPanel: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-tsu-blue hover:bg-tsu-blue-light text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-tsu-blue/20"
+                        className="w-full bg-tcu-blue hover:bg-tcu-blue-light text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-tcu-blue/20"
                     >
                         {loading ? '登入中...' : '立即登入'}
                     </button>
@@ -749,13 +749,13 @@ const AdminPanel: React.FC = () => {
             <div className="flex justify-between items-center mb-10">
                 <div>
                     <h1 className="text-4xl font-black italic uppercase tracking-tighter">
-                        管理後台 <span className="text-tsu-blue text-lg not-italic opacity-50 ml-2">Admin Dashboard</span>
+                        管理後台 <span className="text-tcu-blue text-lg not-italic opacity-50 ml-2">Admin Dashboard</span>
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 font-bold mt-1">
                         目前登入身份: {session.user.email}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-tsu-blue/10 text-tsu-blue px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-tcu-blue/10 text-tcu-blue px-2 py-0.5 rounded-full">
                             Settings: {siteSettings.find(s => s.key === 'app_version')?.value || 'v1.0.0'}
                         </span>
                         <span className="text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -765,7 +765,7 @@ const AdminPanel: React.FC = () => {
                         <button
                             onClick={handleVersionUpdate}
                             disabled={isUpdatingVersion}
-                            className="text-slate-400 hover:text-tsu-blue transition-colors"
+                            className="text-slate-400 hover:text-tcu-blue transition-colors"
                             title="更新偏好版本資訊"
                         >
                             <Edit2 className="w-3 h-3" />
@@ -792,7 +792,7 @@ const AdminPanel: React.FC = () => {
                             <button
                                 id="bulk-sync-btn"
                                 onClick={handleBulkSync}
-                                className="flex items-center gap-1 bg-tsu-blue/10 hover:bg-tsu-blue/20 text-tsu-blue px-3 py-1 rounded-lg text-xs font-bold transition-all border border-tsu-blue/20"
+                                className="flex items-center gap-1 bg-tcu-blue/10 hover:bg-tcu-blue/20 text-tcu-blue px-3 py-1 rounded-lg text-xs font-bold transition-all border border-tcu-blue/20"
                                 title="同步所有路段成績"
                             >
                                 <Database className="w-4 h-4" />
@@ -803,8 +803,8 @@ const AdminPanel: React.FC = () => {
                     </div>
 
                     {editingSegment ? (
-                        <form onSubmit={handleUpdateSegment} className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-tsu-blue">
-                            <h4 className="font-bold text-tsu-blue uppercase text-sm">
+                        <form onSubmit={handleUpdateSegment} className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-tcu-blue">
+                            <h4 className="font-bold text-tcu-blue uppercase text-sm">
                                 {editingSegment.id === 'new' ? '新增路段' : `編輯路段: ${editingSegment.strava_id}`}
                             </h4>
                             {editingSegment.id === 'new' && (
@@ -918,7 +918,7 @@ const AdminPanel: React.FC = () => {
                             <div className="flex gap-2 pt-2">
                                 <button
                                     type="submit"
-                                    className="flex-1 bg-tsu-blue text-white font-bold py-2 rounded-lg text-sm"
+                                    className="flex-1 bg-tcu-blue text-white font-bold py-2 rounded-lg text-sm"
                                 >
                                     儲存變更
                                 </button>
@@ -934,7 +934,7 @@ const AdminPanel: React.FC = () => {
                     ) : (
                         <div className="space-y-4">
                             {segments.map((seg) => (
-                                <div key={seg.id} className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 group hover:border-tsu-blue border border-transparent transition-all">
+                                <div key={seg.id} className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 group hover:border-tcu-blue border border-transparent transition-all">
                                     <div className="flex-1 min-w-0">
                                         <p className="font-bold text-sm sm:text-base break-words">{seg.name}</p>
                                         <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">ID: {seg.id}</p>
@@ -945,7 +945,7 @@ const AdminPanel: React.FC = () => {
                                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
                                         <button
                                             onClick={() => handleRefreshSegment(seg)}
-                                            className="text-slate-400 hover:text-tsu-blue transition-colors p-1"
+                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1"
                                             title="重新整理路段資料與地圖"
                                         >
                                             <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -953,7 +953,7 @@ const AdminPanel: React.FC = () => {
                                         <button
                                             id={`sync-btn-${seg.id}`}
                                             onClick={() => handleSyncEfforts(seg)}
-                                            className="text-slate-400 hover:text-tsu-blue transition-colors p-1"
+                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1"
                                             title="同步詳細成績至 DB"
                                         >
                                             <Database className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -977,7 +977,7 @@ const AdminPanel: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => setEditingSegment(seg)}
-                                            className="text-slate-400 hover:text-tsu-blue transition-colors p-1"
+                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1"
                                         >
                                             <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </button>
@@ -1098,7 +1098,7 @@ const AdminPanel: React.FC = () => {
                                         console.error('Segment fetch error:', err);
                                     }
                                 }}
-                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tsu-blue hover:text-tsu-blue transition-all"
+                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tcu-blue hover:text-tcu-blue transition-all"
                             >
                                 + 新增挑戰路段
                             </button>
@@ -1121,7 +1121,7 @@ const AdminPanel: React.FC = () => {
                                         setRegSearchTerm(e.target.value);
                                         setRegCurrentPage(1);
                                     }}
-                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tsu-blue/20 transition-all"
+                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tcu-blue/20 transition-all"
                                 />
                             </div>
                             <select
@@ -1130,7 +1130,7 @@ const AdminPanel: React.FC = () => {
                                     fetchRegistrations(val);
                                     setRegCurrentPage(1);
                                 }}
-                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tsu-blue/20 transition-all font-bold"
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold"
                             >
                                 <option value="">全部路段</option>
                                 {segments.map(seg => (
@@ -1143,14 +1143,14 @@ const AdminPanel: React.FC = () => {
                                     setRegPageSize(Number(e.target.value));
                                     setRegCurrentPage(1);
                                 }}
-                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tsu-blue/20 transition-all font-mono"
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tcu-blue/20 transition-all font-mono"
                             >
                                 <option value={10}>10/page</option>
                                 <option value={20}>20/page</option>
                                 <option value={50}>50/page</option>
                             </select>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => fetchRegistrations()} className="text-slate-400 hover:text-tsu-blue transition-colors p-2" title="重新整理">
+                                <button onClick={() => fetchRegistrations()} className="text-slate-400 hover:text-tcu-blue transition-colors p-2" title="重新整理">
                                     <RefreshCw className="w-4 h-4" />
                                 </button>
                             </div>
@@ -1203,7 +1203,7 @@ const AdminPanel: React.FC = () => {
                                                                         });
                                                                 }
                                                             }}
-                                                            className="font-mono text-tsu-blue hover:underline font-bold"
+                                                            className="font-mono text-tcu-blue hover:underline font-bold"
                                                         >
                                                             {reg.number || '派發'}
                                                         </button>
@@ -1252,7 +1252,7 @@ const AdminPanel: React.FC = () => {
                                     <button
                                         onClick={() => setRegCurrentPage(prev => prev + 1)}
                                         disabled={regCurrentPage * regPageSize >= registrations.filter(reg => reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())).length}
-                                        className="px-4 py-2 bg-tsu-blue text-white rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-tsu-blue-dark transition-colors"
+                                        className="px-4 py-2 bg-tcu-blue text-white rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-tcu-blue-dark transition-colors"
                                     >
                                         Next
                                     </button>
@@ -1266,7 +1266,7 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <div className="flex items-center gap-3">
-                            <Database className="w-5 h-5 text-tsu-blue" />
+                            <Database className="w-5 h-5 text-tcu-blue" />
                             <h3 className="text-xl font-black">API 權杖管理 (Strava Tokens)</h3>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -1280,7 +1280,7 @@ const AdminPanel: React.FC = () => {
                                         setTokenSearchTerm(e.target.value);
                                         setTokenCurrentPage(1);
                                     }}
-                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tsu-blue/20 transition-all"
+                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tcu-blue/20 transition-all"
                                 />
                             </div>
                             <select
@@ -1289,7 +1289,7 @@ const AdminPanel: React.FC = () => {
                                     setTokenPageSize(Number(e.target.value));
                                     setTokenCurrentPage(1);
                                 }}
-                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tsu-blue/20 transition-all font-mono"
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tcu-blue/20 transition-all font-mono"
                             >
                                 <option value={10}>10/page</option>
                                 <option value={20}>20/page</option>
@@ -1298,7 +1298,7 @@ const AdminPanel: React.FC = () => {
                             </select>
                             <button
                                 onClick={fetchStravaTokens}
-                                className="text-slate-400 hover:text-tsu-blue transition-colors p-2"
+                                className="text-slate-400 hover:text-tcu-blue transition-colors p-2"
                                 title="重新整理列表"
                             >
                                 <RefreshCw className={`w-4 h-4 ${isRefreshingTokens ? 'animate-spin' : ''}`} />
@@ -1310,22 +1310,22 @@ const AdminPanel: React.FC = () => {
                         <table className="w-full text-sm text-left">
                             <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <tr>
-                                    <th className="px-4 py-3 rounded-l-lg cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('athleteID')}>
+                                    <th className="px-4 py-3 rounded-l-lg cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('athleteID')}>
                                         Athlete ID {tokenSortField === 'athleteID' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('name')}>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('name')}>
                                         運動員名稱 {tokenSortField === 'name' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('createdAt')}>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('createdAt')}>
                                         建立日期 {tokenSortField === 'createdAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('expires_at')}>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('expires_at')}>
                                         過期時間 {tokenSortField === 'expires_at' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
+                                    <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
                                         綁定狀態 {tokenSortField === 'isBound' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tsu-blue transition-colors" onClick={() => toggleTokenSort('updatedAt')}>
+                                    <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('updatedAt')}>
                                         最後更新 {tokenSortField === 'updatedAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                 </tr>
@@ -1387,7 +1387,7 @@ const AdminPanel: React.FC = () => {
                             <button
                                 onClick={() => setTokenCurrentPage(prev => prev + 1)}
                                 disabled={tokenCurrentPage * tokenPageSize >= filteredTokens.length}
-                                className="px-4 py-2 bg-tsu-blue text-white rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-tsu-blue-dark transition-colors"
+                                className="px-4 py-2 bg-tcu-blue text-white rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-tcu-blue-dark transition-colors"
                             >
                                 Next
                             </button>
@@ -1414,7 +1414,7 @@ const AdminPanel: React.FC = () => {
                                         setMemberSearchTerm(e.target.value);
                                         setMemberCurrentPage(1); // 搜尋時重設頁碼
                                     }}
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-4 text-xs focus:ring-2 focus:ring-tsu-blue"
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-4 text-xs focus:ring-2 focus:ring-tcu-blue"
                                 />
                             </div>
 
@@ -1425,7 +1425,7 @@ const AdminPanel: React.FC = () => {
                                     setMemberPageSize(Number(e.target.value));
                                     setMemberCurrentPage(1);
                                 }}
-                                className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-3 text-xs font-bold focus:ring-tsu-blue"
+                                className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-3 text-xs font-bold focus:ring-tcu-blue"
                             >
                                 <option value={10}>10 筆/頁</option>
                                 <option value={100}>100 筆/頁</option>
@@ -1438,7 +1438,7 @@ const AdminPanel: React.FC = () => {
                                 </span>
                                 <button
                                     onClick={fetchAllMembers}
-                                    className="text-slate-400 hover:text-tsu-blue transition-colors p-2"
+                                    className="text-slate-400 hover:text-tcu-blue transition-colors p-2"
                                     title="重新整理列表"
                                 >
                                     <RefreshCw className="w-4 h-4" />
@@ -1513,7 +1513,7 @@ const AdminPanel: React.FC = () => {
                                                         <div className="text-[10px] text-slate-400 font-mono">{m.account ? m.account.replace(/(.{3})(.*)(.{3})/, "$1****$3") : '-'}</div>
                                                     </td>
                                                     <td className="px-4 py-4 border-x border-slate-100 dark:border-slate-700">
-                                                        <span className="px-2 py-0.5 bg-tsu-blue/10 text-tsu-blue text-[10px] font-bold rounded-full uppercase tracking-tighter">
+                                                        <span className="px-2 py-0.5 bg-tcu-blue/10 text-tcu-blue text-[10px] font-bold rounded-full uppercase tracking-tighter">
                                                             {m.member_type || '一般會員'}
                                                         </span>
                                                     </td>
@@ -1558,7 +1558,7 @@ const AdminPanel: React.FC = () => {
                                                 上一頁
                                             </button>
                                             <div className="flex items-center px-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                                                <span className="text-xs font-black text-tsu-blue">{memberCurrentPage}</span>
+                                                <span className="text-xs font-black text-tcu-blue">{memberCurrentPage}</span>
                                                 <span className="text-xs font-bold text-slate-400 mx-2">/</span>
                                                 <span className="text-xs font-bold text-slate-400">{totalPages}</span>
                                             </div>
@@ -1581,13 +1581,13 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-tsu-blue" />
+                            <Globe className="w-5 h-5 text-tcu-blue" />
                             SEO & 站點設定
                         </h3>
                         <button
                             onClick={handleSaveAllSettings}
                             disabled={isSavingSettings}
-                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
+                            className="bg-tcu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
                         >
                             {isSavingSettings ? '儲存中...' : '儲存設定'}
                         </button>
@@ -1606,14 +1606,14 @@ const AdminPanel: React.FC = () => {
                                     <textarea
                                         value={setting.value || ''}
                                         onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tsu-blue min-h-[100px]"
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tcu-blue min-h-[100px]"
                                     />
                                 ) : (
                                     <input
                                         type="text"
                                         value={setting.value || ''}
                                         onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tcu-blue"
                                     />
                                 )}
                             </div>
@@ -1625,13 +1625,13 @@ const AdminPanel: React.FC = () => {
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
-                            <Share2 className="w-5 h-5 text-tsu-blue" />
+                            <Share2 className="w-5 h-5 text-tcu-blue" />
                             頁尾連結設定
                         </h3>
                         <button
                             onClick={handleSaveAllSettings}
                             disabled={isSavingSettings}
-                            className="bg-tsu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
+                            className="bg-tcu-blue text-white px-6 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:opacity-50 transition-all"
                         >
                             {isSavingSettings ? '儲存中...' : '儲存設定'}
                         </button>
@@ -1641,11 +1641,11 @@ const AdminPanel: React.FC = () => {
                         {siteSettings.filter(s => s.key.startsWith('footer_link_')).map((setting) => {
                             // 根據 key 決定圖示
                             const getIcon = (key: string) => {
-                                if (key === 'footer_link_share') return <Share2 className="w-4 h-4 text-tsu-blue" />;
-                                if (key === 'footer_link_doc') return <FileText className="w-4 h-4 text-tsu-blue" />;
-                                if (key === 'footer_link_support') return <LifeBuoy className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_share') return <Share2 className="w-4 h-4 text-tcu-blue" />;
+                                if (key === 'footer_link_doc') return <FileText className="w-4 h-4 text-tcu-blue" />;
+                                if (key === 'footer_link_support') return <LifeBuoy className="w-4 h-4 text-tcu-blue" />;
                                 if (key === 'footer_link_line') return <MessageCircle className="w-4 h-4 text-[#06c755]" />;
-                                if (key === 'footer_link_web') return <Globe className="w-4 h-4 text-tsu-blue" />;
+                                if (key === 'footer_link_web') return <Globe className="w-4 h-4 text-tcu-blue" />;
                                 return null;
                             };
                             return (
@@ -1664,7 +1664,7 @@ const AdminPanel: React.FC = () => {
                                         value={setting.value || ''}
                                         onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
                                         placeholder="https://..."
-                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tsu-blue"
+                                        className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tcu-blue"
                                     />
                                 </div>
                             );

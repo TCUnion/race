@@ -30,8 +30,8 @@
   --color-brand-secondary: #ea580c;
 
   /* TCU / Strava 自訂顏色 - 從 tailwind.config.js 移植 */
-  --color-tsu-blue: #0056A4;
-  --color-tsu-blue-light: #007bff;
+  --color-tcu-blue: #0056A4;
+  --color-tcu-blue-light: #007bff;
   --color-strava-orange: #FC6100;
   --color-strava-grey-dark: #242428;
   --color-strava-grey-light: #A1A1A1;

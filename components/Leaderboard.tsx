@@ -71,7 +71,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
 
   // 定義主題色
   const barColors = [
-    'border-tsu-blue',     // 藍
+    'border-tcu-blue',     // 藍
     'border-strava-orange', // 橘
     'border-emerald-500',   // 綠
     'border-purple-500',   // 紫
@@ -119,7 +119,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsTableExpanded(!isTableExpanded)}
-              className="text-slate-400 hover:text-tsu-blue transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="text-slate-400 hover:text-tcu-blue transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               {isTableExpanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
             </button>
@@ -129,14 +129,14 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6 sm:mb-8">
           {[
             { label: '參賽', value: stats.totalAthletes ?? '-', color: 'text-slate-900', icon: Users },
-            { label: '完成', value: stats.completedAthletes ?? '-', color: 'text-tsu-blue', icon: Trophy },
+            { label: '完成', value: stats.completedAthletes ?? '-', color: 'text-tcu-blue', icon: Trophy },
             { label: '最快', value: formatTime(stats.bestTime), color: 'text-red-500', icon: Zap },
             { label: '均時', value: formatTime(stats.avgTime), color: 'text-slate-900', icon: Dna },
             { label: '功率', value: stats.maxPower ? `${stats.maxPower}W` : '-', color: 'text-orange-500', icon: Zap },
             { label: '速度', value: stats.avgSpeed ? `${(stats.avgSpeed * 3.6).toFixed(1)}` : '-', color: 'text-slate-900', icon: BarChart3 },
           ].map((stat, i) => (
-            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:border-tsu-blue/30 transition-all cursor-pointer">
-              <stat.icon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-300 group-hover:text-tsu-blue mb-1 sm:mb-2 transition-colors" />
+            <div key={i} className="bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-50 dark:border-slate-800 flex flex-col items-center justify-center text-center group hover:border-tcu-blue/30 transition-all cursor-pointer">
+              <stat.icon className="w-3 h-3 sm:w-4 sm:h-4 text-slate-300 group-hover:text-tcu-blue mb-1 sm:mb-2 transition-colors" />
               <span className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider sm:tracking-widest mb-0.5 sm:mb-1">{stat.label}</span>
               <span className={`text-sm sm:text-base font-black italic ${stat.color} dark:text-white`}>
                 {stat.value}
@@ -172,7 +172,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {processedData.map((p) => (
-                    <tr key={`${p.athlete_id}-${p.activity_id}`} className="hover:bg-slate-50 dark:hover:bg-tsu-blue/5 transition-colors group cursor-pointer">
+                    <tr key={`${p.athlete_id}-${p.activity_id}`} className="hover:bg-slate-50 dark:hover:bg-tcu-blue/5 transition-colors group cursor-pointer">
                       <td className="py-4 text-center">
                         <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-black text-xs italic shadow-sm ${p.rank === 1 ? 'bg-amber-400 text-white shadow-amber-400/20' :
                           p.rank === 2 ? 'bg-slate-300 text-slate-700 shadow-slate-300/20' :
@@ -183,13 +183,13 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                       </td>
                       <td className="py-4">
                         <div className="flex items-center gap-3">
-                          <img src={p.profile_medium || p.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} alt={p.name} className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-tsu-blue transition-colors" />
+                          <img src={p.profile_medium || p.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} alt={p.name} className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-tcu-blue transition-colors" />
                           <div>
-                            <div className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-tsu-blue transition-colors flex items-center gap-1.5">
+                            <div className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-tcu-blue transition-colors flex items-center gap-1.5">
                               {p.name}
                               {p.is_tcu && <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" title="TCU 會員" />}
                             </div>
-                            {p.team && <span className="text-[9px] font-black text-tsu-blue/70 dark:text-tsu-blue uppercase tracking-widest">{p.team}</span>}
+                            {p.team && <span className="text-[9px] font-black text-tcu-blue/70 dark:text-tcu-blue uppercase tracking-widest">{p.team}</span>}
                           </div>
                         </div>
                       </td>
@@ -252,7 +252,7 @@ const Leaderboard: React.FC = () => {
   if (isGlobalLoading && segments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        <RefreshCw className="w-16 h-16 text-tsu-blue animate-spin" />
+        <RefreshCw className="w-16 h-16 text-tcu-blue animate-spin" />
         <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-[0.3em] italic animate-pulse">
           Synchronizing Data
         </h2>
@@ -265,7 +265,7 @@ const Leaderboard: React.FC = () => {
       {/* 頁面標題 */}
       <div className="w-full py-8 sm:py-16 text-center">
         <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-slate-900 dark:text-white mb-4 sm:mb-6 italic uppercase tracking-tighter font-display">
-          <span className="block sm:inline">Global</span> <span className="text-tsu-blue">Leaderboard</span>
+          <span className="block sm:inline">Global</span> <span className="text-tcu-blue">Leaderboard</span>
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-2 px-4">
           <span>Real-time</span>
@@ -280,26 +280,26 @@ const Leaderboard: React.FC = () => {
       </div>
 
       {/* 全局篩選與排序 */}
-      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-tsu-blue/5 mb-8 sm:mb-16 z-30">
+      <div className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-tcu-blue/5 mb-8 sm:mb-16 z-30">
         <div className="flex flex-col gap-4 sm:gap-6">
           <div className="flex-1 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-tsu-blue transition-colors" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-tcu-blue transition-colors" />
             <input
               type="text"
               placeholder="搜尋選手..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 sm:h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tsu-blue focus:ring-4 focus:ring-tsu-blue/10 rounded-xl sm:rounded-2xl text-sm font-bold transition-all text-slate-900 dark:text-white"
+              className="w-full h-12 sm:h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tcu-blue focus:ring-4 focus:ring-tcu-blue/10 rounded-xl sm:rounded-2xl text-sm font-bold transition-all text-slate-900 dark:text-white"
             />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="relative group flex-1 sm:min-w-[160px] sm:max-w-[200px]">
-              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-tsu-blue transition-colors" />
+              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-tcu-blue transition-colors" />
               <select
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
-                className="w-full h-12 sm:h-14 pl-10 pr-10 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tsu-blue focus:ring-4 focus:ring-tsu-blue/10 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-widest appearance-none cursor-pointer dark:text-white text-slate-900"
+                className="w-full h-12 sm:h-14 pl-10 pr-10 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-tcu-blue focus:ring-4 focus:ring-tcu-blue/10 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-widest appearance-none cursor-pointer dark:text-white text-slate-900"
               >
                 <option value="">全部車隊</option>
                 {teams.map(t => <option key={t} value={t}>{t}</option>)}
@@ -316,7 +316,7 @@ const Leaderboard: React.FC = () => {
                 <button
                   key={opt.id}
                   onClick={() => setSortBy(opt.id)}
-                  className={`flex-1 h-10 sm:h-12 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all ${sortBy === opt.id ? 'bg-white dark:bg-slate-700 text-tsu-blue shadow-md' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                  className={`flex-1 h-10 sm:h-12 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all ${sortBy === opt.id ? 'bg-white dark:bg-slate-700 text-tcu-blue shadow-md' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
                 >
                   {opt.label}
                 </button>
@@ -325,7 +325,7 @@ const Leaderboard: React.FC = () => {
 
             <button
               onClick={() => refresh()}
-              className="h-12 sm:h-14 px-6 sm:px-8 rounded-xl sm:rounded-2xl bg-tsu-blue text-white font-black uppercase text-xs tracking-[0.15em] sm:tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-tsu-blue/20 flex items-center justify-center gap-2 sm:gap-3"
+              className="h-12 sm:h-14 px-6 sm:px-8 rounded-xl sm:rounded-2xl bg-tcu-blue text-white font-black uppercase text-xs tracking-[0.15em] sm:tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-tcu-blue/20 flex items-center justify-center gap-2 sm:gap-3"
             >
               <RefreshCw className="w-4 h-4" />
               刷新
@@ -368,19 +368,19 @@ const Leaderboard: React.FC = () => {
 
       {/* Global Call to Action */}
       <div className="mt-24 p-12 md:p-20 rounded-[3rem] bg-slate-900 dark:bg-slate-900/50 border border-slate-800 text-center relative overflow-hidden group w-full max-w-4xl shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-tsu-blue/20 to-strava-orange/10 transform scale-150 -rotate-12 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-tcu-blue/20 to-strava-orange/10 transform scale-150 -rotate-12 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
         <div className="relative z-10 flex flex-col items-center">
-          <div className="w-20 h-20 bg-tsu-blue/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 group-hover:rotate-12 transition-transform duration-500">
-            <Trophy className="w-10 h-10 text-tsu-blue" />
+          <div className="w-20 h-20 bg-tcu-blue/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 group-hover:rotate-12 transition-transform duration-500">
+            <Trophy className="w-10 h-10 text-tcu-blue" />
           </div>
           <h2 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter font-display mb-6">
-            Ready to claim your <span className="text-tsu-blue">Crown</span>?
+            Ready to claim your <span className="text-tcu-blue">Crown</span>?
           </h2>
           <p className="text-slate-400 font-medium mb-12 max-w-md mx-auto leading-relaxed">
             連結你的 Strava 帳號即可參與各項賽事挑戰，自動同步數據，展示你的最強實力。
           </p>
           <div className="flex flex-col sm:flex-row gap-6">
-            <button className="h-16 px-12 rounded-2xl bg-tsu-blue text-white font-black uppercase text-sm tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-2xl shadow-tsu-blue/30 group/btn">
+            <button className="h-16 px-12 rounded-2xl bg-tcu-blue text-white font-black uppercase text-sm tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-2xl shadow-tcu-blue/30 group/btn">
               Join Challenge
               <ChevronRight className="inline-block w-4 h-4 ml-2 transform group-hover/btn:translate-x-1 transition-transform" />
             </button>

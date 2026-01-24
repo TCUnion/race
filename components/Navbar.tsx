@@ -188,33 +188,33 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <nav className="flex items-center gap-x-3 lg:gap-x-5 xl:gap-x-8">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.LANDING ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.explore')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.LEADERBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.ranking')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.DASHBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.dashboard')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.MAINTENANCE ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.records')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
               className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.MEMBER_BINDING
-                ? (isBound === false ? 'text-yellow-400 border-b-2 border-yellow-400 pb-1' : 'text-tsu-blue border-b-2 border-tsu-blue pb-1')
-                : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tsu-blue')
+                ? (isBound === false ? 'text-yellow-400 border-b-2 border-yellow-400 pb-1' : 'text-tcu-blue border-b-2 border-tcu-blue pb-1')
+                : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tcu-blue')
                 } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''} ${isBound === null ? 'opacity-50 grayscale pointer-events-none' : ''}`}
             >
               {isBound === true ? t('nav.members') : t('nav.members_bind')}
@@ -222,7 +222,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {isBound && (
               <button
                 onClick={() => onNavigate(ViewType.TEAM_DASHBOARD)}
-                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
               >
                 <Users2 className="w-3 h-3" />
                 {t('nav.my_team')}
@@ -231,7 +231,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {isBound && (
               <button
                 onClick={() => handleNavigate(ViewType.AI_COACH)}
-                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.AI_COACH ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.AI_COACH ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
               >
                 <Zap className="w-3 h-3" />
                 {t('nav.ai_coach')}
@@ -251,14 +251,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             <LanguageSwitcher />
             <ThemeToggle />
             {isLoading ? (
-              <div className="flex items-center gap-2 text-tsu-blue">
+              <div className="flex items-center gap-2 text-tcu-blue">
                 <RefreshCw className="w-4 h-4 animate-spin" />
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('common.authorizing')}</span>
               </div>
             ) : athlete ? (
               <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800 group">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider group-hover:text-tsu-blue transition-colors">
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider group-hover:text-tcu-blue transition-colors">
                     {athlete.firstname} {athlete.lastname}
                   </span>
                   <div className="flex items-center gap-1">
@@ -272,7 +272,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   <img
                     src={athlete.profile || "/placeholder-avatar.png"}
                     alt="Athlete"
-                    className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 group-hover:border-tsu-blue transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 group-hover:border-tcu-blue transition-all cursor-pointer"
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                   />
                   {isBound && (
@@ -291,7 +291,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             ) : (
               <button
                 onClick={handleConnect}
-                className="group relative flex items-center gap-2 bg-white hover:bg-tsu-blue text-black hover:text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-white/5 active:shadow-none"
+                className="group relative flex items-center gap-2 bg-white hover:bg-tcu-blue text-black hover:text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-white/5 active:shadow-none"
               >
                 <StravaLogo className="w-4 h-4 transition-transform group-hover:rotate-12" />
                 <span>{t('common.connect_strava').toUpperCase()}</span>
@@ -314,7 +314,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           )}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-slate-700 dark:text-white hover:text-tsu-blue transition-colors p-1"
+            className="text-slate-700 dark:text-white hover:text-tcu-blue transition-colors p-1"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -327,7 +327,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           <nav className="flex flex-col p-4 gap-2">
             {athlete && (
               <div className="flex items-center gap-4 p-4 bg-slate-100 dark:bg-slate-900/50 rounded-2xl mb-4 border border-slate-200 dark:border-slate-800">
-                <img src={athlete.profile} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-tsu-blue" />
+                <img src={athlete.profile} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-tcu-blue" />
                 <div className="flex-1">
                   <div className="text-slate-900 dark:text-white font-black uppercase text-sm">{athlete.firstname} {athlete.lastname}</div>
                   <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
@@ -340,28 +340,28 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LANDING ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LANDING ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <Compass className="w-5 h-5 mr-3" />
               {t('nav.explore')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LEADERBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LEADERBOARD ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <BarChart3 className="w-5 h-5 mr-3" />
               {t('nav.ranking')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.DASHBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.DASHBOARD ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <LayoutDashboard className="w-5 h-5 mr-3" />
               {t('nav.dashboard')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.MAINTENANCE ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <Wrench className="w-5 h-5 mr-3" />
               {t('nav.records')}
@@ -369,7 +369,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
               className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.MEMBER_BINDING
-                ? (isBound === false ? 'bg-yellow-400/10 text-yellow-400' : 'bg-tsu-blue/10 text-tsu-blue')
+                ? (isBound === false ? 'bg-yellow-400/10 text-yellow-400' : 'bg-tcu-blue/10 text-tcu-blue')
                 : (isBound === false ? 'text-yellow-400/90 hover:bg-yellow-400/5' : 'text-slate-400 hover:bg-slate-800')
                 } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow ring-inset mx-2' : ''}`}
             >
@@ -383,7 +383,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   setIsMenuOpen(false);
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${currentView === ViewType.TEAM_DASHBOARD
-                  ? 'bg-tsu-blue/10 text-tsu-blue'
+                  ? 'bg-tcu-blue/10 text-tcu-blue'
                   : 'text-slate-500 hover:bg-slate-50'
                   }`}
               >
@@ -396,7 +396,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => handleNavigate(ViewType.AI_COACH)}
-                  className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.AI_COACH ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+                  className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.AI_COACH ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
                 >
                   <Zap className="w-5 h-5 mr-3" />
                   {t('nav.ai_coach')}
@@ -406,7 +406,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   <div className="flex flex-col gap-2 px-2 py-3 bg-slate-50 dark:bg-slate-900/30 rounded-2xl mx-2 border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between px-2">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">字型大小</span>
-                      <span className="text-[8px] font-bold text-tsu-blue bg-tsu-blue/10 px-1.5 py-0.5 rounded uppercase">{fontSize}</span>
+                      <span className="text-[8px] font-bold text-tcu-blue bg-tcu-blue/10 px-1.5 py-0.5 rounded uppercase">{fontSize}</span>
                     </div>
                     <div className="grid grid-cols-5 gap-1 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
                       {(['xs', 'sm', 'base', 'lg', 'xl'] as FontSize[]).map((size) => (
@@ -414,8 +414,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                           key={size}
                           onClick={() => setFontSize(size)}
                           className={`h-9 rounded-lg flex items-center justify-center text-[10px] font-black transition-all active:scale-90 ${fontSize === size
-                            ? 'bg-tsu-blue text-white shadow-lg'
-                            : 'text-slate-400 hover:text-tsu-blue hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                            ? 'bg-tcu-blue text-white shadow-lg'
+                            : 'text-slate-400 hover:text-tcu-blue hover:bg-slate-50 dark:hover:bg-slate-700/50'
                             }`}
                         >
                           {size.toUpperCase()}

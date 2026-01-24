@@ -15,8 +15,8 @@ export default {
     theme: {
         extend: {
             colors: {
-                "tsu-blue": "#0056A4",
-                "tsu-blue-light": "#007bff",
+                "tcu-blue": "#0056A4",
+                "tcu-blue-light": "#007bff",
                 "strava-orange": "#FC6100",
                 "strava-grey-dark": "#242428",
                 "strava-grey-light": "#A1A1A1",
@@ -53,7 +53,7 @@ export default {
     safelist: [
         'animate-glow-blue',
         'ring-2',
-        'ring-tsu-blue'
+        'ring-tcu-blue'
     ],
     plugins: [
         forms,

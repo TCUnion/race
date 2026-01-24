@@ -98,7 +98,7 @@ const TeamDashboard: React.FC = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <Loader2 className="w-8 h-8 animate-spin text-tsu-blue" />
+                <Loader2 className="w-8 h-8 animate-spin text-tcu-blue" />
             </div>
         );
     }
@@ -117,12 +117,12 @@ const TeamDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-sm border border-slate-200 dark:border-slate-800 mb-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-tsu-blue/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-tcu-blue/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
 
                 <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-2">
-                        <div className="bg-tsu-blue/10 p-3 rounded-2xl">
-                            <Users2 className="w-8 h-8 text-tsu-blue" />
+                        <div className="bg-tcu-blue/10 p-3 rounded-2xl">
+                            <Users2 className="w-8 h-8 text-tcu-blue" />
                         </div>
                         <div>
                             <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 dark:text-white">
@@ -148,7 +148,7 @@ const TeamDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('members')}
                     className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all ${activeTab === 'members'
-                        ? 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
                         : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
                 >
@@ -157,7 +157,7 @@ const TeamDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('races')}
                     className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all ${activeTab === 'races'
-                        ? 'bg-tsu-blue text-white shadow-lg shadow-tsu-blue/30'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
                         : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
                 >
@@ -270,7 +270,7 @@ const TeamDashboard: React.FC = () => {
                                             {/* 年齡 */}
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold ${member.age
-                                                    ? 'bg-tsu-blue/10 text-tsu-blue'
+                                                    ? 'bg-tcu-blue/10 text-tcu-blue'
                                                     : 'text-slate-300'
                                                     }`}>
                                                     {member.age || '-'}
@@ -381,7 +381,7 @@ const TeamDashboard: React.FC = () => {
                                         </button>
                                         <button
                                             type="submit"
-                                            className="px-6 py-2 bg-tsu-blue text-white rounded-xl font-bold hover:bg-tsu-blue-dark"
+                                            className="px-6 py-2 bg-tcu-blue text-white rounded-xl font-bold hover:bg-tcu-blue-dark"
                                         >
                                             建立
                                         </button>
@@ -390,7 +390,7 @@ const TeamDashboard: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={() => setIsCreatingRace(true)}
-                                    className="w-full flex items-center justify-center gap-2 py-4 text-slate-400 hover:text-tsu-blue hover:bg-white dark:hover:bg-slate-800 transition-all rounded-xl font-bold uppercase tracking-widest"
+                                    className="w-full flex items-center justify-center gap-2 py-4 text-slate-400 hover:text-tcu-blue hover:bg-white dark:hover:bg-slate-800 transition-all rounded-xl font-bold uppercase tracking-widest"
                                 >
                                     <Plus className="w-5 h-5" />
                                     建立新賽事
@@ -401,7 +401,7 @@ const TeamDashboard: React.FC = () => {
 
                     <div className="grid gap-4">
                         {races.map((race) => (
-                            <div key={race.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 flex justify-between items-center group hover:border-tsu-blue/30 transition-all">
+                            <div key={race.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 flex justify-between items-center group hover:border-tcu-blue/30 transition-all">
                                 <div>
                                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">{race.name}</h3>
                                     <div className="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-wider">

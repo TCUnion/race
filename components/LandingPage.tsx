@@ -35,7 +35,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
   // 定義多組配色主題
   const themes = [
-    { primary: 'bg-tsu-blue', shadow: 'shadow-tsu-blue/30', gradient: 'rgba(0, 102, 204, 0.4)' }, // 經典藍
+    { primary: 'bg-tcu-blue', shadow: 'shadow-tcu-blue/30', gradient: 'rgba(0, 102, 204, 0.4)' }, // 經典藍
     { primary: 'bg-strava-orange', shadow: 'shadow-strava-orange/30', gradient: 'rgba(252, 76, 2, 0.4)' }, // Strava 橘
     { primary: 'bg-emerald-600', shadow: 'shadow-emerald-600/30', gradient: 'rgba(5, 150, 105, 0.4)' }, // 森林綠
     { primary: 'bg-purple-600', shadow: 'shadow-purple-600/30', gradient: 'rgba(124, 58, 237, 0.4)' }, // 幻影紫
@@ -109,9 +109,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
     : `linear-gradient(${currentTheme.gradient} 0%, rgba(248, 250, 252, 0.95) 100%)`;
 
   return (
-    <div className="flex flex-col items-center w-full pb-20 animate-fade-in">
+    <div className="flex flex-col items-center w-full pb-10 animate-fade-in">
       {/* Hero Section */}
-      <div className="w-full max-w-[1200px] px-4 py-8">
+      <div className="w-full max-w-[1200px] px-4 py-2">
         <div className="relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-strava-grey-dark shadow-2xl group transition-all duration-700">
           <div
             className="flex min-h-[380px] sm:min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
@@ -193,18 +193,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
         </div>
 
         {/* Dynamic Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-4">
           {dynamicStats.map((stat, i) => (
-            <div key={i} className="flex flex-col gap-1 rounded-2xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tsu-blue/30 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer min-h-[140px] group">
-              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-tsu-blue transition-colors">{stat.label}</p>
-              <div className="h-10 flex items-center">
+            <div key={i} className="flex flex-col gap-1 rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-tcu-blue/30 hover:shadow-lg transition-all cursor-pointer group">
+              <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-tcu-blue transition-colors">{stat.label}</p>
+              <div className="flex items-baseline gap-2">
                 <p className={`text-slate-900 dark:text-white text-3xl font-black italic ${isLoading ? 'animate-pulse' : ''}`}>
                   {stat.value === '-' && isLoading ? '\u00A0' : stat.value}
                 </p>
               </div>
-              <p className={`text-tsu-blue text-xs font-bold uppercase mt-2 truncate ${isLoading ? 'animate-pulse' : ''}`}>
-                {stat.footer}
-              </p>
             </div>
           ))}
         </div>
@@ -216,7 +213,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
               <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-2 bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <MapIcon className="w-5 h-5 text-tsu-blue flex-shrink-0" />
+                  <MapIcon className="w-5 h-5 text-tcu-blue flex-shrink-0" />
                   <h2 className="text-slate-900 dark:text-white text-base sm:text-lg font-black uppercase tracking-tight italic">{t('landing.map_title')}</h2>
                 </div>
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
@@ -254,12 +251,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <section className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-tsu-blue" />
+                  <BarChart3 className="w-5 h-5 text-tcu-blue" />
                   <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">{t('landing.leaderboard_preview')}</h2>
                 </div>
                 <button
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // 這裡應該導向 Leaderboard View 或頁面
-                  className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1 group"
+                  className="text-tcu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1 group"
                 >
                   {t('landing.view_full_leaderboard')}
                   <ChevronRightIcon className="w-3 h-3 transition-transform group-hover:translate-x-1" />
@@ -268,7 +265,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {isLoading ? (
                   <div className="p-8 text-center">
-                    <RefreshCw className="w-8 h-8 text-tsu-blue animate-spin mx-auto mb-4" />
+                    <RefreshCw className="w-8 h-8 text-tcu-blue animate-spin mx-auto mb-4" />
                     <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">{t('landing.loading_leaderboard')}</p>
                   </div>
                 ) : (
@@ -277,7 +274,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                     <p className="text-sm font-bold uppercase tracking-widest">{t('landing.check_dashboard')}</p>
                     <button
                       onClick={onRegister}
-                      className="mt-4 text-tsu-blue text-xs font-black uppercase tracking-widest hover:brightness-110 underline decoration-2 underline-offset-4"
+                      className="mt-4 text-tcu-blue text-xs font-black uppercase tracking-widest hover:brightness-110 underline decoration-2 underline-offset-4"
                     >
                       {t('landing.join_challenge')}
                     </button>
@@ -308,7 +305,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       { label: t('landing.avg_grade'), value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
                       { label: t('landing.max_grade'), value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
                       { label: t('landing.athlete_count'), value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
-                      { label: t('landing.entry_fee'), value: 'FREE', color: 'text-tsu-blue' }
+                      { label: t('landing.entry_fee'), value: 'FREE', color: 'text-tcu-blue' }
                     ].map((item, i) => (
                       <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0 hover:bg-white/50 dark:hover:bg-white/5 rounded px-1 transition-colors">
                         <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[9px]">{item.label}</span>
@@ -331,7 +328,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               )}
             </section>
 
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tsu-blue shadow-lg relative overflow-hidden transition-all hover:shadow-xl">
+            <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tcu-blue shadow-lg relative overflow-hidden transition-all hover:shadow-xl">
               <button
                 type="button"
                 className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic"
@@ -349,7 +346,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   <div className="mt-6">
                     <StravaConnect />
                     <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
-                      {t('landing.policy_agree')} <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">{t('landing.privacy_policy')}</a>
+                      {t('landing.policy_agree')} <a className="underline hover:text-tcu-blue transition-colors" href="/privacy-policy.html">{t('landing.privacy_policy')}</a>
                     </p>
                   </div>
                 </div>
@@ -365,7 +362,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 <div className="space-y-3">
                   {segment?.KOM && (
                     <div className="flex justify-between items-center group">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-tsu-blue transition-colors">{t('landing.kom')}</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-tcu-blue transition-colors">{t('landing.kom')}</span>
                       <span className="text-lg font-black text-strava-orange italic">{segment.KOM}</span>
                     </div>
                   )}
