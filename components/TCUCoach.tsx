@@ -126,7 +126,7 @@ const TCUCoach: React.FC = () => {
 
                         <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                             <div
-                                className={`px-5 py-3.5 rounded-2xl shadow-sm font-medium leading-relaxed whitespace-pre-wrap transition-all duration-300 ${msg.role === 'user'
+                                className={`px-5 py-3.5 rounded-2xl shadow-sm font-medium leading-relaxed whitespace-pre-wrap transition-[font-size,background-color,color] duration-200 ${msg.role === 'user'
                                     ? 'bg-tsu-blue text-white rounded-tr-none'
                                     : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
                                     }`}

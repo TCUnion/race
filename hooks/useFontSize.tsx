@@ -27,11 +27,11 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     function getFontSizeValue(size: FontSize): string {
         switch (size) {
             case 'xs': return '12px';
-            case 'sm': return '14px';
-            case 'base': return '16px';
-            case 'lg': return '18px';
-            case 'xl': return '22px';
-            default: return '16px';
+            case 'sm': return '16px';
+            case 'base': return '20px';
+            case 'lg': return '26px';
+            case 'xl': return '34px';
+            default: return '20px';
         }
     }
 
