@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
+import ThemeToggle from './ThemeToggle';
 import { useAuth, StravaAthlete } from '../hooks/useAuth';
 import { API_BASE_URL } from '../lib/api_config';
 
@@ -238,6 +239,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           </nav>
 
           <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
+            <ThemeToggle />
             {isLoading ? (
               <div className="flex items-center gap-2 text-tsu-blue">
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -289,7 +291,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="flex md:hidden items-center gap-4">
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle />
           {!athlete && !isLoading && (
             <button
               onClick={handleConnect}
