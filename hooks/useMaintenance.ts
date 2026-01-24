@@ -84,6 +84,18 @@ export interface MaintenanceSetting {
   athlete_id: string;
 }
 
+// 壽命設定（對應 bike_lifespan_settings 表）
+export interface LifespanSetting {
+  id: string;
+  bike_id: string;
+  maintenance_type_id: string;
+  athlete_id: string;
+  lifespan_km?: number;    // 里程壽命 (公里)
+  lifespan_days?: number;  // 時間壽命 (天數)
+  created_at: string;
+  updated_at: string;
+}
+
 // 保養狀態
 export type MaintenanceStatus = 'ok' | 'due_soon' | 'overdue';
 
@@ -133,6 +145,7 @@ export const useMaintenance = () => {
   const [maintenanceTypes, setMaintenanceTypes] = useState<MaintenanceType[]>([]);
   const [records, setRecords] = useState<BikeMaintenanceRecord[]>([]);
   const [settings, setSettings] = useState<MaintenanceSetting[]>([]);
+  const [lifespanSettings, setLifespanSettings] = useState<LifespanSetting[]>([]);
   const [appSettings, setAppSettings] = useState<AppSetting[]>([]); // New state for app settings
   const [activities, setActivities] = useState<StravaActivity[]>([]); // 新增活動資料狀態
   const [loading, setLoading] = useState(true);
@@ -160,8 +173,8 @@ export const useMaintenance = () => {
         return;
       }
 
-      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、活動紀錄、App設定
-      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, activitiesResult, appSettingsResult] = await Promise.all([
+      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、壽命設定、活動紀錄、App設定
+      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, lifespanSettingsResult, activitiesResult, appSettingsResult] = await Promise.all([
         supabase
           .from('bikes')
           .select('*')
@@ -185,6 +198,10 @@ export const useMaintenance = () => {
           .from('bike_maintenance_settings')
           .select('*')
           .eq('athlete_id', athleteId),
+        supabase
+          .from('bike_lifespan_settings')
+          .select('*')
+          .eq('athlete_id', athleteId),
         // 載入最近一年的活動紀錄用於計算里程
         supabase
           .from('strava_activities')
@@ -204,6 +221,7 @@ export const useMaintenance = () => {
       if (typesResult.error) throw typesResult.error;
       if (recordsResult.error) throw recordsResult.error;
       if (settingsResult.error) throw settingsResult.error;
+      if (lifespanSettingsResult.error) console.warn('載入壽命設定失敗:', lifespanSettingsResult.error);
       if (activitiesResult.error) throw activitiesResult.error;
 
       setBikes(bikesResult.data || []);
@@ -211,6 +229,7 @@ export const useMaintenance = () => {
       setMaintenanceTypes(typesResult.data || []);
       setRecords(recordsResult.data || []);
       setSettings(settingsResult.data || []);
+      setLifespanSettings(lifespanSettingsResult.data || []);
       setActivities(activitiesResult.data || []);
       setAppSettings(appSettingsResult.data || []);
     } catch (err: any) {
@@ -318,6 +337,44 @@ export const useMaintenance = () => {
       throw err;
     }
   };
+
+  // 更新壽命設定
+  const updateLifespanSetting = async (bikeId: string, typeId: string, lifespanKm?: number, lifespanDays?: number) => {
+    try {
+      const athleteId = getAthleteId();
+      if (!athleteId) throw new Error('Athlete ID not found');
+
+      const { data, error } = await supabase
+        .from('bike_lifespan_settings')
+        .upsert({
+          bike_id: bikeId,
+          maintenance_type_id: typeId,
+          athlete_id: athleteId,
+          lifespan_km: lifespanKm,
+          lifespan_days: lifespanDays
+        }, {
+          onConflict: 'bike_id,maintenance_type_id'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setLifespanSettings(prev => {
+        const remaining = prev.filter(s => !(s.bike_id === bikeId && s.maintenance_type_id === typeId));
+        return [...remaining, data];
+      });
+      return data;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  // 取得特定腳踏車的壽命設定
+  const getLifespanSetting = useCallback((bikeId: string, typeId: string): LifespanSetting | undefined => {
+    return lifespanSettings.find(s => s.bike_id === bikeId && s.maintenance_type_id === typeId);
+  }, [lifespanSettings]);
 
   // 刪除保養紀錄
   const deleteMaintenanceRecord = async (id: string) => {
@@ -646,6 +703,9 @@ export const useMaintenance = () => {
     refresh: fetchData,
     updateAppSetting,
     getAppSetting,
-    appSettings
+    appSettings,
+    lifespanSettings,
+    updateLifespanSetting,
+    getLifespanSetting
   };
 };

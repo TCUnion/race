@@ -117,7 +117,10 @@ const MaintenanceDashboard: React.FC = () => {
     refresh: fetchData,
     updateAppSetting,
     getAppSetting,
-    appSettings
+    appSettings,
+    lifespanSettings,
+    updateLifespanSetting,
+    getLifespanSetting
   } = useMaintenance();
 
   // 排序狀態
@@ -212,12 +215,18 @@ const MaintenanceDashboard: React.FC = () => {
 
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'reminders' | 'history'>('reminders');
+  const [activeTab, setActiveTab] = useState<'reminders' | 'table' | 'history'>('reminders');
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editInterval, setEditInterval] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [selectedHistoryType, setSelectedHistoryType] = useState<MaintenanceType | null>(null);
   const [returnToHistoryType, setReturnToHistoryType] = useState<MaintenanceType | null>(null);
+
+  // 壽命設定編輯狀態
+  const [editingLifespanTypeId, setEditingLifespanTypeId] = useState<string | null>(null);
+  const [editLifespanKm, setEditLifespanKm] = useState<string>('');
+  const [editLifespanDays, setEditLifespanDays] = useState<string>('');
+  const [isSavingLifespan, setIsSavingLifespan] = useState(false);
 
   // 輪組編輯狀態
   const [editingWheelset, setEditingWheelset] = useState<Wheelset | null>(null);
@@ -305,6 +314,28 @@ const MaintenanceDashboard: React.FC = () => {
       console.error('儲存里程失敗:', err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 壽命設定編輯函數
+  const handleStartLifespanEdit = (typeId: string, bikeId: string) => {
+    const setting = getLifespanSetting(bikeId, typeId);
+    setEditingLifespanTypeId(typeId);
+    setEditLifespanKm(setting?.lifespan_km?.toString() || '');
+    setEditLifespanDays(setting?.lifespan_days?.toString() || '');
+  };
+
+  const handleSaveLifespan = async (bikeId: string, typeId: string) => {
+    setIsSavingLifespan(true);
+    try {
+      const lifespanKm = editLifespanKm ? parseInt(editLifespanKm) : undefined;
+      const lifespanDays = editLifespanDays ? parseInt(editLifespanDays) : undefined;
+      await updateLifespanSetting(bikeId, typeId, lifespanKm, lifespanDays);
+      setEditingLifespanTypeId(null);
+    } catch (err) {
+      console.error('儲存壽命設定失敗:', err);
+    } finally {
+      setIsSavingLifespan(false);
     }
   };
 
@@ -1006,6 +1037,15 @@ const MaintenanceDashboard: React.FC = () => {
                     保養提醒
                   </button>
                   <button
+                    onClick={() => setActiveTab('table')}
+                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'table'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
+                      }`}
+                  >
+                    表格總覽
+                  </button>
+                  <button
                     onClick={() => setActiveTab('history')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'history'
                       ? 'bg-orange-600 text-white'
@@ -1127,47 +1167,48 @@ const MaintenanceDashboard: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between text-xs opacity-40">
                                       <span>0 km</span>
-                                      <div
-                                        className="flex items-center gap-1 group/interval"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        {editingTypeId === reminder.type.id ? (
-                                          <div className="flex items-center gap-1 bg-black/40 rounded-lg p-1 -m-1">
-                                            <input
-                                              type="number"
-                                              value={editInterval}
-                                              onChange={(e) => setEditInterval(e.target.value)}
-                                              className="w-16 bg-transparent border-none text-right font-mono font-bold text-white focus:ring-0 p-0 text-xs"
-                                              autoFocus
-                                            />
-                                            <button
-                                              onClick={() => handleSaveInterval(selectedBike.id, reminder.type.id)}
-                                              disabled={isSaving}
-                                              className="text-green-400 hover:text-green-300 transition-colors"
-                                            >
-                                              {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                                            </button>
-                                            <button
-                                              onClick={() => setEditingTypeId(null)}
-                                              className="text-red-400 hover:text-red-300 transition-colors"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            <span>{reminder.nextServiceMileage.toLocaleString()} km (每 {((reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0))).toLocaleString()} km)</span>
-                                            <button
-                                              onClick={() => handleStartEdit(reminder.type.id, (reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0)))}
-                                              className="p-1.5 bg-orange-500/90 hover:bg-orange-500 text-white shadow-sm rounded-lg transition-all"
-                                              title="編輯里程間隔"
-                                            >
-                                              <Edit2 className="w-3.5 h-3.5" />
-                                            </button>
-                                          </>
-                                        )}
-                                      </div>
+                                      <span>{((reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0))).toLocaleString()} km</span>
                                     </div>
+                                    {/* 天數壽命進度條 */}
+                                    {(() => {
+                                      const ls = getLifespanSetting(selectedBike.id, reminder.type.id);
+                                      if (!ls?.lifespan_days) return null;
+
+                                      // 從保養紀錄取得最新日期
+                                      let serviceDate = reminder.lastService?.service_date;
+
+                                      // 如果沒有 lastService，嘗試從所有該類型紀錄取最新
+                                      if (!serviceDate) {
+                                        const typeRecords = getRecordsByBike(selectedBike.id)
+                                          .filter(r => {
+                                            const types = r.maintenance_type.split(', ').map(t => t.trim());
+                                            return types.includes(reminder.type.id) || types.includes(reminder.type.name);
+                                          })
+                                          .sort((a, b) => new Date(b.service_date).getTime() - new Date(a.service_date).getTime());
+                                        serviceDate = typeRecords[0]?.service_date;
+                                      }
+
+                                      if (!serviceDate) return null;
+
+                                      const daysSinceService = Math.floor((Date.now() - new Date(serviceDate).getTime()) / (1000 * 60 * 60 * 24));
+                                      const daysPercent = (daysSinceService / ls.lifespan_days) * 100;
+                                      return (
+                                        <div className="pt-2 border-t border-white/10 space-y-1">
+                                          <div className="flex justify-between text-xs">
+                                            <span className="opacity-60">時間壽命</span>
+                                            <span className={`font-mono font-bold ${daysPercent >= 100 ? 'text-red-400' : daysPercent >= 85 ? 'text-yellow-400' : 'text-blue-300'}`}>
+                                              {daysSinceService} / {ls.lifespan_days} 天
+                                            </span>
+                                          </div>
+                                          <div className="h-1.5 bg-black/20 rounded-full overflow-hidden">
+                                            <div
+                                              className={`h-full transition-all ${daysPercent >= 100 ? 'bg-red-500' : daysPercent >= 85 ? 'bg-yellow-500' : 'bg-blue-400'}`}
+                                              style={{ width: `${Math.min(daysPercent, 100)}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
                               )}
@@ -1177,6 +1218,171 @@ const MaintenanceDashboard: React.FC = () => {
                       </div>
                     </SortableContext>
                   </DndContext>
+                )}
+
+                {/* 表格總覽視圖 */}
+                {activeTab === 'table' && (
+                  <div className="overflow-hidden bg-white/5 border border-white/10 rounded-2xl">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-white/5 text-orange-200/80 uppercase font-medium">
+                          <tr>
+                            <th className="px-4 py-3 whitespace-nowrap">保養項目</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-center">狀態</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">距上次保養</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">使用率</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">保養間隔</th>
+                            <th className="px-4 py-3 whitespace-nowrap text-right">時間壽命</th>
+                            <th className="px-4 py-3 whitespace-nowrap">上次保養日期</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10">
+                          {sortedReminders.filter(r =>
+                            r.type.id !== 'full_service' &&
+                            r.type.id !== 'wheel_check' &&
+                            !r.type.name.includes('輪框檢查')
+                          ).map(reminder => {
+                            const StatusIcon = statusIcons[reminder.status];
+                            const ls = getLifespanSetting(selectedBike.id, reminder.type.id);
+                            const currentInterval = (reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0));
+                            const displayName = reminder.type.id === 'gear_replacement' || reminder.type.name === '器材更換'
+                              ? '其他'
+                              : reminder.type.name;
+                            return (
+                              <tr key={reminder.type.id} className="hover:bg-white/5 transition-colors">
+                                <td className="px-4 py-3">
+                                  <span className="font-medium text-white">{displayName}</span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${statusColors[reminder.status]}`}>
+                                    <StatusIcon className="w-3 h-3" />
+                                    {statusLabels[reminder.status]}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-white">
+                                  {reminder.mileageSinceService.toLocaleString()} km
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <div className="w-16 h-2 bg-black/30 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full ${reminder.status === 'overdue' ? 'bg-red-500' :
+                                          reminder.status === 'due_soon' ? 'bg-yellow-500' : 'bg-green-500'
+                                          }`}
+                                        style={{ width: `${Math.min(reminder.percentageUsed, 100)}%` }}
+                                      />
+                                    </div>
+                                    <span className={`font-mono text-xs ${reminder.status === 'overdue' ? 'text-red-400' :
+                                      reminder.status === 'due_soon' ? 'text-yellow-400' : 'text-green-400'
+                                      }`}>
+                                      {Math.round(reminder.percentageUsed)}%
+                                    </span>
+                                  </div>
+                                </td>
+                                {/* 保養間隔 - 可編輯 */}
+                                <td className="px-4 py-3 text-right">
+                                  {editingTypeId === reminder.type.id ? (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <input
+                                        type="number"
+                                        min="10"
+                                        step="10"
+                                        value={editInterval}
+                                        onChange={(e) => setEditInterval(e.target.value)}
+                                        className="w-20 bg-white/10 border border-white/20 rounded px-2 py-1 text-right font-mono text-white text-xs"
+                                        autoFocus
+                                      />
+                                      <span className="text-orange-200/40 text-xs">km</span>
+                                      <button
+                                        onClick={() => handleSaveInterval(selectedBike.id, reminder.type.id)}
+                                        disabled={isSaving}
+                                        className="text-green-400 hover:text-green-300 transition-colors p-1"
+                                      >
+                                        {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingTypeId(null)}
+                                        className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span className="font-mono text-orange-200/70">{currentInterval.toLocaleString()} km</span>
+                                      <button
+                                        onClick={() => handleStartEdit(reminder.type.id, currentInterval)}
+                                        className="p-1 bg-orange-500/60 hover:bg-orange-500 text-white rounded transition-all"
+                                        title="編輯保養間隔"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                                {/* 時間壽命 - 可編輯 */}
+                                <td className="px-4 py-3 text-right">
+                                  {editingLifespanTypeId === reminder.type.id ? (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <input
+                                        type="number"
+                                        min="10"
+                                        step="10"
+                                        value={editLifespanDays}
+                                        onChange={(e) => setEditLifespanDays(e.target.value)}
+                                        placeholder="天數"
+                                        className="w-16 bg-white/10 border border-white/20 rounded px-2 py-1 text-right font-mono text-white text-xs"
+                                        autoFocus
+                                      />
+                                      <span className="text-blue-300/40 text-xs">天</span>
+                                      <button
+                                        onClick={() => handleSaveLifespan(selectedBike.id, reminder.type.id)}
+                                        disabled={isSavingLifespan}
+                                        className="text-green-400 hover:text-green-300 transition-colors p-1"
+                                      >
+                                        {isSavingLifespan ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingLifespanTypeId(null)}
+                                        className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <span className="font-mono text-blue-300/70">
+                                        {ls?.lifespan_days ? `${ls.lifespan_days} 天` : '-'}
+                                      </span>
+                                      <button
+                                        onClick={() => handleStartLifespanEdit(reminder.type.id, selectedBike.id)}
+                                        className="p-1 bg-blue-500/60 hover:bg-blue-500 text-white rounded transition-all"
+                                        title="編輯時間壽命"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-orange-200/60">
+                                  {(() => {
+                                    if (reminder.lastService?.service_date) return reminder.lastService.service_date;
+                                    const typeRecords = getRecordsByBike(selectedBike.id)
+                                      .filter(r => {
+                                        const types = r.maintenance_type.split(', ').map(t => t.trim());
+                                        return types.includes(reminder.type.id) || types.includes(reminder.type.name);
+                                      })
+                                      .sort((a, b) => new Date(b.service_date).getTime() - new Date(a.service_date).getTime());
+                                    return typeRecords[0]?.service_date || '-';
+                                  })()}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
 
                 {/* 歷史紀錄列表 */}
