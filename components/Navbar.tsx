@@ -184,35 +184,35 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex flex-1 justify-end gap-8 items-center">
-          <nav className="flex items-center gap-8">
+        <div className="hidden lg:flex flex-1 justify-end gap-x-4 lg:gap-x-6 xl:gap-x-8 items-center">
+          <nav className="flex items-center gap-x-3 lg:gap-x-5 xl:gap-x-8">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               {t('nav.explore')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               {t('nav.ranking')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               {t('nav.dashboard')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
               {t('nav.records')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
-              className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.MEMBER_BINDING
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.MEMBER_BINDING
                 ? (isBound === false ? 'text-yellow-400 border-b-2 border-yellow-400 pb-1' : 'text-tsu-blue border-b-2 border-tsu-blue pb-1')
                 : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tsu-blue')
                 } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''} ${isBound === null ? 'opacity-50 grayscale pointer-events-none' : ''}`}
@@ -222,7 +222,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {isBound && (
               <button
                 onClick={() => onNavigate(ViewType.TEAM_DASHBOARD)}
-                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
               >
                 <Users2 className="w-3 h-3" />
                 {t('nav.my_team')}
@@ -231,7 +231,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {isBound && (
               <button
                 onClick={() => handleNavigate(ViewType.AI_COACH)}
-                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.AI_COACH ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
+                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.AI_COACH ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
               >
                 <Zap className="w-3 h-3" />
                 {t('nav.ai_coach')}
@@ -240,7 +240,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {isAdmin && (
               <button
                 onClick={() => handleNavigate(ViewType.ADMIN)}
-                className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-400 hover:text-red-600'}`}
+                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-400 hover:text-red-600'}`}
               >
                 {t('nav.admin')}
               </button>
@@ -301,7 +301,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="flex md:hidden items-center gap-2">
+        <div className="flex lg:hidden items-center gap-2">
           <LanguageSwitcher />
           <ThemeToggle />
           {!athlete && !isLoading && (
@@ -323,7 +323,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 h-[calc(100vh-70px)] overflow-y-auto bg-white dark:bg-[#1a1a1a] border-b border-slate-200 dark:border-slate-800 animate-in slide-in-from-top duration-300 pb-10">
+        <div className="lg:hidden absolute top-full left-0 right-0 h-[calc(100vh-70px)] overflow-y-auto bg-white dark:bg-[#1a1a1a] border-b border-slate-200 dark:border-slate-800 animate-in slide-in-from-top duration-300 pb-10">
           <nav className="flex flex-col p-4 gap-2">
             {athlete && (
               <div className="flex items-center gap-4 p-4 bg-slate-100 dark:bg-slate-900/50 rounded-2xl mb-4 border border-slate-200 dark:border-slate-800">
