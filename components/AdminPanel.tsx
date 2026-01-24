@@ -785,7 +785,7 @@ const AdminPanel: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
                 {/* 路段管理 */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-black">路段管理</h3>
                         <div className="flex items-center gap-3">
@@ -932,94 +932,111 @@ const AdminPanel: React.FC = () => {
                             </div>
                         </form>
                     ) : (
-                        <div className="space-y-4">
-                            {segments.map((seg) => (
-                                <div key={seg.id} className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 group hover:border-tcu-blue border border-transparent transition-all">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-sm sm:text-base break-words">{seg.name}</p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">ID: {seg.id}</p>
-                                        {seg.description && (
-                                            <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 sm:line-clamp-1">{seg.description}</p>
-                                        )}
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
+                                        <tr>
+                                            <th className="px-4 py-3 rounded-l-lg">路段名稱</th>
+                                            <th className="px-4 py-3">Strava ID</th>
+                                            <th className="px-4 py-3">敘述</th>
+                                            <th className="px-4 py-3">距離</th>
+                                            <th className="px-4 py-3">坡度</th>
+                                            <th className="px-4 py-3">狀態</th>
+                                            <th className="px-4 py-3 rounded-r-lg text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {segments.map((seg) => (
+                                            <tr key={seg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-4 py-3">
+                                                    <p className="font-bold text-sm">{seg.name}</p>
+                                                </td>
+                                                <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.strava_id || seg.id}</td>
+                                                <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate" title={seg.description || ''}>{seg.description || '-'}</td>
+                                                <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.distance ? `${(seg.distance / 1000).toFixed(2)} km` : '-'}</td>
+                                                <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.average_grade ? `${seg.average_grade}%` : '-'}</td>
+                                                <td className="px-4 py-3">
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                const { error } = await supabase
+                                                                    .from('segments')
+                                                                    .update({ is_active: !seg.is_active })
+                                                                    .eq('id', seg.id);
+                                                                if (error) throw error;
+                                                                fetchSegments();
+                                                            } catch (err: any) {
+                                                                alert('更新失敗: ' + err.message);
+                                                            }
+                                                        }}
+                                                        className={`px-2 py-1 ${seg.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'} text-xs font-bold rounded-full transition-colors cursor-pointer whitespace-nowrap`}
+                                                    >
+                                                        {seg.is_active ? '啟用中' : '已停用'}
+                                                    </button>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <button
+                                                            onClick={() => handleRefreshSegment(seg)}
+                                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                            title="重新整理路段資料"
+                                                        >
+                                                            <RefreshCw className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            id={`sync-btn-${seg.id}`}
+                                                            onClick={() => handleSyncEfforts(seg)}
+                                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                            title="同步成績至 DB"
+                                                        >
+                                                            <Database className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setEditingSegment(seg)}
+                                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                            title="編輯路段"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (!confirm(`確定要刪除路段「${seg.name}」？\n\n此操作將同時刪除所有相關的報名資料，且無法復原！`)) return;
+                                                                try {
+                                                                    const { error: regError } = await supabase
+                                                                        .from('registrations')
+                                                                        .delete()
+                                                                        .eq('segment_id', seg.id);
+                                                                    if (regError) throw regError;
+                                                                    const { error: segError } = await supabase
+                                                                        .from('segments')
+                                                                        .delete()
+                                                                        .eq('id', seg.id);
+                                                                    if (segError) throw segError;
+                                                                    alert('路段已刪除');
+                                                                    fetchSegments();
+                                                                    fetchRegistrations();
+                                                                } catch (err: any) {
+                                                                    alert('刪除失敗: ' + err.message);
+                                                                }
+                                                            }}
+                                                            className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                            title="刪除路段"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {segments.length === 0 && !loading && (
+                                    <div className="text-center py-10 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-200 mt-4">
+                                        <p className="text-slate-400 font-bold">目前無路段資料</p>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
-                                        <button
-                                            onClick={() => handleRefreshSegment(seg)}
-                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1"
-                                            title="重新整理路段資料與地圖"
-                                        >
-                                            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
-                                        </button>
-                                        <button
-                                            id={`sync-btn-${seg.id}`}
-                                            onClick={() => handleSyncEfforts(seg)}
-                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1"
-                                            title="同步詳細成績至 DB"
-                                        >
-                                            <Database className="w-4 h-4 sm:w-5 sm:h-5" />
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    const { error } = await supabase
-                                                        .from('segments')
-                                                        .update({ is_active: !seg.is_active })
-                                                        .eq('id', seg.id);
-                                                    if (error) throw error;
-                                                    fetchSegments();
-                                                } catch (err: any) {
-                                                    alert('更新失敗: ' + err.message);
-                                                }
-                                            }}
-                                            className={`px-2 py-0.5 ${seg.is_active ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'} text-[10px] font-bold rounded-full transition-colors cursor-pointer whitespace-nowrap`}
-                                        >
-                                            {seg.is_active ? '啟用' : '停用'}
-                                        </button>
-                                        <button
-                                            onClick={() => setEditingSegment(seg)}
-                                            className="text-slate-400 hover:text-tcu-blue transition-colors p-1"
-                                        >
-                                            <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                if (!confirm(`確定要刪除路段「${seg.name}」？\n\n此操作將同時刪除所有相關的報名資料，且無法復原！`)) return;
-                                                try {
-                                                    // 先刪除相關報名資料
-                                                    const { error: regError } = await supabase
-                                                        .from('registrations')
-                                                        .delete()
-                                                        .eq('segment_id', seg.id);
-
-                                                    if (regError) throw regError;
-
-                                                    // 再刪除路段
-                                                    const { error: segError } = await supabase
-                                                        .from('segments')
-                                                        .delete()
-                                                        .eq('id', seg.id);
-
-                                                    if (segError) throw segError;
-
-                                                    alert('路段已刪除');
-                                                    fetchSegments();
-                                                    fetchRegistrations();
-                                                } catch (err: any) {
-                                                    alert('刪除失敗: ' + err.message);
-                                                }
-                                            }}
-                                            className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                                        >
-                                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            {segments.length === 0 && !loading && (
-                                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-200">
-                                    <p className="text-slate-400 font-bold">目前無路段資料</p>
-                                </div>
-                            )}
+                                )}
+                            </div>
                             <button
                                 onClick={async () => {
                                     const strava_id = prompt('請輸入 Strava 路段 ID (數字):');
@@ -1098,11 +1115,11 @@ const AdminPanel: React.FC = () => {
                                         console.error('Segment fetch error:', err);
                                     }
                                 }}
-                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tcu-blue hover:text-tcu-blue transition-all"
+                                className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tcu-blue hover:text-tcu-blue transition-all mt-4"
                             >
                                 + 新增挑戰路段
                             </button>
-                        </div>
+                        </>
                     )}
                 </div>
 
@@ -1672,7 +1689,7 @@ const AdminPanel: React.FC = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
