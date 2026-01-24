@@ -4,6 +4,7 @@ import StravaConnect from './StravaConnect';
 import SegmentMap from './SegmentMap';
 import { useSegmentData, formatTime, formatDistance, formatSpeed } from '../hooks/useSegmentData';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   const { segments, statsMap, weather, isLoading } = useSegmentData();
   const { theme } = useTheme();
+  const { t, i18n } = useTranslation();
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
   // 定義多組配色主題
@@ -59,8 +61,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   // 輔助函式：格式化日期
   const formatDateRange = (start?: string, end?: string) => {
     if (!start && !end) return null;
-    const s = start ? new Date(start).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '未設定';
-    const e = end ? new Date(end).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '未設定';
+    const locale = i18n.language === 'zh' ? 'zh-TW' : 'en-US';
+    const s = start ? new Date(start).toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }) : t('landing.not_set');
+    const e = end ? new Date(end).toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }) : t('landing.not_set');
     return `${s} - ${e}`;
   };
 
@@ -79,24 +82,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   // 動態統計數據
   const dynamicStats = [
     {
-      label: '總爬升高度',
+      label: t('landing.total_elevation'),
       value: segment ? `${Math.round(segment.total_elevation_gain || (segment.elevation_high - segment.elevation_low))} M` : (isLoading ? '...' : '-'),
-      footer: segment ? `${segment.average_grade?.toFixed(1)}% Avg Grade` : (isLoading ? 'Loading...' : '-')
+      footer: segment ? `${segment.average_grade?.toFixed(1)}% ${t('landing.avg_grade')}` : (isLoading ? 'Loading...' : '-')
     },
     {
-      label: '路段距離',
+      label: t('landing.distance'),
       value: segment ? `${(segment.distance / 1000).toFixed(1)} KM` : (isLoading ? '...' : '-'),
       footer: segment?.name || (isLoading ? 'Loading...' : '-')
     },
     {
-      label: '參賽人數',
+      label: t('landing.participants'),
       value: stats.totalAthletes > 0 ? `${stats.totalAthletes}+` : (isLoading ? '...' : '-'),
-      footer: stats.completedAthletes > 0 ? `${stats.completedAthletes} 已完成` : 'Growing Fast'
+      footer: stats.completedAthletes > 0 ? `${stats.completedAthletes} ${t('landing.completed')}` : t('landing.growing_fast')
     },
     {
-      label: '最快時間',
+      label: t('landing.fastest_time'),
       value: stats.bestTime ? formatTime(stats.bestTime) : (isLoading ? '...' : '-'),
-      footer: stats.avgSpeed ? `Avg ${formatSpeed(stats.avgSpeed)}` : 'Challenge Now'
+      footer: stats.avgSpeed ? `Avg ${formatSpeed(stats.avgSpeed)}` : t('landing.challenge_now')
     }
   ];
 
@@ -150,7 +153,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 {segment?.description || '台中經典挑戰：136檢定'}
               </h1>
               <p className={`text-sm sm:text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-                連結你的 Strava，挑戰經典路段，與全台頂尖好手一決高下。
+                {t('landing.subtitle')}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
@@ -158,7 +161,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 onClick={onRegister}
                 className={`flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 ${currentTheme.primary} text-white text-lg font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl ${currentTheme.shadow} active:scale-95 duration-700`}
               >
-                <span>立即報名</span>
+                <span>{t('landing.register_now')}</span>
               </button>
               {segment?.link ? (
                 <a
@@ -167,18 +170,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                   rel="noopener noreferrer"
                   className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95 group"
                 >
-                  <span>查看詳情</span>
+                  <span>{t('landing.view_details')}</span>
                   <ExternalLink className="w-5 h-5 ml-2 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </a>
               ) : (
                 <button className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95">
-                  <span>查看詳情</span>
+                  <span>{t('landing.view_details')}</span>
                 </button>
               )}
             </div>
 
             <div className="flex flex-col gap-2 items-center mt-6">
-              <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-xs font-black uppercase tracking-wide shadow-md transition-colors duration-700`}>Limited Time Challenge</span>
+              <span className={`inline-block px-4 py-1 rounded ${currentTheme.primary} text-white text-xs font-black uppercase tracking-wide shadow-md transition-colors duration-700`}>{t('landing.limited_time')}</span>
               {segment && (formatDateRange(segment.start_date, segment.end_date)) && (
                 <span className="text-amber-400 text-sm font-black tracking-widest uppercase animate-pulse flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -214,7 +217,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-2 bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
                   <MapIcon className="w-5 h-5 text-tsu-blue flex-shrink-0" />
-                  <h2 className="text-slate-900 dark:text-white text-base sm:text-lg font-black uppercase tracking-tight italic">挑戰路段地圖</h2>
+                  <h2 className="text-slate-900 dark:text-white text-base sm:text-lg font-black uppercase tracking-tight italic">{t('landing.map_title')}</h2>
                 </div>
                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                   {segment ? `Segment #${segment.strava_id}` : 'Loading...'}
@@ -230,17 +233,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       <>
                         <span className="flex items-center gap-1">
                           <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                          <span className="text-slate-600 dark:text-slate-400 text-xs">起點 {segment.elevation_low}m</span>
+                          <span className="text-slate-600 dark:text-slate-400 text-xs">{t('landing.start_point')} {segment.elevation_low}m</span>
                         </span>
                         <span className="flex items-center gap-1">
                           <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                          <span className="text-slate-600 dark:text-slate-400 text-xs">終點 {segment.elevation_high}m</span>
+                          <span className="text-slate-600 dark:text-slate-400 text-xs">{t('landing.end_point')} {segment.elevation_high}m</span>
                         </span>
                       </>
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-all group cursor-pointer">
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter hidden sm:inline">Powered by</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter hidden sm:inline">{t('landing.powered_by')}</span>
                     <StravaLogo className="h-4 sm:h-5 w-auto grayscale group-hover:grayscale-0 transition-all" />
                   </div>
                 </div>
@@ -252,13 +255,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-tsu-blue" />
-                  <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">目前排行榜</h2>
+                  <h2 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight italic">{t('landing.leaderboard_preview')}</h2>
                 </div>
                 <button
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // 這裡應該導向 Leaderboard View 或頁面
                   className="text-tsu-blue text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1 group"
                 >
-                  查看完整榜單
+                  {t('landing.view_full_leaderboard')}
                   <ChevronRightIcon className="w-3 h-3 transition-transform group-hover:translate-x-1" />
                 </button>
               </div>
@@ -266,17 +269,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 {isLoading ? (
                   <div className="p-8 text-center">
                     <RefreshCw className="w-8 h-8 text-tsu-blue animate-spin mx-auto mb-4" />
-                    <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">載入排行榜...</p>
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">{t('landing.loading_leaderboard')}</p>
                   </div>
                 ) : (
                   <div className="p-12 text-center text-slate-500">
                     <BarChart3 className="w-12 h-12 mb-2 opacity-20 mx-auto" />
-                    <p className="text-sm font-bold uppercase tracking-widest">前往各路段儀表板查看即時排行</p>
+                    <p className="text-sm font-bold uppercase tracking-widest">{t('landing.check_dashboard')}</p>
                     <button
                       onClick={onRegister}
                       className="mt-4 text-tsu-blue text-xs font-black uppercase tracking-widest hover:brightness-110 underline decoration-2 underline-offset-4"
                     >
-                      立即加入挑戰
+                      {t('landing.join_challenge')}
                     </button>
                   </div>
                 )}
@@ -292,7 +295,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic"
                 onClick={() => setDetailsOpen(prev => !prev)}
               >
-                <span>路段詳情</span>
+                <span>{t('landing.details_title')}</span>
                 {detailsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
@@ -300,12 +303,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <ul className="space-y-3">
                     {[
-                      { label: '挑戰期間', value: (segment && formatDateRange(segment.start_date, segment.end_date)) || '未設定' },
-                      { label: '路段名稱', value: segment?.name || '-' },
-                      { label: '平均坡度', value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
-                      { label: '最陡坡度', value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
-                      { label: '挑戰人數', value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
-                      { label: '入場費', value: 'FREE', color: 'text-tsu-blue' }
+                      { label: t('landing.period'), value: (segment && formatDateRange(segment.start_date, segment.end_date)) || t('landing.not_set') },
+                      { label: t('landing.segment_name'), value: segment?.name || '-' },
+                      { label: t('landing.avg_grade'), value: segment ? `${segment.average_grade?.toFixed(1)}%` : '-' },
+                      { label: t('landing.max_grade'), value: segment ? `${segment.maximum_grade?.toFixed(1)}%` : '-' },
+                      { label: t('landing.athlete_count'), value: segment?.athlete_count ? `${segment.athlete_count.toLocaleString()}` : '-' },
+                      { label: t('landing.entry_fee'), value: 'FREE', color: 'text-tsu-blue' }
                     ].map((item, i) => (
                       <li key={i} className="flex flex-col gap-1 text-[11px] font-bold py-1 border-b border-slate-200/50 dark:border-slate-800/50 last:border-0 hover:bg-white/50 dark:hover:bg-white/5 rounded px-1 transition-colors">
                         <span className="text-slate-500 dark:text-slate-400 uppercase tracking-widest text-[9px]">{item.label}</span>
@@ -321,7 +324,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                       className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-strava-orange text-white font-black text-[10px] uppercase hover:brightness-110 transition-all shadow-md active:scale-95 group"
                     >
                       <StravaLogo className="h-3 w-auto" color="white" />
-                      <span>在 Strava 查看路段</span>
+                      <span>{t('landing.view_on_strava')}</span>
                     </a>
                   )}
                 </div>
@@ -334,19 +337,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                 className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic"
                 onClick={() => setStartOpen(prev => !prev)}
               >
-                <span>開始挑戰</span>
+                <span>{t('landing.start_challenge')}</span>
                 {startOpen ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
               </button>
 
               {startOpen && (
                 <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed font-medium">
-                    為了自動計算您的成績，請先連結您的 Strava 帳號。我們將僅讀取此活動期間的公開活動紀錄。
+                    {t('landing.connect_notice')}
                   </p>
                   <div className="mt-6">
                     <StravaConnect />
                     <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold mt-4">
-                      點擊即代表您同意本平台的 <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">隱私權政策</a>
+                      {t('landing.policy_agree')} <a className="underline hover:text-tsu-blue transition-colors" href="/privacy-policy.html">{t('landing.privacy_policy')}</a>
                     </p>
                   </div>
                 </div>
@@ -357,18 +360,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             {(segment?.KOM || segment?.QOM) && (
               <section className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 rounded-2xl p-6 border border-amber-500/30 transition-all hover:scale-[1.02]">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" /> 紀錄保持者
+                  <Trophy className="w-5 h-5 text-amber-500" /> {t('landing.record_holder')}
                 </h3>
                 <div className="space-y-3">
                   {segment?.KOM && (
                     <div className="flex justify-between items-center group">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-tsu-blue transition-colors">KOM (男子紀錄)</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-tsu-blue transition-colors">{t('landing.kom')}</span>
                       <span className="text-lg font-black text-strava-orange italic">{segment.KOM}</span>
                     </div>
                   )}
                   {segment?.QOM && (
                     <div className="flex justify-between items-center group">
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-pink-500 transition-colors">QOM (女子紀錄)</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase group-hover:text-pink-500 transition-colors">{t('landing.qom')}</span>
                       <span className="text-lg font-black text-pink-500 italic">{segment.QOM}</span>
                     </div>
                   )}
@@ -380,7 +383,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             {weather && (
               <section className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 dark:from-sky-500/20 dark:to-blue-500/20 rounded-2xl p-6 border border-sky-500/30 transition-all hover:scale-[1.02]">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase italic flex items-center gap-2">
-                  <Sun className="w-5 h-5 text-sky-500" /> {weather.location || '路段'} 天氣
+                  <Sun className="w-5 h-5 text-sky-500" /> {weather.location || '路段'} {t('landing.weather')}
                 </h3>
                 <div className="flex items-center justify-between">
                   <div>
@@ -403,7 +406,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
                     {weather.current?.humidity && (
                       <p className="flex items-center justify-end gap-1">
                         <Droplets className="w-3 h-3 text-sky-400" />
-                        濕度 {weather.current.humidity}%
+                        {t('landing.humidity')} {weather.current.humidity}%
                       </p>
                     )}
                   </div>

@@ -1,9 +1,9 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
+import './lib/i18n';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -16,7 +16,9 @@ root.render(
   <React.StrictMode>
     <ThemeProvider>
       <ErrorBoundary>
-        <App />
+        <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+          <App />
+        </React.Suspense>
       </ErrorBoundary>
     </ThemeProvider>
   </React.StrictMode>

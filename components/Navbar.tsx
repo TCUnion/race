@@ -19,8 +19,10 @@ import {
 import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
 import ThemeToggle from './ThemeToggle';
+import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth, StravaAthlete } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../lib/api_config';
 
 interface NavbarProps {
@@ -51,6 +53,7 @@ const CONFIG = {
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { athlete, isBound, isAdmin, logout } = useAuth();
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -185,25 +188,25 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               onClick={() => handleNavigate(ViewType.LANDING)}
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 ${currentView === ViewType.LANDING ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
-              探索活動
+              {t('nav.explore')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.LEADERBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
-              排行榜
+              {t('nav.ranking')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
-              個人儀表板
+              {t('nav.dashboard')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
               className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.MAINTENANCE ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
             >
-              保養紀錄
+              {t('nav.records')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
@@ -212,7 +215,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tsu-blue')
                 } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''} ${isBound === null ? 'opacity-50 grayscale pointer-events-none' : ''}`}
             >
-              {isBound === true ? 'TCU 會員資料' : 'TCU 綁定'}
+              {isBound === true ? t('nav.members') : t('nav.members_bind')}
             </button>
             {isBound && (
               <button
@@ -220,7 +223,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
               >
                 <Users2 className="w-3 h-3" />
-                我的車隊
+                {t('nav.my_team')}
               </button>
             )}
             {isBound && (
@@ -229,7 +232,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.AI_COACH ? 'text-tsu-blue border-b-2 border-tsu-blue pb-1' : 'text-slate-400 hover:text-tsu-blue'}`}
               >
                 <Zap className="w-3 h-3" />
-                AI 功率訓練教室
+                {t('nav.ai_coach')}
               </button>
             )}
             {isAdmin && (
@@ -237,17 +240,18 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 onClick={() => handleNavigate(ViewType.ADMIN)}
                 className={`text-xs font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-400 hover:text-red-600'}`}
               >
-                ADMIN
+                {t('nav.admin')}
               </button>
             )}
           </nav>
 
           <div className="flex items-center gap-4 pl-4 border-l border-slate-200 dark:border-slate-800">
+            <LanguageSwitcher />
             <ThemeToggle />
             {isLoading ? (
               <div className="flex items-center gap-2 text-tsu-blue">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-widest">授權中</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('common.authorizing')}</span>
               </div>
             ) : athlete ? (
               <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800 group">
@@ -279,7 +283,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   onClick={logout}
                   className="text-[10px] font-black text-slate-500 hover:text-red-500 uppercase tracking-widest transition-colors"
                 >
-                  登出
+                  {t('nav.logout')}
                 </button>
               </div>
             ) : (
@@ -288,7 +292,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className="group relative flex items-center gap-2 bg-white hover:bg-tsu-blue text-black hover:text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-white/5 active:shadow-none"
               >
                 <StravaLogo className="w-4 h-4 transition-transform group-hover:rotate-12" />
-                <span>連結 STRAVA</span>
+                <span>{t('common.connect_strava').toUpperCase()}</span>
               </button>
             )}
           </div>
@@ -336,28 +340,28 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LANDING ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <Compass className="w-5 h-5 mr-3" />
-              探索活動
+              {t('nav.explore')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.LEADERBOARD)}
               className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.LEADERBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <BarChart3 className="w-5 h-5 mr-3" />
-              排行榜
+              {t('nav.ranking')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
               className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.DASHBOARD ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <LayoutDashboard className="w-5 h-5 mr-3" />
-              個人儀表板
+              {t('nav.dashboard')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
               className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.MAINTENANCE ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <Wrench className="w-5 h-5 mr-3" />
-              保養紀錄
+              {t('nav.records')}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
@@ -367,7 +371,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow ring-inset mx-2' : ''}`}
             >
               <UserCheck className="w-5 h-5 mr-3" />
-              {isBound ? 'TCU 會員資料' : 'TCU 綁定'}
+              {isBound ? t('nav.members') : t('nav.members_bind')}
             </button>
             {isBound && (
               <button
@@ -381,7 +385,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   }`}
               >
                 <Users2 className="w-5 h-5" />
-                <span>我的車隊</span>
+                <span>{t('nav.my_team')}</span>
               </button>
             )}
 
@@ -391,7 +395,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.AI_COACH ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
               >
                 <Zap className="w-5 h-5 mr-3" />
-                AI 功率訓練教室
+                {t('nav.ai_coach')}
               </button>
             )}
             {isAdmin && (
@@ -400,7 +404,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.ADMIN ? 'bg-red-600/10 text-red-600' : 'text-red-400 hover:bg-red-600/5'}`}
               >
                 <Shield className="w-5 h-5 mr-3" />
-                ADMIN PANEL
+                {t('nav.admin')} PANEL
               </button>
             )}
 
@@ -410,7 +414,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className="mt-4 flex items-center justify-center gap-3 bg-white text-black py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl active:scale-95"
               >
                 <StravaLogo theme="dark" className="w-6 h-6" />
-                連結 STRAVA
+                {t('common.connect_strava').toUpperCase()}
               </button>
             )}
 
@@ -419,7 +423,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 onClick={logout}
                 className="mt-4 flex items-center justify-center gap-3 bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 py-4 rounded-xl font-bold uppercase tracking-widest transition-all"
               >
-                <span>登出系統</span>
+                <span>{t('nav.logout_system')}</span>
               </button>
             )}
           </nav>
