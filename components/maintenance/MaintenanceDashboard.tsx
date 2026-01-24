@@ -1285,7 +1285,7 @@ const MaintenanceDashboard: React.FC = () => {
                                     <div className="flex items-center justify-end gap-1">
                                       <input
                                         type="number"
-                                        min="10"
+                                        min="0"
                                         step="10"
                                         value={editInterval}
                                         onChange={(e) => setEditInterval(e.target.value)}
@@ -1326,7 +1326,7 @@ const MaintenanceDashboard: React.FC = () => {
                                     <div className="flex items-center justify-end gap-1">
                                       <input
                                         type="number"
-                                        min="10"
+                                        min="0"
                                         step="10"
                                         value={editLifespanDays}
                                         onChange={(e) => setEditLifespanDays(e.target.value)}
