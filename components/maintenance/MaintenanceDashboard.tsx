@@ -805,7 +805,10 @@ const MaintenanceDashboard: React.FC = () => {
                             checked={selectedBike.active_wheelset_id === ws.id}
                             onChange={async () => {
                               try {
+                                // 更新單車的作用中輪組
                                 await updateBike(selectedBike.id, { active_wheelset_id: ws.id });
+                                // 同時更新輪組的啟用日期
+                                await updateWheelset(ws.id, { active_date: new Date().toISOString().split('T')[0] });
                               } catch (err) {
                                 console.error('更新預設輪組失敗:', err);
                                 alert('更新失敗，請稍後再試');
@@ -869,7 +872,10 @@ const MaintenanceDashboard: React.FC = () => {
                                 checked={selectedBike.active_wheelset_id === ws.id}
                                 onChange={async () => {
                                   try {
+                                    // 更新單車的作用中輪組
                                     await updateBike(selectedBike.id, { active_wheelset_id: ws.id });
+                                    // 同時更新輪組的啟用日期
+                                    await updateWheelset(ws.id, { active_date: new Date().toISOString().split('T')[0] });
                                   } catch (err) {
                                     console.error('更新預設輪組失敗:', err);
                                     alert('更新失敗，請稍後再試');

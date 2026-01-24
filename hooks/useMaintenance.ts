@@ -538,22 +538,20 @@ export const useMaintenance = () => {
       let calculatedClimbingSinceService = 0;
 
       // 核心修改 logic: 
-      // 如果是輪胎更換且有作用中輪組，我們使用輪組的累積里程
+      // 如果是輪胎更換且有作用中輪組，我們使用輪組的啟用日期或保養紀錄計算里程
       if (isTires && bike.active_wheelset_id) {
         const activeWheelset = wheelsets.find(ws => ws.id === bike.active_wheelset_id);
         if (activeWheelset) {
-          if (lastService && lastService.service_date) {
-            // 使用日期推算
-            const metrics = calculateMetricsSinceDate(bike.id, lastService.service_date);
+          // 優先順序：1. 保養紀錄日期 2. 輪組啟用日期 3. 輪組總里程
+          const referenceDate = lastService?.service_date || activeWheelset.active_date;
+          if (referenceDate) {
+            // 使用參考日期計算從該日期至今的里程
+            const metrics = calculateMetricsSinceDate(bike.id, referenceDate);
             calculatedMileageSinceService = metrics.distanceKm;
             calculatedClimbingSinceService = metrics.elevationGain;
           } else {
-            // 如果沒有保養紀錄，則使用輪組本身的累積里程 (輪組爬升暫時無法從 wheelsets 表取得，設為 0 或需擴充 DB)
+            // 如果沒有參考日期，則使用輪組本身的累積里程
             calculatedMileageSinceService = activeWheelset.distance / 1000;
-            // calculatedClimbingSinceService = 0; // 暫不支援輪組獨立爬升追蹤 Without DB change
-            // 為了避免誤差，暫時用該單車近期活動推算 (雖不精確但比 0 好) 
-            // 但如果輪組剛換上？
-            // 這裡先保持 0，後續可考慮擴充 wheelsets table
           }
         } else {
           // 找不到輪組資訊，回退到單車邏輯
