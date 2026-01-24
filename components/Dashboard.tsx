@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useSegmentData, formatTime } from '../hooks/useSegmentData';
 import SegmentMap from './SegmentMap';
@@ -306,32 +307,91 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
         </section>
-        {/* Segment Selector */}
-        <section className="flex flex-col gap-4">
-          <h2 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">您可以點擊切換路段詳情</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {registeredSegments.map((reg) => {
-              const isSelected = currentSegmentId === reg.segment_id;
-              return (
-                <button
-                  key={reg.id}
-                  onClick={() => setCurrentSegmentId(reg.segment_id)}
-                  className={`flex flex-col items-start gap-1 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all w-full ${isSelected ? 'border-tsu-blue bg-white dark:bg-slate-900' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'}`}
-                >
-                  <div className="flex justify-between w-full items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">#{reg.segments?.strava_id}</span>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-tsu-blue" />}
-                  </div>
-                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white text-left break-words leading-tight w-full">{reg.segments?.name}</h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${reg.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
-                      {reg.status === 'approved' ? '已核准' : '審核中'}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">#{reg.number || '未配號'}</span>
-                  </div>
-                </button>
-              );
-            })}
+        {/* Segment Selector - Tinder UI */}
+        <section className="flex flex-col gap-6 items-center">
+          <div className="flex flex-col gap-1 items-center">
+            <h2 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">左右滑動切換路段詳情</h2>
+            <div className="flex gap-1">
+              {registeredSegments.map((reg, idx) => (
+                <div
+                  key={`dot-${reg.id}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${currentSegmentId === reg.segment_id ? 'w-6 bg-tsu-blue' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="relative w-full max-w-[400px] h-[180px] perspective-1000">
+            <AnimatePresence mode="popLayout">
+              {registeredSegments
+                .filter(reg => reg.segment_id === currentSegmentId)
+                .map((reg) => {
+                  const currentIndex = registeredSegments.findIndex(r => r.segment_id === currentSegmentId);
+
+                  return (
+                    <motion.div
+                      key={reg.id}
+                      drag="x"
+                      dragConstraints={{ left: 0, right: 0 }}
+                      style={{ x: 0, zIndex: 50 }}
+                      onDragEnd={(_, info) => {
+                        if (Math.abs(info.offset.x) > 100) {
+                          const nextIdx = (currentIndex + 1) % registeredSegments.length;
+                          setCurrentSegmentId(registeredSegments[nextIdx].segment_id);
+                        }
+                      }}
+                      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{
+                        scale: 0.8,
+                        opacity: 0,
+                        x: 200,
+                        rotate: 20,
+                        transition: { duration: 0.3 }
+                      }}
+                      className="absolute inset-0 cursor-grab active:cursor-grabbing"
+                    >
+                      <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-tsu-blue p-6 shadow-2xl flex flex-col justify-between h-full relative overflow-hidden group">
+                        {/* Background Decoration */}
+                        <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Trophy className="w-32 h-32 rotate-12" />
+                        </div>
+
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">#{reg.segments?.strava_id}</span>
+                            <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-1">{reg.segments?.name}</h3>
+                          </div>
+                          <CheckCircle2 className="w-6 h-6 text-tsu-blue" />
+                        </div>
+
+                        <div className="flex items-end justify-between relative z-10">
+                          <div className="flex gap-2">
+                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${reg.status === 'approved' ? 'bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400'}`}>
+                              {reg.status === 'approved' ? '已核准' : '審核中'}
+                            </span>
+                            <span className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                              #{reg.number || '未配號'}
+                            </span>
+                          </div>
+                          <div className="flex -space-x-2">
+                            {[1, 2, 3].map(i => (
+                              <div key={i} className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-800" />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+            </AnimatePresence>
+
+            {/* Hint for next card */}
+            {registeredSegments.length > 1 && (
+              <div className="absolute inset-0 -z-10 translate-y-4 scale-95 opacity-40 blur-[1px]">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-slate-200 dark:border-slate-800 p-6 h-full" />
+              </div>
+            )}
           </div>
         </section>
 
