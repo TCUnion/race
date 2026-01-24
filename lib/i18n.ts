@@ -12,7 +12,7 @@ i18n
     .use(initReactI18next)
     .init({
         fallbackLng: 'zh',
-        debug: import.meta.env.DEV, // 開發模式下開啟除錯
+        debug: false, // 關閉除錯模式，減少 Console 雜訊
 
         interpolation: {
             escapeValue: false, // React 已經預設防止 XSS
