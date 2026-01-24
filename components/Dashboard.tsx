@@ -220,7 +220,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="text-red-400 font-bold">無法載入報名資訊</div>
         <button
           onClick={() => athlete && fetchAllRegistrations(athlete.id)}
-          className="px-6 py-2 bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition"
+          className="px-6 py-2 bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl hover:bg-slate-300 dark:hover:bg-slate-700 transition"
         >
           重試
         </button>
@@ -232,10 +232,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   if (registeredSegments.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
-        <div className="bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl max-w-md">
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
           <UserCheck className="w-16 h-16 text-tsu-blue mx-auto mb-4" />
-          <h2 className="text-xl font-black uppercase italic mb-2 text-white">尚未報名任何路段</h2>
-          <p className="text-slate-400 text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
+          <h2 className="text-xl font-black uppercase italic mb-2 text-slate-900 dark:text-white">尚未報名任何路段</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
           <div className="flex flex-col gap-3">
             <button
               onClick={() => onNavigate(ViewType.REGISTER)}

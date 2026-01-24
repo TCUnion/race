@@ -167,11 +167,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-solid border-slate-800 bg-[#242424]/95 backdrop-blur-md transition-all duration-300">
+    <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#242424]/95 backdrop-blur-md transition-all duration-300">
       <div className="flex items-center justify-between px-4 sm:px-6 md:px-20 py-4 gap-2">
         <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 flex-shrink" onClick={() => handleNavigate(ViewType.LANDING)}>
           <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto flex-shrink-0 transform transition-transform group-hover:scale-110" />
-          <h2 className="hidden min-[270px]:block text-white text-base sm:text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors truncate">TCU STRAVA RANK</h2>
+          <h2 className="hidden min-[270px]:block text-slate-900 dark:text-white text-base sm:text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors truncate">TCU STRAVA RANK</h2>
         </div>
 
         {/* Desktop Navigation */}
@@ -238,7 +238,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             )}
           </nav>
 
-          <div className="flex items-center gap-4 pl-4 border-l border-slate-800">
+          <div className="flex items-center gap-4 pl-4 border-l border-slate-200 dark:border-slate-800">
             <ThemeToggle />
             {isLoading ? (
               <div className="flex items-center gap-2 text-tsu-blue">
@@ -246,9 +246,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 <span className="text-[10px] font-black uppercase tracking-widest">授權中</span>
               </div>
             ) : athlete ? (
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-800 group">
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800 group">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-white uppercase tracking-wider group-hover:text-tsu-blue transition-colors">
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider group-hover:text-tsu-blue transition-colors">
                     {athlete.firstname} {athlete.lastname}
                   </span>
                   <div className="flex items-center gap-1">
@@ -262,11 +262,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   <img
                     src={athlete.profile || "/placeholder-avatar.png"}
                     alt="Athlete"
-                    className="w-8 h-8 rounded-full border-2 border-slate-800 group-hover:border-tsu-blue transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 group-hover:border-tsu-blue transition-all cursor-pointer"
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                   />
                   {isBound && (
-                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-[#242424]">
+                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-white dark:border-[#242424]">
                       <UserCheck className="w-2 h-2 text-white" />
                     </div>
                   )}
@@ -303,7 +303,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           )}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-white hover:text-tsu-blue transition-colors p-1"
+            className="text-slate-700 dark:text-white hover:text-tsu-blue transition-colors p-1"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -312,13 +312,13 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 h-[calc(100vh-70px)] overflow-y-auto bg-[#1a1a1a] border-b border-slate-800 animate-in slide-in-from-top duration-300 pb-10">
+        <div className="md:hidden absolute top-full left-0 right-0 h-[calc(100vh-70px)] overflow-y-auto bg-white dark:bg-[#1a1a1a] border-b border-slate-200 dark:border-slate-800 animate-in slide-in-from-top duration-300 pb-10">
           <nav className="flex flex-col p-4 gap-2">
             {athlete && (
-              <div className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-2xl mb-4 border border-slate-800">
+              <div className="flex items-center gap-4 p-4 bg-slate-100 dark:bg-slate-900/50 rounded-2xl mb-4 border border-slate-200 dark:border-slate-800">
                 <img src={athlete.profile} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-tsu-blue" />
                 <div className="flex-1">
-                  <div className="text-white font-black uppercase text-sm">{athlete.firstname} {athlete.lastname}</div>
+                  <div className="text-slate-900 dark:text-white font-black uppercase text-sm">{athlete.firstname} {athlete.lastname}</div>
                   <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                     {isAdmin && <Shield className="w-3 h-3 text-red-500" />}
                     {isAdmin ? 'Administrator' : isBound ? 'TCU Certified' : 'Strava Connected'}

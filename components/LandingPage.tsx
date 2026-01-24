@@ -102,7 +102,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
     <div className="flex flex-col items-center w-full pb-20 animate-fade-in">
       {/* Hero Section */}
       <div className="w-full max-w-[1200px] px-4 py-8">
-        <div className="relative overflow-hidden rounded-2xl bg-strava-grey-dark shadow-2xl group transition-all duration-700">
+        <div className="relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-strava-grey-dark shadow-2xl group transition-all duration-700">
           <div
             className="flex min-h-[380px] sm:min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
             style={{
