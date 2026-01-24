@@ -10,6 +10,7 @@ import {
     Info
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useFontSize } from '../hooks/useFontSize';
 
 interface Message {
     id: string;
@@ -20,6 +21,7 @@ interface Message {
 
 const TCUCoach: React.FC = () => {
     const { athlete, memberData } = useAuth();
+    const { fontSize } = useFontSize();
     const displayName = memberData?.real_name || memberData?.member_name || athlete?.firstname || '選手';
 
     const getGreetingMessage = (name: string): Message => ({
@@ -118,10 +120,13 @@ const TCUCoach: React.FC = () => {
                         </div>
 
                         <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className={`px-5 py-3.5 rounded-2xl shadow-sm text-sm font-medium leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                                ? 'bg-tsu-blue text-white rounded-tr-none'
-                                : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
-                                }`}>
+                            <div
+                                className={`px-5 py-3.5 rounded-2xl shadow-sm font-medium leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
+                                        ? 'bg-tsu-blue text-white rounded-tr-none'
+                                        : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
+                                    }`}
+                                style={{ fontSize: `var(--tcu-active-font-size, 14px)` }}
+                            >
                                 {msg.content}
                             </div>
                             <span className="text-[10px] text-slate-400 font-bold mt-1 px-1">

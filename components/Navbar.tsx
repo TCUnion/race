@@ -22,6 +22,7 @@ import ThemeToggle from './ThemeToggle';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth, StravaAthlete } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useFontSize, FontSize } from '../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../lib/api_config';
 
@@ -53,6 +54,7 @@ const CONFIG = {
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { athlete, isBound, isAdmin, logout } = useAuth();
   const { theme } = useTheme();
+  const { fontSize, setFontSize } = useFontSize();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -391,13 +393,35 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             )}
 
             {isBound && (
-              <button
-                onClick={() => handleNavigate(ViewType.AI_COACH)}
-                className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.AI_COACH ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
-              >
-                <Zap className="w-5 h-5 mr-3" />
-                {t('nav.ai_coach')}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => handleNavigate(ViewType.AI_COACH)}
+                  className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.AI_COACH ? 'bg-tsu-blue/10 text-tsu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+                >
+                  <Zap className="w-5 h-5 mr-3" />
+                  {t('nav.ai_coach')}
+                </button>
+                {/* Font Size Adjustment - Only shown when in AI Coach view for better context, or always in Bound mode */}
+                {isBound && (
+                  <div className="flex items-center justify-between px-6 py-2 bg-slate-50 dark:bg-slate-900/30 rounded-xl mx-2 border border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mr-2">字型大小</span>
+                    <div className="flex bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                      {(['xs', 'sm', 'base', 'lg', 'xl'] as FontSize[]).map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setFontSize(size)}
+                          className={`w-8 h-8 rounded-md flex items-center justify-center text-[10px] font-bold transition-all ${fontSize === size
+                            ? 'bg-tsu-blue text-white shadow-md'
+                            : 'text-slate-400 hover:text-tsu-blue'
+                            }`}
+                        >
+                          {size.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {isAdmin && (
               <button
