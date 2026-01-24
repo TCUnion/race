@@ -403,16 +403,19 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 </button>
                 {/* Font Size Adjustment - Only shown when in AI Coach view for better context, or always in Bound mode */}
                 {isBound && (
-                  <div className="flex items-center justify-between px-6 py-2 bg-slate-50 dark:bg-slate-900/30 rounded-xl mx-2 border border-slate-100 dark:border-slate-800">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mr-2">字型大小</span>
-                    <div className="flex bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-col gap-2 px-2 py-3 bg-slate-50 dark:bg-slate-900/30 rounded-2xl mx-2 border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between px-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">字型大小</span>
+                      <span className="text-[8px] font-bold text-tsu-blue bg-tsu-blue/10 px-1.5 py-0.5 rounded uppercase">{fontSize}</span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-1 bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
                       {(['xs', 'sm', 'base', 'lg', 'xl'] as FontSize[]).map((size) => (
                         <button
                           key={size}
                           onClick={() => setFontSize(size)}
-                          className={`w-8 h-8 rounded-md flex items-center justify-center text-[10px] font-bold transition-all ${fontSize === size
-                            ? 'bg-tsu-blue text-white shadow-md'
-                            : 'text-slate-400 hover:text-tsu-blue'
+                          className={`h-9 rounded-lg flex items-center justify-center text-[10px] font-black transition-all active:scale-90 ${fontSize === size
+                            ? 'bg-tsu-blue text-white shadow-lg'
+                            : 'text-slate-400 hover:text-tsu-blue hover:bg-slate-50 dark:hover:bg-slate-700/50'
                             }`}
                         >
                           {size.toUpperCase()}
