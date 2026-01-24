@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
+import { FontSizeProvider } from './hooks/useFontSize';
 import './lib/i18n';
 import './index.css';
 
@@ -15,11 +16,13 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ThemeProvider>
-      <ErrorBoundary>
-        <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-          <App />
-        </React.Suspense>
-      </ErrorBoundary>
+      <FontSizeProvider>
+        <ErrorBoundary>
+          <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+            <App />
+          </React.Suspense>
+        </ErrorBoundary>
+      </FontSizeProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
