@@ -21,7 +21,7 @@ interface Message {
 
 const TCUCoach: React.FC = () => {
     const { athlete, memberData } = useAuth();
-    const { fontSize } = useFontSize();
+    const { fontSizeValue } = useFontSize();
     const displayName = memberData?.real_name || memberData?.member_name || athlete?.firstname || '選手';
 
     const getGreetingMessage = (name: string): Message => ({
@@ -125,7 +125,7 @@ const TCUCoach: React.FC = () => {
                                     ? 'bg-tsu-blue text-white rounded-tr-none'
                                     : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none'
                                     }`}
-                                style={{ fontSize: `var(--tcu-active-font-size, 14px)` }}
+                                style={{ fontSize: fontSizeValue }}
                             >
                                 {msg.content}
                             </div>
@@ -163,9 +163,9 @@ const TCUCoach: React.FC = () => {
                             }
                         }}
                         placeholder="輸入您的問題..."
-                        className="w-full bg-transparent border-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm font-medium resize-none max-h-32 py-2.5 px-2"
+                        className="w-full bg-transparent border-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none max-h-32 py-2.5 px-2"
                         rows={1}
-                        style={{ minHeight: '44px' }}
+                        style={{ minHeight: '44px', fontSize: fontSizeValue }}
                     />
                     <button
                         onClick={handleSend}
