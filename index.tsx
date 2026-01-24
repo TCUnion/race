@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
-import { FontSizeProvider } from './hooks/useFontSize';
+import { FontSizeProvider } from './hooks/useFontSize.tsx';
 import './lib/i18n';
 import './index.css';
 
