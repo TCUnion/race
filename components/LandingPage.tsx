@@ -3,6 +3,7 @@ import React from 'react';
 import StravaConnect from './StravaConnect';
 import SegmentMap from './SegmentMap';
 import { useSegmentData, formatTime, formatDistance, formatSpeed } from '../hooks/useSegmentData';
+import { useTheme } from '../hooks/useTheme';
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,7 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
   const { segments, statsMap, weather, isLoading } = useSegmentData();
+  const { theme } = useTheme();
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
   // 定義多組配色主題
@@ -98,6 +100,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
     }
   ];
 
+  // 根據主題計算 Hero 背景漸層
+  const heroGradient = theme === 'dark'
+    ? `linear-gradient(${currentTheme.gradient} 0%, rgba(18, 18, 18, 0.95) 100%)`
+    : `linear-gradient(${currentTheme.gradient} 0%, rgba(248, 250, 252, 0.95) 100%)`;
+
   return (
     <div className="flex flex-col items-center w-full pb-20 animate-fade-in">
       {/* Hero Section */}
@@ -106,7 +113,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
           <div
             className="flex min-h-[380px] sm:min-h-[520px] flex-col gap-6 bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center relative transition-all duration-1000"
             style={{
-              backgroundImage: `linear-gradient(${currentTheme.gradient} 0%, rgba(18, 18, 18, 0.95) 100%), url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")`
+              backgroundImage: `${heroGradient}, url("https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&q=80&w=2070")`
             }}
           >
             {/* Pagination Controls */}
@@ -139,10 +146,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             )}
 
             <div className="flex flex-col gap-4 max-w-4xl transform transition-all duration-700 delay-100 px-2">
-              <h1 className="text-white text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black leading-tight tracking-tighter uppercase italic drop-shadow-2xl font-display break-words">
+              <h1 className={`text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black leading-tight tracking-tighter uppercase italic drop-shadow-2xl font-display break-words ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                 {segment?.description || '台中經典挑戰：136檢定'}
               </h1>
-              <p className="text-slate-300 text-sm sm:text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto">
+              <p className={`text-sm sm:text-base md:text-xl font-medium leading-relaxed max-w-2xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                 連結你的 Strava，挑戰經典路段，與全台頂尖好手一決高下。
               </p>
             </div>

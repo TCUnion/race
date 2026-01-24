@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { trackThemeChange } from '../utils/analytics';
 
 type Theme = 'light' | 'dark';
 
@@ -90,6 +91,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setThemeState(newTheme);
         applyTheme(newTheme);
         localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+        // 追蹤主題變更事件
+        trackThemeChange(newTheme);
     };
 
     const toggleTheme = () => {
@@ -98,10 +101,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     };
 
     return (
-        <ThemeContext.Provider value= {{ theme, toggleTheme, setTheme }
-}>
-    { children }
-    </ThemeContext.Provider>
+        <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }
+        }>
+            {children}
+        </ThemeContext.Provider>
     );
 };
 

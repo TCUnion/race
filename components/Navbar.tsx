@@ -20,6 +20,7 @@ import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
 import ThemeToggle from './ThemeToggle';
 import { useAuth, StravaAthlete } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 import { API_BASE_URL } from '../lib/api_config';
 
 interface NavbarProps {
@@ -49,10 +50,14 @@ const CONFIG = {
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { athlete, isBound, isAdmin, logout } = useAuth();
+  const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
+
+  // 根據主題選擇 Logo
+  const logoSrc = theme === 'dark' ? '/tcu-logo-light.png' : '/tcu-logo-dark.png';
 
   const saveAndSetAthlete = async (athleteData: any) => {
     // 規範化資料
@@ -170,8 +175,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     <header className="sticky top-0 z-50 border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#242424]/95 backdrop-blur-md transition-all duration-300">
       <div className="flex items-center justify-between px-4 sm:px-6 md:px-20 py-4 gap-2">
         <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 flex-shrink" onClick={() => handleNavigate(ViewType.LANDING)}>
-          <img src="/tsu-logo.png" alt="TCU Logo" className="h-8 w-auto flex-shrink-0 transform transition-transform group-hover:scale-110" />
-          <h2 className="hidden min-[270px]:block text-slate-900 dark:text-white text-base sm:text-lg font-black leading-tight tracking-tighter uppercase font-display italic group-hover:text-tsu-blue transition-colors truncate">TCU STRAVA RANK</h2>
+          <img src={logoSrc} alt="TCU Logo" className="h-8 w-auto flex-shrink-0 transform transition-transform group-hover:scale-110" />
         </div>
 
         {/* Desktop Navigation */}

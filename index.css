@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 /* 淺色模式（預設） */
 :root {
