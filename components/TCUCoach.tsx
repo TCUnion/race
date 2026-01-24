@@ -133,6 +133,7 @@ const TCUCoach: React.FC = () => {
                                 style={{ fontSize: `var(--tcu-fs-active, ${fontSizeValue})` }}
                                 data-fs-variant={fontSize}
                             >
+                                <span className="text-[10px] opacity-50 block mb-1">診斷: {fontSizeValue}</span>
                                 {msg.content}
                             </div>
                             <span className="text-[10px] text-slate-400 font-bold mt-1 px-1">
