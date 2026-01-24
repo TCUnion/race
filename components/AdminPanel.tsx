@@ -538,7 +538,7 @@ const AdminPanel: React.FC = () => {
         setIsUnbindingMember(member.email);
         try {
             // 從 localStorage 取得管理員的 Strava Athlete ID
-            const athleteMeta = localStorage.getItem('strava_athlete_meta');
+            const athleteMeta = localStorage.getItem('strava_athlete_data');
             let adminId: string | null = null;
 
             if (athleteMeta) {

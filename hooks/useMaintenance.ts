@@ -96,6 +96,15 @@ export interface LifespanSetting {
   updated_at: string;
 }
 
+// 活動輪組關聯（對應 activity_wheelset 表）
+export interface ActivityWheelset {
+  id: string;
+  activity_id: number;
+  wheelset_id: string;
+  athlete_id: number;
+  created_at: string;
+}
+
 // 保養狀態
 export type MaintenanceStatus = 'ok' | 'due_soon' | 'overdue';
 
@@ -148,13 +157,14 @@ export const useMaintenance = () => {
   const [lifespanSettings, setLifespanSettings] = useState<LifespanSetting[]>([]);
   const [appSettings, setAppSettings] = useState<AppSetting[]>([]); // New state for app settings
   const [activities, setActivities] = useState<StravaActivity[]>([]); // 新增活動資料狀態
+  const [activityWheelsets, setActivityWheelsets] = useState<ActivityWheelset[]>([]); // 活動輪組關聯
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
 
   // 取得 athlete_id
   const getAthleteId = useCallback((): string | null => {
-    const savedData = localStorage.getItem('strava_athlete_meta');
+    const savedData = localStorage.getItem('strava_athlete_data');
     if (!savedData) return null;
     const athlete = JSON.parse(savedData);
     return String(athlete.id);
@@ -213,6 +223,10 @@ export const useMaintenance = () => {
         supabase
           .from('app_settings')
           .select('*')
+          .eq('athlete_id', athleteId),
+        supabase
+          .from('activity_wheelset')
+          .select('*')
           .eq('athlete_id', athleteId)
       ]);
 
@@ -232,6 +246,7 @@ export const useMaintenance = () => {
       setLifespanSettings(lifespanSettingsResult.data || []);
       setActivities(activitiesResult.data || []);
       setAppSettings(appSettingsResult.data || []);
+      setActivityWheelsets(activityWheelsetsResult?.data || []);
     } catch (err: any) {
       console.error('載入保養資料失敗:', err);
       // 如果 strava_activities 表不存在，不要因此阻擋其他資料顯示

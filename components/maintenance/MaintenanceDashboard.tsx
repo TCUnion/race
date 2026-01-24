@@ -920,7 +920,7 @@ const MaintenanceDashboard: React.FC = () => {
                       onClick={async () => {
                         const existingCount = wheelsets.filter(ws => ws.bike_id === selectedBike.id).length;
                         const newItem = await addWheelset({
-                          athlete_id: JSON.parse(localStorage.getItem('strava_athlete_meta') || '{}').id,
+                          athlete_id: JSON.parse(localStorage.getItem('strava_athlete_data') || '{}').id,
                           bike_id: selectedBike.id,
                           name: `輪組 ${existingCount + 1}`,
                           brand: '',
@@ -939,7 +939,7 @@ const MaintenanceDashboard: React.FC = () => {
                       onClick={async () => {
                         const existingCount = wheelsets.filter(ws => !ws.bike_id).length;
                         const newItem = await addWheelset({
-                          athlete_id: JSON.parse(localStorage.getItem('strava_athlete_meta') || '{}').id,
+                          athlete_id: JSON.parse(localStorage.getItem('strava_athlete_data') || '{}').id,
                           bike_id: null,
                           name: `通用輪組 ${existingCount + 1}`,
                           brand: '',
