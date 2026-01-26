@@ -377,7 +377,7 @@ const MaintenanceDashboard: React.FC = () => {
       wheelset_id: ''
     });
     setEditingRecordId(null);
-    setTargetType(null);
+    setTargetType(null); // 重要：重置目標類型
     setIsAddModalOpen(false);
   };
 
@@ -459,7 +459,9 @@ const MaintenanceDashboard: React.FC = () => {
       athlete_id: String(athlete.id),
       maintenance_type: maintenanceTypeValue,
       service_date: formData.service_date,
-      mileage_at_service: selectedBike.converted_distance || (selectedBike.distance / 1000),
+      mileage_at_service: formData.mileage_at_service
+        ? parseFloat(formData.mileage_at_service as string)
+        : (selectedBike.converted_distance || (selectedBike.distance / 1000)),
       cost: formData.cost ? parseFloat(formData.cost) : undefined,
       shop_name: formData.shop_name || undefined,
       notes: formData.notes || undefined,
@@ -1928,23 +1930,40 @@ const MaintenanceDashboard: React.FC = () => {
               {/* 保養類型 */}
               <div>
                 <label className="block text-sm font-bold text-orange-200/60 mb-2">保養類型</label>
-                <select
-                  value={formData.service_type}
-                  onChange={e => setFormData(prev => ({ ...prev, service_type: e.target.value }))}
-                  required
-                  className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                >
-                  <option value="">-- 請選擇 --</option>
-                  <option value="chain_replacement">鏈條更換</option>
-                  <option value="cassette_replacement">飛輪更換</option>
-                  <option value="tire_replacement">輪胎更換</option>
-                  <option value="brake_pad_replacement">煞車皮更換</option>
-                  <option value="cable_replacement">煞車/變速線更換</option>
-                  <option value="bar_tape_replacement">手把帶更換</option>
-                  <option value="full_tune_up">大保養</option>
-                  <option value="wheel_truing">輪組校正</option>
-                  <option value="other">其他</option>
-                </select>
+                {targetType ? (
+                  <div className="flex items-center gap-2 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                    <Wrench className="w-5 h-5 text-orange-400" />
+                    <div>
+                      <div className="text-white font-bold">{targetType.name}</div>
+                      <div className="text-xs text-orange-200/40">{targetType.description}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 p-4 bg-white/5 border border-white/10 rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
+                    {displayMaintenanceTypes.map(type => (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => {
+                          const current = formData.maintenance_type;
+                          const next = current.includes(type.id)
+                            ? current.filter(id => id !== type.id)
+                            : [...current, type.id];
+                          setFormData(prev => ({ ...prev, maintenance_type: next }));
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${formData.maintenance_type.includes(type.id)
+                          ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/40'
+                          : 'bg-white/5 text-white/40 hover:bg-white/10'
+                          }`}
+                      >
+                        {type.name}
+                      </button>
+                    ))}
+                    {formData.maintenance_type.length === 0 && (
+                      <p className="text-xs text-orange-200/30 w-full text-center py-2 italic">請選擇一項或多項保養內容</p>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1958,6 +1977,86 @@ const MaintenanceDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">保養方式</label>
+                  <div className="flex bg-white/5 border border-white/20 rounded-xl p-1 h-[50px]">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, is_diy: true }))}
+                      className={`flex-1 rounded-lg text-sm font-bold transition-all ${formData.is_diy ? 'bg-orange-600 text-white shadow-md' : 'text-white/40 hover:text-white/60'
+                        }`}
+                    >
+                      DIY
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, is_diy: false }))}
+                      className={`flex-1 rounded-lg text-sm font-bold transition-all ${!formData.is_diy ? 'bg-white/10 text-white shadow-md' : 'text-white/40 hover:text-white/60'
+                        }`}
+                    >
+                      店家
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {!formData.is_diy && (
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">店家名稱</label>
+                  <input
+                    type="text"
+                    value={formData.shop_name}
+                    onChange={e => setFormData(prev => ({ ...prev, shop_name: e.target.value }))}
+                    placeholder="seh STUDIO"
+                    className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {targetType && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">零件品牌</label>
+                    <input
+                      type="text"
+                      value={formData.details[targetType.id]?.brand || ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          details: {
+                            ...prev.details,
+                            [targetType.id]: { ...(prev.details[targetType.id] || { model: '', other: '' }), brand: val }
+                          }
+                        }));
+                      }}
+                      placeholder="品牌（如：Shimano）"
+                      className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-orange-200/60 mb-2">零件型號</label>
+                    <input
+                      type="text"
+                      value={formData.details[targetType.id]?.model || ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          details: {
+                            ...prev.details,
+                            [targetType.id]: { ...(prev.details[targetType.id] || { brand: '', other: '' }), model: val }
+                          }
+                        }));
+                      }}
+                      placeholder="型號（如：105 R7100）"
+                      className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-bold text-orange-200/60 mb-2">費用 (選填)</label>
                   <input
                     type="number"
@@ -1967,25 +2066,25 @@ const MaintenanceDashboard: React.FC = () => {
                     className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">里程 km (選填)</label>
+                  <input
+                    type="number"
+                    value={formData.mileage_at_service || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, mileage_at_service: e.target.value }))}
+                    placeholder="自動計算"
+                    className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
               </div>
-              {/* 保養時里程 (選填) */}
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養時里程 km (選填)</label>
-                <input
-                  type="number"
-                  value={formData.mileage_at_service}
-                  onChange={e => setFormData(prev => ({ ...prev, mileage_at_service: e.target.value }))}
-                  placeholder="若留空則自動計算"
-                  className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
+
               {/* 備註 */}
               <div>
                 <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 (選填)</label>
                 <textarea
                   value={formData.notes}
                   onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="例如：更換品牌、型號..."
+                  placeholder="例如：施工細節、心得紀錄..."
                   rows={2}
                   className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
                 />

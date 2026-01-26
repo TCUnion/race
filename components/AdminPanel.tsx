@@ -1060,6 +1060,78 @@ const AdminPanel: React.FC = () => {
                         </div>
                     )}
 
+                    {/* 待審核管理員列表 */}
+                    {managers.some(m => !m.is_active) && (
+                        <div className="mb-8">
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                </span>
+                                <h4 className="text-lg font-bold text-red-500">待審核管理員 (Pending Approval)</h4>
+                            </div>
+                            <div className="overflow-x-auto bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-200 dark:border-red-900/30">
+                                <table className="w-full text-left">
+                                    <thead className="text-red-400 uppercase text-xs font-bold">
+                                        <tr>
+                                            <th className="px-6 py-4">管理員姓名</th>
+                                            <th className="px-6 py-4">Email 帳號</th>
+                                            <th className="px-6 py-4">角色</th>
+                                            <th className="px-4 py-4">單位名稱</th>
+                                            <th className="px-6 py-4 text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-red-100 dark:divide-red-900/30">
+                                        {managers.filter(m => !m.is_active).map((manager) => (
+                                            <tr key={manager.id} className="hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-slate-900 dark:text-white">
+                                                        {manager.real_name || '管理者'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-mono text-slate-500">
+                                                        {manager.email || '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                                        {manager.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
+                                                    {manager.shop_name || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm(`確定要啟用 ${manager.real_name || manager.email} 嗎？`)) {
+                                                                    await handleUpdateManagerStatus(manager.id, true);
+                                                                }
+                                                            }}
+                                                            className="flex items-center gap-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                                                        >
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            核准啟用
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteManager(manager)}
+                                                            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                                                            title="拒絕/刪除"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
@@ -1078,10 +1150,11 @@ const AdminPanel: React.FC = () => {
                                     m.shop_name?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
                                     String(m.athlete_id || '').includes(managerSearchTerm))
                                 ).map((manager) => (
-                                    <tr key={manager.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                    <tr key={manager.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${!manager.is_active ? 'opacity-50 grayscale' : ''}`}>
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-slate-900 dark:text-white">
                                                 {manager.real_name || '管理者'}
+                                                {!manager.is_active && <span className="ml-2 text-[10px] bg-slate-200 text-slate-500 px-1 rounded">停用中</span>}
                                             </div>
                                             <div className="text-xs text-slate-500 mt-0.5">
                                                 Strava ID: {manager.athlete_id || '未綁定'}

@@ -261,6 +261,14 @@ export interface AthleteMaintenanceSummary {
     overdueCount: number;
     lastServiceDate?: string;
     nextServiceDate?: string;
+    items?: {
+      type_id: string;
+      name: string;
+      percentage: number;
+      mileageSince: number;
+      interval: number;
+      status: 'ok' | 'due_soon' | 'overdue';
+    }[];
   }[];
   totalOverdue: number;
   totalDueSoon: number;

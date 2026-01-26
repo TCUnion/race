@@ -393,8 +393,44 @@ function ManagerDashboard() {
         );
     }
 
-    // 如果未登入或非管理員，顯示登入介面
+    // 4. 最後檢查權限：如果已登入但不是管理員，且沒有待審核資料，顯示登入介面
     if (!isAuthenticated || !isManager) {
+        // 如果有角色資料但未啟用，顯示審核中 (優先於登入介面顯示)
+        if (managerRole && !managerRole.is_active) {
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+                    <div className="bg-slate-800/50 border border-amber-500/30 rounded-3xl p-8 max-w-lg text-center backdrop-blur-xl">
+                        <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                            <Clock className="w-10 h-10 text-amber-500" />
+                        </div>
+                        <h2 className="text-2xl font-black text-white mb-2">帳號審核中</h2>
+                        <div className="inline-block px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-xs font-bold mb-6">
+                            {ROLE_NAMES[managerRole.role] || managerRole.role} · {managerRole.shop_name}
+                        </div>
+                        <p className="text-slate-400 mb-8 leading-relaxed">
+                            您的管理員申請已送出，目前正在等待系統管理員審核。<br />
+                            如有疑問請洽 <a href="https://page.line.me/criterium" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 font-bold hover:underline transition-colors">TCU Line@官方</a> 確認。
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-white font-bold transition-colors flex items-center gap-2"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                                檢查狀態
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="px-6 py-2 border border-slate-600 hover:bg-slate-700 rounded-xl text-slate-300 font-bold transition-colors"
+                            >
+                                登出
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         if (error) {
             // 如果有具體錯誤（例如被停權），顯示錯誤
             return (
@@ -416,31 +452,7 @@ function ManagerDashboard() {
         return <ManagerLogin onLoginSuccess={refresh} />;
     }
 
-    // 渲染錯誤狀態
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 max-w-md text-center">
-                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-white mb-2">載入失敗</h2>
-                    <p className="text-slate-400 mb-4">{error}</p>
-                    <button
-                        onClick={refresh}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-                    >
-                        重試
-                    </button>
-                    <div className="mt-4">
-                        <a href="/" className="text-sm text-slate-500 hover:text-white transition-colors">
-                            回首頁
-                        </a>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!isManager) {
+    if (!managerRole?.id) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
                 <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-8 max-w-lg text-center">
@@ -684,9 +696,12 @@ function ManagerDashboard() {
                                                         </span>
                                                     )}
                                                     <button
-                                                        onClick={() => sendNotification(summary.athlete_id, '您有保養項目即將到期，請盡快安排保養時間。', 'line')}
+                                                        onClick={() => {
+                                                            setSearchQuery(summary.athlete_name);
+                                                            setActiveTab('maintenance');
+                                                        }}
                                                         className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
-                                                        title="發送提醒"
+                                                        title="查看保養詳情"
                                                     >
                                                         <Send className="w-4 h-4 text-slate-400" />
                                                     </button>
@@ -1026,10 +1041,19 @@ function ManagerDashboard() {
                                         <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {summary.bikes.map(bike => {
                                                 const StatusIcon = statusIcons[bike.maintenanceStatus];
+                                                const isExpanded = expandedActivityRows.has(parseInt(bike.id) + 1000000); // 借用活動展開邏輯，加位移區隔
+                                                const toggleBike = () => {
+                                                    const newSet = new Set(expandedActivityRows);
+                                                    const key = parseInt(bike.id) + 1000000;
+                                                    if (newSet.has(key)) newSet.delete(key);
+                                                    else newSet.add(key);
+                                                    setExpandedActivityRows(newSet);
+                                                };
+
                                                 return (
                                                     <div
                                                         key={bike.id}
-                                                        className={`p-4 rounded-xl border ${statusColors[bike.maintenanceStatus]}`}
+                                                        className={`p-4 rounded-xl border transition-all ${statusColors[bike.maintenanceStatus]} ${isExpanded ? 'lg:col-span-full' : ''}`}
                                                     >
                                                         <div className="flex items-start justify-between mb-3">
                                                             <div className="flex items-center gap-2">
@@ -1046,10 +1070,46 @@ function ManagerDashboard() {
                                                                 最近保養: {bike.lastServiceDate}
                                                             </p>
                                                         )}
-                                                        <div className="mt-2 text-xs">
-                                                            {bike.overdueCount > 0 && <span className="mr-2">{bike.overdueCount} 項超期</span>}
-                                                            {bike.dueSoonCount > 0 && <span>{bike.dueSoonCount} 項即將到期</span>}
+                                                        <div className="mt-3 flex items-center justify-between">
+                                                            <div className="text-xs font-bold">
+                                                                {bike.overdueCount > 0 && <span className="mr-2 text-red-400">{bike.overdueCount} 項超期</span>}
+                                                                {bike.dueSoonCount > 0 && <span className="text-amber-400">{bike.dueSoonCount} 項即將到期</span>}
+                                                                {bike.overdueCount === 0 && bike.dueSoonCount === 0 && <span className="text-emerald-400">所有項目正常</span>}
+                                                            </div>
+                                                            <button
+                                                                onClick={toggleBike}
+                                                                className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1"
+                                                            >
+                                                                {isExpanded ? '收合詳情' : '查看清單'}
+                                                                {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                            </button>
                                                         </div>
+
+                                                        {/* 詳細清單 */}
+                                                        {isExpanded && bike.items && (
+                                                            <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                                                                {bike.items.sort((a, b) => b.percentage - a.percentage).map((item, idx) => (
+                                                                    <div key={idx} className="space-y-1">
+                                                                        <div className="flex items-center justify-between text-xs">
+                                                                            <span className="font-bold text-white/90">{item.name}</span>
+                                                                            <span className={`font-mono ${item.status === 'overdue' ? 'text-red-400' :
+                                                                                    item.status === 'due_soon' ? 'text-amber-400' : 'text-slate-400'
+                                                                                }`}>
+                                                                                {item.mileageSince.toFixed(0)} / {item.interval} km
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className={`h-full transition-all ${item.status === 'overdue' ? 'bg-red-500' :
+                                                                                        item.status === 'due_soon' ? 'bg-amber-500' : 'bg-emerald-500'
+                                                                                    }`}
+                                                                                style={{ width: `${Math.min(item.percentage, 100)}%` }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             })}

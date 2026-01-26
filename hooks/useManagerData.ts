@@ -111,7 +111,7 @@ export function useManagerData(): UseManagerDataReturn {
     // 檢查是否為管理者
     const checkManagerRole = useCallback(async (identity: { id?: string; email?: string }) => {
         try {
-            let query = supabase.from('manager_roles').select('*').eq('is_active', true);
+            let query = supabase.from('manager_roles').select('*'); // 移除 is_active 限制，允許查詢未啟用帳號
 
             if (identity.id) {
                 query = query.eq('athlete_id', identity.id);
@@ -220,6 +220,7 @@ export function useManagerData(): UseManagerDataReturn {
                 // 簡化的保養狀態計算
                 let overdue = 0;
                 let dueSoon = 0;
+                const items: any[] = [];
 
                 types?.forEach((type: any) => {
                     const typeRecords = bikeRecords.filter((r: any) =>
@@ -232,8 +233,23 @@ export function useManagerData(): UseManagerDataReturn {
                     const interval = type.default_interval_km || 3000;
                     const percentage = (mileageSince / interval) * 100;
 
-                    if (percentage >= 100) overdue++;
-                    else if (percentage >= 85) dueSoon++;
+                    let status: 'ok' | 'due_soon' | 'overdue' = 'ok';
+                    if (percentage >= 100) {
+                        overdue++;
+                        status = 'overdue';
+                    } else if (percentage >= 85) {
+                        dueSoon++;
+                        status = 'due_soon';
+                    }
+
+                    items.push({
+                        type_id: type.id,
+                        name: type.name,
+                        percentage,
+                        mileageSince,
+                        interval,
+                        status
+                    });
                 });
 
                 totalOverdue += overdue;
@@ -247,7 +263,8 @@ export function useManagerData(): UseManagerDataReturn {
                     dueSoonCount: dueSoon,
                     overdueCount: overdue,
                     lastServiceDate: lastRecord?.service_date,
-                    nextServiceDate: undefined, // 可進一步計算
+                    nextServiceDate: undefined,
+                    items
                 };
             });
 
@@ -475,7 +492,10 @@ export function useManagerData(): UseManagerDataReturn {
             const role = await checkManagerRole(identity);
 
             setManagerRole(role);
-            setIsManager(!!role);
+
+            // 只有啟用中才視為有效管理員
+            const isActiveManager = !!role && role.is_active;
+            setIsManager(isActiveManager);
 
             if (!role) {
                 // 非管理者，清空資料
@@ -486,6 +506,12 @@ export function useManagerData(): UseManagerDataReturn {
                 setMaintenanceStatistics([]);
                 setNotificationSettings([]);
                 setNotificationLogs([]);
+                setLoading(false);
+                return;
+            }
+
+            // 若帳號未啟用，不載入敏感資料，直接返回
+            if (!role.is_active) {
                 setLoading(false);
                 return;
             }
@@ -722,7 +748,7 @@ export function useManagerData(): UseManagerDataReturn {
         const upsertData: any = {
             role,
             shop_name: shopName,
-            is_active: true,
+            is_active: false,
             updated_at: new Date().toISOString(),
         };
 
@@ -736,7 +762,7 @@ export function useManagerData(): UseManagerDataReturn {
 
         const { error: insertError } = await supabase
             .from('manager_roles')
-            .upsert(upsertData);
+            .upsert(upsertData, { onConflict: 'email' });
 
         if (insertError) throw insertError;
         await refresh();

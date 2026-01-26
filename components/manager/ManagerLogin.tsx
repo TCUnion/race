@@ -69,7 +69,11 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
                     onLoginSuccess();
                 }
             } catch (err: any) {
-                setError(err.message || '登入失敗，請檢查帳號密碼。');
+                if (err.message === 'Invalid login credentials') {
+                    setError('帳號或密碼錯誤。若您剛註冊，請檢查信箱並完成驗證。');
+                } else {
+                    setError(err.message || '登入失敗，請檢查帳號密碼。');
+                }
             } finally {
                 setLoading(false);
             }
