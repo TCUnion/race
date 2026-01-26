@@ -7,7 +7,7 @@ from database import supabase
 
 app = FastAPI()
 
-origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://strava.criterium.tw,https://status-8wp.pages.dev,https://status.criterium.tw,https://n8n.criterium.tw").split(",")
+origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://strava.criterium.tw,https://status-8wp.pages.dev,https://status.criterium.tw,https://n8n.criterium.tw,https://service.criterium.tw").split(",")
 
 app.add_middleware(
     CORSMiddleware,
