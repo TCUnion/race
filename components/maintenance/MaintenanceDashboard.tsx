@@ -1925,27 +1925,6 @@ const MaintenanceDashboard: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* 保養類型 */}
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養類型</label>
-                <select
-                  value={formData.service_type}
-                  onChange={e => setFormData(prev => ({ ...prev, service_type: e.target.value }))}
-                  required
-                  className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                >
-                  <option value="">-- 請選擇 --</option>
-                  <option value="chain_replacement">鏈條更換</option>
-                  <option value="cassette_replacement">飛輪更換</option>
-                  <option value="tire_replacement">輪胎更換</option>
-                  <option value="brake_pad_replacement">煞車皮更換</option>
-                  <option value="cable_replacement">煞車/變速線更換</option>
-                  <option value="bar_tape_replacement">手把帶更換</option>
-                  <option value="full_tune_up">大保養</option>
-                  <option value="wheel_truing">輪組校正</option>
-                  <option value="other">其他</option>
-                </select>
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-orange-200/60 mb-2">保養日期</label>
@@ -1958,7 +1937,7 @@ const MaintenanceDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-orange-200/60 mb-2">費用 (選填)</label>
+                  <label className="block text-sm font-bold text-orange-200/60 mb-2">費用</label>
                   <input
                     type="number"
                     value={formData.cost}
@@ -1967,28 +1946,6 @@ const MaintenanceDashboard: React.FC = () => {
                     className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
                   />
                 </div>
-              </div>
-              {/* 保養時里程 (選填) */}
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">保養時里程 km (選填)</label>
-                <input
-                  type="number"
-                  value={formData.mileage_at_service}
-                  onChange={e => setFormData(prev => ({ ...prev, mileage_at_service: e.target.value }))}
-                  placeholder="若留空則自動計算"
-                  className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-              {/* 備註 */}
-              <div>
-                <label className="block text-sm font-bold text-orange-200/60 mb-2">備註 (選填)</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="例如：更換品牌、型號..."
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none resize-none"
-                />
               </div>
               <button
                 type="submit"

@@ -77,7 +77,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
             if (error) throw error;
 
             if (!data) {
-                setError('查無此會員資料。請先至 https://www.tcu.com.tw/ 進行註冊。系統每天早上 9 點更新會員資料，請於更新後再試一次。');
+                setError('查無此會員資料。請先至 https://www.tsu.com.tw/ 進行註冊。系統每天早上 9 點更新會員資料，請於更新後再試一次。');
             } else {
                 setLocalMemberData(data);
                 const result = await triggerOtp(data.email, data.real_name, tcuId);
@@ -414,7 +414,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                             <ExternalLink className="w-3.5 h-3.5" />
                             <span>若需修改個人資料，請前往</span>
                             <a
-                                href="https://www.tcu.com.tw/member-data/profile"
+                                href="https://www.tsu.com.tw/member-data/profile"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-tcu-blue hover:text-tcu-blue-light hover:underline transition-colors uppercase tracking-wider"

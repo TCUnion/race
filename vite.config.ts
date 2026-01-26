@@ -41,15 +41,6 @@ export default defineConfig(({ mode }) => {
       '__APP_VERSION__': JSON.stringify(gitVersion)
     },
 
-    build: {
-      rollupOptions: {
-        input: {
-          main: path.resolve(__dirname, 'index.html'),
-          manager: path.resolve(__dirname, 'manager.html'),
-          admin: path.resolve(__dirname, 'admin.html'),
-        },
-      },
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

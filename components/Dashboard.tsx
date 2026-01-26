@@ -57,7 +57,7 @@ import {
   Gauge,
   ExternalLink
 } from 'lucide-react';
-import WorkshopAuthorizationInbox from './WorkshopAuthorizationInbox';
+// ViewType removed from here as it's imported at the top
 
 interface DashboardProps {
   onNavigate: (view: ViewType) => void;
@@ -405,9 +405,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
         </section>
-
-        {/* Workshop Authorization Inbox */}
-        <WorkshopAuthorizationInbox />
 
         {/* Synchronized Slides */}
         <div className="relative min-h-[800px]">
