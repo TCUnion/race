@@ -95,62 +95,68 @@
 
     <script>
         // ========== n8n Format Response 節點的正確欄位名稱 ==========
-        // 根據實際輸出調整變數名稱
-
+        
+        // 從 n8n 注入的變數
         const athleteData = {
-            // 運動員 ID
             id: '{{ $json.athlete_id }}',
-
-            // 運動員姓名 (camelCase 格式)
             firstname: '{{ $json.firstName }}',
             lastname: '{{ $json.lastName }}',
-
-            // 頭像 URL
             profile: '{{ $json.profile }}',
             profile_medium: '{{ $json.profile_medium }}',
-
-            // Token 資訊
             access_token: '{{ $json.access_token }}',
             refresh_token: '{{ $json.refresh_token }}',
             expires_at: '{{ $json.expires_at }}'
         };
 
-        console.log('準備傳送授權資料:', athleteData);
+        // 取得回調網址 (預設為首頁)
+        const returnUrl = '{{ $json.return_url }}' || 'https://criterium.tw';
 
-        // 方法 1: postMessage（主要方法）
+        console.log('準備傳送授權資料:', athleteData);
+        const statusEl = document.querySelector('p');
+        const timerEl = document.getElementById('timer');
+
+        // 倒數計時函式
+        let seconds = 3;
+        const startCountdown = (callback) => {
+            const interval = setInterval(() => {
+                seconds--;
+                if (timerEl) timerEl.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(interval);
+                    callback();
+                }
+            }, 1000);
+        };
+
+        // 判斷模式：Popup (postMessage) vs Redirect (URL Param)
         if (window.opener) {
+            // [模式 1] Popup 模式
             try {
                 window.opener.postMessage({
                     type: 'STRAVA_AUTH_SUCCESS',
                     athlete: athleteData
                 }, '*');
                 console.log('postMessage 已發送');
+                statusEl.innerHTML += '<br><span style="font-size: 12px; color: #eee;">視窗將自動關閉...</span>';
+                
+                startCountdown(() => window.close());
             } catch (e) {
                 console.error('postMessage 發送失敗:', e);
+                statusEl.innerText = '授權成功，但在關閉視窗時發生錯誤。請手動關閉此視窗。';
             }
         } else {
-            console.warn('找不到 opener 視窗');
-        }
+            // [模式 2] Redirect 模式 (手機或一般跳轉)
+            console.log('找不到 opener，切換至 Redirect 模式');
+            statusEl.innerHTML += '<br><span style="font-size: 12px; color: #eee;">正在導回應用程式...</span>';
 
-        // 方法 2: localStorage 暫存（備用方法）
-        try {
-            localStorage.setItem('strava_athlete_meta_temp', JSON.stringify(athleteData));
-            console.log('localStorage 暫存已設置');
-        } catch (e) {
-            console.warn('localStorage 設置失敗（跨域限制）:', e);
+            // 將資料編碼放入 URL
+            const targetUrl = new URL(returnUrl);
+            targetUrl.searchParams.set('athlete', JSON.stringify(athleteData)); // 傳遞完整資料
+            
+            startCountdown(() => {
+                window.location.href = targetUrl.toString();
+            });
         }
-
-        // 倒數計時並關閉視窗
-        let seconds = 3;
-        const timerEl = document.getElementById('timer');
-        const countdown = setInterval(() => {
-            seconds--;
-            timerEl.textContent = seconds;
-            if (seconds <= 0) {
-                clearInterval(countdown);
-                window.close();
-            }
-        }, 1000);
     </script>
 </body>
 

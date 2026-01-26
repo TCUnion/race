@@ -1,0 +1,311 @@
+{
+    "name": "Manager Account Activation (v2 - With Auth Creation)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "GET",
+                "path": "activate-manager",
+                "options": {}
+            },
+            "id": "webhook-verify",
+            "name": "Activation Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "schema": "public",
+                "table": "manager_verifications",
+                "filters": [
+                    {
+                        "column": "token",
+                        "value": "={{ $json.query.token }}"
+                    },
+                    {
+                        "column": "is_used",
+                        "value": "false"
+                    }
+                ]
+            },
+            "id": "check-token",
+            "name": "Check Token",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "alwaysOutputData": false,
+            "continueOnFail": true
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.token }}",
+                            "value2": "={{ $node[\"Activation Webhook\"].json.query.token }}"
+                        }
+                    ]
+                }
+            },
+            "id": "validate-token",
+            "name": "Is Token Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "schema": "public",
+                "table": "manager_roles",
+                "filters": [
+                    {
+                        "column": "email",
+                        "value": "={{ $node[\"Activation Webhook\"].json.query.email }}"
+                    }
+                ]
+            },
+            "id": "get-manager-data",
+            "name": "Get Manager Data",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                850,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $env.SUPABASE_URL }}/auth/v1/admin/users",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "email",
+                            "value": "={{ $node[\"Activation Webhook\"].json.query.email }}"
+                        },
+                        {
+                            "name": "password",
+                            "value": "={{ $json.pending_password }}"
+                        },
+                        {
+                            "name": "email_confirm",
+                            "value": "=true"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "create-auth-user",
+            "name": "Create Auth User",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "schema": "public",
+                "table": "manager_roles",
+                "updateColumns": [
+                    "is_active",
+                    "user_id",
+                    "pending_password"
+                ],
+                "filters": [
+                    {
+                        "column": "email",
+                        "value": "={{ $node[\"Activation Webhook\"].json.query.email }}"
+                    }
+                ],
+                "columns": {
+                    "is_active": true,
+                    "user_id": "={{ $json.id }}",
+                    "pending_password": null
+                }
+            },
+            "id": "activate-role",
+            "name": "Activate Account",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "schema": "public",
+                "table": "manager_verifications",
+                "updateColumns": [
+                    "is_used"
+                ],
+                "filters": [
+                    {
+                        "column": "token",
+                        "value": "={{ $node[\"Activation Webhook\"].json.query.token }}"
+                    }
+                ],
+                "columns": {
+                    "is_used": true
+                }
+            },
+            "id": "mark-used",
+            "name": "Mark Token Used",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "options": {
+                    "responseCode": 200,
+                    "responseBody": "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>啟用成功</title><style>body{font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;background:#f4f7f9;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.card{background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px}.icon{font-size:48px;margin-bottom:20px;color:#10b981}h1{color:#1e293b;margin:0 0 10px;font-size:24px}p{color:#64748b;line-height:1.5;margin-bottom:30px}.btn{background:#3b82f6;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:600;display:inline-block}.btn:hover{background:#2563eb}</style></head><body><div class=\"card\"><div class=\"icon\">🎉</div><h1>帳號啟用成功</h1><p>您的管理者權限已生效，<br>現在可以登入後台開始使用了。</p><a href=\"/manager\" class=\"btn\">前往登入頁面</a></div></body></html>"
+                }
+            },
+            "id": "success-page",
+            "name": "Show Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1650,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "options": {
+                    "responseCode": 400,
+                    "responseBody": "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>啟用失敗</title><style>body{font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;background:#f4f7f9;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.card{background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px}.icon{font-size:48px;margin-bottom:20px;color:#ef4444}h1{color:#1e293b;margin:0 0 10px;font-size:24px}p{color:#64748b;line-height:1.5;margin-bottom:30px}</style></head><body><div class=\"card\"><div class=\"icon\">⚠️</div><h1>連結無效或已過期</h1><p>請確認您是否已經啟用過，<br>或聯繫系統管理員。</p></div></body></html>"
+                }
+            },
+            "id": "error-page",
+            "name": "Show Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                850,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Activation Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Check Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Token": {
+            "main": [
+                [
+                    {
+                        "node": "Is Token Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Token Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Manager Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Show Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Manager Data": {
+            "main": [
+                [
+                    {
+                        "node": "Create Auth User",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Auth User": {
+            "main": [
+                [
+                    {
+                        "node": "Activate Account",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Activate Account": {
+            "main": [
+                [
+                    {
+                        "node": "Mark Token Used",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark Token Used": {
+            "main": [
+                [
+                    {
+                        "node": "Show Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

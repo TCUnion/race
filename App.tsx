@@ -12,6 +12,7 @@ import MemberBindingCard from './components/MemberBindingCard';
 import MaintenanceDashboard from './components/maintenance/MaintenanceDashboard';
 import ACPowerTraining from './components/ACPowerTraining';
 import TeamDashboard from './components/TeamDashboard';
+import SettingsPage from './components/SettingsPage';
 import { useSEO } from './hooks/useSEO';
 import { useAuth } from './hooks/useAuth';
 
@@ -71,10 +72,13 @@ const App: React.FC = () => {
         return <ACPowerTraining />;
       case ViewType.TEAM_DASHBOARD:
         return <TeamDashboard />;
+      case ViewType.SETTINGS:
+        return <SettingsPage />;
       default:
         return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
     }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -9,6 +9,8 @@ export enum ViewType {
   MEMBER_BINDING = 'MEMBER_BINDING',
   AI_COACH = 'AI_COACH',
   TEAM_DASHBOARD = 'TEAM_DASHBOARD',
+  MANAGER_DASHBOARD = 'MANAGER_DASHBOARD',
+  SETTINGS = 'SETTINGS',
 }
 
 export enum RaceStatus {
@@ -40,6 +42,7 @@ export interface Participant {
   date: string;
   strava_activity_id?: string | number;
 }
+
 export interface StravaActivity {
   id: number;
   athlete_id: number;
@@ -49,6 +52,11 @@ export interface StravaActivity {
   start_date: string;
   gear_id: string; // 對應 bikes.id
   total_elevation_gain: number; // 總爬升 (公尺)
+  average_watts?: number;
+  max_watts?: number;
+  average_heartrate?: number;
+  max_heartrate?: number;
+  suffer_score?: number;
 }
 
 export interface Activity {
@@ -142,4 +150,151 @@ export interface Wheelset {
   color?: string;
   created_at: string;
   updated_at: string;
+}
+
+// ====================================
+// 管理後台系統型別定義
+// ====================================
+
+// 授權狀態
+export type AuthorizationStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+
+// 授權類型
+export type AuthorizationType = 'maintenance' | 'activity' | 'statistics' | 'all';
+
+// 通知類型
+export type NotificationType = 'maintenance_due' | 'parts_prep' | 'activity_summary' | 'overdue_alert';
+
+// 通知管道
+export type NotificationChannel = 'line' | 'email' | 'push' | 'all';
+
+// 管理者角色
+export type ManagerRole = 'admin' | 'shop_owner' | 'team_leader' | 'technician' | 'team_coach' | 'power_coach';
+
+// 授權關係
+export interface UserAuthorization {
+  id: string;
+  manager_athlete_id: number;
+  athlete_id: number;
+  authorization_type: AuthorizationType;
+  status: AuthorizationStatus;
+  shop_name?: string;
+  notes?: string;
+  created_at: string;
+  approved_at?: string;
+  expires_at?: string;
+  updated_at: string;
+  // 關聯資料 (前端組合)
+  athlete_info?: {
+    firstname?: string;
+    lastname?: string;
+    profile?: string;
+  };
+}
+
+// 通知設定
+export interface NotificationSetting {
+  id: string;
+  manager_athlete_id: number;
+  notification_type: NotificationType;
+  channel: NotificationChannel;
+  is_enabled: boolean;
+  threshold_days: number;
+  threshold_percentage: number;
+  schedule_time: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 通知記錄
+export interface NotificationLog {
+  id: string;
+  manager_athlete_id: number;
+  athlete_id?: number;
+  notification_type: NotificationType;
+  title?: string;
+  message: string;
+  channel: NotificationChannel;
+  status: 'pending' | 'sent' | 'failed' | 'read';
+  error_message?: string;
+  sent_at?: string;
+  read_at?: string;
+  created_at: string;
+}
+
+// 管理者角色資料
+export interface ManagerRoleData {
+  id: string;
+  athlete_id: number;
+  role: ManagerRole;
+  shop_name?: string;
+  // 新增聯絡資訊欄位
+  address?: string;
+  phone?: string;
+  social_links?: {
+    facebook?: string;
+    instagram?: string;
+    youtube?: string;
+    website?: string;
+  };
+  // Legacy fields (optional)
+  shop_address?: string;
+  shop_phone?: string;
+  line_notify_token?: string;
+  email?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// 車友保養摘要 (用於報表顯示)
+export interface AthleteMaintenanceSummary {
+  athlete_id: number;
+  athlete_name: string;
+  athlete_profile?: string;
+  bikes: {
+    id: string;
+    name: string;
+    distance: number;
+    maintenanceStatus: 'ok' | 'due_soon' | 'overdue';
+    dueSoonCount: number;
+    overdueCount: number;
+    lastServiceDate?: string;
+    nextServiceDate?: string;
+  }[];
+  totalOverdue: number;
+  totalDueSoon: number;
+}
+
+// 活動摘要統計
+export interface ActivitySummary {
+  athlete_id: number;
+  athlete_name: string;
+  total_activities: number;
+  total_distance: number; // km
+  total_elevation: number; // m
+  total_time: number; // hours
+  bikes_used: {
+    bike_id: string;
+    bike_name: string;
+    distance: number;
+    activity_count: number;
+  }[];
+  most_active_region?: string;
+  // Performance Data
+  avg_watts?: number;
+  max_watts?: number;
+  avg_heartrate?: number;
+  max_heartrate?: number;
+  recent_activities?: StravaActivity[];
+}
+
+// 保養項目統計
+export interface MaintenanceStatistics {
+  type_id: string;
+  type_name: string;
+  total_count: number;
+  total_cost: number;
+  avg_interval_km: number;
+  athletes_count: number;
 }

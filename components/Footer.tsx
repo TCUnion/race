@@ -1,14 +1,16 @@
 import React from 'react';
-import { Share2, FileText, LifeBuoy, Bike, MessageCircle, Globe } from 'lucide-react';
+import { Share2, FileText, LifeBuoy, Bike, MessageCircle, Globe, Shield } from 'lucide-react';
 import { ViewType } from '../types';
-import { useSiteSettings } from '../hooks/useSiteSettings';  // [NEW] Import hook
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useAuth } from '../hooks/useAuth';  // [NEW] Import hook
 
 interface FooterProps {
   onNavigate?: (view: ViewType) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  const { getSetting } = useSiteSettings(); // [NEW] Use hook
+  const { getSetting } = useSiteSettings();
+  const { isAdmin } = useAuth(); // [NEW] Use hook
 
   // Helper to get link or #
   const getLink = (key: string) => getSetting(key) || '#';
@@ -55,6 +57,15 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <a className="text-[10px] font-bold text-slate-500 hover:text-tcu-blue uppercase transition-colors" href="#">Privacy</a>
             <a className="text-[10px] font-bold text-slate-500 hover:text-tcu-blue uppercase transition-colors" href="#">Terms</a>
             <a className="text-[10px] font-bold text-slate-500 hover:text-tcu-blue uppercase transition-colors" href="/privacy-policy.html">Privacy Policy</a>
+            {isAdmin && onNavigate && (
+              <button
+                onClick={() => onNavigate(ViewType.ADMIN)}
+                className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase transition-colors flex items-center gap-1 opacity-50 hover:opacity-100"
+              >
+                <Shield className="w-3 h-3" />
+                ADMIN
+              </button>
+            )}
           </div>
         </div>
       </div>
