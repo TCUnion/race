@@ -14,7 +14,8 @@ import {
   UserCheck,
   Zap,
   Sparkles,
-  Users2
+  Users2,
+  Store
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StravaLogo from './StravaLogo';
@@ -25,6 +26,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useFontSize, FontSize } from '../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../lib/api_config';
+import { useMemberAuthorizations } from '../hooks/useMemberAuthorizations';
 
 interface NavbarProps {
   currentView: ViewType;
@@ -60,6 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
+  const { pendingAuthorizations } = useMemberAuthorizations();
 
   // 根據主題選擇 Logo
   const logoSrc = theme === 'dark' ? '/tcu-logo-light.png' : '/tcu-logo-dark.png';
@@ -144,6 +147,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   };
 
   useEffect(() => {
+    // 1. Handle PostMessage (Legacy/Popup support)
     const handleMessage = (event: MessageEvent) => {
       if (!CONFIG.allowedOrigins.includes(event.origin) && event.origin !== "null") return;
       if (event.data?.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
@@ -152,6 +156,21 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       }
     };
     window.addEventListener('message', handleMessage);
+
+    // 2. Handle URL Parameters (Full Page Redirect support)
+    const params = new URLSearchParams(window.location.search);
+    const athleteParam = params.get('athlete');
+    if (athleteParam) {
+      try {
+        const athleteData = JSON.parse(decodeURIComponent(athleteParam));
+        saveAndSetAthlete(athleteData);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {
+        console.error('Failed to parse athlete data from URL', e);
+      }
+    }
+
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
@@ -164,16 +183,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     setIsLoading(true);
     setIsMenuOpen(false);
     localStorage.removeItem(CONFIG.storageKey + '_temp');
-    const width = 600, height = 700;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
+
+    // Use Full Page Redirect instead of Popup to avoid blockers
     const url = `${CONFIG.stravaAuthUrl}?return_url=${encodeURIComponent(window.location.href)}`;
-    authWindowRef.current = window.open(url, 'strava_auth', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`);
-    if (!authWindowRef.current) {
-      window.location.href = url;
-    } else {
-      startPolling();
-    }
+    window.location.href = url;
   };
 
   return (
@@ -200,9 +213,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.DASHBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
+              className={`relative text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.DASHBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.dashboard')}
+              {pendingAuthorizations.length > 0 && (
+                <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              )}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
@@ -237,14 +253,19 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 {t('nav.ai_coach')}
               </button>
             )}
+
+            <button
+              onClick={() => handleNavigate(ViewType.SETTINGS)}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.SETTINGS ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
+            >
+              設定
+            </button>
+
+
             {isAdmin && (
-              <button
-                onClick={() => handleNavigate(ViewType.ADMIN)}
-                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.ADMIN ? 'text-red-600 border-b-2 border-red-600 pb-1' : 'text-red-400 hover:text-red-600'}`}
-              >
-                {t('nav.admin')}
-              </button>
+              <div className="hidden"></div>
             )}
+
           </nav>
 
           <div className="flex items-center gap-4 pl-4 border-l border-slate-200 dark:border-slate-800">
@@ -314,9 +335,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           )}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-slate-700 dark:text-white hover:text-tcu-blue transition-colors p-1"
+            className="text-slate-700 dark:text-white hover:text-tcu-blue transition-colors p-1 relative"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {pendingAuthorizations.length > 0 && !isMenuOpen && (
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-[#242424]"></span>
+            )}
           </button>
         </div>
       </div>
@@ -354,10 +378,13 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             </button>
             <button
               onClick={() => handleNavigate(ViewType.DASHBOARD)}
-              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.DASHBOARD ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`relative flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.DASHBOARD ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
             >
               <LayoutDashboard className="w-5 h-5 mr-3" />
               {t('nav.dashboard')}
+              {pendingAuthorizations.length > 0 && (
+                <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              )}
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MAINTENANCE)}
@@ -426,15 +453,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 )}
               </div>
             )}
-            {isAdmin && (
-              <button
-                onClick={() => handleNavigate(ViewType.ADMIN)}
-                className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.ADMIN ? 'bg-red-600/10 text-red-600' : 'text-red-400 hover:bg-red-600/5'}`}
-              >
-                <Shield className="w-5 h-5 mr-3" />
-                {t('nav.admin')} PANEL
-              </button>
-            )}
+
+            <button
+              onClick={() => handleNavigate(ViewType.SETTINGS)}
+              className={`flex items-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.SETTINGS ? 'bg-tcu-blue/10 text-tcu-blue' : 'text-slate-400 hover:bg-slate-800'}`}
+            >
+              <Users2 className="w-5 h-5 mr-3" />
+              設定
+            </button>
+
+            {/* Admin Button Removed from original position */}
 
             {!athlete && !isLoading && (
               <button
@@ -454,10 +482,20 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 <span>{t('nav.logout_system')}</span>
               </button>
             )}
+
+            {isAdmin && (
+              <button
+                onClick={() => handleNavigate(ViewType.ADMIN)}
+                className={`mt-4 w-full flex items-center justify-center px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${currentView === ViewType.ADMIN ? 'bg-red-600/10 text-red-600' : 'text-red-400 hover:bg-red-600/5'}`}
+              >
+                <Shield className="w-5 h-5 mr-3" />
+                {t('nav.admin')} PANEL
+              </button>
+            )}
           </nav>
-        </div>
+        </div >
       )}
-    </header>
+    </header >
   );
 };
 
