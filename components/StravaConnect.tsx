@@ -219,7 +219,8 @@ const StravaConnect: React.FC = () => {
         );
 
         if (!authWindowRef.current) {
-            window.location.href = url;
+            setIsLoading(false);
+            alert('請允許彈出視窗以進行 Strava 授權');
             return;
         }
 

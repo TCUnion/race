@@ -18,7 +18,9 @@
         "authorizing": "授權中",
         "error": "發生錯誤",
         "connect_strava": "連接 Strava",
-        "strava_connected": "已連接 Strava"
+        "strava_connected": "已連接 Strava",
+        "close_menu": "關閉選單",
+        "enable_popup": "請允許彈出視窗以進行 Strava 授權"
     },
     "landing": {
         "subtitle": "連結你的 Strava，挑戰經典路段，與全台頂尖好手一決高下。",

@@ -18,7 +18,9 @@
         "authorizing": "Authorizing",
         "error": "Error occurred",
         "connect_strava": "Connect Strava",
-        "strava_connected": "Strava Connected"
+        "strava_connected": "Strava Connected",
+        "close_menu": "Close Menu",
+        "enable_popup": "Please enable popups to connect with Strava"
     },
     "landing": {
         "subtitle": "Connect Strava, challenge classic segments, and compete with top riders.",

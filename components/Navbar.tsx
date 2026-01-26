@@ -146,34 +146,19 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     }, CONFIG.pollingInterval);
   };
 
+  // 3. Lock body scroll when menu is open
   useEffect(() => {
-    // 1. Handle PostMessage (Legacy/Popup support)
-    const handleMessage = (event: MessageEvent) => {
-      if (!CONFIG.allowedOrigins.includes(event.origin) && event.origin !== "null") return;
-      if (event.data?.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
-        stopPolling();
-        saveAndSetAthlete(event.data.athlete);
-      }
-    };
-    window.addEventListener('message', handleMessage);
-
-    // 2. Handle URL Parameters (Full Page Redirect support)
-    const params = new URLSearchParams(window.location.search);
-    const athleteParam = params.get('athlete');
-    if (athleteParam) {
-      try {
-        const athleteData = JSON.parse(decodeURIComponent(athleteParam));
-        saveAndSetAthlete(athleteData);
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } catch (e) {
-        console.error('Failed to parse athlete data from URL', e);
-      }
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
 
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
+  // Restore functions
   const handleNavigate = (view: ViewType) => {
     onNavigate(view);
     setIsMenuOpen(false);
@@ -184,9 +169,25 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     setIsMenuOpen(false);
     localStorage.removeItem(CONFIG.storageKey + '_temp');
 
-    // Use Full Page Redirect instead of Popup to avoid blockers
+    const width = 600;
+    const height = 700;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
     const url = `${CONFIG.stravaAuthUrl}?return_url=${encodeURIComponent(window.location.href)}`;
-    window.location.href = url;
+
+    authWindowRef.current = window.open(
+      url,
+      'strava_auth',
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+    );
+
+    if (authWindowRef.current) {
+      authWindowRef.current.focus();
+      startPolling();
+    } else {
+      setIsLoading(false);
+      alert(t('common.enable_popup', '請允許彈出視窗以進行 Strava 授權'));
+    }
   };
 
   return (
@@ -347,7 +348,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 h-[calc(100vh-70px)] overflow-y-auto bg-white dark:bg-[#1a1a1a] border-b border-slate-200 dark:border-slate-800 animate-in slide-in-from-top duration-300 pb-10">
+        <div className="lg:hidden absolute top-full left-0 right-0 h-[calc(100dvh-70px)] overflow-y-auto bg-white dark:bg-[#1a1a1a] border-b border-slate-200 dark:border-slate-800 animate-in slide-in-from-top duration-300 pb-10 shadow-2xl z-40">
           <nav className="flex flex-col p-4 gap-2">
             {athlete && (
               <div className="flex items-center gap-4 p-4 bg-slate-100 dark:bg-slate-900/50 rounded-2xl mb-4 border border-slate-200 dark:border-slate-800">
@@ -492,6 +493,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 {t('nav.admin')} PANEL
               </button>
             )}
+
+            <button
+              onClick={() => setIsMenuOpen(false)}
+              className="mt-8 w-full flex items-center justify-center px-6 py-4 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5 mr-2" />
+              關閉選單
+            </button>
+
           </nav>
         </div >
       )}
