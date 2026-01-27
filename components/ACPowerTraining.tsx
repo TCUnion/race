@@ -1,5 +1,5 @@
 import React from 'react';
-import TCUCoach from './TCUCoach';
+import AthletePowerTrainingReport from './member/AthletePowerTrainingReport';
 import { useAuth } from '../hooks/useAuth';
 import { ShieldAlert, Zap } from 'lucide-react';
 
@@ -27,22 +27,12 @@ const ACPowerTraining: React.FC = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tcu-blue/10 text-tcu-blue border border-tcu-blue/20">
-                        <Zap className="w-4 h-4 fill-tcu-blue" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Premium Feature</span>
-                    </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white uppercase italic tracking-tight">
-                        AI 功率訓練教室
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium max-w-2xl mx-auto">
-                        運用最先進的 AI 技術分析您的騎乘數據，提供個人化的訓練建議與即時問答。讓數據轉化為您的競爭優勢。
-                    </p>
-                </div>
+
 
                 {/* Main Content */}
+
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
-                    <TCUCoach />
+                    <AthletePowerTrainingReport />
                 </div>
             </div>
         </div>

@@ -1,13 +1,15 @@
 /**
- * PowerTrainingReport 組件
- * 功率教練專用的科學化訓練報表
+ * AthletePowerTrainingReport 組件
+ * 專為個人選手設計的功率分析報表
+ * 移植自 PowerTrainingReport，僅顯示當前登入使用者的數據
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    AlertCircle, User, Calendar, RefreshCw, CheckCircle, Edit2, Zap, Heart, Activity, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Clock, Flame, Target, BarChart3
+    AlertCircle, User, Calendar, RefreshCw, CheckCircle, Edit2, Zap, Heart, Activity, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Clock, Flame, Target, BarChart3, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { usePowerAnalysis } from '../../hooks/usePowerAnalysis';
 import {
     ActivitySummary,
@@ -20,12 +22,6 @@ import {
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush
 } from 'recharts';
-
-interface PowerTrainingReportProps {
-    activitySummaries: ActivitySummary[];
-    defaultFTP?: number;
-    defaultMaxHR?: number;
-}
 
 // 格式化時間 (秒 -> HH:MM:SS)
 const formatDuration = (seconds: number): string => {
@@ -504,13 +500,19 @@ const TrainingLoadCard: React.FC<{
     );
 };
 
-// 單一選手報表
-const AthleteReport: React.FC<{
-    summary: ActivitySummary;
-    ftp: number;
-    maxHR?: number;
-}> = ({ summary, ftp, maxHR }) => {
-    const [expanded, setExpanded] = useState(false);
+const AthletePowerTrainingReport: React.FC = () => {
+    const { athlete } = useAuth();
+    const [recentActivities, setRecentActivities] = useState<StravaActivity[]>([]);
+    const [loadingActivities, setLoadingActivities] = useState(true);
+    const [currentFTP, setCurrentFTP] = useState(0);
+    const [currentMaxHR, setCurrentMaxHR] = useState(190);
+
+    // 分頁狀態
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
+
+    // 報表相關狀態
     const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
     const [activityAnalysis, setActivityAnalysis] = useState<ActivityPowerAnalysis | null>(null);
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -520,32 +522,78 @@ const AthleteReport: React.FC<{
 
     const { getActivityStreams, analyzeActivityPower, checkStreamsAvailability } = usePowerAnalysis();
 
-    // 檢查哪些活動已有數據流
+    // 1. 取得最近活動列表 & 選手基本數據
     useEffect(() => {
-        const checkStreams = async () => {
-            if (!summary.recent_activities?.length) return;
-            const ids = summary.recent_activities.map(a => a.id);
-            const availableIds = await checkStreamsAvailability(ids);
-            setAvailableStreams(new Set(availableIds));
+        if (!athlete?.id) return;
+
+        const fetchData = async () => {
+            setLoadingActivities(true);
+            try {
+                // 計算分頁範圍
+                const from = (currentPage - 1) * itemsPerPage;
+                const to = from + itemsPerPage - 1;
+
+                const { data: activities, error, count } = await supabase
+                    .from('strava_activities')
+                    .select('*', { count: 'exact' })
+                    .eq('athlete_id', athlete.id)
+                    .order('start_date', { ascending: false })
+                    .range(from, to);
+
+                if (count !== null) setTotalCount(count);
+
+                if (error) throw error;
+                const activityList = activities || [];
+                setRecentActivities(activityList);
+
+                // 檢查哪些活動已有 Streams
+                if (activityList.length > 0) {
+                    const ids = activityList.map(a => a.id);
+                    const availableIds = await checkStreamsAvailability(ids);
+                    setAvailableStreams(new Set(availableIds));
+
+                    // 嘗試從最近的 Streams 中找出 FTP (若有)
+                    // 這邊簡單做：取最近 5 筆有 Streams 的，看有沒有 FTP 紀錄
+                    // 或是直接查詢 strava_streams 最近的一筆
+                    const { data: latestStream } = await supabase
+                        .from('strava_streams')
+                        .select('ftp, max_heartrate')
+                        .in('activity_id', availableIds)
+                        .gt('ftp', 0) // 找有設定 FTP 的
+                        .order('activity_id', { ascending: false }) // 大概是最近的 ID
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (latestStream) {
+                        setCurrentFTP(latestStream.ftp || 0);
+                        if (latestStream.max_heartrate) setCurrentMaxHR(latestStream.max_heartrate);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch athlete activities:', err);
+            } finally {
+                setLoadingActivities(false);
+            }
         };
-        checkStreams();
-    }, [summary.recent_activities, checkStreamsAvailability]);
+
+        fetchData();
+    }, [athlete?.id, checkStreamsAvailability, currentPage, itemsPerPage]);
 
     // 計算週 TSS（簡化版）
     const weeklyTSS = useMemo(() => {
-        if (!summary.recent_activities) return 0;
+        if (!recentActivities.length) return 0;
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        return summary.recent_activities
+        return recentActivities
             .filter(a => new Date(a.start_date) >= oneWeekAgo && (a.sport_type === 'Ride' || a.sport_type === 'VirtualRide') && a.average_watts)
             .reduce((sum, a) => {
                 // 簡化 TSS 估算：(時間 * IF^2 * 100) / 3600
-                const estimatedIF = ftp > 0 ? (a.average_watts || 0) / ftp : 0;
+                const estimatedIF = currentFTP > 0 ? (a.average_watts || 0) / currentFTP : 0;
                 const estimatedTSS = (a.moving_time * Math.pow(estimatedIF, 2) * 100) / 3600;
                 return sum + estimatedTSS;
             }, 0);
-    }, [summary.recent_activities, ftp]);
+    }, [recentActivities, currentFTP]);
 
     // 分析選定活動
     const handleActivitySelect = async (activity: StravaActivity) => {
@@ -560,7 +608,11 @@ const AthleteReport: React.FC<{
         try {
             const streams = await getActivityStreams(activity.id);
             if (streams) {
-                const analysis = analyzeActivityPower(activity, streams, streams.ftp || ftp, streams.max_heartrate || maxHR);
+                // 使用 Streams 裡的 FTP 或是目前的 FTP
+                const analysisFtp = streams.ftp || currentFTP;
+                const analysisMaxHR = streams.max_heartrate || currentMaxHR;
+
+                const analysis = analyzeActivityPower(activity, streams, analysisFtp, analysisMaxHR);
                 setActivityAnalysis(analysis);
             } else {
                 setActivityAnalysis(null);
@@ -575,26 +627,19 @@ const AthleteReport: React.FC<{
 
     // 同步狀態管理: { [activityId]: 'idle' | 'syncing' | 'success' | 'error' }
     const [syncStatus, setSyncStatus] = useState<Record<number, 'idle' | 'syncing' | 'success' | 'error'>>({});
-
-    // 用於記錄每個活動上次點擊同步的時間 (防止連點)
     const [lastSyncTime, setLastSyncTime] = useState<Record<number, number>>({});
 
     // 觸發同步 (手動呼叫 Webhook)
     const handleSyncActivity = async (e: React.MouseEvent, activity: StravaActivity) => {
-        e.stopPropagation(); // 防止觸發活動展開
+        e.stopPropagation();
 
         const now = Date.now();
         const lastTime = lastSyncTime[activity.id] || 0;
-
-        // 檢查是否正在同步中 或 距離上次點擊未滿 5 秒
-        if (syncStatus[activity.id] === 'syncing' || (now - lastTime < 5000)) {
-            return;
-        }
+        if (syncStatus[activity.id] === 'syncing' || (now - lastTime < 5000)) return;
 
         setSyncStatus(prev => ({ ...prev, [activity.id]: 'syncing' }));
         setLastSyncTime(prev => ({ ...prev, [activity.id]: now }));
 
-        // 設定 10 秒 Timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -605,48 +650,35 @@ const AthleteReport: React.FC<{
                 event_time: Math.floor(Date.now() / 1000),
                 object_id: activity.id,
                 object_type: "activity",
-                owner_id: summary.athlete_id,
-                subscription_id: 0, // 手動觸發
+                owner_id: athlete?.id, // 使用當前使用者 ID
+                subscription_id: 0,
                 updates: {}
             };
 
             const response = await fetch('https://n8n.criterium.tw/webhook/strava-activity-webhook', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
-                signal: controller.signal // 傳入 signal 以支援 timeout
+                signal: controller.signal
             });
 
-            clearTimeout(timeoutId); // 成功回傳後清除 timeout
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 setSyncStatus(prev => ({ ...prev, [activity.id]: 'success' }));
                 setAvailableStreams(prev => new Set(prev).add(activity.id));
 
-                // 如果有選手 FTP 設定，同時更新 strava_streams 中的 FTP 欄位
-                // 更新 strava_streams 中的 FTP 欄位 (預設 0，表示未設定)
-                const ftpToSave = summary.ftp || 0;
-                // 更新 strava_streams 中的 Max HR 欄位 (預設 190)
-                const maxHrToSave = summary.max_heartrate || 190;
+                // 更新 FTP
+                const ftpToSave = currentFTP || 0;
+                const maxHrToSave = currentMaxHR || 190;
 
-                const { error: updateError } = await supabase.from('strava_streams')
-                    .update({
-                        ftp: ftpToSave,
-                        max_heartrate: maxHrToSave
-                    })
+                await supabase.from('strava_streams')
+                    .update({ ftp: ftpToSave, max_heartrate: maxHrToSave })
                     .eq('activity_id', activity.id);
 
-                if (updateError) {
-                    console.error('更新 FTP 失敗 (Sync):', updateError);
-                }
-
-                // 3秒後重置狀態 (如果已同步，保持 success 狀態或透過 availableStreams 控制顯示)
                 setTimeout(() => {
                     setSyncStatus(prev => ({ ...prev, [activity.id]: 'idle' }));
                     if (selectedActivity?.id === activity.id) {
-                        // 重新觸發分析以更新數據
                         handleActivitySelect(activity);
                     }
                 }, 3000);
@@ -654,14 +686,8 @@ const AthleteReport: React.FC<{
                 throw new Error('Webhook call failed');
             }
         } catch (error: any) {
-            clearTimeout(timeoutId); // 發生錯誤也要清除 timeout
+            clearTimeout(timeoutId);
             console.error('同步失敗:', error);
-
-            // 區分 Timeout 錯誤與一般錯誤
-            if (error.name === 'AbortError') {
-                console.error('同步請求超時 (超過 10 秒)');
-            }
-
             setSyncStatus(prev => ({ ...prev, [activity.id]: 'error' }));
             setTimeout(() => setSyncStatus(prev => ({ ...prev, [activity.id]: 'idle' })), 3000);
         }
@@ -670,9 +696,7 @@ const AthleteReport: React.FC<{
     // 更新活動特定的 FTP
     const handleUpdateFtp = async (newFtp: number) => {
         if (!selectedActivity) return;
-
         try {
-            // 1. Update Supabase
             const { error } = await supabase
                 .from('strava_streams')
                 .update({ ftp: newFtp })
@@ -680,312 +704,305 @@ const AthleteReport: React.FC<{
 
             if (error) throw error;
 
-            // 2. Re-calculate Analysis
+            // 更新全域狀態 (讓使用者感覺 FTP 已全域更新)
+            setCurrentFTP(newFtp);
+
+            // Re-calculate
             const streams = await getActivityStreams(selectedActivity.id);
             if (streams) {
-                const analysis = analyzeActivityPower(selectedActivity, streams, newFtp, activityAnalysis?.max_heartrate || maxHR);
+                const analysis = analyzeActivityPower(selectedActivity, streams, newFtp, activityAnalysis?.max_heartrate || currentMaxHR);
                 setActivityAnalysis(analysis);
             }
-
         } catch (error) {
             console.error('更新 FTP 失敗:', error);
-            // Optionally show error toast
         }
     };
 
-
-
-    return (
-        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
-            {/* 選手標題列 */}
-            <div
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/30 transition-colors"
-                onClick={() => setExpanded(!expanded)}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-white">{summary.athlete_name}</h3>
-                        <p className="text-xs text-slate-400">
-                            FTP: {ftp > 0 ? `${ftp}W` : '未設定'} • 週 TSS: {Math.round(weeklyTSS)}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {/* 快速統計 */}
-
-
-                    {expanded ? (
-                        <ChevronUp className="w-5 h-5 text-slate-400" />
-                    ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
-                    )}
-                </div>
-            </div>
-
-            {/* 展開內容 */}
-            {expanded && (
-                <div className="border-t border-slate-700/50 p-4">
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-
-
-                        {/* 右側：最近活動列表 (佔 12/12) */}
-                        <div className="xl:col-span-12">
-                            <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
-                                <BarChart3 className="w-4 h-4" />
-                                最近活動分析
-                            </h4>
-                            <div className="space-y-2">
-                                {(summary.recent_activities || []).slice(0, 10).map(activity => (
-                                    <div key={activity.id}>
-                                        <div
-                                            className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${selectedActivity?.id === activity.id
-                                                ? 'bg-yellow-500/20 border border-yellow-500/50'
-                                                : 'bg-slate-700/30 hover:bg-slate-700/50'
-                                                }`}
-                                            onClick={() => handleActivitySelect(activity)}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                {/* 同步按鈕與狀態顯示 */}
-                                                <div
-                                                    onClick={(e) => handleSyncActivity(e, activity)}
-                                                    className="p-1.5 rounded-full hover:bg-slate-600/50 transition-colors"
-                                                    title={availableStreams.has(activity.id) ? "數據已同步 (點擊重新同步)" : "同步此活動數據"}
-                                                >
-                                                    {syncStatus[activity.id] === 'syncing' ? (
-                                                        <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
-                                                    ) : (syncStatus[activity.id] === 'success' || availableStreams.has(activity.id)) ? (
-                                                        <CheckCircle className="w-4 h-4 text-emerald-400" />
-                                                    ) : syncStatus[activity.id] === 'error' ? (
-                                                        <AlertCircle className="w-4 h-4 text-red-400" />
-                                                    ) : (
-                                                        <RefreshCw className="w-4 h-4 text-slate-500 hover:text-white" />
-                                                    )}
-                                                </div>
-
-                                                <Calendar className="w-4 h-4 text-slate-500" />
-                                                <div>
-                                                    <div className="text-sm text-white font-medium truncate max-w-[200px]">
-                                                        {activity.name}
-                                                    </div>
-                                                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                                                        <span>{new Date(activity.start_date).toLocaleDateString('zh-TW')}</span>
-                                                        <span className="opacity-50">•</span>
-                                                        <span className="font-mono text-[10px]">{activity.id}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-xs">
-                                                {/* 計算與顯示訓練負荷指標 */}
-                                                {(() => {
-                                                    const ftp = summary.ftp || 0;
-                                                    const np = activity.weighted_average_watts || 0;
-                                                    const ap = activity.average_watts || 0;
-                                                    // Avoid division by zero
-                                                    const intensity = ftp > 0 ? np / ftp : 0;
-                                                    const tss = ftp > 0 ? (activity.moving_time * np * intensity) / (ftp * 3600) * 100 : 0;
-
-                                                    // 若無功率數據，僅顯示時間
-                                                    if (ap === 0 && np === 0) return (
-                                                        <span className="text-slate-400">
-                                                            {formatDuration(activity.moving_time)}
-                                                        </span>
-                                                    );
-
-                                                    return (
-                                                        <>
-                                                            {/* 只在已同步 (有詳細 Streams) 時顯示進階指標 */}
-                                                            {availableStreams.has(activity.id) && np > 0 && (
-                                                                <>
-                                                                    {/* TSS */}
-                                                                    <div className="flex items-center gap-1 text-pink-400" title="Training Stress Score">
-                                                                        <span className="font-mono font-bold">{Math.round(tss)}</span>
-                                                                        <span className="text-[10px] opacity-70">TSS</span>
-                                                                    </div>
-
-                                                                    {/* NP */}
-                                                                    <div className="flex items-center gap-1 text-orange-400" title="Normalized Power">
-                                                                        <span className="font-mono font-bold">{Math.round(np)}</span>
-                                                                        <span className="text-[10px] opacity-70">NP</span>
-                                                                    </div>
-
-                                                                    {/* IF */}
-                                                                    <div className="hidden sm:flex items-center gap-1 text-blue-400" title="Intensity Factor">
-                                                                        <span className="font-mono font-bold">{intensity.toFixed(2)}</span>
-                                                                        <span className="text-[10px] opacity-70">IF</span>
-                                                                    </div>
-                                                                </>
-                                                            )}
-
-                                                            {/* AP */}
-                                                            {np > 0 && (
-                                                                <div className="hidden md:flex items-center gap-1 text-slate-400 ml-1" title="Average Power">
-                                                                    <Zap className="w-3 h-3 text-yellow-500" />
-                                                                    <span>{Math.round(ap)}W</span>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Duration */}
-                                                            <span className="text-slate-500 ml-1 font-mono">
-                                                                {formatDuration(activity.moving_time)}
-                                                            </span>
-                                                        </>
-                                                    );
-                                                })()}
-
-                                                {selectedActivity?.id === activity.id ? (
-                                                    <ChevronUp className="w-4 h-4 text-yellow-400 ml-1" />
-                                                ) : (
-                                                    <ChevronDown className="w-4 h-4 text-slate-500 ml-1" />
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* 活動詳細分析 */}
-                                        {selectedActivity?.id === activity.id && (
-                                            <div className="mt-2 p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                                                {loadingAnalysis ? (
-                                                    <div className="flex items-center justify-center py-8">
-                                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
-                                                    </div>
-                                                ) : activityAnalysis ? (
-                                                    <div className="space-y-6">
-                                                        {/* 訓練負荷指標 - 僅在有力數據時顯示 */}
-                                                        {activityAnalysis.trainingLoad.np > 0 && (
-                                                            <div>
-                                                                <h5 className="text-xs font-medium text-slate-400 mb-3">訓練負荷指標 (可點擊數值修改設定)</h5>
-                                                                <TrainingLoadCard
-                                                                    load={activityAnalysis.trainingLoad}
-                                                                    ftp={activityAnalysis.ftp}
-                                                                    sportType={activity.sport_type}
-                                                                    hasStravaZones={activityAnalysis.stravaZones && activityAnalysis.stravaZones.length > 0}
-                                                                    onUpdateFtp={handleUpdateFtp}
-                                                                />
-                                                            </div>
-                                                        )}
-
-                                                        {/* 功率區間分佈 - 僅限 Ride 且具備有效功率數據 */}
-                                                        {activityAnalysis.powerZones && (activity.sport_type === 'Ride' || activity.sport_type === 'VirtualRide') && activityAnalysis.trainingLoad.np > 0 && (
-                                                            <div>
-                                                                <h5 className="text-xs font-medium text-slate-400 mb-3">功率區間分佈</h5>
-                                                                <div className="space-y-2">
-                                                                    {activityAnalysis.powerZones.map(zone => (
-                                                                        <div key={zone.zone} className="flex items-center gap-3">
-                                                                            <div className="w-16 text-xs text-slate-400">
-                                                                                Z{zone.zone} {zone.name}
-                                                                            </div>
-                                                                            <div className="flex-1 h-4 bg-slate-700/50 rounded-full overflow-hidden">
-                                                                                <div
-                                                                                    className="h-full rounded-full"
-                                                                                    style={{
-                                                                                        width: `${zone.percentageTime}%`,
-                                                                                        backgroundColor: zone.color,
-                                                                                    }}
-                                                                                />
-                                                                            </div>
-                                                                            <div className="w-12 text-right text-xs font-mono text-slate-300">
-                                                                                {zone.percentageTime}%
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-
-
-                                                        {/* Strava 原始區間 - 僅限 Ride 且具備有效功率數據與資料 */}
-                                                        {activityAnalysis.stravaZones && activityAnalysis.stravaZones.length > 0 && (activity.sport_type === 'Ride' || activity.sport_type === 'VirtualRide') && activityAnalysis.trainingLoad.np > 0 && (
-                                                            <div className="mt-8 pt-6 border-t border-slate-700/50">
-                                                                <h5 className="text-xs font-medium text-slate-300 mb-4 flex items-center gap-2">
-                                                                    <Target className="w-3 h-3 text-orange-400" />
-                                                                    Strava 原始功率區間分析
-                                                                </h5>
-                                                                <div className="grid grid-cols-1 gap-6">
-                                                                    {(() => {
-                                                                        const zones = Array.isArray(activityAnalysis.stravaZones)
-                                                                            ? activityAnalysis.stravaZones
-                                                                            : [{ type: 'heartrate', distribution_buckets: activityAnalysis.stravaZones }];
-
-                                                                        // 僅處理功率區間
-                                                                        return zones
-                                                                            .filter((z: any) => z.type === 'power')
-                                                                            .map((z: any, idx: number) => (
-                                                                                <div key={idx}>
-                                                                                    <StravaZoneChart data={z.distribution_buckets} type={z.type} />
-                                                                                </div>
-                                                                            ));
-                                                                    })()}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-
-                                                        {/* 活動曲線圖 */}
-                                                        <div>
-                                                            <h5 className="text-xs font-medium text-slate-400 mb-2">數據趨勢分析</h5>
-                                                            <ActivityCharts data={activityAnalysis} />
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-center py-8 text-slate-500">
-                                                        <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                                        <p>此活動尚無詳細數據流</p>
-                                                        <p className="text-xs mt-1">請點選左上角同步</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div >
-            )}
-        </div >
-    );
-};
-
-// 主組件
-const PowerTrainingReport: React.FC<PowerTrainingReportProps> = ({
-    activitySummaries,
-    defaultFTP = 200,
-    defaultMaxHR = 190,
-}) => {
-    const [globalFTP, setGlobalFTP] = useState(defaultFTP);
-    const [globalMaxHR, setGlobalMaxHR] = useState(defaultMaxHR);
-
-    if (activitySummaries.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                <Activity className="w-16 h-16 mb-4 opacity-30" />
-                <p className="text-lg">尚無授權選手的活動數據</p>
-                <p className="text-sm mt-2">請先邀請選手並取得活動報表授權</p>
-            </div>
-        );
-    }
+    if (!athlete) return <div className="p-4 text-slate-400">請先登入 Strava</div>;
 
     return (
         <div className="space-y-6">
+            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
+                {/* 標題列 */}
+                <div className="p-6 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                            <User className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                {athlete.firstname} {athlete.lastname}
+                                <span className="px-2 py-0.5 rounded text-xs font-normal bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    AI 功率教室
+                                </span>
+                            </h2>
+                            <p className="text-sm text-slate-400 mt-1">
+                                目前設定 FTP: <span className="text-white font-mono">{currentFTP > 0 ? `${currentFTP}W` : '未設定'}</span> •
+                                本週 TSS: <span className="text-white font-mono">{Math.round(weeklyTSS)}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 內容區域 - 直接顯示，不需折疊 */}
+                <div className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
 
-            {/* 選手報表列表 */}
-            <div className="space-y-4">
-                {activitySummaries.map(summary => (
-                    <AthleteReport
-                        key={summary.athlete_id}
-                        summary={summary}
-                        ftp={summary.ftp || globalFTP}
-                        maxHR={globalMaxHR}
-                    />
-                ))}
+                        {/* 下方：最近活動列表 (修正為手風琴樣式) */}
+                        <div className="xl:col-span-12">
+                            <h3 className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                                <Activity className="w-4 h-4" />
+                                最近活動紀錄
+                            </h3>
+                            <div className="space-y-2">
+                                {loadingActivities ? (
+                                    <div className="text-center py-8 text-slate-500">載入中...</div>
+                                ) : recentActivities.length === 0 ? (
+                                    <div className="text-center py-8 text-slate-500">尚無活動紀錄</div>
+                                ) : (
+                                    recentActivities.map(activity => {
+                                        const isSynced = availableStreams.has(activity.id);
+                                        const isSyncing = syncStatus[activity.id] === 'syncing';
+
+                                        // 簡單計算 TSS (若有功率) 以顯示在列表中
+                                        const avgWatts = activity.average_watts || 0;
+                                        const np = avgWatts * 1.05; // 簡易估算
+                                        const intensity = currentFTP > 0 ? np / currentFTP : 0;
+                                        const tss = (activity.moving_time * intensity * intensity * 100) / 3600;
+
+                                        return (
+                                            <div
+                                                key={activity.id}
+                                                className={`bg-slate-800/40 rounded-lg border transition-all duration-200 overflow-hidden
+                                                    ${selectedActivity?.id === activity.id
+                                                        ? 'border-blue-500/50 bg-slate-800/80 shadow-lg shadow-blue-500/10'
+                                                        : 'border-slate-700/30 hover:bg-slate-800/60 hover:border-slate-600'
+                                                    }`}
+                                            >
+                                                {/* Header Row */}
+                                                <div
+                                                    className="p-3 sm:px-4 flex items-center justify-between cursor-pointer group"
+                                                    onClick={() => {
+                                                        if (isSynced) {
+                                                            handleActivitySelect(activity);
+                                                        }
+                                                        // 如果未同步，點擊也可以觸發選擇，讓使用者看到"請先同步" (或者自動觸發同步?)
+                                                        // 這裡維持現有邏輯：點擊即選取，選取後再處理顯示
+                                                        handleActivitySelect(activity);
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <div className={`w-1 h-8 rounded-full flex-shrink-0 ${activity.sport_type === 'Ride' || activity.sport_type === 'VirtualRide'
+                                                            ? 'bg-yellow-500'
+                                                            : 'bg-slate-600'
+                                                            }`} />
+
+                                                        <div className="flex flex-col min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className={`font-medium truncate transition-colors ${selectedActivity?.id === activity.id ? 'text-blue-300' : 'text-slate-200 group-hover:text-white'
+                                                                    }`}>
+                                                                    {activity.name}
+                                                                </h4>
+                                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">
+                                                                    {activity.sport_type === 'VirtualRide' ? 'Virtual' : activity.sport_type}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                                {new Date(activity.start_date).toLocaleDateString()}
+                                                                <span>•</span>
+                                                                {formatDuration(activity.moving_time)}
+                                                                <span>•</span>
+                                                                {((activity.distance || 0) / 1000).toFixed(1)} km
+
+                                                                {/* 同步狀態指示 */}
+                                                                {isSyncing ? (
+                                                                    <span className="flex items-center gap-1 text-blue-400 ml-2">
+                                                                        <RefreshCw className="w-3 h-3 animate-spin" />
+                                                                        同步中...
+                                                                    </span>
+                                                                ) : isSynced ? (
+                                                                    <span className="flex items-center gap-1 text-emerald-400 ml-2" title="數據已同步">
+                                                                        <CheckCircle className="w-3 h-3" />
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={(e) => handleSyncActivity(e, activity)}
+                                                                        className="flex items-center gap-1 text-slate-500 hover:text-blue-400 ml-2 transition-colors px-1.5 py-0.5 rounded border border-transparent hover:border-blue-500/30 hover:bg-blue-500/10"
+                                                                        title="點擊同步詳細數據"
+                                                                    >
+                                                                        <RefreshCw className="w-3 h-3" />
+                                                                        <span className="text-[10px]">同步</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 右側數據摘要 */}
+                                                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                                                        {/* 指標顯示邏輯 (類似 PowerTrainingReport) */}
+                                                        {isSynced && avgWatts > 0 && (
+                                                            <>
+                                                                {/* TSS - 這裡僅為列表顯示用，實際精確計算在詳細視圖 */}
+                                                                <div className="hidden sm:flex flex-col items-end">
+                                                                    <span className="text-xs font-mono text-pink-400 font-bold">{Math.round(tss)}</span>
+                                                                    <span className="text-[10px] text-slate-600">TSS</span>
+                                                                </div>
+                                                                {/* Power */}
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className="text-xs font-mono text-yellow-500 font-bold">{Math.round(avgWatts)}W</span>
+                                                                    <span className="text-[10px] text-slate-600">AVG</span>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                        {selectedActivity?.id === activity.id ? (
+                                                            <ChevronUp className="w-4 h-4 text-blue-400" />
+                                                        ) : (
+                                                            <ChevronDown className="w-4 h-4 text-slate-600" />
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* 展開內容區域 - 這裡我們將其保留為空，因為上面已經有獨立的詳細分析區塊。
+                                                    但為了符合「手風琴」的隱喻，我們可以把選中的項目高亮顯示，
+                                                    或者如果想要真正的 inline accordion，可以把上面的 <TrainingLoadCard> 等內容搬進來。
+                                                    目前的設計是：點擊列表 -> 上方顯示詳細資料 (Master-Detail 模式)。
+                                                    使用者希望像 Power Coach 頁面一樣 (它是 accordion)。
+                                                    
+                                                    為了完全一致，我們應該把詳細分析搬到這裡面。
+                                                */}
+                                                {selectedActivity?.id === activity.id && (
+                                                    <div className="border-t border-slate-700/30 bg-slate-900/30">
+                                                        {loadingAnalysis ? (
+                                                            <div className="py-8 flex justify-center">
+                                                                <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                                                            </div>
+                                                        ) : activityAnalysis ? (
+                                                            <div className="p-4 space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                                                                {/* 訓練負荷 */}
+                                                                {activityAnalysis.trainingLoad.np > 0 && (
+                                                                    <div>
+                                                                        <h5 className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">數據概覽</h5>
+                                                                        <TrainingLoadCard
+                                                                            load={activityAnalysis.trainingLoad}
+                                                                            ftp={activityAnalysis.ftp}
+                                                                            sportType={selectedActivity.sport_type}
+                                                                            hasStravaZones={!!activityAnalysis.stravaZones}
+                                                                            onUpdateFtp={handleUpdateFtp}
+                                                                        />
+                                                                    </div>
+                                                                )}
+
+                                                                {/* 圖表區塊 */}
+                                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                                    {/* 功率區間 */}
+                                                                    {activityAnalysis.powerZones && (selectedActivity.sport_type === 'Ride' || selectedActivity.sport_type === 'VirtualRide') && (
+                                                                        <div>
+                                                                            <h5 className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                                                                <Zap className="w-3 h-3" /> 功率區間
+                                                                            </h5>
+                                                                            <PowerZoneChart zones={activityAnalysis.powerZones} />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Strava 原始區間 */}
+                                                                    {activityAnalysis.stravaZones && activityAnalysis.stravaZones.length > 0 && (
+                                                                        <div>
+                                                                            <h5 className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                                                                <Target className="w-3 h-3" /> Strava 原始分析
+                                                                            </h5>
+                                                                            <div className="space-y-4">
+                                                                                {(() => {
+                                                                                    const zones = Array.isArray(activityAnalysis.stravaZones)
+                                                                                        ? activityAnalysis.stravaZones
+                                                                                        : [{ type: 'heartrate', distribution_buckets: activityAnalysis.stravaZones }];
+
+                                                                                    return zones
+                                                                                        .filter((z: any) => z.type === 'power')
+                                                                                        .map((z: any, idx: number) => (
+                                                                                            <StravaZoneChart key={idx} data={z.distribution_buckets} type={z.type} />
+                                                                                        ));
+                                                                                })()}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* 詳細圖表 */}
+                                                                <div className="pt-4 border-t border-slate-700/30">
+                                                                    <h5 className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">趨勢圖表</h5>
+                                                                    <ActivityCharts data={activityAnalysis} />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="py-8 text-center text-slate-500">
+                                                                <p className="mb-2">尚無詳細數據</p>
+                                                                {!isSynced && (
+                                                                    <button
+                                                                        onClick={(e) => handleSyncActivity(e, activity)}
+                                                                        className="text-blue-400 hover:text-blue-300 underline text-sm"
+                                                                    >
+                                                                        立即同步數據
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* 分頁控制列 */}
+                            <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-700/50">
+                                <div className="flex items-center gap-2 text-sm text-slate-400">
+                                    <span>顯示:</span>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1); // 切換筆數時重置回第一頁
+                                        }}
+                                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                    <span className="ml-2 hidden sm:inline">
+                                        {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalCount)} / 共 {totalCount} 筆
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-1 rounded hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronLeft className="w-5 h-5 text-slate-400" />
+                                    </button>
+                                    <span className="text-sm text-slate-400 font-mono">
+                                        {currentPage} / {Math.ceil(totalCount / itemsPerPage) || 1}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalCount / itemsPerPage), p + 1))}
+                                        disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
+                                        className="p-1 rounded hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronRight className="w-5 h-5 text-slate-400" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
 
-export default PowerTrainingReport;
+export default AthletePowerTrainingReport;
