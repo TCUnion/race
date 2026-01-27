@@ -208,6 +208,7 @@ export interface UserAuthorization {
   id: string;
   manager_athlete_id: number;
   athlete_id: number;
+  manager_email?: string; // 新增：用於邀請尚未綁定 Strava 的管理者
   authorization_type: AuthorizationType;
   status: AuthorizationStatus;
   shop_name?: string;
@@ -222,6 +223,7 @@ export interface UserAuthorization {
     lastname?: string;
     profile?: string;
   };
+  manager_role?: ManagerRole; // 新增：管理者角色 (用於顯示不同授權文字)
 }
 
 // 通知設定
@@ -326,6 +328,7 @@ export interface ActivitySummary {
   max_watts?: number;
   avg_heartrate?: number;
   max_heartrate?: number;
+  avg_cadence?: number;
   recent_activities?: StravaActivity[];
 }
 

@@ -237,6 +237,7 @@ const MaintenanceDashboard: React.FC = () => {
 
   // 輪組編輯狀態
   const [editingWheelset, setEditingWheelset] = useState<Wheelset | null>(null);
+  const [isSyncingMileage, setIsSyncingMileage] = useState(false);
   const [wheelsetFormData, setWheelsetFormData] = useState({
     name: '',
     brand: '',
@@ -461,7 +462,7 @@ const MaintenanceDashboard: React.FC = () => {
       service_date: formData.service_date,
       mileage_at_service: formData.mileage_at_service
         ? parseFloat(formData.mileage_at_service as string)
-        : (selectedBike.converted_distance || (selectedBike.distance / 1000)),
+        : calculateTotalDistanceAtDate(selectedBike, formData.service_date),
       cost: formData.cost ? parseFloat(formData.cost) : undefined,
       shop_name: formData.shop_name || undefined,
       notes: formData.notes || undefined,
@@ -497,6 +498,33 @@ const MaintenanceDashboard: React.FC = () => {
       fetchData();
     } catch (err) {
       console.error('儲存紀錄失敗:', err);
+    }
+  };
+
+  const handleSyncAllMileage = async () => {
+    if (!selectedBike || !bikeRecords.length) return;
+    if (!window.confirm(`確定要同步這 ${bikeRecords.length} 筆紀錄的里程嗎？\n系統將根據保養日期自動推算當時里程並更新。此操作無法復原。`)) return;
+
+    setIsSyncingMileage(true);
+    try {
+      let successCount = 0;
+      for (const record of bikeRecords) {
+        const estimatedMileage = calculateTotalDistanceAtDate(selectedBike, record.service_date);
+        // 如果誤差大於 0.1km 才更新（避免不必要的請求）
+        if (Math.abs(record.mileage_at_service - estimatedMileage) > 0.1) {
+          await updateMaintenanceRecord(record.id, {
+            mileage_at_service: estimatedMileage
+          });
+          successCount++;
+        }
+      }
+      alert(`同步完成！共更新 ${successCount} 筆紀錄。`);
+      fetchData();
+    } catch (err) {
+      console.error('同步里程失敗:', err);
+      alert('同步過程中發生錯誤，請稍後再試。');
+    } finally {
+      setIsSyncingMileage(false);
     }
   };
 
@@ -786,7 +814,7 @@ const MaintenanceDashboard: React.FC = () => {
                     <div>
                       <h3 className="font-bold text-white">{bike.name}</h3>
                       <p className="text-sm text-orange-200/50">
-                        {(bike.converted_distance || bike.distance / 1000).toLocaleString()} km
+                        {Math.round(bike.converted_distance || bike.distance / 1000).toLocaleString()} km
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -849,7 +877,7 @@ const MaintenanceDashboard: React.FC = () => {
                               <div className="flex flex-wrap gap-2 text-xs text-orange-200/40">
                                 <span>{ws.brand || '---'} / {ws.model || '---'}</span>
                                 <span>•</span>
-                                <span>里程: {(calculateWheelsetTotalDistance(ws) / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km</span>
+                                <span>里程: {Math.round(calculateWheelsetTotalDistance(ws) / 1000).toLocaleString()} km</span>
                                 {ws.active_date && (
                                   <>
                                     <span>•</span>
@@ -917,7 +945,7 @@ const MaintenanceDashboard: React.FC = () => {
                                   <div className="flex flex-wrap gap-2 text-xs text-orange-200/40">
                                     <span>{ws.brand || '---'} / {ws.model || '---'}</span>
                                     <span>•</span>
-                                    <span>里程: {(calculateWheelsetTotalDistance(ws) / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} km</span>
+                                    <span>里程: {Math.round(calculateWheelsetTotalDistance(ws) / 1000).toLocaleString()} km</span>
                                   </div>
                                 </div>
                               </div>
@@ -1002,7 +1030,7 @@ const MaintenanceDashboard: React.FC = () => {
                       </div>
                       <p className="text-orange-200/60 mb-2">
                         總里程：<span className="text-white font-mono font-bold">
-                          {(selectedBike.converted_distance || selectedBike.distance / 1000).toLocaleString()}
+                          {Math.round(selectedBike.converted_distance || selectedBike.distance / 1000).toLocaleString()}
                         </span> km
                       </p>
 
@@ -1191,7 +1219,7 @@ const MaintenanceDashboard: React.FC = () => {
                                     <div className="flex justify-between text-sm">
                                       <span className="opacity-60">距上次保養</span>
                                       <span className="font-mono font-bold">
-                                        {reminder.mileageSinceService.toLocaleString()} km
+                                        {Math.round(reminder.mileageSinceService).toLocaleString()} km
                                       </span>
                                     </div>
                                     <div className="h-2 bg-black/20 rounded-full overflow-hidden">
@@ -1204,7 +1232,7 @@ const MaintenanceDashboard: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between text-xs opacity-40">
                                       <span>0 km</span>
-                                      <span>{((reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0))).toLocaleString()} km</span>
+                                      <span>{Math.round(reminder.nextServiceMileage - (reminder.lastService?.mileage_at_service || 0)).toLocaleString()} km</span>
                                     </div>
                                     {/* 天數壽命進度條 */}
                                     {(() => {
@@ -1297,7 +1325,7 @@ const MaintenanceDashboard: React.FC = () => {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono text-white">
-                                  {reminder.mileageSinceService.toLocaleString()} km
+                                  {Math.round(reminder.mileageSinceService).toLocaleString()} km
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                   <div className="flex items-center justify-end gap-2">
@@ -1346,7 +1374,7 @@ const MaintenanceDashboard: React.FC = () => {
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-end gap-1">
-                                      <span className="font-mono text-orange-200/70">{currentInterval.toLocaleString()} km</span>
+                                      <span className="font-mono text-orange-200/70">{Math.round(currentInterval).toLocaleString()} km</span>
                                       <button
                                         onClick={() => handleStartEdit(reminder.type.id, currentInterval)}
                                         className="p-1 bg-orange-500/60 hover:bg-orange-500 text-white rounded transition-all"
@@ -1424,12 +1452,25 @@ const MaintenanceDashboard: React.FC = () => {
 
                 {/* 歷史紀錄列表 */}
                 {activeTab === 'history' && (
-                  <MaintenanceTable
-                    records={bikeRecords}
-                    onDelete={handleDeleteRecord}
-                    loading={loading}
-                    onEdit={setEditingRecord}
-                  />
+                  <div className="space-y-4">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleSyncAllMileage}
+                        disabled={isSyncingMileage || bikeRecords.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-xl text-sm font-bold transition-all border border-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="依日期自動推算並修正所有紀錄的里程"
+                      >
+                        {isSyncingMileage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {isSyncingMileage ? '同步中...' : '同步歷史里程'}
+                      </button>
+                    </div>
+                    <MaintenanceTable
+                      records={bikeRecords}
+                      onDelete={handleDeleteRecord}
+                      loading={loading}
+                      onEdit={setEditingRecord}
+                    />
+                  </div>
                 )}
 
                 {/* 活動輪組列表 */}
@@ -1849,15 +1890,15 @@ const MaintenanceDashboard: React.FC = () => {
                               <td className="p-4 text-white font-bold whitespace-nowrap align-top">
                                 {record.service_date}
                                 <div className="text-[10px] text-white/30 font-mono mt-1">
-                                  {calculateTotalDistanceAtDate(selectedBike, record.service_date).toLocaleString(undefined, { maximumFractionDigits: 1 })} km
+                                  {Math.round(calculateTotalDistanceAtDate(selectedBike, record.service_date)).toLocaleString()} km
                                 </div>
                               </td>
                               <td className="p-4 align-top">
-                                <span className="text-orange-300 font-mono">{stats.distanceKm.toFixed(1)} km</span>
+                                <span className="text-orange-300 font-mono">{Math.round(stats.distanceKm).toLocaleString()} km</span>
                                 {!previousRecord && <span className="text-[10px] text-white/30 block">累積</span>}
                               </td>
                               <td className="p-4 text-white/80 font-mono align-top">
-                                {stats.movingTimeHours.toFixed(1)} hr
+                                {Math.round(stats.movingTimeHours).toLocaleString()} hr
                               </td>
                               <td className="p-4 text-white/80 font-mono align-top">
                                 {stats.days} 天
@@ -2075,6 +2116,12 @@ const MaintenanceDashboard: React.FC = () => {
                     placeholder="自動計算"
                     className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-orange-500 focus:outline-none"
                   />
+                  <p className="mt-1.5 text-[10px] text-orange-200/40 italic">
+                    依日期估算：
+                    <span className="text-orange-300 font-mono ml-1">
+                      {Math.round(calculateTotalDistanceAtDate(selectedBike, formData.service_date)).toLocaleString()} km
+                    </span>
+                  </p>
                 </div>
               </div>
 

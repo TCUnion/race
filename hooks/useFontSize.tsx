@@ -34,7 +34,7 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             value: fontSizeValue,
             lastUpdate: new Date().toLocaleTimeString()
         };
-        console.log(`[FontSize] Global scale applied: ${fontSize} (${fontSizeValue})`);
+
     }, [fontSize, fontSizeValue]);
 
     function getFontSizeValue(size: FontSize): string {

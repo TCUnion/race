@@ -213,7 +213,15 @@ export const useSegmentData = (): UseSegmentDataReturn => {
             }
 
             // 1. & 2. 並行請求：直接從 Supabase 抓取所有成績資料 與 報名資料
-            const segmentIds = activeSegments.map(s => s.id);
+            // 確保 ID 為數字且去重，過濾無效 ID
+            const segmentIds = Array.from(new Set(activeSegments.map(s => Number(s.id)).filter(id => !isNaN(id) && id !== 0)));
+
+            if (segmentIds.length === 0) {
+                if (isInitialLoad) setIsLoading(false);
+                isFetching.current = false;
+                return;
+            }
+
             const [effortsResult, registrationsResult, athletesResult] = await Promise.all([
                 supabase
                     .from('segment_efforts')

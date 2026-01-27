@@ -53,11 +53,14 @@ import {
     BellRing,
     Settings2,
     ArrowUpRight,
+    History,
 } from 'lucide-react';
 import { useManagerData } from '../../hooks/useManagerData';
 import { supabase } from '../../lib/supabase';
 import { AthleteMaintenanceSummary, ActivitySummary, MaintenanceStatistics } from '../../types';
 import ManagerLogin from './ManagerLogin';
+import MaintenanceTable from '../maintenance/MaintenanceTable';
+import { MaintenanceRecord } from '../../types';
 
 const ROLE_NAMES: Record<string, string> = {
     shop_owner: '車店老闆',
@@ -72,6 +75,17 @@ const ACTIVITY_TYPE_NAMES: Record<string, string> = {
     'WeightTraining': '重訓', 'Workout': '健身', 'VirtualRide': '虛擬騎乘',
     'Hike': '健行', 'Walk': '步行', 'AlpineSki': '滑雪',
     'Badminton': '羽球'
+};
+
+const ACTIVITY_TYPE_COLORS: Record<string, string> = {
+    'Ride': 'text-slate-400',       // 騎乘預設灰色
+    'VirtualRide': 'text-blue-400', // 虛擬騎乘
+    'Run': 'text-orange-400',       // 跑步
+    'Swim': 'text-cyan-400',        // 游泳
+    'WeightTraining': 'text-violet-400', // 重訓
+    'Workout': 'text-purple-400',   // 健身
+    'Hike': 'text-emerald-400',     // 健行
+    'Walk': 'text-teal-400',        // 步行
 };
 
 // 頁籤類型
@@ -187,6 +201,7 @@ function ManagerDashboard() {
         sendNotification,
         registerAsManager,
         checkAthleteExistence,
+        deleteAuthorization,
     } = useManagerData();
 
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -205,6 +220,8 @@ function ManagerDashboard() {
     const [searchError, setSearchError] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [expandedActivityRows, setExpandedActivityRows] = useState<Set<number>>(new Set());
+    const [expandedBikes, setExpandedBikes] = useState<Set<string>>(new Set());
+    const [collapsedMaintenanceAthletes, setCollapsedMaintenanceAthletes] = useState<Set<number>>(new Set());
 
     // 解決不同角色進入不該進入的頁籤的問題
     useEffect(() => {
@@ -222,6 +239,73 @@ function ManagerDashboard() {
     const [activityRowsPerPage, setActivityRowsPerPage] = useState(10);
     // 新增：紀錄每個車友展開活動列表的當前頁碼 { [athleteId]: page }
     const [activitySubPages, setActivitySubPages] = useState<Record<number, number>>({});
+
+    // 歷史紀錄 Modal 狀態
+    const [historyModalBikeId, setHistoryModalBikeId] = useState<string | null>(null);
+    const [historyModalBikeName, setHistoryModalBikeName] = useState<string>('');
+    const [historyRecords, setHistoryRecords] = useState<MaintenanceRecord[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
+    // 取得指定車輛的歷史紀錄
+    const fetchHistoryRecords = async (bikeId: string, athleteId: string | number) => {
+        setHistoryLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('bike_maintenance')
+                .select('*')
+                .eq('bike_id', bikeId)
+                .eq('athlete_id', athleteId) // 確保權限驗證通過 (RLS 需要 athlete_id)
+                .order('service_date', { ascending: false });
+
+            if (error) {
+                console.error('Supabase error fetching history:', error);
+                throw error;
+            }
+            console.log('Fetched history records:', data);
+            setHistoryRecords(data || []);
+        } catch (err) {
+            console.error('Error fetching history:', err);
+            // 這裡可以加一個 toast 通知
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    // 處理刪除歷史紀錄
+    const handleDeleteHistoryRecord = async (recordId: string) => {
+        if (!window.confirm('確定要刪除此保養紀錄嗎？此動作無法復原。')) return;
+
+        try {
+            const { error } = await supabase
+                .from('bike_maintenance')
+                .delete()
+                .eq('id', recordId);
+
+            if (error) throw error;
+
+            // 更新列表
+            setHistoryRecords(prev => prev.filter(r => r.id !== recordId));
+
+            // 重新整理資料，因為刪除紀錄可能會影響組件壽命計算
+            // 但為了體驗，這裡暫時不重整整個 Dashboard，只更新列表
+        } catch (err) {
+            console.error('Error deleting record:', err);
+            alert('刪除失敗，請稍後再試');
+        }
+    };
+
+    // 開啟歷史紀錄 Modal
+    const openHistoryModal = (bikeId: string, bikeName: string, athleteId: string | number) => {
+        setHistoryModalBikeId(bikeId);
+        setHistoryModalBikeName(bikeName);
+        fetchHistoryRecords(bikeId, athleteId);
+    };
+
+    // 關閉歷史紀錄 Modal
+    const closeHistoryModal = () => {
+        setHistoryModalBikeId(null);
+        setHistoryRecords([]);
+    };
 
     // 當視角或篩選改變時重置頁碼
     useEffect(() => {
@@ -598,67 +682,20 @@ function ManagerDashboard() {
                             className="space-y-6"
                         >
                             {/* 角色差異化統計卡片 */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {managerRole?.role === 'shop_owner' ? (
-                                    <>
-                                        {/* 教練角色不顯示詳細統計卡片，只顯示隊員數 */}
-                                        {(
-                                            <>
-                                                <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
-                                                            <Activity className={`w-5 h-5 ${theme.primary}`} />
-                                                        </div>
-                                                        <span className="text-xs font-bold text-slate-400 uppercase">總活動數</span>
-                                                    </div>
-                                                    <p className="text-2xl font-black text-white">{totalActivities}</p>
-                                                </div>
-                                                <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
-                                                            <Wrench className={`w-5 h-5 ${theme.primary}`} />
-                                                        </div>
-                                                        <span className="text-xs font-bold text-slate-400 uppercase">待保養</span>
-                                                    </div>
-                                                    <p className="text-2xl font-black text-white">{totalOverdue}</p>
-                                                </div>
-                                                <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
-                                                            <Clock className={`w-5 h-5 ${theme.primary}`} />
-                                                        </div>
-                                                        <span className="text-xs font-bold text-slate-400 uppercase">即將到期</span>
-                                                    </div>
-                                                    <p className="text-2xl font-black text-white">{totalDueSoon}</p>
-                                                </div>
-                                            </>
-                                        )}
-                                        <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
-                                                    <Wrench className={`w-5 h-5 ${theme.primary}`} />
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-400 uppercase">總車輛數</span>
+                            {/* 角色差異化統計卡片 */}
+                            {managerRole?.role !== 'shop_owner' && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
+                                                <Users className={`w-5 h-5 ${theme.primary}`} />
                                             </div>
-                                            <p className={`text-3xl font-black ${theme.primary}`}>{maintenanceSummaries.reduce((sum, s) => sum + s.bikes.length, 0)}</p>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">團隊成員</span>
                                         </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* 教練角色觀點 */}
-                                        {/* 教練角色觀點 - 只保留團隊成員卡片 */}
-                                        <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
-                                                    <Users className={`w-5 h-5 ${theme.primary}`} />
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-400 uppercase">團隊成員</span>
-                                            </div>
-                                            <p className="text-3xl font-black text-white">{totalAthletes}</p>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                                        <p className="text-3xl font-black text-white">{totalAthletes}</p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* 待審核的申請 */}
                             {authorizations.filter(a => a.status === 'pending').length > 0 && (
@@ -963,21 +1000,38 @@ function ManagerDashboard() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('確定要再次發送邀請嗎？')) {
-                                                                    try {
-                                                                        await addAuthorization(auth.athlete_id, 'all');
-                                                                        alert('邀請已重新發送！');
-                                                                    } catch (err: any) {
-                                                                        alert('發送失敗: ' + err.message);
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (window.confirm('確定要再次發送邀請嗎？')) {
+                                                                        try {
+                                                                            await addAuthorization(auth.athlete_id, 'all');
+                                                                            alert('邀請已重新發送！');
+                                                                        } catch (err: any) {
+                                                                            alert('發送失敗: ' + err.message);
+                                                                        }
                                                                     }
-                                                                }
-                                                            }}
-                                                            className="px-3 py-1.5 bg-blue-600/20 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
-                                                        >
-                                                            再次邀請
-                                                        </button>
+                                                                }}
+                                                                className="px-3 py-1.5 bg-blue-600/20 text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
+                                                            >
+                                                                再次邀請
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (window.confirm('確定要刪除此授權紀錄嗎？此動作無法復原。')) {
+                                                                        try {
+                                                                            await deleteAuthorization(auth.id);
+                                                                        } catch (err: any) {
+                                                                            alert('刪除失敗: ' + err.message);
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                                                                title="刪除紀錄"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -1061,92 +1115,116 @@ function ManagerDashboard() {
                                                     </div>
                                                 </div>
 
-                                                <button
-                                                    onClick={() => sendNotification(summary.athlete_id, '您有保養項目需要關注，請查看詳情。', 'line')}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                    發送提醒
-                                                </button>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => sendNotification(summary.athlete_id, '您有保養項目需要關注，請查看詳情。', 'line')}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        <Send className="w-4 h-4" />
+                                                        發送提醒
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newSet = new Set(collapsedMaintenanceAthletes);
+                                                            if (newSet.has(summary.athlete_id)) newSet.delete(summary.athlete_id);
+                                                            else newSet.add(summary.athlete_id);
+                                                            setCollapsedMaintenanceAthletes(newSet);
+                                                        }}
+                                                        className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                        title={collapsedMaintenanceAthletes.has(summary.athlete_id) ? "展開列表" : "收合列表"}
+                                                    >
+                                                        {collapsedMaintenanceAthletes.has(summary.athlete_id) ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* 車輛清單 - 使用更高密度的 Grid 佈局 */}
-                                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                                                {summary.bikes.map(bike => {
-                                                    const StatusIcon = statusIcons[bike.maintenanceStatus];
-                                                    const isExpanded = expandedActivityRows.has(parseInt(bike.id) + 1000000); // 借用活動展開邏輯，加位移區隔
-                                                    const toggleBike = () => {
-                                                        const newSet = new Set(expandedActivityRows);
-                                                        const key = parseInt(bike.id) + 1000000;
-                                                        if (newSet.has(key)) newSet.delete(key);
-                                                        else newSet.add(key);
-                                                        setExpandedActivityRows(newSet);
-                                                    };
+                                            {!collapsedMaintenanceAthletes.has(summary.athlete_id) && (
+                                                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                                                    {summary.bikes.map(bike => {
+                                                        const StatusIcon = statusIcons[bike.maintenanceStatus];
+                                                        const isExpanded = expandedBikes.has(bike.id);
+                                                        const toggleBike = () => {
+                                                            const newSet = new Set(expandedBikes);
+                                                            if (newSet.has(bike.id)) newSet.delete(bike.id);
+                                                            else newSet.add(bike.id);
+                                                            setExpandedBikes(newSet);
+                                                        };
 
-                                                    return (
-                                                        <div
-                                                            key={bike.id}
-                                                            className={`p-4 rounded-xl border transition-all ${statusColors[bike.maintenanceStatus]}`}
-                                                        >
-                                                            <div className="flex items-start justify-between mb-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Bike className="w-5 h-5" />
-                                                                    <span className="font-bold">{bike.name}</span>
+                                                        return (
+                                                            <div
+                                                                key={bike.id}
+                                                                className={`p-4 rounded-xl border transition-all ${statusColors[bike.maintenanceStatus]}`}
+                                                            >
+                                                                <div className="flex items-start justify-between mb-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Bike className="w-5 h-5" />
+                                                                        <span className="font-bold">{bike.name}</span>
+                                                                    </div>
+                                                                    <StatusIcon className="w-5 h-5" />
                                                                 </div>
-                                                                <StatusIcon className="w-5 h-5" />
-                                                            </div>
-                                                            <p className="text-sm opacity-80">
-                                                                里程: {bike.distance.toFixed(0)} km
-                                                            </p>
-                                                            {bike.lastServiceDate && (
-                                                                <p className="text-xs opacity-60 mt-1">
-                                                                    最近保養: {bike.lastServiceDate}
+                                                                <p className="text-sm opacity-80">
+                                                                    里程: {bike.distance.toFixed(0)} km
                                                                 </p>
-                                                            )}
-                                                            <div className="mt-3 flex items-center justify-between">
-                                                                <div className="text-xs font-bold">
-                                                                    {bike.overdueCount > 0 && <span className="mr-2 text-red-400">{bike.overdueCount} 項超期</span>}
-                                                                    {bike.dueSoonCount > 0 && <span className="text-amber-400">{bike.dueSoonCount} 項即將到期</span>}
-                                                                    {bike.overdueCount === 0 && bike.dueSoonCount === 0 && <span className="text-emerald-400">所有項目正常</span>}
+                                                                {bike.lastServiceDate && (
+                                                                    <p className="text-xs opacity-60 mt-1">
+                                                                        最近保養: {bike.lastServiceDate}
+                                                                    </p>
+                                                                )}
+                                                                <div className="mt-3 flex items-center justify-between">
+                                                                    <div className="text-xs font-bold">
+                                                                        {bike.overdueCount > 0 && <span className="mr-2 text-red-400">{bike.overdueCount} 項超期</span>}
+                                                                        {bike.dueSoonCount > 0 && <span className="text-amber-400">{bike.dueSoonCount} 項即將到期</span>}
+                                                                        {bike.overdueCount === 0 && bike.dueSoonCount === 0 && <span className="text-emerald-400">所有項目正常</span>}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => openHistoryModal(bike.id, bike.name, summary.athlete_id)}
+                                                                            className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1 text-blue-400"
+                                                                        >
+                                                                            歷史紀錄
+                                                                        </button>
+                                                                        <span className="text-slate-600">|</span>
+                                                                        <button
+                                                                            onClick={toggleBike}
+                                                                            className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1"
+                                                                        >
+                                                                            {isExpanded ? '收合詳情' : '查看清單'}
+                                                                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
-                                                                <button
-                                                                    onClick={toggleBike}
-                                                                    className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1"
-                                                                >
-                                                                    {isExpanded ? '收合詳情' : '查看清單'}
-                                                                    {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                                </button>
-                                                            </div>
 
-                                                            {/* 詳細清單 */}
-                                                            {isExpanded && bike.items && (
-                                                                <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                                                                    {bike.items.sort((a, b) => b.percentage - a.percentage).map((item, idx) => (
-                                                                        <div key={idx} className="space-y-1">
-                                                                            <div className="flex items-center justify-between text-xs">
-                                                                                <span className="font-bold text-white/90">{item.name}</span>
-                                                                                <span className={`font-mono ${item.status === 'overdue' ? 'text-red-400' :
-                                                                                    item.status === 'due_soon' ? 'text-amber-400' : 'text-slate-400'
-                                                                                    }`}>
-                                                                                    {item.mileageSince.toFixed(0)} / {item.interval} km
-                                                                                </span>
+                                                                {/* 詳細清單 */}
+                                                                {isExpanded && bike.items && (
+                                                                    <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                                                                        {bike.items.sort((a, b) => b.percentage - a.percentage).map((item, idx) => (
+                                                                            <div key={idx} className="space-y-1">
+                                                                                <div className="flex items-center justify-between text-xs">
+                                                                                    <span className="font-bold text-white/90">{item.name}</span>
+                                                                                    <span className={`font-mono ${item.status === 'overdue' ? 'text-red-400' :
+                                                                                        item.status === 'due_soon' ? 'text-amber-400' : 'text-slate-400'
+                                                                                        }`}>
+                                                                                        {item.mileageSince.toFixed(0)} / {item.interval} km
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                                                                                    <div
+                                                                                        className={`h-full transition-all ${item.status === 'overdue' ? 'bg-red-500' :
+                                                                                            item.status === 'due_soon' ? 'bg-amber-500' : 'bg-emerald-500'
+                                                                                            }`}
+                                                                                        style={{ width: `${Math.min(item.percentage, 100)}%` }}
+                                                                                    />
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                                                                                <div
-                                                                                    className={`h-full transition-all ${item.status === 'overdue' ? 'bg-red-500' :
-                                                                                        item.status === 'due_soon' ? 'bg-amber-500' : 'bg-emerald-500'
-                                                                                        }`}
-                                                                                    style={{ width: `${Math.min(item.percentage, 100)}%` }}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
 
@@ -1372,6 +1450,7 @@ function ManagerDashboard() {
                                                         {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
                                                             <>
                                                                 <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Power (Avg/Max)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">均轉</th>
                                                                 <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">HR (Avg/Max)</th>
                                                             </>
                                                         )}
@@ -1406,6 +1485,14 @@ function ManagerDashboard() {
                                                                                         </span>
                                                                                         <span className="text-xs text-slate-500">{summary.max_watts || '-'} max</span>
                                                                                     </div>
+                                                                                ) : '-'}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                                                                                {summary.avg_cadence ? (
+                                                                                    <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                        <RefreshCw className="w-3 h-3 text-emerald-500" />
+                                                                                        {Math.round(summary.avg_cadence)}
+                                                                                    </span>
                                                                                 ) : '-'}
                                                                             </td>
                                                                             <td className="px-6 py-4 text-right text-slate-300 font-mono">
@@ -1494,6 +1581,7 @@ function ManagerDashboard() {
                                                                                             <th className="px-4 py-2 text-right w-20">最大瓦</th>
                                                                                             <th className="px-4 py-2 text-right w-20">均心</th>
                                                                                             <th className="px-4 py-2 text-right w-20">最大心</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">均轉</th>
                                                                                             <th className="px-4 py-2 text-right w-20">最高速</th>
                                                                                             <th className="px-4 py-2 text-right w-20">溫度</th>
                                                                                             <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
@@ -1519,7 +1607,7 @@ function ManagerDashboard() {
                                                                                                 const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
 
                                                                                                 const calories = activity.calories || '-';
-                                                                                                const type = activity.sport_type || activity.type || '';
+                                                                                                const type = activity.sport_type || (activity as any).type || '';
 
                                                                                                 return (
                                                                                                     <tr key={activity.id} className="hover:bg-slate-800/50">
@@ -1531,7 +1619,9 @@ function ManagerDashboard() {
                                                                                                                 {activity.name}
                                                                                                             </a>
                                                                                                         </td>
-                                                                                                        <td className="px-4 py-2 text-slate-400">{ACTIVITY_TYPE_NAMES[type] || type}</td>
+                                                                                                        <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
+                                                                                                            {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                                                        </td>
                                                                                                         <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
                                                                                                         <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
                                                                                                         <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
@@ -1547,6 +1637,9 @@ function ManagerDashboard() {
                                                                                                         </td>
                                                                                                         <td className="px-4 py-2 text-right text-red-500 font-mono">
                                                                                                             {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-emerald-400 font-mono">
+                                                                                                            {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
                                                                                                         </td>
                                                                                                         <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
                                                                                                         <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
@@ -1618,7 +1711,7 @@ function ManagerDashboard() {
                                                             const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
 
                                                             const calories = activity.calories || '-';
-                                                            const type = activity.sport_type || activity.type || '';
+                                                            const type = activity.sport_type || (activity as any).type || '';
 
                                                             return (
                                                                 <tr key={`${activity.athlete_name}-${activity.id}`} className="hover:bg-slate-700/20 transition-colors">
@@ -1633,7 +1726,7 @@ function ManagerDashboard() {
                                                                             {activity.name}
                                                                         </a>
                                                                     </td>
-                                                                    <td className="px-6 py-4 text-slate-400 text-sm">
+                                                                    <td className={`px-6 py-4 font-bold text-sm ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
                                                                         {ACTIVITY_TYPE_NAMES[type] || type}
                                                                     </td>
                                                                     <td className="px-6 py-4 text-right text-slate-300 font-mono">
@@ -1647,6 +1740,9 @@ function ManagerDashboard() {
                                                                     </td>
                                                                     <td className="px-6 py-4 text-right text-slate-300 whitespace-nowrap font-mono">
                                                                         {formatDuration(activity.elapsed_time || 0)}
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-right text-emerald-400 font-mono">
+                                                                        {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
                                                                     </td>
                                                                     <td className="px-6 py-4 text-right">
                                                                         {activity.average_watts ? (
@@ -2196,6 +2292,55 @@ function ManagerDashboard() {
                     )
                 }
             </AnimatePresence >
+
+            {/* 歷史紀錄 Modal */}
+            <AnimatePresence>
+                {historyModalBikeId && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                        onClick={closeHistoryModal}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                                        <History className="w-5 h-5 text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">保養歷史紀錄</h3>
+                                        <p className="text-sm text-slate-400">{historyModalBikeName}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={closeHistoryModal}
+                                    className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-white"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+                                <MaintenanceTable
+                                    records={historyRecords}
+                                    onDelete={handleDeleteHistoryRecord}
+                                    loading={historyLoading}
+                                    showCost={false}
+                                    showActions={false}
+                                />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div >
     );
 }

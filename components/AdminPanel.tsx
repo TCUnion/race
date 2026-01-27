@@ -661,23 +661,44 @@ const AdminPanel: React.FC = () => {
                 });
             }
 
-            // 4. 合併資料
-            const combined = (athletes || []).map(a => {
-                const token = tokenMap.get(a.id.toString());
+            // 4. 合併資料 - 改為以 strava_tokens 為主，確保顯示所有權杖
+            // 建立所有獨特的 IDSet (聯集)
+            const allIds = new Set<string>();
+            (athletes || []).forEach(a => allIds.add(a.id.toString()));
+            // @ts-ignore
+            tokens.forEach(t => allIds.add(t.athlete_id.toString()));
+
+            const combined = Array.from(allIds).map(id => {
+                const athlete = (athletes || []).find(a => a.id.toString() === id);
+                const token = tokenMap.get(id);
+
+                // 只有當有 Token 或是 Athlete 資料時才顯示
+                // 但為了修正 "API 權杖管理" 的數量差異，我們應該優先顯示有 Token 的資料
+                // 如果只有 Athlete 但沒有 Token，這通常只是單純的會員資料，不屬於 "API 權杖" 的管理範疇
+                // 但原本的邏輯似乎是想顯示所有 Athlete 的狀態 (有無 Token)
+                // 為了符合 "API 權杖管理" 的語意，這裡我們調整為：顯示所有有 Token 的 ID，以及所有在 athletes 表中的 ID
+
                 return {
-                    athleteID: a.id.toString(),
-                    name: `${a.firstname} ${a.lastname}`,
+                    athleteID: id,
+                    name: athlete ? `${athlete.firstname} ${athlete.lastname}` : 'Unknown Athlete',
                     createdAt: token?.created_at || null,
                     updatedAt: token?.updated_at || null,
                     expires_at: token?.expires_at || null,
-                    isBound: boundSet.has(a.id.toString())
+                    isBound: boundSet.has(id),
+                    hasToken: !!token
                 };
-            }).sort((a, b) => {
-                // 有權杖的排前面，其次按姓名排序
-                if (a.updatedAt && !b.updatedAt) return -1;
-                if (!a.updatedAt && b.updatedAt) return 1;
-                return a.name.localeCompare(b.name, 'zh-TW');
-            });
+            })
+                // 過濾掉沒有 Token 的資料 (如果只想看有 Token 的)
+                // 但使用者可能是想看 "所有潛在的連接"，原本邏輯是 map athletes
+                // 根據使用者問題 "strava_tokens 有44筆...只有40筆"，表示漏掉了 4 筆有 Token 但沒 Athlete 的資料
+                // 所以我們必須包含那些有 Token 但沒有 Athlete 的資料
+                // 這裡我們保留所有資料，並在 UI 上做區分或排序
+                .filter(item => item.hasToken) // 只顯示有 Token 的資料，符合 "API 權杖管理" 的定義
+                .sort((a, b) => {
+                    if (a.updatedAt && !b.updatedAt) return -1;
+                    if (!a.updatedAt && b.updatedAt) return 1;
+                    return a.name.localeCompare(b.name, 'zh-TW');
+                });
 
             setStravaTokens(combined);
         } catch (err: any) {
@@ -1769,14 +1790,18 @@ const AdminPanel: React.FC = () => {
                                 </div>
                             </>
                         )}
-                    </div></>)}
+                    </div>
+                </>
+                )}
 
-                {/* API 權杖管理 (Strava Tokens) */}
                 {activeTab === 'tokens' && (<div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <div className="flex items-center gap-3">
                             <Database className="w-5 h-5 text-tcu-blue" />
                             <h3 className="text-xl font-black">API 權杖管理 (Strava Tokens)</h3>
+                            <span className="px-3 py-1 text-xs font-bold text-tcu-blue bg-tcu-blue/10 rounded-full">
+                                {stravaTokens.length} 筆
+                            </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                             <div className="relative flex-1 md:flex-initial">

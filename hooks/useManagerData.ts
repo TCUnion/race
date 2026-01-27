@@ -63,6 +63,7 @@ interface UseManagerDataReturn {
     addAuthorization: (athleteId: number, type: AuthorizationType, notes?: string) => Promise<void>;
     updateAuthorizationStatus: (id: string, status: AuthorizationStatus) => Promise<void>;
     removeAuthorization: (id: string) => Promise<void>;
+    deleteAuthorization: (id: string) => Promise<void>;
     updateNotificationSetting: (setting: Partial<NotificationSetting>) => Promise<void>;
     sendNotification: (athleteId: number, message: string, channel: string) => Promise<void>;
     registerAsManager: (role: string, shopName?: string) => Promise<void>;
@@ -163,16 +164,26 @@ export function useManagerData(): UseManagerDataReturn {
     const loadAthleteInfo = useCallback(async (athleteIds: number[]) => {
         if (athleteIds.length === 0) return [];
 
-        const { data, error: athleteError } = await supabase
-            .from('athletes')
-            .select('id, firstname, lastname, profile, city')
-            .in('id', athleteIds);
+        // 去重並確保 ID 為數字
+        const uniqueIds = Array.from(new Set(athleteIds.map(id => Number(id)).filter(id => !isNaN(id))));
+        if (uniqueIds.length === 0) return [];
 
-        if (athleteError) {
-            throw athleteError;
+        try {
+            const { data, error: athleteError } = await supabase
+                .from('athletes')
+                .select('id, firstname, lastname, profile')
+                .in('id', uniqueIds);
+
+            if (athleteError) {
+                console.error('批量載入車友資訊失敗:', athleteError);
+                return [];
+            }
+
+            return (data || []) as AthleteInfo[];
+        } catch (err) {
+            console.error('loadAthleteInfo 發生異常:', err);
+            return [];
         }
-
-        return (data || []) as AthleteInfo[];
     }, []);
 
     // 載入保養摘要
@@ -211,7 +222,7 @@ export function useManagerData(): UseManagerDataReturn {
                 .from('athletes')
                 .select('firstname, lastname, profile')
                 .eq('id', athleteId)
-                .single();
+                .maybeSingle();
 
             if (bikes.length === 0) continue;
 
@@ -334,7 +345,7 @@ export function useManagerData(): UseManagerDataReturn {
                 .from('athletes')
                 .select('firstname, lastname')
                 .eq('id', athleteId)
-                .single();
+                .maybeSingle();
 
             // 載入車輛資訊
             const { data: bikes } = await supabase
@@ -364,6 +375,11 @@ export function useManagerData(): UseManagerDataReturn {
                 : undefined;
 
             const maxHeartRate = activities.reduce((max: number, a: any) => Math.max(max, a.max_heartrate || 0), 0);
+
+            const activitiesWithCadence = activities.filter((a: any) => a.average_cadence > 0);
+            const avgCadence = activitiesWithCadence.length > 0
+                ? activitiesWithCadence.reduce((sum: number, a: any) => sum + (a.average_cadence || 0), 0) / activitiesWithCadence.length
+                : undefined;
 
             // 最近 100 筆活動 (配合前端最大分頁選項)
             const recentActivities = activities.slice(0, 100);
@@ -403,6 +419,7 @@ export function useManagerData(): UseManagerDataReturn {
                 max_watts: maxWatts || undefined,
                 avg_heartrate: avgHeartRate,
                 max_heartrate: maxHeartRate || undefined,
+                avg_cadence: avgCadence,
                 recent_activities: recentActivities,
             });
         }
@@ -707,6 +724,17 @@ export function useManagerData(): UseManagerDataReturn {
         await refresh();
     }, [refresh]);
 
+    // 刪除授權紀錄 (物理刪除)
+    const deleteAuthorization = useCallback(async (id: string) => {
+        const { error: deleteError } = await supabase
+            .from('user_authorizations')
+            .delete()
+            .eq('id', id);
+
+        if (deleteError) throw deleteError;
+        await refresh();
+    }, [refresh]);
+
     // 更新通知設定
     const updateNotificationSetting = useCallback(async (
         setting: Partial<NotificationSetting>
@@ -851,6 +879,7 @@ export function useManagerData(): UseManagerDataReturn {
         addAuthorization,
         updateAuthorizationStatus,
         removeAuthorization,
+        deleteAuthorization,
         updateNotificationSetting,
         sendNotification,
         registerAsManager,
