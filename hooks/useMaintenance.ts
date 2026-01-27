@@ -232,7 +232,7 @@ export const useMaintenance = () => {
 
       setBikes(bikesResult.data || []);
       setWheelsets(wheelsetsResult.data || []);
-      setMaintenanceTypes(typesResult.data || []);
+      setMaintenanceTypes((typesResult.data || []).filter((t: any) => t.id !== 'wheel_check' && !t.name.includes('輪框檢查')));
       setRecords(recordsResult.data || []);
       setSettings(settingsResult.data || []);
       setLifespanSettings(lifespanSettingsResult.data || []);

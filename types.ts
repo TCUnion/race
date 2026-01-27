@@ -46,17 +46,49 @@ export interface Participant {
 export interface StravaActivity {
   id: number;
   athlete_id: number;
+  athlete?: any; // 原始 Athlete 物件
   name: string;
   distance: number;
   moving_time: number; // 使用秒
+  elapsed_time?: number; // 總耗時 (秒)
   start_date: string;
+  start_date_local?: string;
   gear_id: string; // 對應 bikes.id
   total_elevation_gain: number; // 總爬升 (公尺)
+  elev_high?: number;
+  elev_low?: number;
   average_watts?: number;
   max_watts?: number;
+  weighted_average_watts?: number;
   average_heartrate?: number;
   max_heartrate?: number;
+  has_heartrate?: boolean;
+  average_speed?: number;
+  max_speed?: number;
+  average_cadence?: number;
+  average_temp?: number;
+  kilojoules?: number;
+  calories?: number;
+  device_name?: string;
+  trainer?: boolean;
+  commute?: boolean;
+  manual?: boolean;
+  private?: boolean;
+  visibility?: string;
+  sport_type?: string;
   suffer_score?: number;
+  map?: {
+    id: string;
+    polyline: string;
+    summary_polyline: string;
+  };
+  start_latlng?: [number, number];
+  end_latlng?: [number, number];
+  upload_id?: number;
+  external_id?: string;
+  description?: string;
+  timezone?: string;
+  utc_offset?: number;
 }
 
 export interface Activity {

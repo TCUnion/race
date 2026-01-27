@@ -1843,7 +1843,16 @@ const AdminPanel: React.FC = () => {
                                 {displayedTokens
                                     .map((token) => (
                                         <tr key={token.athleteID} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-4 py-3 font-mono text-xs">{token.athleteID}</td>
+                                            <td className="px-4 py-3 font-mono text-xs">
+                                                <a
+                                                    href={`https://www.strava.com/athletes/${token.athleteID}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hover:text-tcu-blue hover:underline transition-colors font-bold"
+                                                >
+                                                    {token.athleteID}
+                                                </a>
+                                            </td>
                                             <td className="px-4 py-3 font-bold">{token.name}</td>
                                             <td className="px-4 py-3 text-slate-500">
                                                 {token.createdAt ? new Date(token.createdAt).toLocaleDateString('zh-TW') : '-'}

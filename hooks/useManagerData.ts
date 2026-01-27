@@ -181,25 +181,30 @@ export function useManagerData(): UseManagerDataReturn {
 
         const summaries: AthleteMaintenanceSummary[] = [];
 
+        // 載入全域共用的資料
+        const { data: allTypes } = await supabase
+            .from('maintenance_types')
+            .select('*')
+            .order('sort_order');
+
+        if (!allTypes) return [];
+
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
         for (const athleteId of athleteIds) {
-            // 載入車輛
-            const { data: bikes } = await supabase
-                .from('bikes')
-                .select('*')
-                .eq('athlete_id', athleteId)
-                .eq('retired', false);
+            // 載入該車友的所有相關資料
+            const [bikesResult, recordsResult, settingsResult, activitiesResult] = await Promise.all([
+                supabase.from('bikes').select('*').eq('athlete_id', athleteId).eq('retired', false),
+                supabase.from('bike_maintenance').select('*').eq('athlete_id', athleteId).order('service_date', { ascending: false }),
+                supabase.from('bike_maintenance_settings').select('*').eq('athlete_id', athleteId),
+                supabase.from('strava_activities').select('*').eq('athlete_id', athleteId).gte('start_date', oneYearAgo.toISOString())
+            ]);
 
-            // 載入保養紀錄
-            const { data: records } = await supabase
-                .from('bike_maintenance')
-                .select('*')
-                .eq('athlete_id', athleteId)
-                .order('service_date', { ascending: false });
-
-            // 載入保養類型
-            const { data: types } = await supabase
-                .from('maintenance_types')
-                .select('*');
+            const bikes = bikesResult.data || [];
+            const records = recordsResult.data || [];
+            const settings = settingsResult.data || [];
+            const activities = activitiesResult.data || [];
 
             // 載入車友資訊
             const { data: athlete } = await supabase
@@ -208,62 +213,88 @@ export function useManagerData(): UseManagerDataReturn {
                 .eq('id', athleteId)
                 .single();
 
-            if (!bikes || bikes.length === 0) continue;
+            if (bikes.length === 0) continue;
 
             let totalOverdue = 0;
             let totalDueSoon = 0;
 
             const bikeSummaries = bikes.map((bike: any) => {
-                const bikeRecords = records?.filter((r: any) => r.bike_id === bike.id) || [];
+                const currentMileageKm = bike.converted_distance || (bike.distance / 1000);
+                const bikeRecords = records.filter((r: any) => r.bike_id === bike.id);
                 const lastRecord = bikeRecords[0];
 
-                // 簡化的保養狀態計算
-                let overdue = 0;
-                let dueSoon = 0;
                 const items: any[] = [];
+                let bikeOverdue = 0;
+                let bikeDueSoon = 0;
 
-                types?.forEach((type: any) => {
-                    const typeRecords = bikeRecords.filter((r: any) =>
-                        r.maintenance_type.includes(type.id) || r.maintenance_type.includes('full_service')
-                    );
-                    const lastTypeRecord = typeRecords[0];
-                    const lastMileage = lastTypeRecord?.mileage_at_service || 0;
-                    const currentMileage = bike.converted_distance || bike.distance / 1000;
-                    const mileageSince = currentMileage - lastMileage;
-                    const interval = type.default_interval_km || 3000;
-                    const percentage = (mileageSince / interval) * 100;
+                // 過濾與同步個人端的項目清單
+                allTypes
+                    .filter(type =>
+                        type.id !== 'full_service' &&
+                        type.id !== 'wheel_check' &&
+                        !type.name.includes('輪框檢查')
+                    )
+                    .forEach((type: any) => {
+                        // 找出此項目的最後保養
+                        const lastTypeRecord = bikeRecords.find((r: any) => {
+                            const types = r.maintenance_type.split(', ').map((t: string) => t.trim());
+                            return types.includes(type.id) || types.includes('full_service') || types.includes('全車保養');
+                        });
 
-                    let status: 'ok' | 'due_soon' | 'overdue' = 'ok';
-                    if (percentage >= 100) {
-                        overdue++;
-                        status = 'overdue';
-                    } else if (percentage >= 85) {
-                        dueSoon++;
-                        status = 'due_soon';
-                    }
+                        const lastServiceDate = lastTypeRecord?.service_date;
+                        let mileageSince = 0;
 
-                    items.push({
-                        type_id: type.id,
-                        name: type.name,
-                        percentage,
-                        mileageSince,
-                        interval,
-                        status
+                        if (lastServiceDate) {
+                            // 使用活動里程加總 (與個人端邏輯一致)
+                            const start = new Date(lastServiceDate);
+                            const validActivities = activities.filter((a: any) => {
+                                if (a.gear_id !== bike.id) return false;
+                                return new Date(a.start_date) > start;
+                            });
+                            mileageSince = validActivities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / 1000;
+                        } else {
+                            mileageSince = currentMileageKm;
+                        }
+
+                        // 取得保養間隔 (優先順序: 自訂 > 預估 > 預設)
+                        const setting = settings.find((s: any) => s.bike_id === bike.id && s.maintenance_type_id === type.id);
+                        const intervalKm = setting ? setting.custom_interval_km : (type.estimated_lifespan_km || type.default_interval_km);
+
+                        // 如果里程間隔為 0，則視為不適用的項目，不加入清單
+                        if (intervalKm === 0) return;
+
+                        const percentage = (mileageSince / intervalKm) * 100;
+
+                        let status: 'ok' | 'due_soon' | 'overdue' = 'ok';
+                        if (percentage >= 100) {
+                            bikeOverdue++;
+                            status = 'overdue';
+                        } else if (percentage >= 85) {
+                            bikeDueSoon++;
+                            status = 'due_soon';
+                        }
+
+                        items.push({
+                            type_id: type.id,
+                            name: type.id === 'gear_replacement' || type.name === '器材更換' ? '其他' : type.name,
+                            percentage,
+                            mileageSince,
+                            interval: intervalKm,
+                            status
+                        });
                     });
-                });
 
-                totalOverdue += overdue;
-                totalDueSoon += dueSoon;
+                totalOverdue += bikeOverdue;
+                totalDueSoon += bikeDueSoon;
 
                 return {
                     id: bike.id,
                     name: bike.name || bike.nickname || '未命名車輛',
-                    distance: bike.converted_distance || bike.distance / 1000,
-                    maintenanceStatus: overdue > 0 ? 'overdue' as const : dueSoon > 0 ? 'due_soon' as const : 'ok' as const,
-                    dueSoonCount: dueSoon,
-                    overdueCount: overdue,
+                    distance: currentMileageKm,
+                    maintenanceStatus: (bikeOverdue > 0 ? 'overdue' : bikeDueSoon > 0 ? 'due_soon' : 'ok') as "overdue" | "due_soon" | "ok",
+                    dueSoonCount: bikeDueSoon,
+                    overdueCount: bikeOverdue,
                     lastServiceDate: lastRecord?.service_date,
-                    nextServiceDate: undefined,
                     items
                 };
             });
@@ -334,8 +365,8 @@ export function useManagerData(): UseManagerDataReturn {
 
             const maxHeartRate = activities.reduce((max: number, a: any) => Math.max(max, a.max_heartrate || 0), 0);
 
-            // 最近 10 筆活動
-            const recentActivities = activities.slice(0, 10);
+            // 最近 100 筆活動 (配合前端最大分頁選項)
+            const recentActivities = activities.slice(0, 100);
 
             // 車輛使用統計
             const bikeUsage: Record<string, { distance: number; count: number }> = {};
