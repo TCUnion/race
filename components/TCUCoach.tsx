@@ -25,9 +25,7 @@ const TCUCoach: React.FC = () => {
     const displayName = memberData?.real_name || memberData?.member_name || athlete?.firstname || '選手';
 
     // Debugging font size change
-    React.useEffect(() => {
-        console.log(`[TCUCoach] Font size changed to: ${fontSize} (${fontSizeValue})`);
-    }, [fontSize, fontSizeValue]);
+
 
     const getGreetingMessage = (name: string): Message => ({
         id: '1',

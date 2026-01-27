@@ -65,12 +65,12 @@ const StravaConnect: React.FC = () => {
 
             if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
                 if (event.data?.type?.startsWith('STRAVA_')) {
-                    console.log('StravaConnect: 收到 Strava 相關訊息但來源未授權:', event.origin, event.data);
+
                 }
                 return;
             }
 
-            console.log('StravaConnect: 收到授權訊息:', event.data);
+
 
             if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
                 stopPolling();
@@ -181,10 +181,10 @@ const StravaConnect: React.FC = () => {
             // 用 try-catch 處理 COOP (Cross-Origin-Opener-Policy) 錯誤
             try {
                 if (authWindowRef.current && authWindowRef.current.closed) {
-                    console.log('StravaConnect: 授權視窗已關閉，檢查暫存資料');
+
                     const found = checkStoredData();
                     if (found) {
-                        console.log('StravaConnect: 成功從暫存取得資料');
+
                     }
                     stopPolling();
                     return;

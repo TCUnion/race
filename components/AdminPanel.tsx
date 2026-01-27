@@ -1549,7 +1549,7 @@ const AdminPanel: React.FC = () => {
                                             });
 
                                             const responseText = await response.text();
-                                            console.log('n8n Webhook Raw Response:', responseText); // 強化偵錯
+
 
                                             if (!responseText || responseText.trim() === "") {
                                                 throw new Error("伺服器回傳了空內容，請稍後再試或檢查 Strava ID 是否正確。");
@@ -1560,7 +1560,7 @@ const AdminPanel: React.FC = () => {
                                             const normalized = normalizeSegment(segment);
                                             if (!normalized) throw new Error('無法正規化路段資料');
 
-                                            console.log('Extracted Polyline:', normalized.polyline ? `${normalized.polyline.substring(0, 30)}...` : '❌ MISSING');
+
 
                                             if (!normalized.polyline) {
                                                 if (!confirm('警告：無法從 Strava 取得路線資訊 (Polyline)。\n這將導致排行榜地圖無法顯示。\n\n是否仍要強行新增該路段？')) {
