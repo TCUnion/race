@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    AlertCircle, User, Calendar, RefreshCw, CheckCircle, Edit2, Zap, Heart, Activity, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Clock, Flame, Target, BarChart3
+    AlertCircle, User, Calendar, RefreshCw, CheckCircle, Edit2, Zap, Heart, Activity, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Clock, Flame, Target, BarChart3, ZoomOut
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { usePowerAnalysis } from '../../hooks/usePowerAnalysis';
@@ -18,7 +18,7 @@ import {
     TrainingLoadSummary,
 } from '../../types';
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea
 } from 'recharts';
 
 interface PowerTrainingReportProps {
@@ -155,6 +155,42 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
         return result;
     }, [data]);
 
+    // 縮放狀態
+    const [refAreaLeft, setRefAreaLeft] = useState<number | null>(null);
+    const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
+    const [left, setLeft] = useState<'dataMin' | number>('dataMin');
+    const [right, setRight] = useState<'dataMax' | number>('dataMax');
+
+    // 重置縮放
+    const zoomOut = () => {
+        setRefAreaLeft(null);
+        setRefAreaRight(null);
+        setLeft('dataMin');
+        setRight('dataMax');
+    };
+
+    // 執行縮放
+    const zoom = () => {
+        if (refAreaLeft === null || refAreaRight === null || refAreaLeft === refAreaRight) {
+            setRefAreaLeft(null);
+            setRefAreaRight(null);
+            return;
+        }
+
+        // 確保 left < right
+        let start = refAreaLeft;
+        let end = refAreaRight;
+
+        if (start > end) {
+            [start, end] = [end, start];
+        }
+
+        setRefAreaLeft(null);
+        setRefAreaRight(null);
+        setLeft(start);
+        setRight(end);
+    };
+
     if (chartData.length === 0) return null;
 
     return (
@@ -186,9 +222,22 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                 })}
             </div>
 
-            <div className="h-[400px] w-full min-w-0 overflow-hidden" style={{ width: '100%', height: 400 }}>
+            <div className="h-[400px] w-full min-w-0 overflow-hidden select-none cursor-crosshair" style={{ width: '100%', height: 400 }}>
                 <ResponsiveContainer width="100%" height={400} minWidth={0}>
-                    <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                    <AreaChart
+                        data={chartData}
+                        margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                        onMouseDown={(e) => {
+                            if (e && e.activeLabel) setRefAreaLeft(Number(e.activeLabel));
+                        }}
+                        onMouseMove={(e) => {
+                            if (e && e.activeLabel && refAreaLeft !== null) {
+                                const val = Number(e.activeLabel);
+                                setRefAreaRight(val);
+                            }
+                        }}
+                        onMouseUp={zoom}
+                    >
                         <defs>
                             <linearGradient id="colorWatts" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#EAB308" stopOpacity={0.8} />
@@ -217,11 +266,15 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
                         <XAxis
-                            dataKey="timeStr"
+                            dataKey="time"
+                            type="number"
                             stroke="#94a3b8"
                             tick={{ fontSize: 10 }}
+                            tickFormatter={formatDuration}
                             interval="preserveStartEnd"
                             minTickGap={50}
+                            domain={[left, right]}
+                            allowDataOverflow
                         />
 
                         {/* Y Axes - conditionally rendered but maintain ID stability */}
@@ -236,6 +289,7 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                             contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc', fontSize: '12px' }}
                             itemStyle={{ padding: 0 }}
                             labelStyle={{ color: '#94a3b8', marginBottom: '0.5rem' }}
+                            labelFormatter={(label) => formatDuration(Number(label))}
                             formatter={(value: number, name: string) => {
                                 if (name === 'watts') return [`${value}W`, '功率'];
                                 if (name === 'heartrate') return [`${value}bpm`, '心率'];
@@ -327,16 +381,35 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                             />
                         )}
 
-                        <Brush
-                            dataKey="timeStr"
-                            height={30}
-                            stroke="#64748b"
-                            fill="#1e293b"
-                            tickFormatter={() => ''}
-                            alwaysShowText={false}
-                        />
+                        {refAreaLeft !== null && refAreaRight !== null && (
+                            // @ts-ignore
+                            <ReferenceArea
+                                x1={refAreaLeft}
+                                x2={refAreaRight}
+                                stroke="none"
+                                fill="#000000"
+                                fillOpacity={0.5}
+                            />
+                        )}
                     </AreaChart>
                 </ResponsiveContainer>
+            </div>
+
+            {/* 縮放提示與控制 */}
+            <div className="flex items-center justify-between text-xs text-slate-500 mt-2 px-2">
+                <div>
+                    {left !== 'dataMin' ? (
+                        <button
+                            onClick={zoomOut}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-200 rounded-full transition-colors border border-slate-600"
+                        >
+                            <ZoomOut className="w-3 h-3" />
+                            重置縮放
+                        </button>
+                    ) : (
+                        <span>按住滑鼠左鍵拖曳選取範圍進行縮放</span>
+                    )}
+                </div>
             </div>
         </div>
     );
