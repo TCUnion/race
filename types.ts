@@ -322,6 +322,7 @@ export interface ActivitySummary {
     distance: number;
     activity_count: number;
   }[];
+  ftp: number; // Current Athlete FTP
   most_active_region?: string;
   // Performance Data
   avg_watts?: number;
@@ -340,4 +341,110 @@ export interface MaintenanceStatistics {
   total_cost: number;
   avg_interval_km: number;
   athletes_count: number;
+}
+
+// ====================================
+// 功率訓練分析型別定義
+// ====================================
+
+// Strava Stream 數據類型
+export type StreamType = 'time' | 'watts' | 'heartrate' | 'cadence' | 'velocity_smooth' | 'altitude' | 'grade_smooth' | 'distance' | 'temp' | 'moving' | 'latlng';
+
+// 單一 Stream 數據
+export interface StreamData {
+  type: StreamType;
+  data: number[];
+  series_type?: 'time' | 'distance';
+  original_size?: number;
+  resolution?: 'low' | 'medium' | 'high';
+}
+
+// Strava Streams 完整紀錄
+export interface StravaStreams {
+  id: string;
+  activity_id: number;
+  streams: StreamData[];
+  ftp?: number; // Snapshot FTP at the time of activity
+  max_heartrate?: number;
+  strava_zones?: any[]; // Raw Strava Zone Data
+  created_at: string;
+  updated_at: string;
+}
+
+// 功率區間定義
+export interface PowerZone {
+  zone: number;
+  name: string;
+  minPower: number;
+  maxPower: number;
+  color: string;
+}
+
+// 功率區間分析結果
+export interface PowerZoneAnalysis {
+  zone: number;
+  name: string;
+  timeInZone: number; // 秒
+  percentageTime: number;
+  avgPower: number;
+  color: string;
+}
+
+// 心率區間分析結果
+export interface HRZoneAnalysis {
+  zone: number;
+  name: string;
+  timeInZone: number;
+  percentageTime: number;
+  avgHR: number;
+  color: string;
+}
+
+// 訓練負荷摘要
+export interface TrainingLoadSummary {
+  np: number; // Normalized Power
+  avgPower: number; // Average Power
+  maxPower: number; // Max Power
+  if: number; // Intensity Factor (NP / FTP)
+  tss: number; // Training Stress Score
+  vi: number; // Variability Index (NP / Avg Power)
+  duration: number; // 總時間（秒）
+  kilojoules: number; // 總功（千焦耳）
+}
+
+// 活動功率分析完整結果
+export interface ActivityPowerAnalysis {
+  activityId: number;
+  activityName: string;
+  date: string;
+  ftp: number;
+  max_heartrate?: number;
+  stravaZones?: any[]; // Raw Strava Zone Data
+  trainingLoad: TrainingLoadSummary;
+  powerZones: PowerZoneAnalysis[];
+  hrZones?: HRZoneAnalysis[];
+  // 時序數據（用於圖表）
+  timeSeriesData?: {
+    time: number[];
+    watts: number[];
+    heartrate?: number[];
+    cadence?: number[];
+    velocity?: number[];
+    grade?: number[];
+    altitude?: number[];
+  };
+}
+
+// 選手訓練總覽
+export interface AthletePowerProfile {
+  athleteId: number;
+  athleteName: string;
+  ftp: number;
+  maxHR?: number;
+  weeklyTSS: number;
+  monthlyTSS: number;
+  ctl: number; // Chronic Training Load (42 天 TSS 平均)
+  atl: number; // Acute Training Load (7 天 TSS 平均)
+  tsb: number; // Training Stress Balance (CTL - ATL)
+  recentActivities: ActivityPowerAnalysis[];
 }

@@ -24,6 +24,8 @@ interface AthleteInfo {
     lastname?: string;
     profile?: string;
     city?: string;
+    ftp?: number;
+    max_heartrate?: number;
 }
 
 // 車輛與保養狀態
@@ -171,7 +173,7 @@ export function useManagerData(): UseManagerDataReturn {
         try {
             const { data, error: athleteError } = await supabase
                 .from('athletes')
-                .select('id, firstname, lastname, profile')
+                .select('id, firstname, lastname, profile, ftp, max_heartrate')
                 .in('id', uniqueIds);
 
             if (athleteError) {
@@ -220,7 +222,7 @@ export function useManagerData(): UseManagerDataReturn {
             // 載入車友資訊
             const { data: athlete } = await supabase
                 .from('athletes')
-                .select('firstname, lastname, profile')
+                .select('firstname, lastname, profile, ftp, max_heartrate')
                 .eq('id', athleteId)
                 .maybeSingle();
 
@@ -343,7 +345,7 @@ export function useManagerData(): UseManagerDataReturn {
             // 載入車友資訊
             const { data: athlete } = await supabase
                 .from('athletes')
-                .select('firstname, lastname')
+                .select('firstname, lastname, ftp, max_heartrate')
                 .eq('id', athleteId)
                 .maybeSingle();
 
@@ -418,9 +420,11 @@ export function useManagerData(): UseManagerDataReturn {
                 avg_watts: avgWatts,
                 max_watts: maxWatts || undefined,
                 avg_heartrate: avgHeartRate,
-                max_heartrate: maxHeartRate || undefined,
+
                 avg_cadence: avgCadence,
                 recent_activities: recentActivities,
+                ftp: athlete?.ftp || 200,
+                max_heartrate: athlete?.max_heartrate,
             });
         }
 

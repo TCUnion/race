@@ -60,6 +60,7 @@ import { supabase } from '../../lib/supabase';
 import { AthleteMaintenanceSummary, ActivitySummary, MaintenanceStatistics } from '../../types';
 import ManagerLogin from './ManagerLogin';
 import MaintenanceTable from '../maintenance/MaintenanceTable';
+import PowerTrainingReport from './PowerTrainingReport';
 import { MaintenanceRecord } from '../../types';
 
 const ROLE_NAMES: Record<string, string> = {
@@ -89,7 +90,7 @@ const ACTIVITY_TYPE_COLORS: Record<string, string> = {
 };
 
 // 頁籤類型
-type TabType = 'overview' | 'members' | 'maintenance' | 'activity' | 'statistics' | 'notifications' | 'settings';
+type TabType = 'overview' | 'members' | 'maintenance' | 'activity' | 'power_analysis' | 'statistics' | 'notifications' | 'settings';
 
 // 狀態顏色
 const statusColors = {
@@ -225,7 +226,7 @@ function ManagerDashboard() {
 
     // 解決不同角色進入不該進入的頁籤的問題
     useEffect(() => {
-        if (managerRole?.role === 'shop_owner' && ['activity', 'statistics'].includes(activeTab)) {
+        if (managerRole?.role === 'shop_owner' && ['activity', 'statistics', 'power_analysis'].includes(activeTab)) {
             setActiveTab('overview');
         }
         if ((managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && ['maintenance', 'statistics'].includes(activeTab)) {
@@ -393,19 +394,24 @@ function ManagerDashboard() {
     const tabs = [
         { id: 'overview' as const, label: '總覽', icon: Store },
         { id: 'activity' as const, label: '活動報表', icon: Activity },
+        { id: 'power_analysis' as const, label: '功率分析', icon: Zap },
         { id: 'members' as const, label: `${athleteLabel}管理`, icon: Users },
         { id: 'maintenance' as const, label: '保養報表', icon: Wrench },
         { id: 'statistics' as const, label: '統計分析', icon: BarChart3 },
         { id: 'notifications' as const, label: '通知管理', icon: Bell },
         { id: 'settings' as const, label: '設定', icon: Settings },
     ].filter(tab => {
-        // 車店老闆不需要活動報表跟統計分析
+        // 車店老闆不需要活動報表、功率分析跟統計分析
         if (managerRole?.role === 'shop_owner') {
-            return !['activity', 'statistics'].includes(tab.id);
+            return !['activity', 'statistics', 'power_analysis'].includes(tab.id);
         }
         // 車隊教練不需要保養報表跟統計分析
         if (managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') {
             return !['maintenance', 'statistics'].includes(tab.id);
+        }
+        // 功率分析只顯示給功率教練與車隊教練
+        if (tab.id === 'power_analysis') {
+            return managerRole?.role === 'power_coach' || managerRole?.role === 'team_coach';
         }
         return true;
     });
@@ -1319,6 +1325,7 @@ function ManagerDashboard() {
                                         >
                                             <Calendar className="w-3.5 h-3.5" /> 依照日期
                                         </button>
+
                                     </div>
 
                                     {activityView === 'date' && (
@@ -1342,6 +1349,8 @@ function ManagerDashboard() {
                                         </div>
                                     )}
                                 </div>
+
+
 
                                 {/* 活動清單容器 */}
                                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
@@ -1784,6 +1793,24 @@ function ManagerDashboard() {
                                         </div>
                                     )}
                                 </div>
+                            </motion.div>
+                        )
+                    }
+
+                    {
+                        activeTab === 'power_analysis' && (
+                            <motion.div
+                                key="power_analysis"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="space-y-6"
+                            >
+                                <PowerTrainingReport
+                                    activitySummaries={activitySummaries}
+                                    defaultFTP={200}
+                                    defaultMaxHR={190}
+                                />
                             </motion.div>
                         )
                     }
