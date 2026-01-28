@@ -124,13 +124,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               <>
                 <button
                   onClick={handlePrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10 hover:scale-110 active:scale-90"
+                  aria-label={t('landing.prev_slide') || "Previous Slide"}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10 hover:scale-110 active:scale-90 touch-target"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10 hover:scale-110 active:scale-90"
+                  aria-label={t('landing.next_slide') || "Next Slide"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 border border-white/20 z-10 hover:scale-110 active:scale-90 touch-target"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>
@@ -159,22 +161,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
               <button
                 onClick={onRegister}
-                className={`flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 ${currentTheme.primary} text-white text-lg font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl ${currentTheme.shadow} active:scale-95 duration-700`}
+                className={`flex min-w-[200px] cursor-pointer items-center justify-center rounded-xl h-14 px-8 bg-gradient-to-r from-brand-primary to-sky-500 text-white text-lg font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-brand-primary/40 hover:shadow-glow-primary active:scale-95 duration-300 hover:-translate-y-1 relative overflow-hidden group`}
               >
-                <span>{t('landing.register_now')}</span>
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 skew-y-12"></div>
+                <span className="relative z-10">{t('landing.register_now')}</span>
               </button>
               {segment?.link ? (
                 <a
                   href={segment.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95 group"
+                  className="flex min-w-[200px] cursor-pointer items-center justify-center rounded-xl h-14 px-8 glass-panel text-white text-lg font-black uppercase tracking-widest hover:bg-white/20 transition-all active:scale-95 group hover:-translate-y-1"
                 >
                   <span>{t('landing.view_details')}</span>
                   <ExternalLink className="w-5 h-5 ml-2 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </a>
               ) : (
-                <button className="flex min-w-[200px] cursor-pointer items-center justify-center rounded h-14 px-8 bg-white/10 text-white border border-white/20 text-lg font-black uppercase tracking-widest backdrop-blur-sm hover:bg-white/20 transition-all active:scale-95">
+                <button className="flex min-w-[200px] cursor-pointer items-center justify-center rounded-xl h-14 px-8 glass-panel text-white text-lg font-black uppercase tracking-widest hover:bg-white/20 transition-all active:scale-95 hover:-translate-y-1">
                   <span>{t('landing.view_details')}</span>
                 </button>
               )}
@@ -289,7 +292,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <section className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 transition-all hover:shadow-md">
               <button
                 type="button"
-                className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic"
+                aria-expanded={detailsOpen}
+                className="w-full flex justify-between items-center text-sm font-black text-slate-900 dark:text-white uppercase italic touch-target"
                 onClick={() => setDetailsOpen(prev => !prev)}
               >
                 <span>{t('landing.details_title')}</span>
@@ -331,7 +335,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
             <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-t-4 border-tcu-blue shadow-lg relative overflow-hidden transition-all hover:shadow-xl">
               <button
                 type="button"
-                className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic"
+                aria-expanded={startOpen}
+                className="w-full flex justify-between items-center text-xl font-black text-slate-900 dark:text-white uppercase italic touch-target"
                 onClick={() => setStartOpen(prev => !prev)}
               >
                 <span>{t('landing.start_challenge')}</span>
