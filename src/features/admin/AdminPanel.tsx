@@ -654,6 +654,29 @@ const AdminPanel: React.FC = () => {
         }
     };
 
+    const handleUnbindManagerStrava = async () => {
+        if (!editingManager || !editingManager.athlete_id) return;
+
+        if (!confirm(`確定要解除管理員「${editingManager.real_name || editingManager.email}」的 Strava 帳號綁定嗎？\n\n解除後該管理員需重新進行綁定才能使用 Strava 登入。`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('manager_roles')
+                .update({ athlete_id: null })
+                .eq('id', editingManager.id);
+
+            if (error) throw error;
+
+            alert('已成功解除 Strava 綁定');
+            // Update local editing state
+            setEditingManager({ ...editingManager, athlete_id: null });
+            // Refresh main list
+            fetchManagers();
+        } catch (err: any) {
+            alert('解除綁定失敗: ' + err.message);
+        }
+    };
+
     const handleDeleteManager = async (manager: any) => {
         // 🔒 受保護的系統管理員帳號 (禁止刪除)
         const PROTECTED_EMAILS = [
@@ -1150,6 +1173,27 @@ const AdminPanel: React.FC = () => {
                                         <option value="power_coach">Power Coach (功率教練)</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Strava 綁定狀態</label>
+                                    <div className="flex items-center gap-2 h-[42px]">
+                                        {editingManager.athlete_id ? (
+                                            <>
+                                                <span className="font-mono font-bold text-[#FC4C02]">
+                                                    ID: {editingManager.athlete_id}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleUnbindManagerStrava}
+                                                    className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold rounded-lg transition-colors"
+                                                >
+                                                    解除綁定
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <span className="text-slate-400 text-sm italic">未綁定 Strava 帳號</span>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="md:col-span-2 flex justify-end gap-2 mt-2">
                                     <button
                                         type="button"
@@ -1267,7 +1311,7 @@ const AdminPanel: React.FC = () => {
                                                 {manager.real_name || '管理者'}
                                                 {!manager.is_active && <span className="ml-2 text-[10px] bg-slate-200 text-slate-500 px-1 rounded">停用中</span>}
                                             </div>
-                                            <div className="text-xs text-slate-500 mt-0.5">
+                                            <div className={`text-xs mt-0.5 font-bold ${manager.athlete_id ? 'text-[#FC4C02]' : 'text-slate-500'}`}>
                                                 Strava ID: {manager.athlete_id || '未綁定'}
                                             </div>
                                         </td>
