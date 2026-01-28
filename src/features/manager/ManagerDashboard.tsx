@@ -113,9 +113,9 @@ const statusLabels = {
 
 // 角色專屬配色主題 - Premium 設計
 const ROLE_THEMES: Record<string, {
-    primary: string;       // 主色
-    primaryGlow: string;   // 主色光暈
-    secondary: string;     // 次色
+    primary: string;       // 主要文字色
+    primaryGlow: string;   // 主要發光效果
+    secondary: string;     // 次要文字色
     accent: string;        // 強調色漸層
     gradient: string;      // 背景漸層
     headerBg: string;      // Header 背景
@@ -130,51 +130,51 @@ const ROLE_THEMES: Record<string, {
 }> = {
     shop_owner: {
         primary: 'text-amber-400',
-        primaryGlow: 'shadow-amber-500/30',
-        secondary: 'text-amber-300',
+        primaryGlow: 'shadow-amber-500/20',
+        secondary: 'text-amber-200/80',
         accent: 'from-amber-500 to-orange-600',
-        gradient: 'from-slate-950 via-amber-950/20 to-slate-900',
-        headerBg: 'bg-gradient-to-r from-slate-900/95 via-amber-950/30 to-slate-900/95',
-        cardBg: 'bg-gradient-to-br from-slate-800/60 to-amber-900/10',
-        cardBorder: 'border-amber-500/20',
-        tabActive: 'bg-gradient-to-r from-amber-600 to-orange-600 shadow-lg shadow-amber-500/30',
-        tabHover: 'hover:bg-amber-500/10',
-        buttonPrimary: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400',
-        buttonGlow: 'shadow-lg shadow-amber-500/30',
-        iconBg: 'bg-gradient-to-br from-amber-500/20 to-orange-500/10',
-        badge: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+        gradient: 'from-[#0B1121] via-slate-950 to-[#0B1121]', // Deep Space Blue base
+        headerBg: 'bg-[#0B1121]/80 backdrop-blur-xl border-b border-white/5',
+        cardBg: 'bg-slate-900/40 backdrop-blur-md', // Modern glass
+        cardBorder: 'border-white/5 hover:border-amber-500/30 transition-colors duration-300',
+        tabActive: 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/20',
+        tabHover: 'hover:bg-white/5 hover:text-amber-400',
+        buttonPrimary: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-white',
+        buttonGlow: 'shadow-lg shadow-amber-500/20',
+        iconBg: 'bg-amber-500/10 border border-amber-500/20',
+        badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
     },
     team_coach: {
         primary: 'text-emerald-400',
-        primaryGlow: 'shadow-emerald-500/30',
-        secondary: 'text-emerald-300',
+        primaryGlow: 'shadow-emerald-500/20',
+        secondary: 'text-emerald-200/80',
         accent: 'from-emerald-500 to-teal-600',
-        gradient: 'from-slate-950 via-emerald-950/20 to-slate-900',
-        headerBg: 'bg-gradient-to-r from-slate-900/95 via-emerald-950/30 to-slate-900/95',
-        cardBg: 'bg-gradient-to-br from-slate-800/60 to-emerald-900/10',
-        cardBorder: 'border-emerald-500/20',
-        tabActive: 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-lg shadow-emerald-500/30',
-        tabHover: 'hover:bg-emerald-500/10',
-        buttonPrimary: 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400',
-        buttonGlow: 'shadow-lg shadow-emerald-500/30',
-        iconBg: 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10',
-        badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+        gradient: 'from-[#0B1121] via-slate-950 to-[#0B1121]',
+        headerBg: 'bg-[#0B1121]/80 backdrop-blur-xl border-b border-white/5',
+        cardBg: 'bg-slate-900/40 backdrop-blur-md',
+        cardBorder: 'border-white/5 hover:border-emerald-500/30 transition-colors duration-300',
+        tabActive: 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20',
+        tabHover: 'hover:bg-white/5 hover:text-emerald-400',
+        buttonPrimary: 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-white',
+        buttonGlow: 'shadow-lg shadow-emerald-500/20',
+        iconBg: 'bg-emerald-500/10 border border-emerald-500/20',
+        badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
     },
     power_coach: {
         primary: 'text-violet-400',
-        primaryGlow: 'shadow-violet-500/30',
-        secondary: 'text-violet-300',
+        primaryGlow: 'shadow-violet-500/20',
+        secondary: 'text-violet-200/80',
         accent: 'from-violet-500 to-purple-600',
-        gradient: 'from-slate-950 via-violet-950/20 to-slate-900',
-        headerBg: 'bg-gradient-to-r from-slate-900/95 via-violet-950/30 to-slate-900/95',
-        cardBg: 'bg-gradient-to-br from-slate-800/60 to-violet-900/10',
-        cardBorder: 'border-violet-500/20',
-        tabActive: 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-500/30',
-        tabHover: 'hover:bg-violet-500/10',
-        buttonPrimary: 'bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400',
-        buttonGlow: 'shadow-lg shadow-violet-500/30',
-        iconBg: 'bg-gradient-to-br from-violet-500/20 to-purple-500/10',
-        badge: 'bg-violet-500/20 text-violet-400 border-violet-500/30'
+        gradient: 'from-[#0B1121] via-slate-950 to-[#0B1121]',
+        headerBg: 'bg-[#0B1121]/80 backdrop-blur-xl border-b border-white/5',
+        cardBg: 'bg-slate-900/40 backdrop-blur-md',
+        cardBorder: 'border-white/5 hover:border-violet-500/30 transition-colors duration-300',
+        tabActive: 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/20',
+        tabHover: 'hover:bg-white/5 hover:text-violet-400',
+        buttonPrimary: 'bg-gradient-to-r from-violet-500 to-purple-500 hover:brightness-110 text-white',
+        buttonGlow: 'shadow-lg shadow-violet-500/20',
+        iconBg: 'bg-violet-500/10 border border-violet-500/20',
+        badge: 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
     }
 };
 
@@ -625,13 +625,14 @@ function ManagerDashboard() {
                 <div className="max-w-[98%] mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div
+                            <button
                                 onClick={() => window.location.href = '/'}
                                 className={`w-12 h-12 bg-gradient-to-br ${theme.accent} rounded-2xl flex items-center justify-center shadow-lg ${theme.primaryGlow} cursor-pointer hover:scale-105 transition-transform`}
                                 title="回到首頁"
+                                aria-label="回到首頁"
                             >
                                 <Home className="w-6 h-6 text-white" />
-                            </div>
+                            </button>
                             <div>
                                 <h1 className={`text-xl font-black text-white`}>
                                     {managerRole?.shop_name || '管理後台'}
@@ -640,8 +641,48 @@ function ManagerDashboard() {
                                     <span className={`text-xs font-bold ${theme.primary} uppercase tracking-widest`}>
                                         {ROLE_NAMES[managerRole?.role || ''] || managerRole?.role}
                                     </span>
+                                    {managerRole?.email && (
+                                        <>
+                                            <span className="text-white/20">|</span>
+                                            <span className="text-xs font-mono text-slate-400">
+                                                {managerRole.email}
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Social Links in Header */}
+                        <div className="hidden md:flex items-center gap-3 px-6 border-l border-white/5 mx-6 flex-1">
+                            {managerRole?.social_links?.facebook && (
+                                <a href={managerRole.social_links.facebook} target="_blank" rel="noopener noreferrer"
+                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#1877F2] transition-colors`}
+                                    title="Facebook">
+                                    <Facebook className="w-4 h-4" />
+                                </a>
+                            )}
+                            {managerRole?.social_links?.instagram && (
+                                <a href={managerRole.social_links.instagram} target="_blank" rel="noopener noreferrer"
+                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#E4405F] transition-colors`}
+                                    title="Instagram">
+                                    <Instagram className="w-4 h-4" />
+                                </a>
+                            )}
+                            {managerRole?.social_links?.youtube && (
+                                <a href={managerRole.social_links.youtube} target="_blank" rel="noopener noreferrer"
+                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#FF0000] transition-colors`}
+                                    title="YouTube">
+                                    <Youtube className="w-4 h-4" />
+                                </a>
+                            )}
+                            {managerRole?.social_links?.website && (
+                                <a href={managerRole.social_links.website} target="_blank" rel="noopener noreferrer"
+                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-white transition-colors`}
+                                    title="官方網站">
+                                    <Globe className="w-4 h-4" />
+                                </a>
+                            )}
                         </div>
 
 
@@ -649,6 +690,8 @@ function ManagerDashboard() {
                             <button
                                 onClick={refresh}
                                 className="p-3 rounded-xl hover:bg-slate-700/50 transition-colors"
+                                aria-label="重新整理數據"
+                                title="重新整理數據"
                             >
                                 <RefreshCw className="w-5 h-5 text-slate-400" />
                             </button>
