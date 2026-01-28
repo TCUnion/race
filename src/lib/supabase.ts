@@ -23,3 +23,20 @@ export const supabase = createClient(
     supabaseAnonKey
 );
 
+/**
+ * 建立獨立的 Admin Supabase 客戶端。
+ * 使用自定義 storageKey ('sb-admin-auth-token') 來與一般會員/Manager 的 Session 隔離。
+ * 這樣允許同一瀏覽器同時登入 Admin 和 Manager。
+ */
+export const supabaseAdmin = createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+        auth: {
+            storageKey: 'sb-admin-auth-token',
+            persistSession: true,
+            detectSessionInUrl: false, // Admin 主要是帳密登入，避免搶奪 OAuth Hash
+        }
+    }
+);
+

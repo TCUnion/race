@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabaseAdmin as supabase } from '../../lib/supabase';
 import { API_BASE_URL } from '../../lib/api_config';
 import StravaLogo from '../../components/ui/StravaLogo';
 
@@ -70,6 +70,7 @@ interface StravaToken {
 }
 
 const AdminPanel: React.FC = () => {
+
     const [session, setSession] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState('');
@@ -79,35 +80,79 @@ const AdminPanel: React.FC = () => {
     const [segments, setSegments] = useState<any[]>([]);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setLoading(false);
+        let mounted = true;
+
+        const checkSessionAndRole = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+
             if (session) {
-                fetchSegments();
-                fetchSiteSettings();
-            } else {
-                // 嘗試從 localStorage 讀取記住的登入資訊
-                const savedEmail = localStorage.getItem('admin_email');
-                const savedPassword = localStorage.getItem('admin_password');
-                if (savedEmail) {
-                    setEmail(savedEmail);
-                    setRememberMe(true);
+                // [NEW] Session 恢復時，也必須嚴格檢查角色
+                // console.log("Checking role for:", session.user.email);
+                const { data: managerData, error } = await supabase
+                    .from('manager_roles')
+                    .select('role, is_active')
+                    .eq('email', session.user.email)
+                    .maybeSingle();
+
+                // console.log("Role check result:", managerData, error);
+
+                if (!mounted) return;
+
+                if (error || !managerData || managerData.role !== 'admin' || !managerData.is_active) {
+
+                    // [FIX] 自動導向：若是其他有效管理角色，轉址到 Manager Dashboard
+                    if (managerData && managerData.is_active && ['shop_owner', 'team_coach', 'power_coach'].includes(managerData.role)) {
+                        console.log(`REDIRECT: User ${session.user.email} is ${managerData.role}, redirecting to manager dashboard.`);
+                        // 使用 setTimeout 讓 alert 有機會顯示 (或直接省略 alert 追求流暢體驗，但這裡保留提示)
+                        alert(`您目前的身份為「${managerData.role}」，即將為您跳轉至管理專用後台。`);
+                        window.location.href = '/manager.html';
+                        return;
+                    }
+
+                    console.warn('非 Admin 角色或權限不足，強制登出', managerData);
+                    alert(`權限檢查失敗:\nEmail: ${session.user.email}\nRole: ${managerData?.role}\nActive: ${managerData?.is_active}\nError: ${error?.message}`);
+                    await supabase.auth.signOut();
+                    if (mounted) {
+                        setSession(null);
+                        setLoading(false);
+                        setError('權限不足：此頁面僅限系統管理員訪問。');
+                    }
+                    return;
                 }
-                if (savedPassword) {
-                    setPassword(savedPassword);
+
+                if (mounted) {
+                    setSession(session);
+                    fetchSegments();
+                    fetchSiteSettings();
+                }
+            } else {
+                if (mounted) {
+                    // 嘗試從 localStorage 讀取記住的登入資訊
+                    const savedEmail = localStorage.getItem('admin_email');
+                    const savedPassword = localStorage.getItem('admin_password');
+                    if (savedEmail) {
+                        setEmail(savedEmail);
+                        setRememberMe(true);
+                    }
+                    if (savedPassword) {
+                        setPassword(savedPassword);
+                    }
                 }
             }
-        });
+            if (mounted) setLoading(false);
+        };
 
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            if (session) {
-                fetchSegments();
-                fetchSiteSettings();
+        checkSessionAndRole();
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            // [FIX] 僅當發生明確登出時才清空 Session，防止 INITIAL_SESSION 覆蓋 role check
+            if (event === 'SIGNED_OUT' || !session) {
+                if (mounted) setSession(null);
             }
         });
 
         return () => {
+            mounted = false;
             authListener.subscription.unsubscribe();
         };
     }, []);
@@ -397,7 +442,7 @@ const AdminPanel: React.FC = () => {
             // 2. 權限驗證：檢查是否在 manager_roles 表中且為啟用狀態
             const { data: managerData, error: managerError } = await supabase
                 .from('manager_roles')
-                .select('is_active')
+                .select('is_active, role')
                 .eq('email', email)
                 .maybeSingle();
 
@@ -405,6 +450,20 @@ const AdminPanel: React.FC = () => {
                 // 權限不足，強制登出
                 await supabase.auth.signOut();
                 setError('權限不足：此帳號未獲得管理員授權，或帳號已被停用。');
+                setLoading(false);
+                return;
+            }
+
+            // [NEW] 嚴格限制：僅允許 admin 角色登入 (若為其他管理員則導向)
+            if (managerData.role !== 'admin') {
+                if (['shop_owner', 'team_coach', 'power_coach'].includes(managerData.role)) {
+                    alert(`您目前的身份為「${managerData.role}」，即將為您跳轉至管理專用後台。`);
+                    window.location.href = '/manager.html';
+                    return;
+                }
+
+                await supabase.auth.signOut();
+                setError('權限不足：此登入入口僅限系統管理員使用。請前往「車店/教練管理後台」登入。');
                 setLoading(false);
                 return;
             }
