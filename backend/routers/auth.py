@@ -156,19 +156,25 @@ async def confirm_binding(request: Request):
         strava_id = body.get("stravaId")
         tcu_account = body.get("tcu_account")
         member_name = body.get("member_name")
+        user_id = body.get("user_id") # 新增 user_id
         
-        print(f"[DEBUG] Confirming binding: email={email}, stravaId={strava_id}, tcu_account={tcu_account}")
+        print(f"[DEBUG] Confirming binding: email={email}, stravaId={strava_id}, user_id={user_id}")
         
         if not email or not strava_id:
             return {"success": False, "message": "Missing email or stravaId"}
         
         # Upsert 到 strava_bindings
-        res = supabase.table("strava_bindings").upsert({
+        data_to_save = {
             "tcu_member_email": email,
             "strava_id": str(strava_id),
             "tcu_account": tcu_account,
             "member_name": member_name
-        }).execute()
+        }
+        
+        if user_id:
+            data_to_save["user_id"] = user_id
+            
+        res = supabase.table("strava_bindings").upsert(data_to_save).execute()
         
         # 取得完整會員資料以回傳給前端顯示 (優先使用 account)
         if tcu_account:

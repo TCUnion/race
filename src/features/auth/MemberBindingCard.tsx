@@ -163,6 +163,9 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
             if (!data) {
                 setError('驗證碼錯誤或已過期。');
             } else {
+                // 取得當前 Supabase Auth User ID (若有的話)
+                const { data: { user } } = await supabase.auth.getUser();
+
                 // 呼叫 confirm-binding API 寫入 strava_bindings 表格
                 const response = await fetch(`${API_BASE_URL}/api/auth/confirm-binding`, {
                     method: 'POST',
@@ -171,7 +174,8 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                         email: data.email,
                         stravaId: athlete.id,
                         tcu_account: data.account || tcuId,
-                        member_name: data.real_name
+                        member_name: data.real_name,
+                        user_id: user?.id // 傳遞 Auth ID 建立綁定
                     })
                 });
 
