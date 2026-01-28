@@ -478,7 +478,13 @@ const AdminPanel: React.FC = () => {
             }
 
             // 登入後重整資料
+            // 並且更新 Session 狀態以觸發 UI 重繪
+            setSession(authData.session);
+
+            // 登入後重整資料
             fetchSegments();
+            // [FIX] 登入成功後必須關閉 Loading 狀態
+            setLoading(false);
 
         } catch (err: any) {
             console.error("Auth check failed:", err);
