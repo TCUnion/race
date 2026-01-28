@@ -253,8 +253,7 @@ function ManagerDashboard() {
     const pollingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const handleBindStrava = () => {
-        setIsBindingStrava(true);
-        // Clean temp data
+        // Clean temp data immediately
         localStorage.removeItem('strava_athlete_data_temp');
 
         const width = 600;
@@ -269,13 +268,16 @@ function ManagerDashboard() {
         };
         const url = `${CONFIG.stravaAuthUrl}?return_url=${encodeURIComponent(window.location.href)}`;
 
+        // Open window FIRST before any React state updates to convert it to a trusted event
         authWindowRef.current = window.open(
             url,
             'strava_auth',
             `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
         );
 
+        // Update state and start polling only if window opened successfully
         if (authWindowRef.current) {
+            setIsBindingStrava(true);
             authWindowRef.current.focus();
 
             // Start Polling
@@ -304,8 +306,7 @@ function ManagerDashboard() {
             }, CONFIG.pollingInterval);
 
         } else {
-            setIsBindingStrava(false);
-            alert('請允許彈出視窗以進行 Strava 授權');
+            alert('請允許彈出視窗以進行 Strava 授權 (iOS 請至 設定 -> Safari -> 關閉「阻擋彈出式視窗」)');
         }
     };
 
