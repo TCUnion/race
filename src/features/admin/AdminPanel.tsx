@@ -67,6 +67,7 @@ interface StravaToken {
     expires_at: number;
     name?: string;
     isBound?: boolean;
+    lastActivityAt?: string;
 }
 
 const AdminPanel: React.FC = () => {
@@ -726,7 +727,7 @@ const AdminPanel: React.FC = () => {
             // 2. 抓取所有權杖資訊 (正確資料來源為 strava_tokens)
             const { data: tokens, error: tError } = await supabase
                 .from('strava_tokens')
-                .select('athlete_id, updated_at, expires_at, created_at'); // 確保包含 created_at
+                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at'); // 確保包含 created_at, last_activity_at
 
             const tokenMap = new Map();
             if (!tError && tokens) {
@@ -744,6 +745,7 @@ const AdminPanel: React.FC = () => {
                     if (b.strava_id) boundSet.add(b.strava_id.toString());
                 });
             }
+
 
             // 4. 合併資料 - 改為以 strava_tokens 為主，確保顯示所有權杖
             // 建立所有獨特的 IDSet (聯集)
@@ -769,7 +771,9 @@ const AdminPanel: React.FC = () => {
                     updatedAt: token?.updated_at || null,
                     expires_at: token?.expires_at || null,
                     isBound: boundSet.has(id),
-                    hasToken: !!token
+                    hasToken: !!token,
+                    // @ts-ignore
+                    lastActivityAt: token?.last_activity_at || null
                 };
             })
                 // 過濾掉沒有 Token 的資料 (如果只想看有 Token 的)
@@ -1961,8 +1965,11 @@ const AdminPanel: React.FC = () => {
                                     <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
                                         綁定狀態 {tokenSortField === 'isBound' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('lastActivityAt')}>
+                                        最後活動 {tokenSortField === 'lastActivityAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
                                     <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('updatedAt')}>
-                                        最後更新 {tokenSortField === 'updatedAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                        最後登入 {tokenSortField === 'updatedAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                 </tr>
                             </thead>
@@ -2004,6 +2011,11 @@ const AdminPanel: React.FC = () => {
                                                 ) : (
                                                     <span className="px-2 py-1 bg-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase">Unbound</span>
                                                 )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-[10px] font-bold text-slate-500">
+                                                    {token.lastActivityAt ? new Date(token.lastActivityAt).toLocaleDateString('zh-TW') : '-'}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="text-[10px] font-bold text-slate-400">
