@@ -247,6 +247,106 @@ function ManagerDashboard() {
     const [historyRecords, setHistoryRecords] = useState<MaintenanceRecord[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    // Strava Binding State
+    const [isBindingStrava, setIsBindingStrava] = useState(false);
+    const authWindowRef = React.useRef<Window | null>(null);
+    const pollingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    const handleBindStrava = () => {
+        setIsBindingStrava(true);
+        // Clean temp data
+        localStorage.removeItem('strava_athlete_data_temp');
+
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+        // Use the same webhook as Navbar
+        const CONFIG = {
+            stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
+            pollingInterval: 1000,
+            pollingTimeout: 120000
+        };
+        const url = `${CONFIG.stravaAuthUrl}?return_url=${encodeURIComponent(window.location.href)}`;
+
+        authWindowRef.current = window.open(
+            url,
+            'strava_auth',
+            `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+        );
+
+        if (authWindowRef.current) {
+            authWindowRef.current.focus();
+
+            // Start Polling
+            const startTime = Date.now();
+            pollingTimerRef.current = setInterval(async () => {
+                // Timeout check
+                if (Date.now() - startTime > CONFIG.pollingTimeout) {
+                    if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+                    setIsBindingStrava(false);
+                    alert('Strava 授權逾時，請重試');
+                    return;
+                }
+
+                // Check for generic popup closure
+                try {
+                    if (authWindowRef.current && authWindowRef.current.closed) {
+                        // Check data one last time
+                        checkBindingData();
+                        if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+                        setIsBindingStrava(false);
+                        return;
+                    }
+                } catch (e) { }
+
+                checkBindingData();
+            }, CONFIG.pollingInterval);
+
+        } else {
+            setIsBindingStrava(false);
+            alert('請允許彈出視窗以進行 Strava 授權');
+        }
+    };
+
+    const checkBindingData = async () => {
+        const tempData = localStorage.getItem('strava_athlete_data_temp');
+        if (tempData) {
+            try {
+                const athleteData = JSON.parse(tempData);
+                localStorage.removeItem('strava_athlete_data_temp');
+
+                // Stop polling
+                if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+                if (authWindowRef.current) authWindowRef.current.close();
+
+                // Update Manager Role
+                if (managerRole?.email) { // Ensure we identify by user_id or email
+                    const { error } = await supabase
+                        .from('manager_roles')
+                        .update({
+                            athlete_id: athleteData.id,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('email', managerRole.email); // Use email as key (safest based on context)
+
+                    if (error) throw error;
+
+                    alert('Strava 帳號連結成功！\n下次您可以使用 Strava ID 直接登入。');
+                    refresh(); // Reload manager data
+                } else {
+                    alert('無法識別當前管理員身份 (Missing User ID/Email)');
+                }
+
+            } catch (e: any) {
+                console.error('Binding failed', e);
+                alert('綁定失敗: ' + e.message);
+            } finally {
+                setIsBindingStrava(false);
+            }
+        }
+    };
+
     // 取得指定車輛的歷史紀錄
     const fetchHistoryRecords = async (bikeId: string, athleteId: string | number) => {
         setHistoryLoading(true);
@@ -327,37 +427,23 @@ function ManagerDashboard() {
     };
 
     // Settings Editing State
-    const [isEditingName, setIsEditingName] = useState(false);
+    // const [isEditingName, setIsEditingName] = useState(false); // Deprecated
     const [tempName, setTempName] = useState('');
+    const [tempRealName, setTempRealName] = useState('');
     const [isEditingContact, setIsEditingContact] = useState(false);
     const [tempAddress, setTempAddress] = useState('');
     const [tempPhone, setTempPhone] = useState('');
     const [tempSocials, setTempSocials] = useState<any>({});
 
-    const handleUpdateShopName = async () => {
-        if (!tempName.trim()) return;
 
-        try {
-            const { error } = await supabase
-                .from('manager_roles')
-                .update({ shop_name: tempName })
-                .eq('id', managerRole?.id);
-
-            if (error) throw error;
-
-            alert('名稱更新成功！');
-            setIsEditingName(false);
-            refresh(); // Refresh data to show new name
-        } catch (err: any) {
-            alert('更新失敗: ' + err.message);
-        }
-    };
 
     const handleUpdateContactInfo = async () => {
         try {
             const { error } = await supabase
                 .from('manager_roles')
                 .update({
+                    shop_name: tempName,
+                    real_name: tempRealName,
                     address: tempAddress,
                     phone: tempPhone,
                     social_links: tempSocials
@@ -377,6 +463,7 @@ function ManagerDashboard() {
     // Load initial data when entering edit mode
     const initEditMode = () => {
         setTempName(managerRole?.shop_name || '');
+        setTempRealName(managerRole?.real_name || '');
         setTempAddress(managerRole?.address || '');
         setTempPhone(managerRole?.phone || '');
         setTempSocials(managerRole?.social_links || {});
@@ -411,7 +498,8 @@ function ManagerDashboard() {
         }
         // 功率分析只顯示給功率教練與車隊教練
         if (tab.id === 'power_analysis') {
-            return managerRole?.role === 'power_coach' || managerRole?.role === 'team_coach';
+            if (!managerRole) return false;
+            return managerRole.role === 'power_coach' || managerRole.role === 'team_coach';
         }
         return true;
     });
@@ -420,6 +508,8 @@ function ManagerDashboard() {
     const totalOverdue = maintenanceSummaries.reduce((sum, s) => sum + s.totalOverdue, 0);
     const totalDueSoon = maintenanceSummaries.reduce((sum, s) => sum + s.totalDueSoon, 0);
     const totalAthletes = authorizations.length;
+    const authorizedCount = authorizations.filter(a => a.status === 'approved').length;
+    const pendingCount = authorizations.filter(a => a.status === 'pending').length;
     const totalActivities = activitySummaries.reduce((sum, s) => sum + s.total_activities, 0);
 
     // 取得當前角色主題
@@ -653,36 +743,64 @@ function ManagerDashboard() {
                             </div>
                         </div>
 
-                        {/* Social Links in Header */}
-                        <div className="hidden md:flex items-center gap-3 px-6 border-l border-white/5 mx-6 flex-1">
-                            {managerRole?.social_links?.facebook && (
-                                <a href={managerRole.social_links.facebook} target="_blank" rel="noopener noreferrer"
-                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#1877F2] transition-colors`}
-                                    title="Facebook">
-                                    <Facebook className="w-4 h-4" />
-                                </a>
-                            )}
-                            {managerRole?.social_links?.instagram && (
-                                <a href={managerRole.social_links.instagram} target="_blank" rel="noopener noreferrer"
-                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#E4405F] transition-colors`}
-                                    title="Instagram">
-                                    <Instagram className="w-4 h-4" />
-                                </a>
-                            )}
-                            {managerRole?.social_links?.youtube && (
-                                <a href={managerRole.social_links.youtube} target="_blank" rel="noopener noreferrer"
-                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#FF0000] transition-colors`}
-                                    title="YouTube">
-                                    <Youtube className="w-4 h-4" />
-                                </a>
-                            )}
-                            {managerRole?.social_links?.website && (
-                                <a href={managerRole.social_links.website} target="_blank" rel="noopener noreferrer"
-                                    className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-white transition-colors`}
-                                    title="官方網站">
-                                    <Globe className="w-4 h-4" />
-                                </a>
-                            )}
+                        {/* Stats & Social Links */}
+                        <div className="hidden md:flex items-center gap-6 px-6 border-l border-white/5 mx-6 flex-1">
+                            {/* Quick Stats */}
+                            <div className="flex items-center gap-6 mr-auto">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg bg-slate-800/50 border border-white/5`}>
+                                        <Users className={`w-4 h-4 ${theme.primary}`} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">已授權 {athleteLabel}</span>
+                                        <span className="text-sm font-black text-white leading-none mt-0.5">{authorizedCount}</span>
+                                    </div>
+                                </div>
+
+                                {pendingCount > 0 && (
+                                    <div className="flex items-center gap-3 animate-pulse">
+                                        <div className={`p-2 rounded-lg bg-amber-500/10 border border-amber-500/20`}>
+                                            <UserPlus className="w-4 h-4 text-amber-500" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-amber-500/70 font-bold uppercase tracking-wider">待審核</span>
+                                            <span className="text-sm font-black text-amber-500 leading-none mt-0.5">{pendingCount}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Social Links */}
+                            <div className="flex items-center gap-3">
+                                {managerRole?.social_links?.facebook && (
+                                    <a href={managerRole.social_links.facebook} target="_blank" rel="noopener noreferrer"
+                                        className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#1877F2] transition-colors`}
+                                        title="Facebook">
+                                        <Facebook className="w-4 h-4" />
+                                    </a>
+                                )}
+                                {managerRole?.social_links?.instagram && (
+                                    <a href={managerRole.social_links.instagram} target="_blank" rel="noopener noreferrer"
+                                        className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#E4405F] transition-colors`}
+                                        title="Instagram">
+                                        <Instagram className="w-4 h-4" />
+                                    </a>
+                                )}
+                                {managerRole?.social_links?.youtube && (
+                                    <a href={managerRole.social_links.youtube} target="_blank" rel="noopener noreferrer"
+                                        className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-[#FF0000] transition-colors`}
+                                        title="YouTube">
+                                        <Youtube className="w-4 h-4" />
+                                    </a>
+                                )}
+                                {managerRole?.social_links?.website && (
+                                    <a href={managerRole.social_links.website} target="_blank" rel="noopener noreferrer"
+                                        className={`p-2 rounded-lg ${theme.tabHover} text-slate-400 hover:text-white transition-colors`}
+                                        title="官方網站">
+                                        <Globe className="w-4 h-4" />
+                                    </a>
+                                )}
+                            </div>
                         </div>
 
 
@@ -2021,51 +2139,70 @@ function ManagerDashboard() {
                                 className="space-y-6"
                             >
                                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                    <h2 className="font-bold text-white mb-4">管理者設定</h2>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="font-bold text-white text-lg">管理者設定</h2>
+                                        {!isEditingContact ? (
+                                            <button
+                                                onClick={() => {
+                                                    initEditMode();
+                                                    setIsEditingContact(true);
+                                                }}
+                                                className="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-500 hover:text-white transition-all"
+                                            >
+                                                <Edit2 className="w-3.5 h-3.5" /> 編輯資料
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={handleUpdateContactInfo}
+                                                    className="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-green-500 hover:text-white transition-all"
+                                                >
+                                                    <Save className="w-3.5 h-3.5" /> 儲存變更
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsEditingContact(false)}
+                                                    className="px-3 py-1.5 bg-slate-700 text-slate-400 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-slate-600 hover:text-white transition-all"
+                                                >
+                                                    <X className="w-3.5 h-3.5" /> 取消
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
+                                                管理員姓名
+                                            </label>
+                                            {isEditingContact ? (
+                                                <input
+                                                    type="text"
+                                                    value={tempRealName}
+                                                    onChange={(e) => setTempRealName(e.target.value)}
+                                                    className="bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 w-full max-w-sm"
+                                                    placeholder="輸入您的真實姓名"
+                                                />
+                                            ) : (
+                                                <p className="text-white text-lg font-bold">
+                                                    {managerRole?.real_name || '未設定'}
+                                                </p>
+                                            )}
+                                        </div>
+
                                         <div>
                                             <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
                                                 {getUnitNameLabel()}
                                             </label>
-
-                                            {isEditingName ? (
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={tempName}
-                                                        onChange={(e) => setTempName(e.target.value)}
-                                                        className="bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 w-full max-w-sm"
-                                                        autoFocus
-                                                    />
-                                                    <button
-                                                        onClick={handleUpdateShopName}
-                                                        className="p-2 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition-colors"
-                                                    >
-                                                        <Save className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setIsEditingName(false)}
-                                                        className="p-2 bg-slate-700 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-white transition-colors"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
+                                            {isEditingContact ? (
+                                                <input
+                                                    type="text"
+                                                    value={tempName}
+                                                    onChange={(e) => setTempName(e.target.value)}
+                                                    className="bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 w-full max-w-sm"
+                                                />
                                             ) : (
-                                                <div className="flex items-center gap-3">
-                                                    <p className="text-white text-lg font-bold">
-                                                        {managerRole?.shop_name || '未設定'}
-                                                    </p>
-                                                    <button
-                                                        onClick={() => {
-                                                            setTempName(managerRole?.shop_name || '');
-                                                            setIsEditingName(true);
-                                                        }}
-                                                        className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-slate-700/50 rounded-lg transition-all"
-                                                        title="編輯名稱"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
+                                                <p className="text-white text-lg font-bold">
+                                                    {managerRole?.shop_name || '未設定'}
+                                                </p>
                                             )}
                                         </div>
                                         <div>
@@ -2077,36 +2214,71 @@ function ManagerDashboard() {
                                             <p className="text-white">{ROLE_NAMES[managerRole?.role || ''] || managerRole?.role}</p>
                                         </div>
 
-                                        {/* 聯絡與社群設定 */}
+                                        <div className="pt-6 border-t border-slate-700/50">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-bold text-white text-sm">Strava 帳號連結</h3>
+                                                {managerRole?.athlete_id ? (
+                                                    <span className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] font-black rounded-lg uppercase">
+                                                        已連結
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-1 bg-slate-700 text-slate-400 text-[10px] font-black rounded-lg uppercase">
+                                                        未連結
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Strava ID</p>
+                                                    <p className="text-white font-mono font-bold text-lg">
+                                                        {managerRole?.athlete_id || '尚未綁定'}
+                                                    </p>
+                                                </div>
+
+                                                {!managerRole?.athlete_id ? (
+                                                    <button
+                                                        onClick={handleBindStrava}
+                                                        disabled={isBindingStrava}
+                                                        className="px-4 py-2 bg-[#FC4C02] hover:bg-[#E34402] text-white rounded-lg text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        {isBindingStrava ? (
+                                                            <>
+                                                                <RefreshCw className="w-3 h-3 animate-spin" />
+                                                                連結中...
+                                                            </>
+                                                        ) : (
+                                                            '連結 Strava 帳號'
+                                                        )}
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!confirm('確定要解除 Strava 連結嗎？\n解除後將無法使用 Strava 快速登入。')) return;
+                                                            try {
+                                                                const { error } = await supabase
+                                                                    .from('manager_roles')
+                                                                    .update({ athlete_id: null })
+                                                                    .eq('email', managerRole.email);
+                                                                if (error) throw error;
+                                                                refresh();
+                                                            } catch (e: any) {
+                                                                alert('解除失敗: ' + e.message);
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 bg-slate-700 hover:bg-red-500/20 hover:text-red-500 text-slate-400 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
+                                                    >
+                                                        解除連結
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <p className="mt-2 text-[10px] text-slate-500">
+                                                連結後，您可以在登入頁面使用「Strava ID 登入」快速進入後台，無需輸入密碼。
+                                            </p>
+                                        </div>
+
                                         <div className="pt-6 border-t border-slate-700/50">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="font-bold text-white text-sm">聯絡與社群資訊</h3>
-                                                {!isEditingContact ? (
-                                                    <button
-                                                        onClick={() => {
-                                                            initEditMode();
-                                                            setIsEditingContact(true);
-                                                        }}
-                                                        className="text-xs font-bold text-blue-400 flex items-center gap-1 hover:text-blue-300"
-                                                    >
-                                                        <Edit2 className="w-3 h-3" /> 編輯資訊
-                                                    </button>
-                                                ) : (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={handleUpdateContactInfo}
-                                                            className="text-xs font-bold text-green-400 flex items-center gap-1 hover:text-green-300"
-                                                        >
-                                                            <Save className="w-3 h-3" /> 儲存
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setIsEditingContact(false)}
-                                                            className="text-xs font-bold text-slate-400 flex items-center gap-1 hover:text-slate-300"
-                                                        >
-                                                            <X className="w-3 h-3" /> 取消
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
 
                                             <div className="space-y-4">

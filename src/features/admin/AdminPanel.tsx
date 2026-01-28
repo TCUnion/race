@@ -582,7 +582,7 @@ const AdminPanel: React.FC = () => {
     };
 
     const fetchManagers = async () => {
-        const { data, error } = await supabase
+        const { data: managersData, error } = await supabase
             .from('manager_roles')
             .select('*')
             .order('created_at', { ascending: false });
@@ -590,7 +590,26 @@ const AdminPanel: React.FC = () => {
         if (error) {
             console.error('Fetch managers error:', error);
         } else {
-            setManagers(data || []);
+            // Fetch authorizations statistics
+            const { data: authData } = await supabase
+                .from('user_authorizations')
+                .select('manager_athlete_id, manager_email, status');
+
+            const managersWithStats = (managersData || []).map(m => {
+                const myAuths = (authData || []).filter(a => {
+                    const matchId = m.athlete_id && a.manager_athlete_id && Number(m.athlete_id) === Number(a.manager_athlete_id);
+                    const matchEmail = m.email && a.manager_email && m.email.toLowerCase() === a.manager_email.toLowerCase();
+                    return matchId || matchEmail;
+                });
+
+                return {
+                    ...m,
+                    authorizedCount: myAuths.filter(a => a.status === 'approved').length,
+                    pendingCount: myAuths.filter(a => a.status === 'pending').length
+                };
+            });
+
+            setManagers(managersWithStats);
         }
     };
 
@@ -1226,6 +1245,8 @@ const AdminPanel: React.FC = () => {
                                     <th className="px-6 py-4">Email 帳號</th>
                                     <th className="px-6 py-4">角色</th>
                                     <th className="px-4 py-4">單位名稱</th>
+                                    <th className="px-6 py-4">已授權</th>
+                                    <th className="px-6 py-4">待授權</th>
                                     <th className="px-6 py-4">狀態</th>
                                     <th className="px-6 py-4 rounded-r-xl text-right">操作</th>
                                 </tr>
@@ -1265,6 +1286,22 @@ const AdminPanel: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
                                             {manager.shop_name || '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1 font-mono font-bold text-slate-600 dark:text-slate-400">
+                                                <Users className="w-3 h-3 text-slate-400" />
+                                                {manager.authorizedCount || 0}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {(manager.pendingCount || 0) > 0 ? (
+                                                <div className="flex items-center gap-1 font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg w-fit">
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    {manager.pendingCount}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-300 font-mono text-xs">-</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             {manager.is_active ? (

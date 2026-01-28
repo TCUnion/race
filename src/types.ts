@@ -262,6 +262,7 @@ export interface ManagerRoleData {
   athlete_id: number;
   role: ManagerRole;
   shop_name?: string;
+  real_name?: string; // 管理員自訂姓名
   // 新增聯絡資訊欄位
   address?: string;
   phone?: string;
