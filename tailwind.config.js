@@ -7,10 +7,9 @@ export default {
     darkMode: 'class',
     content: [
         "./index.html",
-        "./App.tsx",
-        "./index.tsx",
-        "./components/**/*.{js,ts,jsx,tsx}",
-        "./hooks/**/*.{js,ts,jsx,tsx}",
+        "./manager.html",
+        "./admin.html",
+        "./src/**/*.{js,ts,jsx,tsx}",
     ],
     theme: {
         extend: {

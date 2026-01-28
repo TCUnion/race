@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { API_BASE_URL } from '../lib/api_config';
-import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../../lib/supabase';
+import { API_BASE_URL } from '../../lib/api_config';
+import { useAuth } from '../../hooks/useAuth';
 import {
     UserCheck,
     Mail,

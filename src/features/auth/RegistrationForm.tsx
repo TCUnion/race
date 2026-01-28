@@ -10,8 +10,8 @@ import {
     RefreshCw,
     Crown
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Segment {
     id: number; // Supabase PK

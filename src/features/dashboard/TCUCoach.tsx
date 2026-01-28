@@ -9,8 +9,8 @@ import {
     RefreshCw,
     Info
 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useFontSize } from '../hooks/useFontSize';
+import { useAuth } from '../../hooks/useAuth';
+import { useFontSize } from '../../hooks/useFontSize';
 
 interface Message {
     id: string;

@@ -1,8 +1,8 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import AdminPanel from './components/AdminPanel';
-import ErrorBoundary from './components/ErrorBoundary';
+import AdminPanel from './features/admin/AdminPanel';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import './lib/i18n';
 import './index.css';
 

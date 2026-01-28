@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import ManagerDashboard from './components/manager/ManagerDashboard';
-import ErrorBoundary from './components/ErrorBoundary';
+import ManagerDashboard from './features/manager/ManagerDashboard';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
 import { FontSizeProvider } from './hooks/useFontSize';
 import './lib/i18n';

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { API_BASE_URL } from '../lib/api_config';
-import StravaLogo from './StravaLogo';
+import { supabase } from '../../lib/supabase';
+import { API_BASE_URL } from '../../lib/api_config';
+import StravaLogo from '../../components/ui/StravaLogo';
 
 // 宣告全域變數 (由 vite.config.ts 注入)
 declare const __APP_VERSION__: string;

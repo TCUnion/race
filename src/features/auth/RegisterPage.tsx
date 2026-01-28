@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link2Off } from 'lucide-react';
 import RegistrationForm from './RegistrationForm';
-import { supabase } from '../lib/supabase';
-import { useSegmentData } from '../hooks/useSegmentData';
-import { ViewType } from '../types';
+import { supabase } from '../../lib/supabase';
+import { useSegmentData } from '../../hooks/useSegmentData';
+import { ViewType } from '../../types';
 
 interface RegisterPageProps {
   onNavigate: (view: ViewType) => void;

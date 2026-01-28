@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ViewType } from '../types';
+import { ViewType } from '../../types';
 import {
   Menu,
   X,
@@ -17,16 +17,16 @@ import {
   Users2,
   Store
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import StravaLogo from './StravaLogo';
-import ThemeToggle from './ThemeToggle';
-import LanguageSwitcher from './LanguageSwitcher';
-import { useAuth, StravaAthlete } from '../hooks/useAuth';
-import { useTheme } from '../hooks/useTheme';
-import { useFontSize, FontSize } from '../hooks/useFontSize';
+import { supabase } from '../../lib/supabase';
+import StravaLogo from '../ui/StravaLogo';
+import ThemeToggle from '../ui/ThemeToggle';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
+import { useAuth, StravaAthlete } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
+import { useFontSize, FontSize } from '../../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../lib/api_config';
-import { useMemberAuthorizations } from '../hooks/useMemberAuthorizations';
+import { API_BASE_URL } from '../../lib/api_config';
+import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
 
 interface NavbarProps {
   currentView: ViewType;

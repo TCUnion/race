@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap } from 'lucide-react';
-import { API_BASE_URL } from '../lib/api_config';
-import { useAuth } from '../hooks/useAuth';
+import { API_BASE_URL } from '../../lib/api_config';
+import { useAuth } from '../../hooks/useAuth';
 
 const TeamDashboard: React.FC = () => {
     const { athlete } = useAuth();

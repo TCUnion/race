@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Check, X, Store, Info, Clock, Dumbbell, Users, Activity } from 'lucide-react';
-import { useMemberAuthorizations } from '../hooks/useMemberAuthorizations';
-import { ManagerRole } from '../types';
+import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
+import { ManagerRole } from '../../types';
 
 const WorkshopAuthorizationInbox: React.FC = () => {
     const { pendingAuthorizations, approve, reject, loading } = useMemberAuthorizations();

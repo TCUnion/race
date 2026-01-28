@@ -1,8 +1,8 @@
 import React from 'react';
 import { Share2, FileText, LifeBuoy, Bike, MessageCircle, Globe, Shield } from 'lucide-react';
-import { ViewType } from '../types';
-import { useSiteSettings } from '../hooks/useSiteSettings';
-import { useAuth } from '../hooks/useAuth';  // [NEW] Import hook
+import { ViewType } from '../../types';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useAuth } from '../../hooks/useAuth';  // [NEW] Import hook
 
 interface FooterProps {
   onNavigate?: (view: ViewType) => void;

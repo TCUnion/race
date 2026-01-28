@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
-import { useSegmentData, formatTime } from '../hooks/useSegmentData';
-import SegmentMap from './SegmentMap';
-import { MOCK_SEGMENT_STATS } from '../constants';
-import { Activity, ViewType } from '../types';
+import { supabase } from '../../lib/supabase';
+import { useSegmentData, formatTime } from '../../hooks/useSegmentData';
+import SegmentMap from '../map/SegmentMap';
+import { MOCK_SEGMENT_STATS } from '../../constants';
+import { Activity, ViewType } from '../../types';
 
 
 const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
@@ -57,7 +57,7 @@ import {
   Gauge,
   ExternalLink
 } from 'lucide-react';
-import WorkshopAuthorizationInbox from './WorkshopAuthorizationInbox';
+import WorkshopAuthorizationInbox from '../admin/WorkshopAuthorizationInbox';
 
 interface DashboardProps {
   onNavigate: (view: ViewType) => void;

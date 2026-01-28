@@ -1,6 +1,6 @@
 import React from 'react';
-import AthletePowerTrainingReport from './member/AthletePowerTrainingReport';
-import { useAuth } from '../hooks/useAuth';
+import AthletePowerTrainingReport from '../member/AthletePowerTrainingReport';
+import { useAuth } from '../../hooks/useAuth';
 import { ShieldAlert, Zap } from 'lucide-react';
 
 const ACPowerTraining: React.FC = () => {

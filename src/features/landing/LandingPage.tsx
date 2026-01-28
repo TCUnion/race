@@ -1,9 +1,9 @@
 
 import React from 'react';
-import StravaConnect from './StravaConnect';
-import SegmentMap from './SegmentMap';
-import { useSegmentData, formatTime, formatDistance, formatSpeed } from '../hooks/useSegmentData';
-import { useTheme } from '../hooks/useTheme';
+import StravaConnect from '../auth/StravaConnect';
+import SegmentMap from '../map/SegmentMap';
+import { useSegmentData, formatTime, formatDistance, formatSpeed } from '../../hooks/useSegmentData';
+import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft,
@@ -21,7 +21,7 @@ import {
   BarChart3,
   RefreshCw
 } from 'lucide-react';
-import StravaLogo from './StravaLogo';
+import StravaLogo from '../../components/ui/StravaLogo';
 
 interface LandingPageProps {
   onRegister: () => void;

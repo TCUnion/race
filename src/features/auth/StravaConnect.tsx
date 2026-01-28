@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Check from 'lucide-react/dist/esm/icons/check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import { API_BASE_URL } from '../lib/api_config';
-import StravaLogo from './StravaLogo';
+import { API_BASE_URL } from '../../lib/api_config';
+import StravaLogo from '../../components/ui/StravaLogo';
 
 interface StravaAthlete {
     id: string | number;

@@ -1,18 +1,18 @@
 
 import React, { useState } from 'react';
 import { ViewType } from './types';
-import LandingPage from './components/LandingPage';
-import Dashboard from './components/Dashboard';
-import Leaderboard from './components/Leaderboard';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import AdminPanel from './components/AdminPanel';
-import RegisterPage from './components/RegisterPage';
-import MemberBindingCard from './components/MemberBindingCard';
-import MaintenanceDashboard from './components/maintenance/MaintenanceDashboard';
-import ACPowerTraining from './components/ACPowerTraining';
-import TeamDashboard from './components/TeamDashboard';
-import SettingsPage from './components/SettingsPage';
+import LandingPage from './features/landing/LandingPage';
+import Dashboard from './features/dashboard/Dashboard';
+import Leaderboard from './features/leaderboard/Leaderboard';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+import AdminPanel from './features/admin/AdminPanel';
+import RegisterPage from './features/auth/RegisterPage';
+import MemberBindingCard from './features/auth/MemberBindingCard';
+import MaintenanceDashboard from './features/maintenance/MaintenanceDashboard';
+import ACPowerTraining from './features/dashboard/ACPowerTraining';
+import TeamDashboard from './features/dashboard/TeamDashboard';
+import SettingsPage from './features/settings/SettingsPage';
 import { useSEO } from './hooks/useSEO';
 import { useAuth } from './hooks/useAuth';
 

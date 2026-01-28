@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Shield, Store, Clock, X, AlertTriangle } from 'lucide-react';
-import { useMemberAuthorizations } from '../hooks/useMemberAuthorizations';
+import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
 
 const SettingsPage: React.FC = () => {
     const { authorizations, reject, loading, refresh } = useMemberAuthorizations();

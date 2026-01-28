@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import SegmentMap from './SegmentMap';
-import { useSegmentData, formatTime, LeaderboardEntry, StravaSegment, SegmentStats } from '../hooks/useSegmentData';
+import SegmentMap from '../map/SegmentMap';
+import { useSegmentData, formatTime, LeaderboardEntry, StravaSegment, SegmentStats } from '../../hooks/useSegmentData';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import MapIcon from 'lucide-react/dist/esm/icons/map';
 import Search from 'lucide-react/dist/esm/icons/search';
@@ -17,7 +17,7 @@ import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import SearchX from 'lucide-react/dist/esm/icons/search-x';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Crown from 'lucide-react/dist/esm/icons/crown';
-import StravaLogo from './StravaLogo';
+import StravaLogo from '../../components/ui/StravaLogo';
 
 const CONFIG = {
   stravaActivityBase: 'https://www.strava.com/activities/'
