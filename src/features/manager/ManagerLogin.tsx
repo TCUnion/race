@@ -39,6 +39,68 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
         }
     }, []);
 
+    // Handle Strava Auth Callback (Login Mode)
+    React.useEffect(() => {
+        const handleStravaAuth = async (athleteData: any) => {
+            try {
+                setLoading(true);
+                console.log('Manager Login: Verifying Strava Athlete', athleteData.id);
+
+                // Verify against manager_roles
+                const { data: role, error } = await supabase
+                    .from('manager_roles')
+                    .select('*')
+                    .eq('athlete_id', athleteData.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (!role) {
+                    throw new Error('此 Strava 帳號未綁定任何管理員權限，請先使用 Email 登入並完成綁定。');
+                }
+
+                if (!role.is_active) {
+                    throw new Error('此管理員帳號尚未啟用，請聯繫系統管理員。');
+                }
+
+                // Login Success
+                localStorage.setItem('strava_athlete_meta', JSON.stringify(athleteData));
+                localStorage.setItem('strava_athlete_data', JSON.stringify(athleteData)); // Sync for consistency
+
+                // Clear any leftover temp data
+                localStorage.removeItem('strava_athlete_data_temp');
+
+                onLoginSuccess();
+            } catch (err: any) {
+                console.error('Strava Login Failed', err);
+                setError(err.message || 'Strava 登入失敗');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'strava_athlete_data_temp' && e.newValue) {
+                const data = JSON.parse(e.newValue);
+                handleStravaAuth(data);
+            }
+        };
+
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data && e.data.type === 'STRAVA_AUTH_SUCCESS' && e.data.athlete) {
+                handleStravaAuth(e.data.athlete);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('message', handleMessage);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('message', handleMessage);
+        };
+    }, []);
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -325,6 +387,40 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
                                     </>
                                 )}
                             </button>
+
+                            {/* Strava Login (Only in Login Mode) */}
+                            {isLogin && (
+                                <>
+                                    <div className="relative flex py-2 items-center">
+                                        <div className="flex-grow border-t border-slate-700"></div>
+                                        <span className="flex-shrink-0 mx-4 text-slate-500 text-sm">或是</span>
+                                        <div className="flex-grow border-t border-slate-700"></div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const width = 600;
+                                            const height = 700;
+                                            const left = window.screen.width / 2 - width / 2;
+                                            const top = window.screen.height / 2 - height / 2;
+                                            const authUrl = `https://n8n.criterium.tw/webhook/strava/auth/start?return_url=${encodeURIComponent(window.location.href)}`;
+
+                                            window.open(
+                                                authUrl,
+                                                'StravaAuth',
+                                                `width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no`
+                                            );
+                                        }}
+                                        className="w-full bg-[#FC4C02] hover:bg-[#E34402] text-white rounded-xl py-3 font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#FC4C02]/20"
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                                        </svg>
+                                        使用 Strava 登入
+                                    </button>
+                                </>
+                            )}
 
                             {/* Back Button for Register Steps */}
                             {!isLogin && regStep === 'details' && (

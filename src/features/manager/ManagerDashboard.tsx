@@ -252,6 +252,37 @@ function ManagerDashboard() {
     const authWindowRef = React.useRef<Window | null>(null);
     const pollingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
+    // Listen for storage changes (cross-tab/window communication) AND postMessage (popup communication)
+    useEffect(() => {
+        // Only listen validation events if we are explicitly binding
+        // (Prevents conflict with ManagerLogin which also listens to these events)
+        if (!isBindingStrava) return;
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'strava_athlete_data_temp' || e.key === 'strava_callback_timestamp') {
+                console.log('ManagerDashboard: Detected storage change, checking binding data...');
+                checkBindingData();
+            }
+        };
+
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data && e.data.type === 'STRAVA_AUTH_SUCCESS' && e.data.athlete) {
+                console.log('ManagerDashboard: Received postMessage with athlete data');
+                // Save to temp storage to unify processing logic
+                localStorage.setItem('strava_athlete_data_temp', JSON.stringify(e.data.athlete));
+                checkBindingData();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('message', handleMessage);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('message', handleMessage);
+        };
+    }, [managerRole, isBindingStrava]); // Updated dependency
+
     const handleBindStrava = () => {
         // Clean temp data immediately
         localStorage.removeItem('strava_athlete_data_temp');
