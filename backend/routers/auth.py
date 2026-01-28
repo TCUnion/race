@@ -14,6 +14,7 @@ class StravaTokenRequest(BaseModel):
     access_token: str
     refresh_token: str
     expires_at: int
+    user_id: Optional[str] = None
 
 @router.post("/strava-token")
 def save_strava_token(req: StravaTokenRequest):
@@ -23,8 +24,12 @@ def save_strava_token(req: StravaTokenRequest):
             "access_token": req.access_token,
             "refresh_token": req.refresh_token,
             "expires_at": req.expires_at,
-            "login_time": datetime.now(timezone.utc).isoformat()  # 使用正確的 ISO 格式路徑
+            "login_time": datetime.now(timezone.utc).isoformat()
         }
+        
+        if req.user_id:
+            data["user_id"] = req.user_id
+            
         # 使用 upsert
         response = supabase.table("strava_tokens").upsert(data).execute()
         return {"status": "success"}

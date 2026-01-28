@@ -3,6 +3,7 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
 import { API_BASE_URL } from '../../lib/api_config';
 import StravaLogo from '../../components/ui/StravaLogo';
+import { supabase } from '../../lib/supabase';
 
 interface StravaAthlete {
     id: string | number;
@@ -119,7 +120,8 @@ const StravaConnect: React.FC = () => {
         // 同步 Token 到後端
         if (athleteData.access_token) {
             try {
-                // 使用相對路徑，讓 Vite Proxy (開發環境) 或 Zeabur Reverse Proxy (正式環境) 自動處理
+                // 取得當前 Supabase 使用者 ID
+                const { data: { user } } = await supabase.auth.getUser();
 
                 await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
                     method: 'POST',
@@ -128,7 +130,8 @@ const StravaConnect: React.FC = () => {
                         athlete_id: Number(athleteData.id),
                         access_token: athleteData.access_token,
                         refresh_token: (athleteData as any).refresh_token || '',
-                        expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600
+                        expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600,
+                        user_id: user?.id
                     })
                 }).catch(err => console.warn('後端同步嘗試失敗，但不影響本機登入', err));
             } catch (e) {

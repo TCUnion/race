@@ -80,6 +80,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     // 同步 Token 到後端
     if (athleteData.access_token) {
       try {
+        // 取得當前 Supabase 使用者 ID
+        const { data: { user } } = await supabase.auth.getUser();
+
         await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -87,7 +90,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             athlete_id: Number(athleteData.id),
             access_token: athleteData.access_token,
             refresh_token: (athleteData as any).refresh_token || '',
-            expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600
+            expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600,
+            user_id: user?.id
           })
         }).catch(err => console.warn('Navbar: 後端同步失敗', err));
       } catch (e) {
