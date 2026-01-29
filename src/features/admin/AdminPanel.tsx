@@ -177,6 +177,17 @@ const AdminPanel: React.FC = () => {
     const [memberSearchTerm, setMemberSearchTerm] = useState('');
     const [memberPageSize, setMemberPageSize] = useState(10);
     const [memberCurrentPage, setMemberCurrentPage] = useState(1);
+    const [memberSortField, setMemberSortField] = useState<string>('real_name');
+    const [memberSortOrder, setMemberSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    const toggleMemberSort = (field: string) => {
+        if (memberSortField === field) {
+            setMemberSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setMemberSortField(field);
+            setMemberSortOrder('asc');
+        }
+    };
 
     // Strava Token 顯示與搜尋/分頁狀態
     const [tokenSearchTerm, setTokenSearchTerm] = useState('');
@@ -2153,11 +2164,66 @@ const AdminPanel: React.FC = () => {
                         const filtered = allMembers.filter(m =>
                             m.real_name?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
                             m.email?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-                            (m.athletes && `${m.athletes.firstname} ${m.athletes.lastname}`.toLowerCase().includes(memberSearchTerm.toLowerCase()))
+                            (m.athletes && `${m.athletes.firstname} ${m.athletes.lastname}`.toLowerCase().includes(memberSearchTerm.toLowerCase())) ||
+                            m.tcu_id?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                            m.account?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                            m.team?.toLowerCase().includes(memberSearchTerm.toLowerCase())
                         );
 
-                        const totalPages = Math.ceil(filtered.length / memberPageSize);
-                        const displayedMembers = filtered.slice(
+                        // Sorting
+                        const sortedFiltered = [...filtered].sort((a, b) => {
+                            let valA, valB;
+
+                            switch (memberSortField) {
+                                case 'strava_id':
+                                    valA = a.strava_id || '';
+                                    valB = b.strava_id || '';
+                                    break;
+                                case 'strava_name':
+                                    valA = a.athletes ? `${a.athletes.firstname} ${a.athletes.lastname}` : '';
+                                    valB = b.athletes ? `${b.athletes.firstname} ${b.athletes.lastname}` : '';
+                                    break;
+                                case 'real_name': // 會員資訊
+                                    const nameA = a.real_name || '';
+                                    const emailA = a.email || '';
+                                    valA = nameA + emailA;
+                                    const nameB = b.real_name || '';
+                                    const emailB = b.email || '';
+                                    valB = nameB + emailB;
+                                    break;
+                                case 'tcu_id': // TCU ID / 帳號
+                                    const tcuA = a.tcu_id || '';
+                                    const accA = a.account || '';
+                                    valA = tcuA + accA;
+                                    const tcuB = b.tcu_id || '';
+                                    const accB = b.account || '';
+                                    valB = tcuB + accB;
+                                    break;
+                                case 'team':
+                                    valA = a.team || '';
+                                    valB = b.team || '';
+                                    break;
+                                case 'member_type':
+                                    valA = a.member_type || '';
+                                    valB = b.member_type || '';
+                                    break;
+                                case 'action':
+                                    // 排序邏輯：有 strava_id 的 (可解除綁定) 排前面/後面
+                                    valA = a.strava_id ? 'Unbind' : 'NoAction';
+                                    valB = b.strava_id ? 'Unbind' : 'NoAction';
+                                    break;
+                                default:
+                                    valA = a[memberSortField];
+                                    valB = b[memberSortField];
+                            }
+
+                            if (valA < valB) return memberSortOrder === 'asc' ? -1 : 1;
+                            if (valA > valB) return memberSortOrder === 'asc' ? 1 : -1;
+                            return 0;
+                        });
+
+                        const totalPages = Math.ceil(sortedFiltered.length / memberPageSize);
+                        const displayedMembers = sortedFiltered.slice(
                             (memberCurrentPage - 1) * memberPageSize,
                             memberCurrentPage * memberPageSize
                         );
@@ -2168,12 +2234,27 @@ const AdminPanel: React.FC = () => {
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                             <tr>
-                                                <th className="px-4 py-3 rounded-l-lg">Strava ID</th>
-                                                <th className="px-4 py-3">Strava Name</th>
-                                                <th className="px-4 py-3">會員資訊</th>
-                                                <th className="px-4 py-3">TCU ID / 帳號</th>
-                                                <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700">會員類別</th>
-                                                <th className="px-4 py-3 rounded-r-lg text-right">操作</th>
+                                                <th className="px-4 py-3 rounded-l-lg cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('strava_id')}>
+                                                    Strava ID {memberSortField === 'strava_id' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
+                                                <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('strava_name')}>
+                                                    Strava Name {memberSortField === 'strava_name' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
+                                                <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('real_name')}>
+                                                    會員資訊 {memberSortField === 'real_name' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
+                                                <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('tcu_id')}>
+                                                    TCU ID / 帳號 {memberSortField === 'tcu_id' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
+                                                <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('team')}>
+                                                    車隊 {memberSortField === 'team' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
+                                                <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('member_type')}>
+                                                    會員類別 {memberSortField === 'member_type' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
+                                                <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('action')}>
+                                                    操作 {memberSortField === 'action' && (memberSortOrder === 'asc' ? '↑' : '↓')}
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -2213,8 +2294,16 @@ const AdminPanel: React.FC = () => {
                                                         <div className="text-xs font-bold text-slate-600 dark:text-slate-400">{m.tcu_id}</div>
                                                         <div className="text-[10px] text-slate-400 font-mono">{m.account ? m.account.replace(/(.{3})(.*)(.{3})/, "$1****$3") : '-'}</div>
                                                     </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{m.team || '-'}</div>
+                                                    </td>
                                                     <td className="px-4 py-4 border-x border-slate-100 dark:border-slate-700">
-                                                        <span className="px-2 py-0.5 bg-tcu-blue/10 text-tcu-blue text-[10px] font-bold rounded-full uppercase tracking-tighter">
+                                                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-tighter ${(m.member_type === '付費車隊管理員')
+                                                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                                            : (m.member_type === '付費會員')
+                                                                ? 'bg-tcu-blue/10 text-tcu-blue'
+                                                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                                            }`}>
                                                             {m.member_type || '一般會員'}
                                                         </span>
                                                     </td>
