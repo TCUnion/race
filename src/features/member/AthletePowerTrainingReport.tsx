@@ -109,7 +109,7 @@ const PowerZoneChart: React.FC<{ zones: PowerZoneAnalysis[] }> = ({ zones }) => 
 // 活動趨勢圖表組件
 const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
     // 預設顯示指標
-    const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['watts', 'heartrate', 'speed']);
+    const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['watts', 'heartrate', 'speed', 'altitude']);
 
     // 定義所有可用指標
     const metrics_config = [
