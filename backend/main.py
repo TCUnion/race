@@ -1,8 +1,12 @@
+import sys
+import os
+
+# 將 main.py 所在的目錄加入 sys.path，解決模組引入問題
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI
-import os
 from fastapi.middleware.cors import CORSMiddleware
-from routers import leaderboard, activities, auth, teams
+from routers import leaderboard, activities, auth, teams, webhooks
 from database import supabase
 
 app = FastAPI()
@@ -39,6 +43,7 @@ app.include_router(leaderboard.router)
 app.include_router(activities.router)
 app.include_router(auth.router)
 app.include_router(teams.router)
+app.include_router(webhooks.router)
 
 @app.get("/")
 def read_root():
