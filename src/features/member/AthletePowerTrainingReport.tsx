@@ -109,7 +109,7 @@ const PowerZoneChart: React.FC<{ zones: PowerZoneAnalysis[] }> = ({ zones }) => 
 // 活動趨勢圖表組件
 const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
     // 預設顯示指標
-    const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['watts', 'heartrate', 'speed']);
+    const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['watts', 'heartrate', 'speed', 'altitude']);
 
     // 定義所有可用指標
     const metrics_config = [
@@ -383,7 +383,6 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                             <ReferenceArea
                                 x1={refAreaLeft}
                                 x2={refAreaRight}
-                                stroke="none"
                                 fill="#000000"
                                 fillOpacity={0.5}
                             />
@@ -654,6 +653,32 @@ const AthletePowerTrainingReport: React.FC = () => {
         fetchData();
     }, [athlete?.id, checkStreamsAvailability, currentPage, itemsPerPage]);
 
+    // [New] 監聽選定活動，當數據流變為可用時自動加載分析 (反應式設計)
+    useEffect(() => {
+        if (selectedActivity && availableStreams.has(selectedActivity.id)) {
+            // 如果還沒載入分析，或者分析的 ID 不對，則加載
+            if (!activityAnalysis || activityAnalysis.activityId !== selectedActivity.id) {
+                const load = async () => {
+                    setLoadingAnalysis(true);
+                    try {
+                        const streams = await getActivityStreams(selectedActivity.id);
+                        if (streams) {
+                            const analysisFtp = streams.ftp || currentFTP;
+                            const analysisMaxHR = streams.max_heartrate || currentMaxHR;
+                            const analysis = analyzeActivityPower(selectedActivity, streams, analysisFtp, analysisMaxHR);
+                            setActivityAnalysis(analysis);
+                        }
+                    } catch (err) {
+                        console.error('自動加載分析失敗:', err);
+                    } finally {
+                        setLoadingAnalysis(false);
+                    }
+                };
+                load();
+            }
+        }
+    }, [selectedActivity, availableStreams, getActivityStreams, analyzeActivityPower, currentFTP, currentMaxHR, activityAnalysis]);
+
     // 計算週 TSS（簡化版）
     const weeklyTSS = useMemo(() => {
         if (!recentActivities.length) return 0;
@@ -740,23 +765,55 @@ const AthletePowerTrainingReport: React.FC = () => {
             clearTimeout(timeoutId);
 
             if (response.ok) {
-                setSyncStatus(prev => ({ ...prev, [activity.id]: 'success' }));
-                setAvailableStreams(prev => new Set(prev).add(activity.id));
+                // 開始輪詢檢查資料是否已入庫
+                let retries = 0;
+                const maxRetries = 15; // 最多 30 秒
 
-                // 更新 FTP
-                const ftpToSave = currentFTP || 0;
-                const maxHrToSave = currentMaxHR || 190;
+                const checkData = async () => {
+                    const { data: streamData } = await supabase
+                        .from('strava_streams')
+                        .select('activity_id')
+                        .eq('activity_id', activity.id)
+                        .maybeSingle();
 
-                await supabase.from('strava_streams')
-                    .update({ ftp: ftpToSave, max_heartrate: maxHrToSave })
-                    .eq('activity_id', activity.id);
+                    if (streamData) {
+                        // 資料已到，更新 UI
+                        setSyncStatus(prev => ({ ...prev, [activity.id]: 'success' }));
+                        setAvailableStreams(prev => new Set(prev).add(activity.id));
 
-                setTimeout(() => {
-                    setSyncStatus(prev => ({ ...prev, [activity.id]: 'idle' }));
-                    if (selectedActivity?.id === activity.id) {
-                        handleActivitySelect(activity);
+                        // 補上 FTP 設定
+                        const ftpToSave = currentFTP || 0;
+                        const maxHrToSave = currentMaxHR || 190;
+                        await supabase.from('strava_streams')
+                            .update({ ftp: ftpToSave, max_heartrate: maxHrToSave })
+                            .eq('activity_id', activity.id);
+
+                        setTimeout(() => {
+                            setSyncStatus(prev => ({ ...prev, [activity.id]: 'idle' }));
+                            // [Notice] 這裡不再需要手動呼叫 handleActivitySelect
+                            // 因為上面的 setAvailableStreams 更新會觸發 useEffect 自動加載分析
+                        }, 1000);
+                        return true;
                     }
-                }, 3000);
+                    return false;
+                };
+
+                const poll = async () => {
+                    if (retries >= maxRetries) {
+                        setSyncStatus(prev => ({ ...prev, [activity.id]: 'error' }));
+                        setTimeout(() => setSyncStatus(prev => ({ ...prev, [activity.id]: 'idle' })), 3000);
+                        return;
+                    }
+
+                    const found = await checkData();
+                    if (!found) {
+                        retries++;
+                        setTimeout(poll, 2000);
+                    }
+                };
+
+                // 立即開始第一次檢查
+                poll();
             } else {
                 throw new Error('Webhook call failed');
             }
@@ -1011,9 +1068,16 @@ const AthletePowerTrainingReport: React.FC = () => {
                                                                     <ActivityCharts data={activityAnalysis} />
                                                                 </div>
                                                             </div>
+                                                        ) : isSyncing ? (
+                                                            <div className="py-12 text-center text-slate-500">
+                                                                <RefreshCw className="w-10 h-10 mx-auto mb-4 animate-spin text-blue-500 opacity-70" />
+                                                                <p className="text-blue-400 font-medium animate-pulse">正在同步並偵測數據...</p>
+                                                                <p className="text-xs mt-2 text-slate-600">偵測到數據入庫後將自動顯示圖表</p>
+                                                            </div>
                                                         ) : (
                                                             <div className="py-8 text-center text-slate-500">
-                                                                <p className="mb-2">尚無詳細數據</p>
+                                                                <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                                                <p className="mb-2">此活動尚無詳細數據流</p>
                                                                 {!isSynced && (
                                                                     <button
                                                                         onClick={(e) => handleSyncActivity(e, activity)}
