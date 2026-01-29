@@ -25,7 +25,7 @@ export function useMemberAuthorizations() {
 
     const fetchAuthorizations = useCallback(async () => {
         const athleteId = getAthleteId();
-        if (!athleteId) {
+        if (!athleteId || athleteId === 'undefined') {
             setLoading(false);
             return;
         }
