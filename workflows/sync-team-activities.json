@@ -1,0 +1,159 @@
+{
+    "name": "TCU-戰情室-同步隊員活動",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutes": 15
+                        }
+                    ]
+                }
+            },
+            "id": "schedule-trigger",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                460,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT \n  t.athlete_id,\n  t.access_token,\n  t.refresh_token,\n  t.expires_at,\n  m.name as member_name\nFROM \n  strava_tokens t\nJOIN \n  tcu_members m ON m.member_id = CAST(t.athlete_id AS TEXT)\nWHERE \n  m.status = '啟用'\n  AND m.team IS NOT NULL;",
+                "options": {}
+            },
+            "id": "get-team-members",
+            "name": "取得有效隊員 Token",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                680,
+                340
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "Postgres-Production",
+                    "name": "Postgres Production"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "split-batches",
+            "name": "Split In Batches",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                900,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://www.strava.com/api/v3/athlete/activities",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "stravaOAuth2Api",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "per_page",
+                            "value": "1"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "strava-get-activities",
+            "name": "Strava: Get Last Activity",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1120,
+                340
+            ],
+            "credentials": {
+                "stravaOAuth2Api": {
+                    "id": "Strava-App",
+                    "name": "Strava App account"
+                }
+            },
+            "onError": "continueErrorOutput"
+        },
+        {
+            "parameters": {
+                "tableName": "strava_activities",
+                "columns": "id, athlete_id, name, distance, moving_time, elapsed_time, total_elevation_gain, type, sport_type, start_date, start_date_local, timezone, average_speed, max_speed, average_cadence, average_temp, average_watts, average_heartrate, max_heartrate, suffer_score, description",
+                "options": {}
+            },
+            "id": "upsert-activity",
+            "name": "寫入資料庫",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                1340,
+                340
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "Postgres-Production",
+                    "name": "Postgres Production"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "schedule-trigger": {
+            "main": [
+                [
+                    {
+                        "node": "get-team-members",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "get-team-members": {
+            "main": [
+                [
+                    {
+                        "node": "split-batches",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "split-batches": {
+            "main": [
+                [
+                    {
+                        "node": "strava-get-activities",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "strava-get-activities": {
+            "main": [
+                [
+                    {
+                        "node": "upsert-activity",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

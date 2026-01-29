@@ -243,7 +243,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {isBound && (
               <button
                 onClick={() => onNavigate(ViewType.TEAM_DASHBOARD)}
-                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.TEAM_DASHBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
+                className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.TEAM_DASHBOARD ? 'text-yellow-500 border-b-2 border-yellow-500 pb-1' : 'text-slate-400 hover:text-yellow-500'}`}
               >
                 <Users2 className="w-3 h-3" />
                 {t('nav.my_team')}
@@ -415,7 +415,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   setIsMenuOpen(false);
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${currentView === ViewType.TEAM_DASHBOARD
-                  ? 'bg-tcu-blue/10 text-tcu-blue'
+                  ? 'bg-yellow-500/10 text-yellow-500'
                   : 'text-slate-500 hover:bg-slate-50'
                   }`}
               >
