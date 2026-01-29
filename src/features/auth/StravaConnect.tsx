@@ -18,7 +18,7 @@ interface StravaAthlete {
 }
 
 const CONFIG = {
-    stravaAuthUrl: `${API_BASE_URL}/api/auth/strava-login`,
+    stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
     storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
     pollingTimeout: 120000,
@@ -34,7 +34,8 @@ const CONFIG = {
         'http://localhost:3001',
         'http://127.0.0.1:3001',
         'http://localhost:5173',
-        API_BASE_URL // Allow current API base
+        API_BASE_URL,
+        'https://service.criterium.tw' // Explicity allow service domain
     ]
 };
 
