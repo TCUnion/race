@@ -123,17 +123,27 @@ const StravaConnect: React.FC = () => {
                 // 取得當前 Supabase 使用者 ID
                 const { data: { user } } = await supabase.auth.getUser();
 
+                const athleteId = Number(athleteData.id);
+                if (isNaN(athleteId)) {
+                    console.error('Invalid athlete ID:', athleteData.id);
+                    return;
+                }
+
+                const payload = {
+                    athlete_id: athleteId, // 確保為數字
+                    access_token: athleteData.access_token || '', // 確保非空字串 (雖然應該要是有的)
+                    refresh_token: (athleteData as any).refresh_token || '', // 若無 refresh token 則給空字串
+                    expires_at: Number((athleteData as any).expires_at) || Math.floor(Date.now() / 1000) + 21600, // 確保為數字
+                    user_id: user?.id || null // 若無 user 則為 null
+                };
+
+                console.log('[StravaConnect] Syncing token to backend:', payload);
+
                 await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        athlete_id: Number(athleteData.id),
-                        access_token: athleteData.access_token,
-                        refresh_token: (athleteData as any).refresh_token || '',
-                        expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600,
-                        user_id: user?.id
-                    })
-                }).catch(err => console.warn('後端同步嘗試失敗，但不影響本機登入', err));
+                    body: JSON.stringify(payload)
+                });
             } catch (e) {
                 console.error('儲存 Token 到後端失敗', e);
             }
