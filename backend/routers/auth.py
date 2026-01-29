@@ -16,6 +16,111 @@ class StravaTokenRequest(BaseModel):
     expires_at: int
     user_id: Optional[str] = None
 
+import os
+import requests
+from fastapi.responses import RedirectResponse, HTMLResponse
+
+@router.get("/strava-login")
+def strava_login():
+    """
+    Redirect to Strava OAuth page
+    """
+    client_id = os.getenv("STRAVA_CLIENT_ID")
+    redirect_uri = os.getenv("STRAVA_REDIRECT_URI", "https://service.criterium.tw/api/auth/strava-callback")
+    scope = "read,activity:read_all,profile:read_all"
+    
+    if not client_id:
+        raise HTTPException(status_code=500, detail="Server config error: Missing STRAVA_CLIENT_ID")
+        
+    url = f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope={scope}"
+    return RedirectResponse(url)
+
+@router.get("/strava-callback")
+def strava_callback(code: str, scope: str = ""):
+    """
+    Handle Strava OAuth callback
+    """
+    client_id = os.getenv("STRAVA_CLIENT_ID")
+    client_secret = os.getenv("STRAVA_CLIENT_SECRET")
+    
+    if not client_id or not client_secret:
+        return HTMLResponse(content="<h1>Error: Server config missing client credentials</h1>", status_code=500)
+        
+    # Exchange code for token
+    token_url = "https://www.strava.com/oauth/token"
+    payload = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code,
+        "grant_type": "authorization_code"
+    }
+    
+    try:
+        response = requests.post(token_url, data=payload)
+        res_data = response.json()
+        
+        if response.status_code != 200:
+             return HTMLResponse(content=f"<h1>Error from Strava: {res_data}</h1>", status_code=400)
+             
+        # Extract data
+        access_token = res_data.get("access_token")
+        refresh_token = res_data.get("refresh_token")
+        expires_at = res_data.get("expires_at")
+        athlete = res_data.get("athlete", {})
+        athlete_id = athlete.get("id")
+        
+        # Save to DB (Optional here, frontend also does it, but safer to do it here too)
+        # But to match n8n behavior, we pass data back to frontend via window.opener
+        
+        # Upsert Token immediately to ensure backend has it
+        try:
+           data = {
+                "athlete_id": athlete_id,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expires_at": expires_at,
+                "name": f"{athlete.get('firstname')} {athlete.get('lastname')}".strip(),
+                "profile": athlete.get("profile"),
+                "login_time": datetime.now(timezone.utc).isoformat()
+            }
+           supabase.table("strava_tokens").upsert(data).execute()
+        except Exception as e:
+           print(f"[WARN] Failed to save token in callback (Frontend should retry): {e}")
+
+        # Return HTML to close popup and pass data
+        html_content = f"""
+        <html>
+        <head><title>Strava Login Success</title></head>
+        <body>
+            <h1>Login Successful...</h1>
+            <script>
+                const data = {{
+                    access_token: "{access_token}",
+                    refresh_token: "{refresh_token}",
+                    expires_at: {expires_at},
+                    athlete: {json.dumps(athlete)},
+                    id: {athlete_id}
+                }};
+                
+                // Send to main window
+                if (window.opener) {{
+                    window.opener.postMessage({{
+                        type: 'STRAVA_AUTH_SUCCESS',
+                        ...data
+                    }}, '*'); // In production, replace '*' with specific origin
+                    window.close();
+                }} else {{
+                    document.body.innerHTML += "<p>Could not find opener window. Please close this tab manually.</p>";
+                }}
+            </script>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
+        
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error processing callback: {str(e)}</h1>", status_code=500)
+
 @router.post("/strava-token")
 def save_strava_token(req: StravaTokenRequest):
     try:
@@ -35,6 +140,7 @@ def save_strava_token(req: StravaTokenRequest):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/member-binding")
 async def proxy_member_binding(request: Request):
