@@ -15,6 +15,7 @@ app = FastAPI()
 # 必選的允許來源 (不受環境變數影響，強制啟用)
 REQUIRED_ORIGINS = [
     "http://localhost:3000",
+    "http://10.0.0.30:3000",
     "https://strava.criterium.tw",
     "https://status-8wp.pages.dev",
     "https://status.criterium.tw",

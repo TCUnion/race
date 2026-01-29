@@ -223,7 +223,7 @@ const AdminPanel: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('https://n8n.criterium.tw/webhook/segment_set', {
+            const response = await fetch('https://service.criterium.tw/webhook/segment_set', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ segment_id: sid })
@@ -288,7 +288,7 @@ const AdminPanel: React.FC = () => {
             const btn = document.getElementById(`sync-btn-${seg.id}`);
             if (btn) btn.classList.add('animate-spin');
 
-            const response = await fetch('https://n8n.criterium.tw/webhook/segment_effor_syn', {
+            const response = await fetch('https://service.criterium.tw/webhook/segment_effor_syn', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ segment_id: sid })
@@ -326,7 +326,7 @@ const AdminPanel: React.FC = () => {
             for (const seg of targetSegments) {
                 try {
                     // 觸發個別同步
-                    await fetch('https://n8n.criterium.tw/webhook/segment_effor_syn', {
+                    await fetch('https://service.criterium.tw/webhook/segment_effor_syn', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ segment_id: seg.strava_id })
@@ -1724,7 +1724,7 @@ const AdminPanel: React.FC = () => {
 
                                         try {
                                             // 呼叫 n8n webhook 取得路段資料
-                                            const response = await fetch('https://n8n.criterium.tw/webhook/segment_set', {
+                                            const response = await fetch('https://service.criterium.tw/webhook/segment_set', {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({ segment_id: parsedId })

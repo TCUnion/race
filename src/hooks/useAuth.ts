@@ -144,15 +144,15 @@ export const useAuth = () => {
     }, []);
 
     useEffect(() => {
-        if (athlete?.id) {
+        if (athlete?.id && String(athlete.id) !== 'undefined' && athlete.id !== 0) {
             setIsLoading(true);
-            checkBindingStatus(athlete.id);
+            checkBindingStatus(Number(athlete.id));
         } else {
             setMemberData(null);
             setIsBound(null);
             setIsLoading(false);
         }
-    }, [athlete?.id]);
+    }, [athlete]); // 監聽整個 athlete 物件的變動 (包含 ts)
 
     const logout = () => {
         localStorage.removeItem(STORAGE_KEY);
