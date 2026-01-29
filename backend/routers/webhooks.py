@@ -206,7 +206,7 @@ async def proxy_member_binding(request: Request):
         # So we MUST handle OTP generation here or mockup.
         # For now, let's keep proxy logic but be aware it might need internal implementation if n8n is truly dead.
         
-        n8n_url = os.getenv("N8N_MEMBER_BINDING_URL", "https://n8n.criterium.tw/webhook/member-binding")
+        n8n_url = os.getenv("N8N_MEMBER_BINDING_URL", "https://service.criterium.tw/webhook/member-binding")
         # If n8n domain is down, this will timeout.
         
         req = urllib.request.Request(
@@ -252,82 +252,104 @@ def strava_auth_start():
     return RedirectResponse(url)
 
 @router.get("/strava/auth/callback")
-def strava_auth_callback(code: str, scope: str = ""):
+def strava_auth_callback(
+    code: str = None, 
+    id: str = None,
+    athlete_id: str = None,
+    access_token: str = None,
+    refresh_token: str = None,
+    expires_at: str = None,
+    firstname: str = None,
+    lastname: str = None,
+    profile: str = None
+):
     """
     Handle Strava OAuth Callback
-    URL: /webhook/strava/auth/callback
+    Supporting two modes:
+    1. Direct from Strava (has 'code'): Redirect to n8n to handle logic as requested.
+    2. Back from n8n (has 'id' or 'athlete_id' and 'access_token'): Display success page.
     """
-    client_id = os.getenv("STRAVA_CLIENT_ID")
-    client_secret = os.getenv("STRAVA_CLIENT_SECRET")
     
-    if not client_id or not client_secret:
-         return HTMLResponse(content="<h1>Error: Server config missing</h1>", status_code=500)
-         
-    token_url = "https://www.strava.com/oauth/token"
-    payload = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "code": code,
-        "grant_type": "authorization_code"
-    }
-    
-    try:
-        response = requests.post(token_url, data=payload)
-        res_data = response.json()
-        
-        if response.status_code != 200:
-             return HTMLResponse(content=f"<h1>Strava Error: {res_data}</h1>", status_code=400)
-             
-        access_token = res_data.get("access_token")
-        refresh_token = res_data.get("refresh_token")
-        expires_at = res_data.get("expires_at")
-        athlete = res_data.get("athlete", {})
-        athlete_id = athlete.get("id")
-        
-        # Save to DB
-        try:
-           data = {
-                "athlete_id": athlete_id,
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "expires_at": expires_at,
-                "name": f"{athlete.get('firstname')} {athlete.get('lastname')}".strip(),
-                "profile": athlete.get("profile"),
-                "login_time": datetime.now(timezone.utc).isoformat()
-            }
-           supabase.table("strava_tokens").upsert(data).execute()
-        except Exception as e:
-           print(f"[WARN] DB Save failed: {e}")
+    # Mode 2: Callback handling (from n8n or direct)
+    def clean_val(v):
+        if v is None or v == "" or str(v).lower() == "undefined":
+            return None
+        return v
 
-        # Post Message Response
-        html_content = f"""
-        <html>
-        <head><title>Strava Login Success</title></head>
-        <body>
-            <h1>Login Successful...</h1>
-            <script>
-                const data = {{
-                    access_token: "{access_token}",
-                    refresh_token: "{refresh_token}",
-                    expires_at: {expires_at},
-                    athlete: {json.dumps(athlete)},
-                    id: {athlete_id}
-                }};
-                
+    target_id = clean_val(athlete_id) or clean_val(id)
+    token = clean_val(access_token)
+    
+    # 無論資料是否完整，只要進入此 Callback 模式且不是帶 'code' 的模式 1，就顯示成功頁面
+    # 這樣前端才能收到 message 並更新狀態
+    
+    clean_first = clean_val(firstname) or ""
+    clean_last = clean_val(lastname) or ""
+    clean_profile = clean_val(profile) or ""
+    
+    # 嘗試從資料庫補完名字 (只要有 target_id)
+    if target_id:
+        try:
+            # 優先從 athletes 表
+            ath_res = supabase.table("athletes").select("firstname, lastname, profile").eq("id", int(target_id)).execute()
+            if ath_res.data:
+                ath_data = ath_res.data[0]
+                clean_first = ath_data.get("firstname") or clean_first
+                clean_last = ath_data.get("lastname") or clean_last
+                clean_profile = ath_data.get("profile") or clean_profile
+            
+            # 備案從 tcu_members
+            if not clean_first:
+                mem_res = supabase.table("tcu_members").select("real_name").eq("strava_id", str(target_id)).execute()
+                if mem_res.data:
+                    clean_first = mem_res.data[0].get("real_name", "")
+        except Exception as e:
+            print(f"[strava_auth_callback] DB Enrichment failed: {e}")
+
+    # 封裝傳回前端的物件
+    auth_data = {
+        "access_token": token or "",
+        "refresh_token": clean_val(refresh_token) or "",
+        "expires_at": int(expires_at) if clean_val(expires_at) else 0,
+        "athlete": {
+            "id": target_id or "unknown",
+            "firstname": clean_first or "Athlete",
+            "lastname": clean_last or "",
+            "profile": clean_profile or ""
+        },
+        "id": target_id or "unknown"
+    }
+
+    js_payload = json.dumps(auth_data)
+    html_content = f"""
+    <html>
+    <head><title>授權完成</title></head>
+    <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; margin: 0;">
+        <div style="text-align: center; padding: 2rem; background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+            <h1 style="color: #0f172a; margin: 0 0 0.5rem 0; font-size: 1.5rem;">授權完成</h1>
+            <p style="color: #64748b; margin: 0;">正在關閉視窗並更新狀態...</p>
+        </div>
+        <script>
+            (function() {{
+                const data = {js_payload};
                 if (window.opener) {{
-                    window.opener.postMessage({{
-                        type: 'STRAVA_AUTH_SUCCESS',
-                        ...data
-                    }}, '*');
-                    window.close();
+                    window.opener.postMessage({{ type: 'STRAVA_AUTH_SUCCESS', ...data }}, '*');
+                    setTimeout(() => window.close(), 1000);
                 }} else {{
-                    document.body.innerHTML += "<p>Could not find opener window.</p>";
+                    localStorage.setItem('strava_athlete_data_temp', JSON.stringify(data));
+                    setTimeout(() => window.close(), 2000);
                 }}
-            </script>
-        </body>
-        </html>
-        """
-        return HTMLResponse(content=html_content)
-        
-    except Exception as e:
-        return HTMLResponse(content=f"<h1>Error: {str(e)}</h1>", status_code=500)
+            }})();
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+    # Mode 1: Direct from Strava (Raw Code)
+    if code:
+        # Redirect to n8n so n8n can handle the token exchange and logic
+        n8n_auth_url = f"https://service.criterium.tw/webhook/strava/auth/callback?code={code}"
+        return RedirectResponse(n8n_auth_url)
+
+    return HTMLResponse(content="<h1>Error: Invalid callback data</h1>", status_code=400)

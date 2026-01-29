@@ -730,7 +730,7 @@ const AthletePowerTrainingReport: React.FC = () => {
                 updates: {}
             };
 
-            const response = await fetch('https://n8n.criterium.tw/webhook/strava-activity-webhook', {
+            const response = await fetch('https://service.criterium.tw/webhook/strava-activity-webhook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

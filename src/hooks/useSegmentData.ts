@@ -82,7 +82,7 @@ interface UseSegmentDataReturn {
 
 const CONFIG = {
     // 使用 n8n webhook 作為排行榜 API（支援 GitHub Pages 靜態網站）
-    apiUrl: 'https://n8n.criterium.tw/webhook/136leaderboard-cached',
+    apiUrl: 'https://service.criterium.tw/webhook/136leaderboard-cached',
     refreshInterval: 60000, // 60 秒自動刷新
 };
 

@@ -75,9 +75,15 @@ const StravaConnect: React.FC = () => {
 
 
 
-            if (event.data.type === 'STRAVA_AUTH_SUCCESS' && event.data.athlete) {
+            if (event.data.type === 'STRAVA_AUTH_SUCCESS') {
                 stopPolling();
-                saveAndSetAthlete(event.data.athlete);
+                // Merge top-level data (which contains 'id') with athlete object to ensure we have the ID
+                const fullData = {
+                    ...event.data,
+                    ...(event.data.athlete || {})
+                };
+
+                saveAndSetAthlete(fullData);
             }
         };
 
@@ -109,6 +115,9 @@ const StravaConnect: React.FC = () => {
     }, []);
 
     const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
+        if (!athleteData.id || String(athleteData.id).toLowerCase() === 'undefined') {
+
+        }
         const fullData = {
             ...athleteData,
             firstname: athleteData.firstname || athleteData.firstName || '',
@@ -139,7 +148,7 @@ const StravaConnect: React.FC = () => {
                     user_id: user?.id || null // 若無 user 則為 null
                 };
 
-                console.log('[StravaConnect] Syncing token to backend:', payload);
+
 
                 await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
                     method: 'POST',
@@ -246,7 +255,7 @@ const StravaConnect: React.FC = () => {
         if (athlete) {
             try {
                 // 發送 Webhook 通知的邏輯
-                await fetch('https://n8n.criterium.tw/webhook/strava/auth/cancel', {
+                await fetch('https://service.criterium.tw/webhook/strava/auth/cancel', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -40,15 +40,10 @@ const CONFIG = {
   pollingTimeout: 120000,
   allowedOrigins: [
     'https://n8n.criterium.tw',
+    'https://service.criterium.tw',
     'https://criterium.tw',
-    'https://strava.criterium.tw',
-    'https://race.criterium.tw',
-    'https://tcu.criterium.tw',
-    'https://www.criterium.tw',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
     'http://localhost:5173',
   ]
 };
@@ -64,6 +59,24 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const authWindowRef = useRef<Window | null>(null);
   const { pendingAuthorizations } = useMemberAuthorizations();
 
+  // 監聽 postMessage (確保 Navbar 也能收到)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'STRAVA_AUTH_SUCCESS') {
+
+        // 合併 athlete 物件到頂層，確保 firstname/lastname 可被存取
+        const fullData = {
+          ...event.data,
+          ...(event.data.athlete || {})
+        };
+        saveAndSetAthlete(fullData);
+        stopPolling();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // 根據主題選擇 Logo
   const logoSrc = theme === 'dark' ? '/tcu-logo-light.png' : '/tcu-logo-dark.png';
 
@@ -78,16 +91,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
 
     // 同步 Token 到後端
-    if (athleteData.access_token) {
+    const numericId = Number(athleteData.id);
+    if (athleteData.access_token && !isNaN(numericId) && numericId !== 0) {
       try {
-        // 取得當前 Supabase 使用者 ID
         const { data: { user } } = await supabase.auth.getUser();
 
         await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            athlete_id: Number(athleteData.id),
+            athlete_id: numericId,
             access_token: athleteData.access_token,
             refresh_token: (athleteData as any).refresh_token || '',
             expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600,
@@ -99,7 +112,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       }
     }
 
-    // 發送事件通知 useAuth 內容內容內容內容內容內容。
+    // 發送事件通知 useAuth
     window.dispatchEvent(new Event('strava-auth-changed'));
     setIsLoading(false);
   };
@@ -285,7 +298,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800 group">
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider group-hover:text-tcu-blue transition-colors">
-                    {athlete.firstname} {athlete.lastname}
+                    {(() => {
+                      const name = `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim();
+                      return (name && !name.toLowerCase().includes('undefined')) ? name : 'Guest';
+                    })()}
                   </span>
                   <div className="flex items-center gap-1">
                     {isAdmin && <Shield className="w-2 h-2 text-red-500" />}

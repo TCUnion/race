@@ -77,7 +77,7 @@ export const useAuth = () => {
 
                 // 如果本地名字是 undefined 或 'Undefined Undefined' 或 與伺服器不符
                 if (currentName.includes('undefined') || currentName !== serverName) {
-                    console.log('[useAuth] Syncing name from server:', serverName);
+
 
                     // 簡單策略：將 serverName 當作 firstname
                     const newAthleteData = {
@@ -126,7 +126,7 @@ export const useAuth = () => {
         window.addEventListener('strava-auth-changed', handleAuthChange);
         window.addEventListener('storage', handleAuthChange);
         window.addEventListener('tcu-binding-success', async () => {
-            console.log('useAuth: Detected tcu-binding-success event');
+
             // 立即嘗試更新
             if (athlete?.id) {
                 await checkBindingStatus(athlete.id);
@@ -144,15 +144,15 @@ export const useAuth = () => {
     }, []);
 
     useEffect(() => {
-        if (athlete?.id) {
+        if (athlete?.id && String(athlete.id) !== 'undefined' && athlete.id !== 0) {
             setIsLoading(true);
-            checkBindingStatus(athlete.id);
+            checkBindingStatus(Number(athlete.id));
         } else {
             setMemberData(null);
             setIsBound(null);
             setIsLoading(false);
         }
-    }, [athlete?.id]);
+    }, [athlete]); // 監聽整個 athlete 物件的變動 (包含 ts)
 
     const logout = () => {
         localStorage.removeItem(STORAGE_KEY);
