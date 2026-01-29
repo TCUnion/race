@@ -404,7 +404,7 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
                                             const height = 700;
                                             const left = window.screen.width / 2 - width / 2;
                                             const top = window.screen.height / 2 - height / 2;
-                                            const authUrl = `https://n8n.criterium.tw/webhook/strava/auth/start?return_url=${encodeURIComponent(window.location.href)}`;
+                                            const authUrl = `https://service.criterium.tw/webhook/strava/auth/start?return_url=${encodeURIComponent(window.location.href)}`;
 
                                             window.open(
                                                 authUrl,

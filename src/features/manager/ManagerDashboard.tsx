@@ -293,7 +293,7 @@ function ManagerDashboard() {
         const top = (window.screen.height - height) / 2;
         // Use the same webhook as Navbar
         const CONFIG = {
-            stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
+            stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
             pollingInterval: 1000,
             pollingTimeout: 120000
         };

@@ -18,7 +18,7 @@ interface StravaAthlete {
 }
 
 const CONFIG = {
-    stravaAuthUrl: 'https://n8n.criterium.tw/webhook/strava/auth/start',
+    stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
     storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
     pollingTimeout: 120000,
