@@ -64,6 +64,11 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
             return;
         }
 
+        if (!athlete?.id) {
+            setError('Strava 資料未載入，請重新登入 Strava 後再試。');
+            return;
+        }
+
         setIsSyncing(true);
         setError(null);
 
@@ -546,10 +551,31 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                 )}
 
                 {/* Error & Success Messages */}
+                {/* Error & Success Messages */}
                 {error && (
                     <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl animate-in fade-in duration-300">
                         <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-[10px] font-bold text-red-600 leading-normal uppercase">{error}</p>
+                        <div className="text-[10px] font-bold text-red-600 leading-normal uppercase">
+                            {(() => {
+                                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                                const parts = error.split(urlRegex);
+                                return parts.map((part, i) =>
+                                    urlRegex.test(part) ? (
+                                        <a
+                                            key={i}
+                                            href={part}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 underline underline-offset-2 transition-colors font-black"
+                                        >
+                                            {part}
+                                        </a>
+                                    ) : (
+                                        <span key={i}>{part}</span>
+                                    )
+                                );
+                            })()}
+                        </div>
                     </div>
                 )}
 

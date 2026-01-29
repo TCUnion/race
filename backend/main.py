@@ -39,6 +39,8 @@ app.include_router(leaderboard.router)
 app.include_router(activities.router)
 app.include_router(auth.router)
 app.include_router(teams.router)
+from routers import webhooks
+app.include_router(webhooks.router)
 
 @app.get("/")
 def read_root():

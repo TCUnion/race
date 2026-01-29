@@ -63,6 +63,36 @@ export const useAuth = () => {
 
             const data = await response.json();
 
+            // 如果後端有回傳 strava_name，更新本地 Athlete 資料 (User Request)
+            if (data.strava_name) {
+                const currentAthlete = localStorage.getItem(STORAGE_KEY);
+                let athleteObj = currentAthlete ? JSON.parse(currentAthlete) : {};
+
+                // 檢查是否需要更新 (避免無限迴圈或不必要寫入)
+                // 這裡簡單假設 strava_name 為全名，塞入 firstname，lastname 清空
+                // 除非 strava_name 包含空白，可嘗試分割
+
+                const serverName = data.strava_name.trim();
+                const currentName = `${athleteObj.firstname || ''} ${athleteObj.lastname || ''}`.trim();
+
+                // 如果本地名字是 undefined 或 'Undefined Undefined' 或 與伺服器不符
+                if (currentName.includes('undefined') || currentName !== serverName) {
+                    console.log('[useAuth] Syncing name from server:', serverName);
+
+                    // 簡單策略：將 serverName 當作 firstname
+                    const newAthleteData = {
+                        ...athleteObj,
+                        id: athleteId, // 確保 ID 存在
+                        firstname: serverName,
+                        lastname: ''
+                    };
+
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(newAthleteData));
+                    // 手動觸發更新
+                    setAthlete(newAthleteData as StravaAthlete);
+                }
+            }
+
             if (data.isBound) {
                 const apiMemberData = data.member_data || {};
                 setMemberData({
@@ -73,8 +103,8 @@ export const useAuth = () => {
                     account: apiMemberData.account || data.tcu_account,
                     member_name: apiMemberData.real_name || data.member_name,
                     bound_at: data.bound_at,
-                    member_type: apiMemberData.member_type, // 確保這些欄位能被傳遞
-                    ...apiMemberData //Spread rest of the data
+                    member_type: apiMemberData.member_type,
+                    ...apiMemberData
                 });
                 setIsBound(true);
             } else {

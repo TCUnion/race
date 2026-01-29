@@ -88,3 +88,25 @@ class StravaService:
         else:
             print(f"Error fetching leaderboard: {response.status_code} - {response.text}")
             return None
+
+    @staticmethod
+    def get_activity(athlete_id: int, activity_id: int) -> Optional[Dict[str, Any]]:
+        """
+        取得特定活動的詳細資料 (包含 segment_efforts)
+        """
+        token_data = StravaService.get_token(athlete_id)
+        if not token_data:
+            print(f"Token not found for athlete {athlete_id}")
+            return None
+
+        headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+        response = requests.get(
+            f"https://www.strava.com/api/v3/activities/{activity_id}?include_all_efforts=true",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching activity {activity_id}: {response.status_code} - {response.text}")
+            return None

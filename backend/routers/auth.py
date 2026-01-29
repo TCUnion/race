@@ -104,7 +104,7 @@ async def proxy_member_binding(request: Request):
 
         # --- 進入 Proxy 邏輯 (代理至 n8n) ---
         import os
-        n8n_url = os.getenv("N8N_MEMBER_BINDING_URL", "https://n8n.criterium.tw/webhook/member-binding")
+        n8n_url = os.getenv("N8N_MEMBER_BINDING_URL", "https://service.criterium.tw/webhook/member-binding")
         
         print(f"[DEBUG] Proxying request to n8n: {n8n_url}")
         
@@ -276,8 +276,19 @@ async def get_binding_status(strava_id: str):
     """
     try:
         print(f"[DEBUG] Checking binding status for strava_id: {strava_id}")
+        
+        # 1. 查詢綁定狀態
         res = supabase.table("strava_bindings").select("*").eq("strava_id", strava_id).execute()
         
+        # 2. 查詢 strava_tokens 中的名字 (User Request: 優先顯示 strava_tokens 的 name)
+        token_name = None
+        try:
+            token_res = supabase.table("strava_tokens").select("name").eq("athlete_id", strava_id).execute()
+            if token_res.data:
+                token_name = token_res.data[0].get("name")
+        except Exception as e:
+            print(f"[DEBUG] Failed to fetch name from strava_tokens: {e}")
+
         if res.data:
             binding = res.data[0]
             email = binding.get("tcu_member_email")
@@ -285,6 +296,7 @@ async def get_binding_status(strava_id: str):
             
             # 取得完整會員資料 (優先使用 tcu_account 查詢，避免同 Email 多帳號問題)
             tcu_account = binding.get("tcu_account")
+            member_res = None
             if tcu_account:
                  print(f"[DEBUG] Fetching member by account: {tcu_account}")
                  member_res = supabase.table("tcu_members").select("*").eq("account", tcu_account).execute()
@@ -292,7 +304,11 @@ async def get_binding_status(strava_id: str):
                  print(f"[DEBUG] Fetching member by email (fallback): {email}")
                  member_res = supabase.table("tcu_members").select("*").eq("email", email).execute()
             
-            member_data = member_res.data[0] if member_res.data else {}
+            member_data = member_res.data[0] if member_res.data and member_res.data else {}
+            
+            # 若 strava_tokens 有 name，覆蓋 member_data 或以獨立欄位回傳
+            # User request: "登入後的名字要出現，用 strava_tokens 裡面的 name"
+            # 這裡回傳 strava_name 供前端優先使用
             
             return {
                 "isBound": True,
@@ -300,11 +316,15 @@ async def get_binding_status(strava_id: str):
                 "tcu_account": binding.get("tcu_account"),
                 "member_name": binding.get("member_name"),
                 "bound_at": binding.get("bound_at"),
-                "member_data": member_data
+                "member_data": member_data,
+                "strava_name": token_name  # 新增欄位
             }
         else:
             print("[DEBUG] No binding found")
-            return {"isBound": False}
+            return {
+                "isBound": False,
+                "strava_name": token_name # Even if not bound, we might want to show the name if token exists (logged in)
+            }
     except Exception as e:
         print(f"[DEBUG] Binding status error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
