@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
+import CaptainWarRoom from './CaptainWarRoom';
 
 const TeamDashboard: React.FC = () => {
     const { athlete } = useAuth();
@@ -11,7 +12,7 @@ const TeamDashboard: React.FC = () => {
     const [members, setMembers] = useState<any[]>([]);
     const [races, setRaces] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'members' | 'races'>('members');
+    const [activeTab, setActiveTab] = useState<'members' | 'races' | 'war_room'>('members');
 
     // Admin: Create Race State
     const [isCreatingRace, setIsCreatingRace] = useState(false);
@@ -27,6 +28,16 @@ const TeamDashboard: React.FC = () => {
             fetchTeamData();
         }
     }, [athlete]);
+
+    // Auto-switch to War Room for Paid Team Managers
+    useEffect(() => {
+        if (members.length > 0 && athlete?.id) {
+            const currentUser = members.find(m => m.strava_id === athlete.id);
+            if (currentUser?.member_type?.includes('付費車隊管理員')) {
+                setActiveTab('war_room');
+            }
+        }
+    }, [members, athlete?.id]);
 
     const fetchTeamData = async () => {
         try {
@@ -125,7 +136,7 @@ const TeamDashboard: React.FC = () => {
                             <Users2 className="w-8 h-8 text-tcu-blue" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 dark:text-white">
+                            <h1 className="text-3xl font-black uppercase italic tracking-tighter text-yellow-500">
                                 {teamData?.team_name || "My Team"}
                             </h1>
                             <p className="text-slate-500 font-bold text-sm tracking-wide uppercase">
@@ -145,6 +156,22 @@ const TeamDashboard: React.FC = () => {
 
             {/* Tabs */}
             <div className="flex gap-4 mb-8">
+                {/* Captain's War Room Tab - Visible to Paid Team Managers */}
+                {members.find(m => m.strava_id === athlete?.id)?.member_type?.includes('付費車隊管理員') && (
+                    <button
+                        onClick={() => setActiveTab('war_room')}
+                        className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all border-2 relative overflow-hidden group ${activeTab === 'war_room'
+                            ? 'bg-red-600 border-red-600 text-white shadow-xl shadow-red-600/40 scale-[1.02]'
+                            : 'bg-white dark:bg-slate-900 border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            }`}
+                    >
+                        <div className={`absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 transition-opacity ${activeTab === 'war_room' ? 'opacity-20' : 'group-hover:opacity-20'}`}></div>
+                        <span className="relative z-10 flex items-center justify-center gap-2">
+                            <Zap className={`w-4 h-4 ${activeTab === 'war_room' ? 'animate-pulse' : ''}`} fill="currentColor" />
+                            <span className="italic">隊長戰情室</span>
+                        </span>
+                    </button>
+                )}
                 <button
                     onClick={() => setActiveTab('members')}
                     className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all ${activeTab === 'members'
@@ -427,6 +454,10 @@ const TeamDashboard: React.FC = () => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {activeTab === 'war_room' && (
+                <CaptainWarRoom members={members} />
             )}
         </div>
     );
