@@ -63,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'STRAVA_AUTH_SUCCESS') {
-        console.log('[Navbar] Received auth success via postMessage');
+
         // 合併 athlete 物件到頂層，確保 firstname/lastname 可被存取
         const fullData = {
           ...event.data,
@@ -81,15 +81,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const logoSrc = theme === 'dark' ? '/tcu-logo-light.png' : '/tcu-logo-dark.png';
 
   const saveAndSetAthlete = async (athleteData: any) => {
-    if (!athleteData.id || String(athleteData.id).toLowerCase() === 'undefined') {
-      console.error('[Navbar] 收到無效的 Athlete ID:', athleteData);
-      // 如果 ID 是 "undefined"，通常是後端或 n8n 跳轉參數錯誤
-      if (String(athleteData.id).toLowerCase() === 'undefined') {
-        alert('授權資料錯誤：收到無效的 ID (undefined)。請檢查 n8n 工作流或後端設定。');
-      }
-      setIsLoading(false);
-      return;
-    }
     // 規範化資料
     const normalizedData = {
       ...athleteData,
@@ -100,7 +91,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
 
     // 同步 Token 到後端
-    if (athleteData.access_token) {
+    const numericId = Number(athleteData.id);
+    if (athleteData.access_token && !isNaN(numericId) && numericId !== 0) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -108,7 +100,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            athlete_id: Number(athleteData.id),
+            athlete_id: numericId,
             access_token: athleteData.access_token,
             refresh_token: (athleteData as any).refresh_token || '',
             expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600,

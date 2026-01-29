@@ -82,7 +82,7 @@ const StravaConnect: React.FC = () => {
                     ...event.data,
                     ...(event.data.athlete || {})
                 };
-                console.log('[StravaConnect] Auth success data:', fullData);
+
                 saveAndSetAthlete(fullData);
             }
         };
@@ -116,12 +116,7 @@ const StravaConnect: React.FC = () => {
 
     const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
         if (!athleteData.id || String(athleteData.id).toLowerCase() === 'undefined') {
-            console.error('[StravaConnect] 收到無效的 Athlete ID:', athleteData);
-            if (String(athleteData.id).toLowerCase() === 'undefined') {
-                alert('授權資料錯誤：收到無效的 ID (undefined)。請檢查 n8n 工作流或後端設定。');
-            }
-            setIsLoading(false);
-            return;
+
         }
         const fullData = {
             ...athleteData,
@@ -153,7 +148,7 @@ const StravaConnect: React.FC = () => {
                     user_id: user?.id || null // 若無 user 則為 null
                 };
 
-                console.log('[StravaConnect] Syncing token to backend:', payload);
+
 
                 await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
                     method: 'POST',

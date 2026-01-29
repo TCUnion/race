@@ -270,114 +270,81 @@ def strava_auth_callback(
     2. Back from n8n (has 'id' or 'athlete_id' and 'access_token'): Display success page.
     """
     
-    # Mode 2: Back from n8n (Success Data already exchanged)
+    # Mode 2: Callback handling (from n8n or direct)
     def clean_val(v):
         if v is None or v == "" or str(v).lower() == "undefined":
             return None
         return v
 
     target_id = clean_val(athlete_id) or clean_val(id)
-    access_token = clean_val(access_token)
+    token = clean_val(access_token)
     
-    if target_id and access_token:
-        # Clean other fields
-        clean_first = clean_val(firstname) or ""
-        clean_last = clean_val(lastname) or ""
-        clean_profile = clean_val(profile) or ""
-        
-        # Try to enrich from database (Prioritize 'athletes' table as requested)
+    # 無論資料是否完整，只要進入此 Callback 模式且不是帶 'code' 的模式 1，就顯示成功頁面
+    # 這樣前端才能收到 message 並更新狀態
+    
+    clean_first = clean_val(firstname) or ""
+    clean_last = clean_val(lastname) or ""
+    clean_profile = clean_val(profile) or ""
+    
+    # 嘗試從資料庫補完名字 (只要有 target_id)
+    if target_id:
         try:
-            # 1. 優先從 'athletes' 表格抓取
+            # 優先從 athletes 表
             ath_res = supabase.table("athletes").select("firstname, lastname, profile").eq("id", int(target_id)).execute()
             if ath_res.data:
                 ath_data = ath_res.data[0]
                 clean_first = ath_data.get("firstname") or clean_first
                 clean_last = ath_data.get("lastname") or clean_last
                 clean_profile = ath_data.get("profile") or clean_profile
-                print(f"[strava_auth_callback] Enriched from 'athletes' table: {clean_first} {clean_last}")
             
-            # 2. 如果還是沒有名字，嘗試從 'tcu_members' 表格抓取 (使用 strava_id)
-            if not clean_first and not clean_last:
+            # 備案從 tcu_members
+            if not clean_first:
                 mem_res = supabase.table("tcu_members").select("real_name").eq("strava_id", str(target_id)).execute()
                 if mem_res.data:
-                    real_name = mem_res.data[0].get("real_name", "")
-                    if real_name:
-                        clean_first = real_name
-                        print(f"[strava_auth_callback] Enriched from 'tcu_members' table: {real_name}")
-
-            # 3. 最後備案：'strava_tokens' 表格
-            if not clean_first and not clean_last:
-                token_res = supabase.table("strava_tokens").select("name, profile").eq("athlete_id", int(target_id)).execute()
-                if token_res.data:
-                    db_data = token_res.data[0]
-                    db_name = db_data.get("name", "")
-                    if db_name:
-                        if " " in db_name:
-                            parts = db_name.split(" ", 1)
-                            clean_first = parts[0]
-                            clean_last = parts[1]
-                        else:
-                            clean_first = db_name
-                    clean_profile = db_data.get("profile") or clean_profile
-                    print(f"[strava_auth_callback] Enriched from 'strava_tokens' table: {clean_first}")
-
+                    clean_first = mem_res.data[0].get("real_name", "")
         except Exception as e:
             print(f"[strava_auth_callback] DB Enrichment failed: {e}")
 
-        # Prepare athlete object for frontend compatibility
-        athlete = {
-            "id": target_id,
-            "firstname": clean_first,
-            "lastname": clean_last,
-            "profile": clean_profile
-        }
-        
-        auth_data = {
-            "access_token": access_token,
-            "refresh_token": clean_val(refresh_token) or "",
-            "expires_at": int(expires_at) if clean_val(expires_at) else 0,
-            "athlete": athlete,
-            "id": target_id
-        }
+    # 封裝傳回前端的物件
+    auth_data = {
+        "access_token": token or "",
+        "refresh_token": clean_val(refresh_token) or "",
+        "expires_at": int(expires_at) if clean_val(expires_at) else 0,
+        "athlete": {
+            "id": target_id or "unknown",
+            "firstname": clean_first or "Athlete",
+            "lastname": clean_last or "",
+            "profile": clean_profile or ""
+        },
+        "id": target_id or "unknown"
+    }
 
-        # Render Success HTML (to close popup and postMessage)
-        js_payload = json.dumps(auth_data)
-        html_content = f"""
-        <html>
-        <head><title>授權成功 - TCU</title></head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; margin: 0;">
-            <div style="text-align: center; padding: 2rem; background: white; border-radius: 1rem; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
-                <h1 style="color: #0f172a; margin: 0 0 0.5rem 0; font-size: 1.5rem;">授權成功</h1>
-                <p style="color: #64748b; margin: 0;">正在返回應用程式...</p>
-                <p style="color: #94a3b8; font-size: 0.8rem; margin-top: 2rem;">若視窗未自動關閉，請手動關閉此頁面。</p>
-            </div>
-            <script>
-                (function() {{
-                    try {{
-                        const data = {js_payload};
-                        console.log("[Backend] Sending STRAVA_AUTH_SUCCESS to opener");
-                        if (window.opener) {{
-                            window.opener.postMessage({{
-                                type: 'STRAVA_AUTH_SUCCESS',
-                                ...data
-                            }}, '*');
-                            // 延遲關閉以確保 message 已送出
-                            setTimeout(() => window.close(), 800);
-                        }} else {{
-                            // 如果找不到 opener，可能是跳轉太快或攔截。嘗試存入 localStorage
-                            localStorage.setItem('strava_athlete_data_temp', JSON.stringify(data));
-                            document.body.innerHTML += "<p style='color:red;'>警告：找不到原始視窗，已嘗試透過暫存同步資訊。</p>";
-                        }}
-                    }} catch (e) {{
-                        console.error("Auth script error:", e);
-                    }}
-                }})();
-            </script>
-        </body>
-        </html>
-        """
-        return HTMLResponse(content=html_content)
+    js_payload = json.dumps(auth_data)
+    html_content = f"""
+    <html>
+    <head><title>授權完成</title></head>
+    <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8fafc; margin: 0;">
+        <div style="text-align: center; padding: 2rem; background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+            <h1 style="color: #0f172a; margin: 0 0 0.5rem 0; font-size: 1.5rem;">授權完成</h1>
+            <p style="color: #64748b; margin: 0;">正在關閉視窗並更新狀態...</p>
+        </div>
+        <script>
+            (function() {{
+                const data = {js_payload};
+                if (window.opener) {{
+                    window.opener.postMessage({{ type: 'STRAVA_AUTH_SUCCESS', ...data }}, '*');
+                    setTimeout(() => window.close(), 1000);
+                }} else {{
+                    localStorage.setItem('strava_athlete_data_temp', JSON.stringify(data));
+                    setTimeout(() => window.close(), 2000);
+                }}
+            }})();
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
     # Mode 1: Direct from Strava (Raw Code)
     if code:

@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import CaptainWarRoom from './CaptainWarRoom';
 
 const TeamDashboard: React.FC = () => {
-    const { athlete } = useAuth();
+    const { athlete, isAdmin } = useAuth();
     const [loading, setLoading] = useState(true);
     const [teamData, setTeamData] = useState<any>(null);
     const [members, setMembers] = useState<any[]>([]);
@@ -29,15 +29,20 @@ const TeamDashboard: React.FC = () => {
         }
     }, [athlete]);
 
-    // Auto-switch to War Room for Paid Team Managers
+    // Check permissions
+    const currentUser = members.find(m => m.strava_id === athlete?.id);
+    const memberType = currentUser?.member_type || '';
+    const canSeeWarRoom = isAdmin ||
+        memberType.includes('付費車隊管理員') ||
+        memberType.includes('隊長') ||
+        memberType.includes('管理員');
+
+    // Auto-switch to War Room for Privileged Users
     useEffect(() => {
-        if (members.length > 0 && athlete?.id) {
-            const currentUser = members.find(m => m.strava_id === athlete.id);
-            if (currentUser?.member_type?.includes('付費車隊管理員')) {
-                setActiveTab('war_room');
-            }
+        if (members.length > 0 && athlete?.id && canSeeWarRoom) {
+            setActiveTab('war_room');
         }
-    }, [members, athlete?.id]);
+    }, [members, athlete?.id, canSeeWarRoom]);
 
     const fetchTeamData = async () => {
         try {
@@ -156,8 +161,8 @@ const TeamDashboard: React.FC = () => {
 
             {/* Tabs */}
             <div className="flex gap-4 mb-8">
-                {/* Captain's War Room Tab - Visible to Paid Team Managers */}
-                {members.find(m => m.strava_id === athlete?.id)?.member_type?.includes('付費車隊管理員') && (
+                {/* Captain's War Room Tab - Visible to Privileged Users */}
+                {canSeeWarRoom && (
                     <button
                         onClick={() => setActiveTab('war_room')}
                         className={`flex-1 py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all border-2 relative overflow-hidden group ${activeTab === 'war_room'
