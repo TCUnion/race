@@ -20,6 +20,7 @@ import {
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea
 } from 'recharts';
+import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
 
 interface PowerTrainingReportProps {
     activitySummaries: ActivitySummary[];
@@ -829,7 +830,12 @@ const AthleteReport: React.FC<{
                         <User className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-white">{summary.athlete_name}</h3>
+                        <h3 className="font-semibold text-white flex items-center gap-2">
+                            {summary.athlete_name}
+                            <span className="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-0.5 rounded">
+                                #{summary.athlete_id}
+                            </span>
+                        </h3>
                         <p className="text-xs text-slate-400">
                             FTP: {ftp > 0 ? `${ftp}W` : '未設定'} • 週 TSS: {Math.round(weeklyTSS)}
                         </p>
@@ -854,8 +860,13 @@ const AthleteReport: React.FC<{
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
 
-                        {/* 右側：最近活動列表 (佔 12/12) */}
+                        {/* 每日訓練圖表 */}
                         <div className="xl:col-span-12">
+                            <DailyTrainingChart activities={summary.recent_activities || []} ftp={ftp} />
+                        </div>
+
+                        {/* 右側：最近活動列表 (佔 12/12) */}
+                        <div className="xl:col-span-12 bg-slate-800/20 rounded-xl p-4 border border-slate-700/30">
                             <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4" />
                                 最近活動分析

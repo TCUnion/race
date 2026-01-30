@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    AlertCircle, User, Calendar, RefreshCw, CheckCircle, Edit2, Zap, Heart, Activity, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Clock, Flame, Target, BarChart3, ChevronLeft, ChevronRight, ZoomOut
+    AlertCircle, User, Calendar, RefreshCw, CheckCircle, Edit2, Zap, Heart, Activity, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Clock, Flame, Target, BarChart3, ChevronLeft, ChevronRight, ZoomOut, BarChart
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -22,6 +22,7 @@ import {
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea
 } from 'recharts';
+import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
 
 // 格式化時間 (秒 -> HH:MM:SS)
 const formatDuration = (seconds: number): string => {
@@ -470,6 +471,9 @@ const StravaZoneChart: React.FC<{ data: any[], type: 'power' | 'heartrate' }> = 
     );
 };
 
+
+
+
 // 訓練負荷卡片
 const TrainingLoadCard: React.FC<{
     load: TrainingLoadSummary;
@@ -880,8 +884,12 @@ const AthletePowerTrainingReport: React.FC = () => {
                 <div className="p-4 sm:p-6">
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
+                        {/* 上方：每日訓練趨勢圖 */}
+                        <div className="xl:col-span-12">
+                            <DailyTrainingChart activities={recentActivities} ftp={currentFTP} />
+                        </div>
 
-                        {/* 下方：最近活動列表 (修正為手風琴樣式) */}
+                        {/* 下方：最近活動紀錄 (修正為手風琴樣式) */}
                         <div className="xl:col-span-12">
                             <h3 className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
                                 <Activity className="w-4 h-4" />
