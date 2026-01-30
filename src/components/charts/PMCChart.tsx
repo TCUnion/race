@@ -34,11 +34,9 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
         sortedActivities.forEach(activity => {
             const dateStr = activity.start_date.split('T')[0];
 
-            // 計算 TSS
             let tss = 0;
-            if (activity.suffer_score) {
-                tss = activity.suffer_score;
-            } else if (ftp > 0 && activity.average_watts) {
+            // 必須確認是由功率計產生 (device_watts) 避免 Strava 估算功率干擾
+            if (ftp > 0 && activity.average_watts && activity.device_watts) {
                 const np = activity.average_watts * 1.05; // 簡易估算 NP
                 const intensity = np / ftp;
                 tss = (activity.moving_time * intensity * intensity * 100) / 3600;

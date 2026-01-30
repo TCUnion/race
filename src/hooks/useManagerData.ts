@@ -332,6 +332,17 @@ export function useManagerData(): UseManagerDataReturn {
         const summaries: ActivitySummary[] = [];
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // TSS 計算輔助函式
+        const calculateSimpleTSS = (watts: number, ftp: number, durationSeconds: number): number => {
+            if (!ftp || !watts) return 0;
+            // 優先使用 Weighted Average Power (NP 近似值)，若無則使用 Average Power
+            const if_factor = watts / ftp;
+            // TSS = (sec * NP * IF) / (FTP * 3600) * 100
+            return (durationSeconds * watts * if_factor) / (ftp * 3600) * 100;
+        };
 
         for (const athleteId of athleteIds) {
             // 載入活動紀錄
@@ -340,7 +351,7 @@ export function useManagerData(): UseManagerDataReturn {
                 .select('*')
                 .eq('athlete_id', athleteId)
                 .gte('start_date', oneYearAgo.toISOString())
-                .order('start_date', { ascending: false });
+                .order('start_date', { ascending: true }); // 改為升序以便計算 PMC
 
             // 載入車友資訊
             const { data: athlete } = await supabase
@@ -357,38 +368,85 @@ export function useManagerData(): UseManagerDataReturn {
 
             if (!activities || activities.length === 0) continue;
 
-            // 計算統計
-            // 計算統計
-            const totalDistance = activities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / 1000;
-            const totalElevation = activities.reduce((sum: number, a: any) => sum + (a.total_elevation_gain || 0), 0);
-            const totalTime = activities.reduce((sum: number, a: any) => sum + (a.moving_time || 0), 0) / 3600;
+            const ftp = athlete?.ftp || 200;
+            let currentCtl = 0;
+            let currentAtl = 0;
 
-            // 功率與心率統計
-            const activitiesWithPower = activities.filter((a: any) => a.average_watts > 0);
+            // 建立日期 Map 以便計算每日 TSS
+            const dailyTssMap = new Map<string, number>();
+
+            activities.forEach((a: any) => {
+                const dateKey = a.start_date.split('T')[0];
+                const watts = a.weighted_average_watts || a.average_watts || 0;
+
+                let tss = 0;
+
+                // 僅計算功率 TSS (必須有功率計數據)
+                if (watts > 0 && a.device_watts) {
+                    tss = calculateSimpleTSS(watts, ftp, a.moving_time);
+                }
+
+                const current = dailyTssMap.get(dateKey) || 0;
+                dailyTssMap.set(dateKey, current + tss);
+
+                // 將 TSS 寫回物件以便後續使用 (雖不存 DB)
+                a.tss = tss;
+            });
+
+            // 計算 PMC (模擬每一天的衰減與累積)
+            // 找出最早與最晚日期
+            const startDate = new Date(activities[0].start_date);
+            const endDate = new Date(); // 計算到今天
+
+            // 為了簡化計算，我們直接遍歷每一天 (或者僅遍歷有活動的日子並補償衰減? 遍歷每一天較準確)
+            let iteratorDate = new Date(startDate);
+
+            while (iteratorDate <= endDate) {
+                const dateKey = iteratorDate.toISOString().split('T')[0];
+                const dayTss = dailyTssMap.get(dateKey) || 0;
+
+                // Coggan Constants: CTL = 42d, ATL = 7d
+                // Today = Yesterday * (1 - 1/TC) + TSS * (1/TC)
+                currentCtl = currentCtl * (41 / 42) + dayTss * (1 / 42);
+                currentAtl = currentAtl * (6 / 7) + dayTss * (1 / 7);
+
+                iteratorDate.setDate(iteratorDate.getDate() + 1);
+            }
+
+            const currentTsb = currentCtl - currentAtl;
+
+            // 篩選近 7 天活動進行統計
+            const recentWeekActivities = activities.filter((a: any) =>
+                new Date(a.start_date) >= sevenDaysAgo
+            );
+
+            // 計算統計 (僅限近 7 天)
+            const totalDistance = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / 1000;
+            const totalElevation = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.total_elevation_gain || 0), 0);
+            const totalTime = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.moving_time || 0), 0) / 3600;
+            const totalTss = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.tss || 0), 0);
+
+            // 功率與心率統計 (平均值仍取近 7 天)
+            const activitiesWithPower = recentWeekActivities.filter((a: any) => a.average_watts > 0);
             const avgWatts = activitiesWithPower.length > 0
                 ? activitiesWithPower.reduce((sum: number, a: any) => sum + (a.average_watts || 0), 0) / activitiesWithPower.length
                 : undefined;
 
-            const maxWatts = activities.reduce((max: number, a: any) => Math.max(max, a.max_watts || 0), 0);
+            const maxWatts = recentWeekActivities.reduce((max: number, a: any) => Math.max(max, a.max_watts || 0), 0);
 
-            const activitiesWithHR = activities.filter((a: any) => a.average_heartrate > 0);
+            const activitiesWithHR = recentWeekActivities.filter((a: any) => a.average_heartrate > 0);
             const avgHeartRate = activitiesWithHR.length > 0
                 ? activitiesWithHR.reduce((sum: number, a: any) => sum + (a.average_heartrate || 0), 0) / activitiesWithHR.length
                 : undefined;
 
-            const maxHeartRate = activities.reduce((max: number, a: any) => Math.max(max, a.max_heartrate || 0), 0);
+            // 為了不影響既有列表顯示，我們將 activities 轉回降序給 recent_activities
+            const sortedActivitiesDesc = [...activities].sort((a, b) =>
+                new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+            );
 
-            const activitiesWithCadence = activities.filter((a: any) => a.average_cadence > 0);
-            const avgCadence = activitiesWithCadence.length > 0
-                ? activitiesWithCadence.reduce((sum: number, a: any) => sum + (a.average_cadence || 0), 0) / activitiesWithCadence.length
-                : undefined;
-
-            // 最近 100 筆活動 (配合前端最大分頁選項)
-            const recentActivities = activities.slice(0, 100);
-
-            // 車輛使用統計
+            // 車輛使用統計 (維持基於所有活動? 不，應與報表範圍一致 => 近 7 天)
             const bikeUsage: Record<string, { distance: number; count: number }> = {};
-            activities.forEach((a: any) => {
+            recentWeekActivities.forEach((a: any) => {
                 if (a.gear_id) {
                     if (!bikeUsage[a.gear_id]) {
                         bikeUsage[a.gear_id] = { distance: 0, count: 0 };
@@ -411,20 +469,25 @@ export function useManagerData(): UseManagerDataReturn {
             summaries.push({
                 athlete_id: athleteId,
                 athlete_name: `${athlete?.firstname || ''} ${athlete?.lastname || ''}`.trim() || `Athlete ${athleteId}`,
-                total_activities: activities.length,
+                total_activities: recentWeekActivities.length,
                 total_distance: totalDistance,
                 total_elevation: totalElevation,
                 total_time: totalTime,
                 bikes_used: bikesUsed,
-                most_active_region: undefined, // 需要額外的地理分析
+                most_active_region: undefined,
                 avg_watts: avgWatts,
                 max_watts: maxWatts || undefined,
                 avg_heartrate: avgHeartRate,
-
-                avg_cadence: avgCadence,
-                recent_activities: recentActivities,
-                ftp: athlete?.ftp || 200,
+                avg_cadence: undefined, // 暫不顯示
+                recent_activities: sortedActivitiesDesc.slice(0, 100), // 列表仍顯示最近活動
+                ftp: ftp,
                 max_heartrate: athlete?.max_heartrate,
+                // PMC Data
+                total_tss: Math.round(totalTss),
+                ctl: Math.round(currentCtl),
+                atl: Math.round(currentAtl),
+                tsb: Math.round(currentTsb),
+                full_history_activities: activities, // Store full history for PMC Chart
             });
         }
 

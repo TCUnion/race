@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { PMCChart } from '../../components/charts/PMCChart';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Store,
@@ -205,7 +206,7 @@ function ManagerDashboard() {
         deleteAuthorization,
     } = useManagerData();
 
-    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [activeTab, setActiveTab] = useState<TabType>('activity');
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddAthleteModal, setShowAddAthleteModal] = useState(false);
     const [addStep, setAddStep] = useState<'search' | 'confirm'>('search');
@@ -227,10 +228,10 @@ function ManagerDashboard() {
     // 解決不同角色進入不該進入的頁籤的問題
     useEffect(() => {
         if (managerRole?.role === 'shop_owner' && ['activity', 'statistics', 'power_analysis'].includes(activeTab)) {
-            setActiveTab('overview');
+            setActiveTab('members');
         }
         if ((managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && ['maintenance', 'statistics'].includes(activeTab)) {
-            setActiveTab('overview');
+            setActiveTab('activity');
         }
     }, [managerRole, activeTab]);
 
@@ -511,7 +512,7 @@ function ManagerDashboard() {
     };
 
     const tabs = [
-        { id: 'overview' as const, label: '總覽', icon: Store },
+        // { id: 'overview' as const, label: '總覽', icon: Store },
         { id: 'activity' as const, label: '活動報表', icon: Activity },
         { id: 'power_analysis' as const, label: '功率分析', icon: Zap },
         { id: 'members' as const, label: `${athleteLabel}管理`, icon: Users },
@@ -610,7 +611,6 @@ function ManagerDashboard() {
             // 檢查是否已存在
             const existing = authorizations.find(a => a.athlete_id === parseInt(newAthleteId));
             if (existing) {
-                // 若已存在且狀態為 pending 或 approved，則阻擋
                 // 若為 rejected 或 revoked，則允許通過 (後端會處理 update)
                 if (existing.status === 'pending') {
                     alert('已發送過申請，正在等待車友審核中。');
@@ -872,161 +872,7 @@ function ManagerDashboard() {
             {/* Main Content */}
             <div className="max-w-[98%] mx-auto px-4 py-6">
                 <AnimatePresence mode="wait">
-                    {/* 總覽模組 */}
-                    {activeTab === 'overview' && (
-                        <motion.div
-                            key="overview"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-6"
-                        >
-                            {/* 角色差異化統計卡片 */}
-                            {/* 角色差異化統計卡片 */}
-                            {managerRole?.role !== 'shop_owner' && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl p-4 shadow-lg`}>
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className={`w-10 h-10 ${theme.iconBg} rounded-xl flex items-center justify-center`}>
-                                                <Users className={`w-5 h-5 ${theme.primary}`} />
-                                            </div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">團隊成員</span>
-                                        </div>
-                                        <p className="text-3xl font-black text-white">{totalAthletes}</p>
-                                    </div>
-                                </div>
-                            )}
 
-                            {/* 待審核的申請 */}
-                            {authorizations.filter(a => a.status === 'pending').length > 0 && (
-                                <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl overflow-hidden`}>
-                                    <div className={`px-6 py-4 border-b ${theme.cardBorder} flex items-center justify-between`}>
-                                        <h2 className="font-bold text-white flex items-center gap-2">
-                                            <Clock className={`w-5 h-5 ${theme.secondary}`} />
-                                            待審核的申請
-                                        </h2>
-                                    </div>
-                                    <div className={`divide-y ${theme.cardBorder}`}>
-                                        {authorizations
-                                            .filter(a => a.status === 'pending')
-                                            .map(auth => {
-                                                const athlete = authorizedAthletes.find(at => at.id === auth.athlete_id);
-                                                return (
-                                                    <div key={auth.id} className={`px-6 py-4 flex items-center justify-between ${theme.iconBg}`}>
-                                                        <div className="flex items-center gap-4">
-                                                            {athlete?.profile ? (
-                                                                <img
-                                                                    src={athlete.profile}
-                                                                    alt={athlete.firstname}
-                                                                    className="w-10 h-10 rounded-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center">
-                                                                    <Users className="w-5 h-5 text-slate-400" />
-                                                                </div>
-                                                            )}
-                                                            <div>
-                                                                <p className="font-bold text-white">
-                                                                    {athlete ? `${athlete.firstname} ${athlete.lastname}` : `Athlete ${auth.athlete_id}`}
-                                                                </p>
-                                                                <p className={`text-xs ${theme.secondary}`}>正在等待車友確認...</p>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => removeAuthorization(auth.id)}
-                                                            className="text-xs font-bold text-red-400 hover:text-red-300 px-3 py-1 rounded-lg hover:bg-red-500/10 transition-colors"
-                                                        >
-                                                            取消申請
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 提醒區塊 & 近期動態 Grid */}
-                            <div className={`grid grid-cols-1 ${managerRole?.role === 'shop_owner' ? 'md:grid-cols-2' : ''} gap-6`}>
-                                {/* 提醒區塊 - 只對車店老闆顯示 */}
-                                {managerRole?.role === 'shop_owner' && (
-                                    <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl overflow-hidden`}>
-                                        <div className={`px-6 py-4 border-b ${theme.cardBorder} flex items-center justify-between`}>
-                                            <h2 className="font-bold text-white flex items-center gap-2">
-                                                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                                                保養提醒
-                                            </h2>
-                                            <button
-                                                onClick={() => setActiveTab('maintenance')}
-                                                className={`text-xs font-bold ${theme.primary} hover:${theme.secondary} flex items-center gap-1`}
-                                            >
-                                                全部 <ChevronRight className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className={`divide-y ${theme.cardBorder}`}>
-                                            {maintenanceSummaries
-                                                .filter(s => s.totalOverdue > 0 || s.totalDueSoon > 0)
-                                                .slice(0, 5)
-                                                .map(summary => (
-                                                    <div key={summary.athlete_id} className="px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setActiveTab('maintenance')}>
-                                                        <div>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="text-white font-bold text-sm">{summary.athlete_name}</span>
-                                                            </div>
-                                                            <div className="text-xs text-slate-500 flex gap-2">
-                                                                {summary.totalOverdue > 0 && <span className="text-red-400 font-medium">{summary.totalOverdue} 項過期</span>}
-                                                                {summary.totalDueSoon > 0 && <span className="text-amber-400 font-medium">{summary.totalDueSoon} 項即將到期</span>}
-                                                            </div>
-                                                        </div>
-                                                        <ChevronRight className="w-4 h-4 text-slate-600" />
-                                                    </div>
-                                                ))}
-                                            {maintenanceSummaries.filter(s => s.totalOverdue > 0 || s.totalDueSoon > 0).length === 0 && (
-                                                <div className="px-6 py-8 text-center text-slate-500 italic text-sm">
-                                                    目前暫無保養提醒項目
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 近期活動動態 - 全員顯示 */}
-                                <div className={`${theme.cardBg} ${theme.cardBorder} border rounded-2xl overflow-hidden`}>
-                                    <div className={`px-6 py-4 border-b ${theme.cardBorder} flex items-center justify-between`}>
-                                        <h2 className="font-bold text-white flex items-center gap-2">
-                                            <ArrowUpRight className={`w-5 h-5 ${theme.primary}`} />
-                                            近期動態
-                                        </h2>
-                                        <button
-                                            onClick={() => setActiveTab('activity')}
-                                            className={`text-xs font-bold ${theme.primary} hover:${theme.secondary} flex items-center gap-1`}
-                                        >
-                                            更多 <ChevronRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <div className={`divide-y ${theme.cardBorder}`}>
-                                        {activitySummaries
-                                            .filter(s => s.recent_activities && s.recent_activities.length > 0)
-                                            .slice(0, 5)
-                                            .map(summary => (
-                                                <div key={summary.athlete_id} className="px-6 py-4">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-white font-bold text-sm">{summary.athlete_name}</span>
-                                                        <span className="text-[10px] text-slate-500">{new Date(summary.recent_activities![0].start_date).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-400 truncate">{summary.recent_activities![0].name}</p>
-                                                </div>
-                                            ))}
-                                        {activitySummaries.length === 0 && (
-                                            <div className="px-6 py-8 text-center text-slate-500 italic text-sm">
-                                                尚無近期活動動態
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )
-                    }
 
                     {
                         activeTab === 'members' && (
@@ -1652,12 +1498,12 @@ function ManagerDashboard() {
                                                         <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">時數</th>
                                                         {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
                                                             <>
-                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Power (Avg/Max)</th>
-                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">均轉</th>
-                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">HR (Avg/Max)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSS (本週)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">CTL (體能)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">ATL (疲勞)</th>
                                                             </>
                                                         )}
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">常用車輛</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSB (狀態)</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-700/50">
@@ -1680,182 +1526,177 @@ function ManagerDashboard() {
                                                                     {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
                                                                         <>
                                                                             <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                                {summary.avg_watts ? (
-                                                                                    <div className="flex flex-col items-end">
-                                                                                        <span className="text-white font-bold flex items-center gap-1">
-                                                                                            <Zap className="w-3 h-3 text-yellow-500" />
-                                                                                            {Math.round(summary.avg_watts)}
-                                                                                        </span>
-                                                                                        <span className="text-xs text-slate-500">{summary.max_watts || '-'} max</span>
-                                                                                    </div>
-                                                                                ) : '-'}
+                                                                                <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                    <Zap className="w-3 h-3 text-yellow-500" />
+                                                                                    {Math.round(summary.total_tss ?? 0)}
+                                                                                </span>
                                                                             </td>
                                                                             <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                                {summary.avg_cadence ? (
-                                                                                    <span className="text-white font-bold flex items-center gap-1 justify-end">
-                                                                                        <RefreshCw className="w-3 h-3 text-emerald-500" />
-                                                                                        {Math.round(summary.avg_cadence)}
-                                                                                    </span>
-                                                                                ) : '-'}
+                                                                                <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                    <Activity className="w-3 h-3 text-blue-500" />
+                                                                                    {Math.round(summary.ctl ?? 0)}
+                                                                                </span>
                                                                             </td>
                                                                             <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                                {summary.avg_heartrate ? (
-                                                                                    <div className="flex flex-col items-end">
-                                                                                        <span className="text-white font-bold flex items-center gap-1">
-                                                                                            <Heart className="w-3 h-3 text-red-500" />
-                                                                                            {Math.round(summary.avg_heartrate)}
-                                                                                        </span>
-                                                                                        <span className="text-xs text-slate-500">{summary.max_heartrate || '-'} max</span>
-                                                                                    </div>
-                                                                                ) : '-'}
+                                                                                <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                    <div className="w-2 h-2 rounded-full bg-pink-500" />
+                                                                                    {Math.round(summary.atl ?? 0)}
+                                                                                </span>
                                                                             </td>
-                                                                            {/* 隱藏教練不可見的統計卡片邏輯結束 */}
                                                                         </>
                                                                     )}
 
                                                                     <td className="px-6 py-4 text-right">
-                                                                        {summary.bikes_used.length > 0 ? (
-                                                                            <span className="text-xs text-slate-400">
-                                                                                {summary.bikes_used[0].bike_name}
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="text-xs text-slate-500">-</span>
-                                                                        )}
+                                                                        <span className={`font-bold font-mono ${(summary.tsb ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                            {Math.round(summary.tsb ?? 0)}
+                                                                        </span>
                                                                     </td>
                                                                 </tr>
                                                                 {expandedActivityRows.has(summary.athlete_id) && summary.recent_activities && (
                                                                     <tr>
                                                                         <td colSpan={10} className="px-0 py-0 bg-slate-900/50">
-                                                                            <div className="p-4">
-                                                                                {/* 內層活動分頁控制 */}
-                                                                                <div className="flex items-center justify-between mb-2 pl-2 pr-2">
-                                                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">近期活動記錄</p>
+                                                                            <div className="p-4 space-y-6">
+                                                                                {/* PMC Chart Section */}
+                                                                                {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.full_history_activities && (
+                                                                                    <div>
+                                                                                        <PMCChart
+                                                                                            activities={summary.full_history_activities}
+                                                                                            ftp={summary.ftp || 200}
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
 
-                                                                                    {/* 只有當活動數量超過每頁顯示筆數時才顯示分頁控制 */}
-                                                                                    {summary.recent_activities.length > activityRowsPerPage && (
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span className="text-xs text-slate-500 mr-2">
-                                                                                                {activitySubPages[summary.athlete_id] || 1} / {Math.ceil(summary.recent_activities.length / activityRowsPerPage)} (共 {summary.recent_activities.length} 筆)
-                                                                                            </span>
-                                                                                            <button
-                                                                                                onClick={(e) => {
-                                                                                                    e.stopPropagation();
-                                                                                                    setActivitySubPages(prev => ({
-                                                                                                        ...prev,
-                                                                                                        [summary.athlete_id]: Math.max(1, (prev[summary.athlete_id] || 1) - 1)
-                                                                                                    }));
-                                                                                                }}
-                                                                                                disabled={(activitySubPages[summary.athlete_id] || 1) === 1}
-                                                                                                className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                                                                            >
-                                                                                                <ChevronLeft className="w-3 h-3" />
-                                                                                            </button>
-                                                                                            <button
-                                                                                                onClick={(e) => {
-                                                                                                    e.stopPropagation();
-                                                                                                    setActivitySubPages(prev => ({
-                                                                                                        ...prev,
-                                                                                                        [summary.athlete_id]: Math.min(
-                                                                                                            Math.ceil(summary.recent_activities.length / activityRowsPerPage),
-                                                                                                            (prev[summary.athlete_id] || 1) + 1
-                                                                                                        )
-                                                                                                    }));
-                                                                                                }}
-                                                                                                disabled={(activitySubPages[summary.athlete_id] || 1) >= Math.ceil(summary.recent_activities.length / activityRowsPerPage)}
-                                                                                                className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                                                                            >
-                                                                                                <ChevronRight className="w-3 h-3" />
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    )}
+                                                                                {/* Recent Activities List */}
+                                                                                <div>
+                                                                                    <div className="flex items-center justify-between mb-2 pl-2 pr-2">
+                                                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">近期活動記錄</p>
+
+                                                                                        {/* 只有當活動數量超過每頁顯示筆數時才顯示分頁控制 */}
+                                                                                        {summary.recent_activities.length > activityRowsPerPage && (
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="text-xs text-slate-500 mr-2">
+                                                                                                    {activitySubPages[summary.athlete_id] || 1} / {Math.ceil(summary.recent_activities.length / activityRowsPerPage)} (共 {summary.recent_activities.length} 筆)
+                                                                                                </span>
+                                                                                                <button
+                                                                                                    onClick={(e) => {
+                                                                                                        e.stopPropagation();
+                                                                                                        setActivitySubPages(prev => ({
+                                                                                                            ...prev,
+                                                                                                            [summary.athlete_id]: Math.max(1, (prev[summary.athlete_id] || 1) - 1)
+                                                                                                        }));
+                                                                                                    }}
+                                                                                                    disabled={(activitySubPages[summary.athlete_id] || 1) === 1}
+                                                                                                    className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                >
+                                                                                                    <ChevronLeft className="w-3 h-3" />
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    onClick={(e) => {
+                                                                                                        e.stopPropagation();
+                                                                                                        setActivitySubPages(prev => ({
+                                                                                                            ...prev,
+                                                                                                            [summary.athlete_id]: Math.min(
+                                                                                                                Math.ceil(summary.recent_activities.length / activityRowsPerPage),
+                                                                                                                (prev[summary.athlete_id] || 1) + 1
+                                                                                                            )
+                                                                                                        }));
+                                                                                                    }}
+                                                                                                    disabled={(activitySubPages[summary.athlete_id] || 1) >= Math.ceil(summary.recent_activities.length / activityRowsPerPage)}
+                                                                                                    className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                >
+                                                                                                    <ChevronRight className="w-3 h-3" />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    <table className="w-full text-sm">
+                                                                                        <thead>
+                                                                                            <tr className="border-b border-slate-700 text-slate-400">
+                                                                                                <th className="px-4 py-2 text-left w-24">日期</th>
+                                                                                                <th className="px-4 py-2 text-left">名稱</th>
+                                                                                                <th className="px-4 py-2 text-left w-20">種類</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">距離 (km)</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">移動時間</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">總時間</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">均瓦</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">最大瓦</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">均心</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">最大心</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">均轉</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">最高速</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">溫度</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
+                                                                                                <th className="px-4 py-2 text-right w-20">卡路里</th>
+                                                                                                <th className="px-4 py-2 text-right w-32">使用設備</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody className="divide-y divide-slate-800">
+                                                                                            {summary.recent_activities
+                                                                                                .slice(
+                                                                                                    ((activitySubPages[summary.athlete_id] || 1) - 1) * activityRowsPerPage,
+                                                                                                    (activitySubPages[summary.athlete_id] || 1) * activityRowsPerPage
+                                                                                                )
+                                                                                                .map(activity => {
+                                                                                                    const bikeName = summary.bikes_used.find(b => b.bike_id === activity.gear_id)?.bike_name || '-';
+                                                                                                    const formatDuration = (seconds: number) => {
+                                                                                                        if (!seconds) return '-';
+                                                                                                        const h = Math.floor(seconds / 3600);
+                                                                                                        const m = Math.floor((seconds % 3600) / 60);
+                                                                                                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                                                                                    };
+                                                                                                    // m/s to km/h: value * 3.6
+                                                                                                    const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
+
+                                                                                                    const calories = activity.calories || '-';
+                                                                                                    const type = activity.sport_type || (activity as any).type || '';
+
+                                                                                                    return (
+                                                                                                        <tr key={activity.id} className="hover:bg-slate-800/50">
+                                                                                                            <td className="px-4 py-2 text-slate-300">
+                                                                                                                {new Date(activity.start_date).toLocaleDateString()}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
+                                                                                                                <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
+                                                                                                                    {activity.name}
+                                                                                                                </a>
+                                                                                                            </td>
+                                                                                                            <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
+                                                                                                                {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-amber-400 font-mono">
+                                                                                                                {activity.average_watts ? Math.round(activity.average_watts) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-amber-500 font-mono">
+                                                                                                                {activity.max_watts ? Math.round(activity.max_watts) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-red-400 font-mono">
+                                                                                                                {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-red-500 font-mono">
+                                                                                                                {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-emerald-400 font-mono">
+                                                                                                                {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
+                                                                                                                {bikeName}
+                                                                                                            </td>
+                                                                                                        </tr>
+                                                                                                    );
+                                                                                                })}
+                                                                                        </tbody>
+                                                                                    </table>
                                                                                 </div>
-
-                                                                                <table className="w-full text-sm">
-                                                                                    <thead>
-                                                                                        <tr className="border-b border-slate-700 text-slate-400">
-                                                                                            <th className="px-4 py-2 text-left w-24">日期</th>
-                                                                                            <th className="px-4 py-2 text-left">名稱</th>
-                                                                                            <th className="px-4 py-2 text-left w-20">種類</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">距離 (km)</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">移動時間</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">總時間</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">均瓦</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">最大瓦</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">均心</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">最大心</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">均轉</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">最高速</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">溫度</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">卡路里</th>
-                                                                                            <th className="px-4 py-2 text-right w-32">使用設備</th>
-                                                                                        </tr>
-                                                                                    </thead>
-                                                                                    <tbody className="divide-y divide-slate-800">
-                                                                                        {summary.recent_activities
-                                                                                            .slice(
-                                                                                                ((activitySubPages[summary.athlete_id] || 1) - 1) * activityRowsPerPage,
-                                                                                                (activitySubPages[summary.athlete_id] || 1) * activityRowsPerPage
-                                                                                            )
-                                                                                            .map(activity => {
-                                                                                                const bikeName = summary.bikes_used.find(b => b.bike_id === activity.gear_id)?.bike_name || '-';
-                                                                                                const formatDuration = (seconds: number) => {
-                                                                                                    if (!seconds) return '-';
-                                                                                                    const h = Math.floor(seconds / 3600);
-                                                                                                    const m = Math.floor((seconds % 3600) / 60);
-                                                                                                    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                                                                                                };
-                                                                                                // m/s to km/h: value * 3.6
-                                                                                                const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
-
-                                                                                                const calories = activity.calories || '-';
-                                                                                                const type = activity.sport_type || (activity as any).type || '';
-
-                                                                                                return (
-                                                                                                    <tr key={activity.id} className="hover:bg-slate-800/50">
-                                                                                                        <td className="px-4 py-2 text-slate-300">
-                                                                                                            {new Date(activity.start_date).toLocaleDateString()}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
-                                                                                                            <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
-                                                                                                                {activity.name}
-                                                                                                            </a>
-                                                                                                        </td>
-                                                                                                        <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
-                                                                                                            {ACTIVITY_TYPE_NAMES[type] || type}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-amber-400 font-mono">
-                                                                                                            {activity.average_watts ? Math.round(activity.average_watts) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-amber-500 font-mono">
-                                                                                                            {activity.max_watts ? Math.round(activity.max_watts) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-red-400 font-mono">
-                                                                                                            {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-red-500 font-mono">
-                                                                                                            {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-emerald-400 font-mono">
-                                                                                                            {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
-                                                                                                            {bikeName}
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                );
-                                                                                            })}
-                                                                                    </tbody>
-                                                                                </table>
                                                                             </div>
                                                                         </td>
                                                                     </tr>

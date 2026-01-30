@@ -60,6 +60,7 @@ export interface StravaActivity {
   average_watts?: number;
   max_watts?: number;
   weighted_average_watts?: number;
+  device_watts?: boolean;
   average_heartrate?: number;
   max_heartrate?: number;
   has_heartrate?: boolean;
@@ -332,6 +333,12 @@ export interface ActivitySummary {
   max_heartrate?: number;
   avg_cadence?: number;
   recent_activities?: StravaActivity[];
+  full_history_activities?: StravaActivity[];
+  // PMC Data
+  total_tss?: number;
+  ctl?: number;
+  atl?: number;
+  tsb?: number;
 }
 
 // 保養項目統計
