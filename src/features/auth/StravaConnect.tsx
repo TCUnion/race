@@ -18,12 +18,14 @@ interface StravaAthlete {
 }
 
 const CONFIG = {
+    // 統一使用 service.criterium.tw 域名，確保 Webhook 處理邏輯一致
+    // NOTE: n8n 端的 Strava Auth Webhook 必須包含 scope: activity:read,activity:read_all
     stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
     storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
     pollingTimeout: 120000,
     allowedOrigins: [
-        'https://n8n.criterium.tw',
+        'https://service.criterium.tw',
         'https://criterium.tw',
         'https://strava.criterium.tw',
         'https://race.criterium.tw',
@@ -35,7 +37,6 @@ const CONFIG = {
         'http://127.0.0.1:3001',
         'http://localhost:5173',
         API_BASE_URL,
-        'https://service.criterium.tw' // Explicity allow service domain
     ]
 };
 

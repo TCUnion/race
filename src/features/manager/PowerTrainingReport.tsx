@@ -382,10 +382,10 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                         )}
 
                         {refAreaLeft !== null && refAreaRight !== null && (
-                            // @ts-ignore
                             <ReferenceArea
                                 x1={refAreaLeft}
                                 x2={refAreaRight}
+                                // @ts-ignore - Recharts type definition issue with fill in some versions
                                 fill="#000000"
                                 fillOpacity={0.5}
                             />
@@ -701,7 +701,7 @@ const AthleteReport: React.FC<{
             const payload = {
                 aspect_type: "create",
                 event_time: Math.floor(Date.now() / 1000),
-                object_id: activity.id,
+                object_id: Number(activity.id), // 確保為數字
                 object_type: "activity",
                 owner_id: summary.athlete_id,
                 subscription_id: 0, // 手動觸發

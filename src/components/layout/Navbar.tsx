@@ -39,7 +39,6 @@ const CONFIG = {
   pollingInterval: 1000,
   pollingTimeout: 120000,
   allowedOrigins: [
-    'https://n8n.criterium.tw',
     'https://service.criterium.tw',
     'https://criterium.tw',
     'http://localhost:3000',

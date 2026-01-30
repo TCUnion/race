@@ -531,7 +531,8 @@ function ManagerDashboard() {
         // 功率分析只顯示給功率教練與車隊教練
         if (tab.id === 'power_analysis') {
             if (!managerRole) return false;
-            return managerRole.role === 'power_coach' || managerRole.role === 'team_coach';
+            const role = managerRole.role as string;
+            return role === 'power_coach' || role === 'team_coach';
         }
         return true;
     });

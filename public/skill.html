@@ -584,7 +584,7 @@
             '計時賽TT': null
         };
 
-        const WEBHOOK_URL = 'https://n8n.criterium.tw/webhook/member-ability';
+        const WEBHOOK_URL = 'https://service.criterium.tw/webhook/member-ability';
 
         const abilityIdMap = {
             '公路賽': 'roadGrade',
@@ -895,6 +895,23 @@
         document.getElementById('memberIdCard').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 queryMember();
+            }
+        });
+
+        // ✅ 新增：URL 參數自動填入與登入
+        window.addEventListener('load', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tcuId = urlParams.get('tcu_id');
+
+            if (tcuId) {
+                console.log('TCU ID detected in URL:', tcuId);
+                const idInput = document.getElementById('memberIdCard');
+                idInput.value = tcuId;
+
+                // 延遲一小段時間確保頁面已渲染完全再啟動查詢
+                setTimeout(() => {
+                    queryMember();
+                }, 300);
             }
         });
     </script>

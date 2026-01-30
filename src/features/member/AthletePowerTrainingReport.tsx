@@ -748,9 +748,9 @@ const AthletePowerTrainingReport: React.FC = () => {
             const payload = {
                 aspect_type: "create",
                 event_time: Math.floor(Date.now() / 1000),
-                object_id: activity.id,
+                object_id: Number(activity.id), // 確保為數字
                 object_type: "activity",
-                owner_id: athlete?.id, // 使用當前使用者 ID
+                owner_id: athlete?.id,
                 subscription_id: 0,
                 updates: {}
             };
@@ -767,7 +767,7 @@ const AthletePowerTrainingReport: React.FC = () => {
             if (response.ok) {
                 // 開始輪詢檢查資料是否已入庫
                 let retries = 0;
-                const maxRetries = 15; // 最多 30 秒
+                const maxRetries = 20; // 延長至 40 秒，給 n8n 更多處理時間
 
                 const checkData = async () => {
                     const { data: streamData } = await supabase
