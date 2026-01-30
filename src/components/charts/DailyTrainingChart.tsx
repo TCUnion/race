@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import {
     BarChart,
@@ -40,7 +39,9 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
 
                 // 計算 TSS (若無 FTP 則無法計算)
                 let tss = 0;
-                if (ftp > 0 && activity.average_watts) {
+                if (activity.suffer_score) {
+                    tss = activity.suffer_score;
+                } else if (ftp > 0 && activity.average_watts) {
                     const np = activity.average_watts * 1.05; // 簡易估算 NP
                     const intensity = np / ftp;
                     tss = (activity.moving_time * intensity * intensity * 100) / 3600;
@@ -69,8 +70,9 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
 
     // 計算平均 TSS (用於參考線)
     const avgTSS = useMemo(() => {
+        if (data.length === 0) return 0;
         const totalTSS = data.reduce((sum, d) => sum + d.tss, 0);
-        return Math.round(totalTSS / 30); // 30天平均 (含休息日)
+        return Math.round(totalTSS / data.length);
     }, [data]);
 
     return (

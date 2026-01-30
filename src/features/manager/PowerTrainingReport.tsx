@@ -21,6 +21,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea
 } from 'recharts';
 import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
+import { PMCChart } from '../../components/charts/PMCChart';
 
 interface PowerTrainingReportProps {
     activitySummaries: ActivitySummary[];
@@ -587,13 +588,13 @@ const AthleteReport: React.FC<{
     const [selectedActivity, setSelectedActivity] = useState<StravaActivity | null>(null);
     const [activityAnalysis, setActivityAnalysis] = useState<ActivityPowerAnalysis | null>(null);
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+    const [chartActivities, setChartActivities] = useState<StravaActivity[]>([]); // For PMC Chart
 
     // 已存在的 Streams ID 列表
     const [availableStreams, setAvailableStreams] = useState<Set<number>>(new Set());
 
     const { getActivityStreams, analyzeActivityPower, checkStreamsAvailability } = usePowerAnalysis();
 
-    // 檢查哪些活動已有數據流
     useEffect(() => {
         const checkStreams = async () => {
             if (!summary.recent_activities?.length) return;
@@ -603,6 +604,28 @@ const AthleteReport: React.FC<{
         };
         checkStreams();
     }, [summary.recent_activities, checkStreamsAvailability]);
+
+    // [New] Fetch chart data (180 days) when expanded
+    useEffect(() => {
+        if (!expanded || chartActivities.length > 0) return;
+
+        const fetchChartData = async () => {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setDate(sixMonthsAgo.getDate() - 180);
+
+            const { data } = await supabase
+                .from('strava_activities')
+                .select('id, start_date, moving_time, average_watts, suffer_score, sport_type, name, distance, average_heartrate, has_heartrate')
+                .eq('athlete_id', summary.athlete_id)
+                .gte('start_date', sixMonthsAgo.toISOString())
+                .order('start_date', { ascending: true });
+
+            if (data) {
+                setChartActivities(data);
+            }
+        };
+        fetchChartData();
+    }, [expanded, summary.athlete_id, chartActivities.length]);
 
     // 計算週 TSS（簡化版）
     const weeklyTSS = useMemo(() => {
@@ -861,8 +884,10 @@ const AthleteReport: React.FC<{
 
 
                         {/* 每日訓練圖表 */}
-                        <div className="xl:col-span-12">
-                            <DailyTrainingChart activities={summary.recent_activities || []} ftp={ftp} />
+                        {/* 每日訓練圖表 & PMC */}
+                        <div className="xl:col-span-12 space-y-6">
+                            <DailyTrainingChart activities={chartActivities.length > 0 ? chartActivities : (summary.recent_activities || [])} ftp={ftp} />
+                            <PMCChart activities={chartActivities.length > 0 ? chartActivities : (summary.recent_activities || [])} ftp={ftp} />
                         </div>
 
                         {/* 右側：最近活動列表 (佔 12/12) */}

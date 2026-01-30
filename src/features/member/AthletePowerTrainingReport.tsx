@@ -23,6 +23,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea
 } from 'recharts';
 import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
+import { PMCChart } from '../../components/charts/PMCChart';
 
 // 格式化時間 (秒 -> HH:MM:SS)
 const formatDuration = (seconds: number): string => {
@@ -581,6 +582,7 @@ const TrainingLoadCard: React.FC<{
 const AthletePowerTrainingReport: React.FC = () => {
     const { athlete } = useAuth();
     const [recentActivities, setRecentActivities] = useState<StravaActivity[]>([]);
+    const [chartActivities, setChartActivities] = useState<StravaActivity[]>([]); // For charts (non-paginated)
     const [loadingActivities, setLoadingActivities] = useState(true);
     const [currentFTP, setCurrentFTP] = useState(0);
     const [currentMaxHR, setCurrentMaxHR] = useState(190);
@@ -656,6 +658,27 @@ const AthletePowerTrainingReport: React.FC = () => {
 
         fetchData();
     }, [athlete?.id, checkStreamsAvailability, currentPage, itemsPerPage]);
+
+    // 1.5 取得圖表用數據 (過去 180 天，不分頁)
+    useEffect(() => {
+        if (!athlete?.id) return;
+        const fetchChartData = async () => {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setDate(sixMonthsAgo.getDate() - 180);
+
+            const { data } = await supabase
+                .from('strava_activities')
+                .select('id, start_date, moving_time, average_watts, suffer_score, sport_type, name, distance, average_heartrate, has_heartrate')
+                .eq('athlete_id', athlete.id)
+                .gte('start_date', sixMonthsAgo.toISOString())
+                .order('start_date', { ascending: true }); // Charts usually want generic chronological order or we sort inside
+
+            if (data) {
+                setChartActivities(data);
+            }
+        };
+        fetchChartData();
+    }, [athlete?.id]);
 
     // [New] 監聽選定活動，當數據流變為可用時自動加載分析 (反應式設計)
     useEffect(() => {
@@ -884,9 +907,10 @@ const AthletePowerTrainingReport: React.FC = () => {
                 <div className="p-4 sm:p-6">
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
-                        {/* 上方：每日訓練趨勢圖 */}
-                        <div className="xl:col-span-12">
-                            <DailyTrainingChart activities={recentActivities} ftp={currentFTP} />
+                        {/* 上方：每日訓練趨勢圖 & PMC */}
+                        <div className="xl:col-span-12 space-y-6">
+                            <DailyTrainingChart activities={chartActivities.length > 0 ? chartActivities : recentActivities} ftp={currentFTP} />
+                            <PMCChart activities={chartActivities.length > 0 ? chartActivities : recentActivities} ftp={currentFTP} />
                         </div>
 
                         {/* 下方：最近活動紀錄 (修正為手風琴樣式) */}
