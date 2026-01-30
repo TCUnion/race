@@ -20,14 +20,14 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
         const days = 30;
 
         // 建立過去 30 天的日期 mapping
-        const dateMap = new Map<string, { tss: number; duration: number; distance: number; dateStr: string; activities: number; totalHrTime: number; weightedHrSum: number; avgHr: number; activityNames: string[] }>();
+        const dateMap = new Map<string, { tss: number; duration: number; distance: number; dateStr: string; activities: number; totalHrTime: number; weightedHrSum: number; avgHr: number; activityNames: string[]; dayOfWeek: number }>();
 
         for (let i = days - 1; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(d.getDate() - i);
             const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
             const displayDate = `${d.getMonth() + 1}/${d.getDate()}`;
-            dateMap.set(dateStr, { tss: 0, duration: 0, distance: 0, dateStr: displayDate, activities: 0, totalHrTime: 0, weightedHrSum: 0, avgHr: 0, activityNames: [] });
+            dateMap.set(dateStr, { tss: 0, duration: 0, distance: 0, dateStr: displayDate, activities: 0, totalHrTime: 0, weightedHrSum: 0, avgHr: 0, activityNames: [], dayOfWeek: d.getDay() });
         }
 
         // 聚合數據
@@ -165,9 +165,13 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
                         />
                         <ReferenceLine yAxisId="left" y={avgTSS} stroke="#94a3b8" strokeDasharray="3 3" opacity={0.5} />
                         <Bar yAxisId="left" dataKey="tss" name="tss" radius={[2, 2, 0, 0]} maxBarSize={40}>
-                            {data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.tss > 0 ? '#3b82f6' : 'transparent'} />
-                            ))}
+                            {data.map((entry, index) => {
+                                let color = '#3b82f6'; // Default Blue
+                                if (entry.dayOfWeek === 6) color = '#22c55e'; // Saturday Green
+                                if (entry.dayOfWeek === 0) color = '#ec4899'; // Sunday Pink
+
+                                return <Cell key={`cell-${index}`} fill={entry.tss > 0 ? color : 'transparent'} />;
+                            })}
                         </Bar>
                         <Line
                             yAxisId="right"
