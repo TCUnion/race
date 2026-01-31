@@ -47,17 +47,33 @@ const normalizeSegment = (raw: any): any => {
     if (!data) return null;
 
     // 🚀 多重備援 Key 檢查 (Strava API 有時會變動，或經過 n8n 轉換)
-    const elevation = data.total_elevation_gain || data.elevation_gain || (data.elevationDetail?.total_gain);
+    const elevation = data.total_elevation_gain || data.elevation_gain || (data.elevationDetail?.total_gain) || 0;
     const id = data.id || data.strava_id || data.segment_id;
 
     return {
         id: id,
-        qom: data.QOM || data.qom || data.qom_time,
+        strava_id: data.strava_id || id, // 確保 strava_id 存在
+        name: data.name || "未命名路段",
+        distance: data.distance || 0,
+        average_grade: data.average_grade || 0,
+        maximum_grade: data.maximum_grade || 0,
+        elevation_gain: elevation,
+        elevation_high: data.elevation_high || 0,
+        elevation_low: data.elevation_low || 0,
+        total_elevation_gain: elevation,
+        activity_type: data.activity_type || "Ride",
+        climb_category: data.climb_category || 0,
+        city: data.city || "",
+        state: data.state || "",
+        country: data.country || "",
+        star_count: data.star_count || 0,
+        athlete_count: data.athlete_count || 0,
+        kom: data.kom || data.xoms?.kom || "",
+        qom: data.QOM || data.qom || data.qom_time || data.xoms?.qom || "",
         pr_elapsed_time: data.pr_elapsed_time || data.athlete_segment_stats?.pr_elapsed_time,
         pr_date: data.pr_date || data.athlete_segment_stats?.pr_date,
         elevation_profile: data.elevation_profile,
-        polyline: findPolyline(data),
-        strava_id: data.strava_id || id // 確保 strava_id 存在
+        polyline: findPolyline(data)
     };
 };
 
