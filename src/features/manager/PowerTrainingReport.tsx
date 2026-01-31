@@ -615,7 +615,7 @@ const AthleteReport: React.FC<{
 
             const { data } = await supabase
                 .from('strava_activities')
-                .select('id, start_date, moving_time, average_watts, suffer_score, sport_type, name, distance, average_heartrate, has_heartrate')
+                .select('id, start_date, moving_time, average_watts, weighted_average_watts, device_watts, suffer_score, sport_type, name, distance, average_heartrate, has_heartrate, max_heartrate')
                 .eq('athlete_id', summary.athlete_id)
                 .gte('start_date', sixMonthsAgo.toISOString())
                 .order('start_date', { ascending: true });
@@ -633,13 +633,23 @@ const AthleteReport: React.FC<{
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        return summary.recent_activities
-            .filter(a => new Date(a.start_date) >= oneWeekAgo && (a.sport_type === 'Ride' || a.sport_type === 'VirtualRide') && a.average_watts)
+        return (summary.recent_activities || [])
+            .filter(a => {
+                const isRide = ['Ride', 'VirtualRide', 'MountainBikeRide', 'GravelRide', 'EBikeRide', 'Velomobile'].includes(a.sport_type);
+                return new Date(a.start_date) >= oneWeekAgo && isRide && a.average_watts;
+            })
             .reduce((sum, a) => {
-                // 簡化 TSS 估算：(時間 * IF^2 * 100) / 3600
-                const estimatedIF = ftp > 0 ? (a.average_watts || 0) / ftp : 0;
-                const estimatedTSS = (a.moving_time * Math.pow(estimatedIF, 2) * 100) / 3600;
-                return sum + estimatedTSS;
+                // 優先使用身心負荷 (Suffer Score)，次之使用功率估算
+                const sufferScore = a.suffer_score ? Number(a.suffer_score) : 0;
+                let activityTss = 0;
+                if (sufferScore > 0) {
+                    activityTss = sufferScore;
+                } else if (ftp > 0 && a.average_watts) {
+                    const np = Number(a.weighted_average_watts || (a.average_watts * 1.05) || 0);
+                    const estimatedIF = np / ftp;
+                    activityTss = (a.moving_time * np * estimatedIF) / (ftp * 3600) * 100;
+                }
+                return sum + activityTss;
             }, 0);
     }, [summary.recent_activities, ftp]);
 
@@ -941,15 +951,17 @@ const AthleteReport: React.FC<{
                                                 <div className="flex items-center gap-2 text-xs">
                                                     {/* 計算與顯示訓練負荷指標 */}
                                                     {(() => {
-                                                        const ftp = summary.ftp || 0;
-                                                        const np = activity.weighted_average_watts || 0;
-                                                        const ap = activity.average_watts || 0;
+                                                        const ftp = Number(summary.ftp || 0);
+                                                        const sufferScore = activity.suffer_score ? Number(activity.suffer_score) : 0;
+                                                        const np = Number(activity.weighted_average_watts || 0);
+                                                        const ap = Number(activity.average_watts || 0);
                                                         // Avoid division by zero
                                                         const intensity = ftp > 0 ? np / ftp : 0;
-                                                        const tss = ftp > 0 ? (activity.moving_time * np * intensity) / (ftp * 3600) * 100 : 0;
+                                                        const tss_from_power = ftp > 0 ? (activity.moving_time * np * intensity) / (ftp * 3600) * 100 : 0;
+                                                        const tss = sufferScore > 0 ? sufferScore : tss_from_power;
 
-                                                        // 若無功率數據，僅顯示時間
-                                                        if (ap === 0 && np === 0) return (
+                                                        // 若無功率與心率數據，僅顯示時間
+                                                        if (ap === 0 && np === 0 && sufferScore === 0) return (
                                                             <span className="text-slate-400">
                                                                 {formatDuration(activity.moving_time)}
                                                             </span>

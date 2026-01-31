@@ -15,7 +15,8 @@ import {
   Zap,
   Sparkles,
   Users2,
-  Store
+  Store,
+  LogOut
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import StravaLogo from '../ui/StravaLogo';
@@ -54,6 +55,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
   const { pendingAuthorizations } = useMemberAuthorizations();
@@ -74,6 +77,17 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // 點擊外部關閉下拉選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // 根據主題選擇 Logo
@@ -214,11 +228,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex flex-1 justify-end gap-x-4 lg:gap-x-6 xl:gap-x-8 items-center">
-          <nav className="flex items-center gap-x-3 lg:gap-x-5 xl:gap-x-8">
+        <div className="hidden lg:flex flex-1 justify-end gap-x-2 lg:gap-x-3 xl:gap-x-4 items-center min-w-0">
+          <nav className="flex items-center gap-x-1 lg:gap-x-2 xl:gap-x-3 min-w-0 flex-shrink overflow-hidden">
             <button
               onClick={() => handleNavigate(ViewType.LANDING)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.LANDING ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-1 lg:px-1.5 py-1 whitespace-nowrap ${currentView === ViewType.LANDING ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.explore')}
             </button>
@@ -245,7 +259,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             </button>
             <button
               onClick={() => handleNavigate(ViewType.MEMBER_BINDING)}
-              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-2 py-1 whitespace-nowrap ${currentView === ViewType.MEMBER_BINDING
+              className={`text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 px-1 lg:px-1.5 py-1 whitespace-nowrap ${currentView === ViewType.MEMBER_BINDING
                 ? (isBound === false ? 'text-yellow-400 border-b-2 border-yellow-400 pb-1' : 'text-tcu-blue border-b-2 border-tcu-blue pb-1')
                 : (isBound === false ? 'text-yellow-400/90 hover:text-yellow-400' : 'text-slate-400 hover:text-tcu-blue')
                 } ${isBound === false ? 'ring-2 ring-yellow-400 animate-glow-yellow' : ''} ${isBound === null ? 'opacity-50 grayscale pointer-events-none' : ''}`}
@@ -285,7 +299,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
           </nav>
 
-          <div className="flex items-center gap-4 pl-4 border-l border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 flex-shrink-0">
             <LanguageSwitcher />
             <ThemeToggle />
             {isLoading ? (
@@ -294,9 +308,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 <span className="text-[10px] font-black uppercase tracking-widest">{t('common.authorizing')}</span>
               </div>
             ) : athlete ? (
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800 group">
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+                {/* 用戶名 + 角色 */}
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider group-hover:text-tcu-blue transition-colors">
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider whitespace-nowrap">
                     {(() => {
                       const name = `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim();
                       return (name && !name.toLowerCase().includes('undefined')) ? name : 'Guest';
@@ -304,30 +319,52 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   </span>
                   <div className="flex items-center gap-1">
                     {isAdmin && <Shield className="w-2 h-2 text-red-500" />}
-                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
                       {isAdmin ? 'TCU ADMIN' : isBound ? 'TCU MEMBER' : 'Guest'}
                     </span>
                   </div>
                 </div>
-                <div className="relative">
-                  <img
-                    src={athlete.profile || "/placeholder-avatar.png"}
-                    alt="Athlete"
-                    className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 group-hover:border-tcu-blue transition-all cursor-pointer"
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  />
-                  {isBound && (
-                    <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-white dark:border-[#242424]">
-                      <UserCheck className="w-2 h-2 text-white" />
+                {/* 頭像 + 下拉選單 */}
+                <div className="relative" ref={profileDropdownRef}>
+                  <button
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="relative focus:outline-none"
+                  >
+                    <img
+                      src={athlete.profile || "/placeholder-avatar.png"}
+                      alt="Athlete"
+                      className={`w-8 h-8 rounded-full border-2 transition-all cursor-pointer ${isProfileDropdownOpen ? 'border-tcu-blue ring-2 ring-tcu-blue/30' : 'border-slate-200 dark:border-slate-800 hover:border-tcu-blue'}`}
+                    />
+                    {isBound && (
+                      <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-white dark:border-[#242424]">
+                        <UserCheck className="w-2 h-2 text-white" />
+                      </div>
+                    )}
+                  </button>
+                  {/* 下拉選單 */}
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                        <div className="text-sm font-bold text-slate-900 dark:text-white">
+                          {athlete.firstname} {athlete.lastname}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {isAdmin ? 'Administrator' : isBound ? 'TCU Member' : 'Guest'}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {t('nav.logout')}
+                      </button>
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={logout}
-                  className="text-[10px] font-black text-slate-500 hover:text-red-500 uppercase tracking-widest transition-colors"
-                >
-                  {t('nav.logout')}
-                </button>
               </div>
             ) : (
               <button

@@ -16,9 +16,9 @@ interface DailyTrainingChartProps {
 export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activities, ftp }) => {
     const data = useMemo(() => {
         const today = new Date();
-        const days = 30;
+        const days = 120;
 
-        // 建立過去 30 天的日期 mapping
+        // 建立過去 120 天的日期 mapping
         const dateMap = new Map<string, { tss: number; duration: number; distance: number; dateStr: string; activities: number; totalHrTime: number; weightedHrSum: number; avgHr: number; activityNames: string[]; dayOfWeek: number }>();
 
         for (let i = days - 1; i >= 0; i--) {
@@ -31,25 +31,30 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
 
         // 聚合數據
         activities.forEach(activity => {
-            if (activity.sport_type !== 'Ride' && activity.sport_type !== 'VirtualRide') return;
+            const isRide = ['Ride', 'VirtualRide', 'MountainBikeRide', 'GravelRide', 'EBikeRide', 'Velomobile'].includes(activity.sport_type);
+            if (!isRide) return;
 
             const dateStr = activity.start_date.split('T')[0];
             if (dateMap.has(dateStr)) {
                 const dayData = dateMap.get(dateStr)!;
 
                 // 計算 TSS (若無 FTP 則無法計算)
+                const sufferScore = activity.suffer_score ? Number(activity.suffer_score) : 0;
                 let tss = 0;
-                if (activity.suffer_score) {
-                    tss = activity.suffer_score;
-                } else if (ftp > 0 && activity.average_watts) {
-                    const np = activity.average_watts * 1.05; // 簡易估算 NP
-                    const intensity = np / ftp;
-                    tss = (activity.moving_time * intensity * intensity * 100) / 3600;
+                if (sufferScore > 0) {
+                    tss = sufferScore;
+                } else if (ftp > 0 && (activity.average_watts || (activity as any).weighted_average_watts)) {
+                    const np = Number((activity as any).weighted_average_watts || (activity.average_watts ? activity.average_watts * 1.05 : 0));
+                    if (np > 0) {
+                        const intensity = np / ftp;
+                        tss = (activity.moving_time * np * intensity) / (ftp * 3600) * 100;
+                    }
                 }
 
                 // 計算加權平均心率
-                if (activity.has_heartrate && activity.average_heartrate) {
-                    dayData.weightedHrSum += activity.average_heartrate * activity.moving_time;
+                const avgHr = activity.average_heartrate ? Number(activity.average_heartrate) : 0;
+                if (activity.has_heartrate && avgHr > 0) {
+                    dayData.weightedHrSum += avgHr * activity.moving_time;
                     dayData.totalHrTime += activity.moving_time;
                 }
 
@@ -80,7 +85,7 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-slate-400 flex items-center gap-2">
                     <BarChart className="w-4 h-4" />
-                    過去 30 天訓練量 (TSS) & 心率
+                    過去 120 天訓練量 (TSS) & 心率
                 </h3>
                 <div className="flex items-center gap-4 text-xs">
                     <span className="flex items-center gap-1.5 text-slate-500">
@@ -92,7 +97,7 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
                         心率
                     </span>
                     <span className="text-slate-500">
-                        30天日均 TSS: <span className="text-slate-300 font-mono">{avgTSS}</span>
+                        120天日均 TSS: <span className="text-slate-300 font-mono">{avgTSS}</span>
                     </span>
                 </div>
             </div>

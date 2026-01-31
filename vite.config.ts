@@ -48,6 +48,23 @@ export default defineConfig(({ mode }) => {
           manager: path.resolve(__dirname, 'manager.html'),
           admin: path.resolve(__dirname, 'admin.html'),
         },
+        output: {
+          // 手動分割 Chunk 策略 - 優化 Bundle Size
+          manualChunks: {
+            // 核心 React 庫
+            'vendor-react': ['react', 'react-dom'],
+            // UI 相關庫
+            'vendor-ui': ['framer-motion', 'lucide-react'],
+            // 圖表庫
+            'vendor-charts': ['recharts'],
+            // 地圖庫
+            'vendor-map': ['leaflet', 'react-leaflet'],
+            // 後端服務
+            'vendor-supabase': ['@supabase/supabase-js'],
+            // 國際化套件
+            'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend'],
+          }
+        }
       },
     },
     resolve: {

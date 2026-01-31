@@ -188,43 +188,47 @@ export function useManagerData(): UseManagerDataReturn {
         }
     }, []);
 
-    // 載入保養摘要
+    // 載入保養摘要 (優化版：批次讀取資料)
     const loadMaintenanceSummaries = useCallback(async (athleteIds: number[]) => {
         if (athleteIds.length === 0) return [];
 
         const summaries: AthleteMaintenanceSummary[] = [];
 
-        // 載入全域共用的資料
-        const { data: allTypes } = await supabase
-            .from('maintenance_types')
-            .select('*')
-            .order('sort_order');
+        // 優化：將時間範圍設定為 42 天 (CTL 週期)
+        const fortyTwoDaysAgo = new Date();
+        fortyTwoDaysAgo.setDate(fortyTwoDaysAgo.getDate() - 42);
 
-        if (!allTypes) return [];
+        const [
+            allTypesResult,
+            allBikesResult,
+            allRecordsResult,
+            allSettingsResult,
+            allActivitiesResult,
+            allAthletesResult
+        ] = await Promise.all([
+            supabase.from('maintenance_types').select('*').order('sort_order'),
+            supabase.from('bikes').select('*').in('athlete_id', athleteIds).eq('retired', false),
+            supabase.from('bike_maintenance').select('*').in('athlete_id', athleteIds).order('service_date', { ascending: false }),
+            supabase.from('bike_maintenance_settings').select('*').in('athlete_id', athleteIds),
+            supabase.from('strava_activities').select('id, athlete_id, gear_id, start_date, distance').in('athlete_id', athleteIds).gte('start_date', fortyTwoDaysAgo.toISOString()),
+            supabase.from('athletes').select('id, firstname, lastname, profile, ftp, max_heartrate').in('id', athleteIds)
+        ]);
 
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const allTypes = allTypesResult.data || [];
+        const allBikes = allBikesResult.data || [];
+        const allRecords = allRecordsResult.data || [];
+        const allSettings = allSettingsResult.data || [];
+        const allActivities = allActivitiesResult.data || [];
+        const allAthletes = allAthletesResult.data || [];
+
+        if (allTypes.length === 0) return [];
 
         for (const athleteId of athleteIds) {
-            // 載入該車友的所有相關資料
-            const [bikesResult, recordsResult, settingsResult, activitiesResult] = await Promise.all([
-                supabase.from('bikes').select('*').eq('athlete_id', athleteId).eq('retired', false),
-                supabase.from('bike_maintenance').select('*').eq('athlete_id', athleteId).order('service_date', { ascending: false }),
-                supabase.from('bike_maintenance_settings').select('*').eq('athlete_id', athleteId),
-                supabase.from('strava_activities').select('*').eq('athlete_id', athleteId).gte('start_date', oneYearAgo.toISOString())
-            ]);
-
-            const bikes = bikesResult.data || [];
-            const records = recordsResult.data || [];
-            const settings = settingsResult.data || [];
-            const activities = activitiesResult.data || [];
-
-            // 載入車友資訊
-            const { data: athlete } = await supabase
-                .from('athletes')
-                .select('firstname, lastname, profile, ftp, max_heartrate')
-                .eq('id', athleteId)
-                .maybeSingle();
+            const athlete = allAthletes.find(a => a.id === athleteId);
+            const bikes = allBikes.filter(b => b.athlete_id === athleteId);
+            const records = allRecords.filter(r => r.athlete_id === athleteId);
+            const settings = allSettings.filter(s => s.athlete_id === athleteId);
+            const activities = allActivities.filter(a => a.athlete_id === athleteId);
 
             if (bikes.length === 0) continue;
 
@@ -240,7 +244,6 @@ export function useManagerData(): UseManagerDataReturn {
                 let bikeOverdue = 0;
                 let bikeDueSoon = 0;
 
-                // 過濾與同步個人端的項目清單
                 allTypes
                     .filter(type =>
                         type.id !== 'full_service' &&
@@ -248,7 +251,6 @@ export function useManagerData(): UseManagerDataReturn {
                         !type.name.includes('輪框檢查')
                     )
                     .forEach((type: any) => {
-                        // 找出此項目的最後保養
                         const lastTypeRecord = bikeRecords.find((r: any) => {
                             const types = r.maintenance_type.split(', ').map((t: string) => t.trim());
                             return types.includes(type.id) || types.includes('full_service') || types.includes('全車保養');
@@ -258,7 +260,6 @@ export function useManagerData(): UseManagerDataReturn {
                         let mileageSince = 0;
 
                         if (lastServiceDate) {
-                            // 使用活動里程加總 (與個人端邏輯一致)
                             const start = new Date(lastServiceDate);
                             const validActivities = activities.filter((a: any) => {
                                 if (a.gear_id !== bike.id) return false;
@@ -269,11 +270,9 @@ export function useManagerData(): UseManagerDataReturn {
                             mileageSince = currentMileageKm;
                         }
 
-                        // 取得保養間隔 (優先順序: 自訂 > 預估 > 預設)
                         const setting = settings.find((s: any) => s.bike_id === bike.id && s.maintenance_type_id === type.id);
                         const intervalKm = setting ? setting.custom_interval_km : (type.estimated_lifespan_km || type.default_interval_km);
 
-                        // 如果里程間隔為 0，則視為不適用的項目，不加入清單
                         if (intervalKm === 0) return;
 
                         const percentage = (mileageSince / intervalKm) * 100;
@@ -325,108 +324,93 @@ export function useManagerData(): UseManagerDataReturn {
         return summaries;
     }, []);
 
-    // 載入活動摘要
+
+    // 載入活動摘要 (優化版：批次讀取)
     const loadActivitySummaries = useCallback(async (athleteIds: number[]) => {
         if (athleteIds.length === 0) return [];
 
-        const summaries: ActivitySummary[] = [];
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        // 優化：將時間範圍設定為 42 天 (CTL 週期)
+        const fortyTwoDaysAgo = new Date();
+        fortyTwoDaysAgo.setDate(fortyTwoDaysAgo.getDate() - 42);
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // 1. 批量載入資料
+        const [allActivitiesResult, allAthletesResult, allBikesResult] = await Promise.all([
+            supabase.from('strava_activities')
+                .select('*')
+                .in('athlete_id', athleteIds)
+                .gte('start_date', fortyTwoDaysAgo.toISOString())
+                .order('start_date', { ascending: true }),
+            supabase.from('athletes').select('id, firstname, lastname, ftp, max_heartrate').in('id', athleteIds),
+            supabase.from('bikes').select('id, name, athlete_id').in('athlete_id', athleteIds)
+        ]);
+
+        const allActivities = allActivitiesResult.data || [];
+        const allAthletes = allAthletesResult.data || [];
+        const allBikes = allBikesResult.data || [];
+
+        const summaries: ActivitySummary[] = [];
 
         // TSS 計算輔助函式
         const calculateSimpleTSS = (watts: number, ftp: number, durationSeconds: number): number => {
             if (!ftp || !watts) return 0;
-            // 優先使用 Weighted Average Power (NP 近似值)，若無則使用 Average Power
             const if_factor = watts / ftp;
-            // TSS = (sec * NP * IF) / (FTP * 3600) * 100
             return (durationSeconds * watts * if_factor) / (ftp * 3600) * 100;
         };
 
         for (const athleteId of athleteIds) {
-            // 載入活動紀錄
-            const { data: activities } = await supabase
-                .from('strava_activities')
-                .select('*')
-                .eq('athlete_id', athleteId)
-                .gte('start_date', oneYearAgo.toISOString())
-                .order('start_date', { ascending: true }); // 改為升序以便計算 PMC
+            const activities = allActivities.filter(a => a.athlete_id === athleteId);
+            const athlete = allAthletes.find(a => a.id === athleteId);
+            const bikes = allBikes.filter(b => b.athlete_id === athleteId);
 
-            // 載入車友資訊
-            const { data: athlete } = await supabase
-                .from('athletes')
-                .select('firstname, lastname, ftp, max_heartrate')
-                .eq('id', athleteId)
-                .maybeSingle();
-
-            // 載入車輛資訊
-            const { data: bikes } = await supabase
-                .from('bikes')
-                .select('id, name')
-                .eq('athlete_id', athleteId);
-
-            if (!activities || activities.length === 0) continue;
+            if (activities.length === 0) continue;
 
             const ftp = athlete?.ftp || 200;
             let currentCtl = 0;
             let currentAtl = 0;
-
-            // 建立日期 Map 以便計算每日 TSS
             const dailyTssMap = new Map<string, number>();
 
             activities.forEach((a: any) => {
                 const dateKey = a.start_date.split('T')[0];
-                const watts = a.weighted_average_watts || a.average_watts || 0;
+                const isRide = ['Ride', 'VirtualRide', 'MountainBikeRide', 'GravelRide', 'EBikeRide', 'Velomobile'].includes(a.sport_type);
 
+                const sufferScore = a.suffer_score ? Number(a.suffer_score) : 0;
                 let tss = 0;
-
-                // 僅計算功率 TSS (必須有功率計數據)
-                if (watts > 0 && a.device_watts) {
+                // 優先使用身心負荷 (Suffer Score)，這對所有運動類型都有效
+                if (sufferScore > 0) {
+                    tss = sufferScore;
+                } else if (isRide && ftp > 0 && (a.average_watts || a.weighted_average_watts)) {
+                    // 次之使用功率計算 (僅限騎乘類活動)
+                    const watts = Number(a.weighted_average_watts || (a.average_watts * 1.05) || 0);
                     tss = calculateSimpleTSS(watts, ftp, a.moving_time);
                 }
 
                 const current = dailyTssMap.get(dateKey) || 0;
                 dailyTssMap.set(dateKey, current + tss);
-
-                // 將 TSS 寫回物件以便後續使用 (雖不存 DB)
                 a.tss = tss;
             });
 
-            // 計算 PMC (模擬每一天的衰減與累積)
-            // 找出最早與最晚日期
             const startDate = new Date(activities[0].start_date);
-            const endDate = new Date(); // 計算到今天
-
-            // 為了簡化計算，我們直接遍歷每一天 (或者僅遍歷有活動的日子並補償衰減? 遍歷每一天較準確)
+            const endDate = new Date();
             let iteratorDate = new Date(startDate);
 
             while (iteratorDate <= endDate) {
                 const dateKey = iteratorDate.toISOString().split('T')[0];
                 const dayTss = dailyTssMap.get(dateKey) || 0;
-
-                // Coggan Constants: CTL = 42d, ATL = 7d
-                // Today = Yesterday * (1 - 1/TC) + TSS * (1/TC)
                 currentCtl = currentCtl * (41 / 42) + dayTss * (1 / 42);
                 currentAtl = currentAtl * (6 / 7) + dayTss * (1 / 7);
-
                 iteratorDate.setDate(iteratorDate.getDate() + 1);
             }
 
             const currentTsb = currentCtl - currentAtl;
+            const recentWeekActivities = activities.filter((a: any) => new Date(a.start_date) >= sevenDaysAgo);
 
-            // 篩選近 7 天活動進行統計
-            const recentWeekActivities = activities.filter((a: any) =>
-                new Date(a.start_date) >= sevenDaysAgo
-            );
-
-            // 計算統計 (僅限近 7 天)
             const totalDistance = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / 1000;
             const totalElevation = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.total_elevation_gain || 0), 0);
             const totalTime = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.moving_time || 0), 0) / 3600;
             const totalTss = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.tss || 0), 0);
 
-            // 功率與心率統計 (平均值仍取近 7 天)
             const activitiesWithPower = recentWeekActivities.filter((a: any) => a.average_watts > 0);
             const avgWatts = activitiesWithPower.length > 0
                 ? activitiesWithPower.reduce((sum: number, a: any) => sum + (a.average_watts || 0), 0) / activitiesWithPower.length
@@ -439,12 +423,10 @@ export function useManagerData(): UseManagerDataReturn {
                 ? activitiesWithHR.reduce((sum: number, a: any) => sum + (a.average_heartrate || 0), 0) / activitiesWithHR.length
                 : undefined;
 
-            // 為了不影響既有列表顯示，我們將 activities 轉回降序給 recent_activities
             const sortedActivitiesDesc = [...activities].sort((a, b) =>
                 new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
             );
 
-            // 車輛使用統計 (維持基於所有活動? 不，應與報表範圍一致 => 近 7 天)
             const bikeUsage: Record<string, { distance: number; count: number }> = {};
             recentWeekActivities.forEach((a: any) => {
                 if (a.gear_id) {
@@ -474,25 +456,23 @@ export function useManagerData(): UseManagerDataReturn {
                 total_elevation: totalElevation,
                 total_time: totalTime,
                 bikes_used: bikesUsed,
-                most_active_region: undefined,
                 avg_watts: avgWatts,
                 max_watts: maxWatts || undefined,
                 avg_heartrate: avgHeartRate,
-                avg_cadence: undefined, // 暫不顯示
-                recent_activities: sortedActivitiesDesc.slice(0, 100), // 列表仍顯示最近活動
+                recent_activities: sortedActivitiesDesc.slice(0, 200),
                 ftp: ftp,
                 max_heartrate: athlete?.max_heartrate,
-                // PMC Data
                 total_tss: Math.round(totalTss),
                 ctl: Math.round(currentCtl),
                 atl: Math.round(currentAtl),
                 tsb: Math.round(currentTsb),
-                full_history_activities: activities, // Store full history for PMC Chart
+                full_history_activities: activities,
             });
         }
 
         return summaries;
     }, []);
+
 
     // 載入保養統計
     const loadMaintenanceStatistics = useCallback(async (athleteIds: number[]) => {
@@ -539,56 +519,61 @@ export function useManagerData(): UseManagerDataReturn {
         return statistics.sort((a, b) => b.total_count - a.total_count);
     }, []);
 
-    // 載入通知設定
+    // 載入通知設定 (增強錯誤處理)
     const loadNotificationSettings = useCallback(async (managerAthleteId?: string, managerEmail?: string) => {
-        let query = supabase.from('notification_settings').select('*');
+        try {
+            let query = supabase.from('notification_settings').select('*');
 
-        if (managerAthleteId && managerEmail) {
-            query = query.or(`manager_athlete_id.eq.${managerAthleteId},manager_email.eq.${managerEmail}`);
-        } else if (managerAthleteId) {
-            query = query.eq('manager_athlete_id', managerAthleteId);
-        } else if (managerEmail) {
-            query = query.eq('manager_email', managerEmail);
-        } else {
+            if (managerAthleteId && managerEmail) {
+                query = query.or(`manager_athlete_id.eq.${managerAthleteId},manager_email.eq.${managerEmail}`);
+            } else if (managerAthleteId) {
+                query = query.eq('manager_athlete_id', managerAthleteId);
+            } else if (managerEmail) {
+                query = query.eq('manager_email', managerEmail);
+            } else {
+                return [];
+            }
+
+            const { data, error: settingsError } = await query;
+            if (settingsError) throw settingsError;
+
+            return (data || []) as NotificationSetting[];
+        } catch (err) {
+            console.warn('通知設定表載入失敗 (可能不存在):', err);
             return [];
         }
-
-        const { data, error: settingsError } = await query;
-        if (settingsError) {
-            console.warn('載入通知設定失敗:', settingsError);
-            return [];
-        }
-
-        return (data || []) as NotificationSetting[];
     }, []);
 
-    // 載入通知記錄
+    // 載入通知記錄 (增強錯誤處理)
     const loadNotificationLogs = useCallback(async (managerAthleteId?: string, managerEmail?: string) => {
-        let query = supabase.from('notification_logs').select('*');
+        try {
+            let query = supabase.from('notification_logs').select('*');
 
-        if (managerAthleteId && managerEmail) {
-            query = query.or(`manager_athlete_id.eq.${managerAthleteId},manager_email.eq.${managerEmail}`);
-        } else if (managerAthleteId) {
-            query = query.eq('manager_athlete_id', managerAthleteId);
-        } else if (managerEmail) {
-            query = query.eq('manager_email', managerEmail);
-        } else {
+            if (managerAthleteId && managerEmail) {
+                query = query.or(`manager_athlete_id.eq.${managerAthleteId},manager_email.eq.${managerEmail}`);
+            } else if (managerAthleteId) {
+                query = query.eq('manager_athlete_id', managerAthleteId);
+            } else if (managerEmail) {
+                query = query.eq('manager_email', managerEmail);
+            } else {
+                return [];
+            }
+
+            const { data, error: logsError } = await query
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (logsError) throw logsError;
+
+            return (data || []) as NotificationLog[];
+        } catch (err) {
+            console.warn('通知記錄表載入失敗 (可能不存在):', err);
             return [];
         }
-
-        const { data, error: logsError } = await query
-            .order('created_at', { ascending: false })
-            .limit(100);
-
-        if (logsError) {
-            console.warn('載入通知記錄失敗:', logsError);
-            return [];
-        }
-
-        return (data || []) as NotificationLog[];
     }, []);
 
-    // 主要載入函數
+
+    // 主要載入函數 (優化版：平行處理所有資料)
     const refresh = useCallback(async () => {
         try {
             setLoading(true);
@@ -612,8 +597,8 @@ export function useManagerData(): UseManagerDataReturn {
             const isActiveManager = !!role && role.is_active;
             setIsManager(isActiveManager);
 
-            if (!role) {
-                // 非管理者，清空資料
+            if (!role || !role.is_active) {
+                // 非管理者或未啟用，清空資料
                 setAuthorizations([]);
                 setAuthorizedAthletes([]);
                 setMaintenanceSummaries([]);
@@ -625,39 +610,21 @@ export function useManagerData(): UseManagerDataReturn {
                 return;
             }
 
-            // 若帳號未啟用，不載入敏感資料，直接返回
-            if (!role.is_active) {
-                setLoading(false);
-                return;
-            }
-
-            // 若沒有 athlete_id (純 Email 管理者)，能做的事情有限，但仍可執行管理功能
-            // 這裡暫時使用 role.athlete_id 作為後續查詢的依據 (若 DB 中為 null 則可能會有問題，需注意)
-            // 如果 role.athlete_id 為空，則無法載入 "依賴 athlete_id" 的資料
-
-            // 修正：如果沒有 athlete_id，則無法載入需要 manager_athlete_id 的關聯資料
-            // 我們可以使用 role.id 作為替代嗎？目前 user_authorizations 使用 manager_athlete_id INT
-            // TODO: schema 應該也要更新 user_authorizations，允許綁定 manager_role_id 或 email
-            // 暫時解法：如果沒有 athlete_id，則跳過載入 authorizations
-
-            // 改進：無論是否有 athlete_id，只要進入此處（role 存在）就嘗試載入資料
             const managerAthleteId = role.athlete_id ? String(role.athlete_id) : undefined;
             const managerEmail = role.email || identity.email;
 
             try {
-                // 載入授權清單
+                // 1. 先載入授權清單 (這是核心依賴)
                 const auths = await loadAuthorizations(managerAthleteId, managerEmail);
                 setAuthorizations(auths);
 
-                // 僅針對「已核准」的車友進行報表計算
+                // 2. 準備車友 ID 清單
                 const approvedAthleteIds = auths
                     .filter(a => a.status === 'approved')
                     .map(a => a.athlete_id);
-
-                // 全體車友 ID (用於載入基本資訊)
                 const allAthleteIds = auths.map(a => a.athlete_id);
 
-                // 平行載入所有資料
+                // 3. 平行載入所有報表與統計資料 (極速模式)
                 const [athletes, summaries, activities, stats, settings, logs] = await Promise.all([
                     loadAthleteInfo(allAthleteIds),
                     loadMaintenanceSummaries(approvedAthleteIds),
@@ -694,6 +661,7 @@ export function useManagerData(): UseManagerDataReturn {
         loadNotificationSettings,
         loadNotificationLogs,
     ]);
+
 
     // 新增授權
     const addAuthorization = useCallback(async (

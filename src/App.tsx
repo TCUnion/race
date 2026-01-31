@@ -1,20 +1,32 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { ViewType } from './types';
-import LandingPage from './features/landing/LandingPage';
-import Dashboard from './features/dashboard/Dashboard';
-import Leaderboard from './features/leaderboard/Leaderboard';
+
+// 靜態導入 - 每頁必需的核心組件
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
-import AdminPanel from './features/admin/AdminPanel';
-import RegisterPage from './features/auth/RegisterPage';
-import MemberBindingCard from './features/auth/MemberBindingCard';
-import MaintenanceDashboard from './features/maintenance/MaintenanceDashboard';
-import ACPowerTraining from './features/dashboard/ACPowerTraining';
-import TeamDashboard from './features/dashboard/TeamDashboard';
-import SettingsPage from './features/settings/SettingsPage';
 import { useSEO } from './hooks/useSEO';
 import { useAuth } from './hooks/useAuth';
+
+// 動態載入 - 按需載入頁面組件以減少初始 Bundle Size
+const LandingPage = React.lazy(() => import('./features/landing/LandingPage'));
+const Dashboard = React.lazy(() => import('./features/dashboard/Dashboard'));
+const Leaderboard = React.lazy(() => import('./features/leaderboard/Leaderboard'));
+const AdminPanel = React.lazy(() => import('./features/admin/AdminPanel'));
+const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'));
+const MemberBindingCard = React.lazy(() => import('./features/auth/MemberBindingCard'));
+const MaintenanceDashboard = React.lazy(() => import('./features/maintenance/MaintenanceDashboard'));
+const ACPowerTraining = React.lazy(() => import('./features/dashboard/ACPowerTraining'));
+const TeamDashboard = React.lazy(() => import('./features/dashboard/TeamDashboard'));
+const SettingsPage = React.lazy(() => import('./features/settings/SettingsPage'));
+
+// Suspense Fallback 組件
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);
+
 
 const App: React.FC = () => {
   useSEO();
@@ -88,7 +100,9 @@ const App: React.FC = () => {
       />
 
       <main className="flex-grow">
-        {renderView()}
+        <Suspense fallback={<PageLoader />}>
+          {renderView()}
+        </Suspense>
       </main>
 
       <Footer onNavigate={(view) => setCurrentView(view)} />

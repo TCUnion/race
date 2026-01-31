@@ -67,14 +67,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         }
     }, [isBound, memberData, athlete]);
 
-    // 檢查現有報名
+    // 檢查現有報名（不使用 embedded relationship 避免 PGRST200 錯誤）
     useEffect(() => {
         const checkExisting = async () => {
             setIsLoadingExisting(true);
             try {
                 const { data, error: regError } = await supabase
                     .from('registrations')
-                    .select('*, segments(name, strava_id)')
+                    .select('*')
                     .eq('strava_athlete_id', athlete.id);
 
                 if (regError) throw regError;
@@ -130,25 +130,46 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 if (delError) throw delError;
             }
 
-            // 2. 執行更新/新增 (Upsert)
-            // 直接對目前選中的所有路段進行 upsert，這會同時處理新增與更新
+            // 2. 執行更新/新增（分離 insert/update 避免 ON CONFLICT 約束問題）
             if (currentSegmentIds.length > 0) {
-                const { error: upsertError } = await supabase
-                    .from('registrations')
-                    .upsert(
-                        currentSegmentIds.map(id => ({
-                            segment_id: id,
-                            strava_athlete_id: athlete.id,
+                // 區分需要新增 vs 需要更新的
+                const toInsert = currentSegmentIds.filter(id => !existingSegmentIds.includes(id));
+                const toUpdate = currentSegmentIds.filter(id => existingSegmentIds.includes(id));
+
+                // 新增新報名（明確產生 UUID 避免 null 約束錯誤）
+                if (toInsert.length > 0) {
+                    const { error: insertError } = await supabase
+                        .from('registrations')
+                        .insert(
+                            toInsert.map(id => ({
+                                id: crypto.randomUUID(),
+                                segment_id: id,
+                                strava_athlete_id: athlete.id,
+                                athlete_name: name,
+                                athlete_profile: athlete.profile,
+                                team: team,
+                                tcu_id: memberData?.tcu_id || null,
+                                status: 'approved'
+                            }))
+                        );
+                    if (insertError) throw insertError;
+                }
+
+                // 更新現有報名
+                if (toUpdate.length > 0) {
+                    const { error: updateError } = await supabase
+                        .from('registrations')
+                        .update({
                             athlete_name: name,
                             athlete_profile: athlete.profile,
                             team: team,
-                            tcu_id: memberData?.tcu_id || null, // 使用 memberData 的 ID，如果沒有則 null
-                            status: 'approved',
+                            tcu_id: memberData?.tcu_id || null,
                             updated_at: new Date().toISOString()
-                        })),
-                        { onConflict: 'strava_athlete_id,segment_id' }
-                    );
-                if (upsertError) throw upsertError;
+                        })
+                        .eq('strava_athlete_id', athlete.id)
+                        .in('segment_id', toUpdate);
+                    if (updateError) throw updateError;
+                }
             }
 
             setSuccessMessage('報名設定已更新');

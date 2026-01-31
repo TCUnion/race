@@ -62,6 +62,7 @@ import { AthleteMaintenanceSummary, ActivitySummary, MaintenanceStatistics } fro
 import ManagerLogin from './ManagerLogin';
 import MaintenanceTable from '../maintenance/MaintenanceTable';
 import PowerTrainingReport from './PowerTrainingReport';
+import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
 import { MaintenanceRecord } from '../../types';
 
 const ROLE_NAMES: Record<string, string> = {
@@ -1556,6 +1557,16 @@ function ManagerDashboard() {
                                                                     <tr>
                                                                         <td colSpan={10} className="px-0 py-0 bg-slate-900/50">
                                                                             <div className="p-4 space-y-6">
+                                                                                {/* Daily Training Chart Section */}
+                                                                                {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.recent_activities && (
+                                                                                    <div className="mb-6">
+                                                                                        <DailyTrainingChart
+                                                                                            activities={summary.recent_activities}
+                                                                                            ftp={summary.ftp || 200}
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+
                                                                                 {/* PMC Chart Section */}
                                                                                 {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.full_history_activities && (
                                                                                     <div>

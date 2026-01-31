@@ -22,7 +22,7 @@ import {
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea
 } from 'recharts';
-import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
+
 import { PMCChart } from '../../components/charts/PMCChart';
 
 // 格式化時間 (秒 -> HH:MM:SS)
@@ -599,6 +599,10 @@ const AthletePowerTrainingReport: React.FC = () => {
 
     // 已存在的 Streams ID 列表
     const [availableStreams, setAvailableStreams] = useState<Set<number>>(new Set());
+    const [globalSyncStats, setGlobalSyncStats] = useState<{ syncedCount: number; pendingIds: number[] }>({
+        syncedCount: 0,
+        pendingIds: []
+    });
 
     const { getActivityStreams, analyzeActivityPower, checkStreamsAvailability } = usePowerAnalysis();
 
@@ -668,7 +672,7 @@ const AthletePowerTrainingReport: React.FC = () => {
 
             const { data } = await supabase
                 .from('strava_activities')
-                .select('id, start_date, moving_time, average_watts, suffer_score, sport_type, name, distance, average_heartrate, has_heartrate')
+                .select('id, start_date, moving_time, average_watts, suffer_score, sport_type, name, distance, average_heartrate, has_heartrate, device_watts, kilojoules')
                 .eq('athlete_id', athlete.id)
                 .gte('start_date', sixMonthsAgo.toISOString())
                 .order('start_date', { ascending: true }); // Charts usually want generic chronological order or we sort inside
@@ -679,6 +683,51 @@ const AthletePowerTrainingReport: React.FC = () => {
         };
         fetchChartData();
     }, [athlete?.id]);
+
+    // 1.6 取得全局同步統計 (用於同步按鈕顯示與全量發送)
+    useEffect(() => {
+        if (!athlete?.id) return;
+        const fetchGlobalStats = async () => {
+            try {
+                // 1. 取得該選手最新的 42 筆活動 ID
+                const { data: latestActivities } = await supabase
+                    .from('strava_activities')
+                    .select('id')
+                    .eq('athlete_id', athlete.id)
+                    .order('start_date', { ascending: false })
+                    .limit(42);
+
+                if (!latestActivities || latestActivities.length === 0) {
+                    setGlobalSyncStats({ syncedCount: 0, pendingIds: [] });
+                    return;
+                }
+
+                const allIds = latestActivities.map(a => String(a.id));
+
+                // 2. 檢查哪些已存在於 strava_streams (上限 120 筆，不需分批)
+                const { data: streams, error: streamError } = await supabase
+                    .from('strava_streams')
+                    .select('activity_id')
+                    .in('activity_id', allIds);
+
+                if (streamError) throw streamError;
+
+                const syncedSet = new Set(streams?.map(s => String(s.activity_id)) || []);
+                const syncedCount = syncedSet.size;
+                const pendingIds = allIds.filter(id => !syncedSet.has(id)).map(id => Number(id));
+
+                setGlobalSyncStats({
+                    syncedCount: syncedCount,
+                    pendingIds: pendingIds
+                });
+            } catch (err) {
+                console.error('獲取全局同步統計失敗:', err);
+                // 發生錯誤時至少保持現狀或顯示錯誤
+                setGlobalSyncStats({ syncedCount: 0, pendingIds: [] });
+            }
+        };
+        fetchGlobalStats();
+    }, [athlete?.id, availableStreams]);
 
     // [New] 監聽選定活動，當數據流變為可用時自動加載分析 (反應式設計)
     useEffect(() => {
@@ -722,6 +771,25 @@ const AthletePowerTrainingReport: React.FC = () => {
             }, 0);
     }, [recentActivities, currentFTP]);
 
+    // 同步統計資料
+    const syncStats = useMemo(() => {
+        // 使用全局統計數據
+        const synced = globalSyncStats.syncedCount;
+        const pending = globalSyncStats.pendingIds.length;
+        const pendingIds = globalSyncStats.pendingIds;
+
+        // 預估時間（秒）
+        const estimatedSeconds = pending * 3;
+        const formatEstimate = (s: number) => {
+            if (s < 60) return `${s} 秒`;
+            const m = Math.floor(s / 60);
+            const rs = s % 60;
+            return rs > 0 ? `${m} 分 ${rs} 秒` : `${m} 分鐘`;
+        };
+
+        return { synced, pending, pendingIds, estimatedTimeStr: formatEstimate(estimatedSeconds) };
+    }, [globalSyncStats]);
+
     // 分析選定活動
     const handleActivitySelect = async (activity: StravaActivity) => {
         if (selectedActivity?.id === activity.id) {
@@ -755,6 +823,90 @@ const AthletePowerTrainingReport: React.FC = () => {
     // 同步狀態管理: { [activityId]: 'idle' | 'syncing' | 'success' | 'error' }
     const [syncStatus, setSyncStatus] = useState<Record<number, 'idle' | 'syncing' | 'success' | 'error'>>({});
     const [lastSyncTime, setLastSyncTime] = useState<Record<number, number>>({});
+    const [isSyncingAll, setIsSyncingAll] = useState(false);
+    const [syncAllMessage, setSyncAllMessage] = useState<string | null>(null);
+
+    // 輔助函數：帶重試機制的 Fetch
+    const fetchWithRetry = async (url: string, options: any, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const res = await fetch(url, options);
+                if (res.ok) return res;
+            } catch (err) {
+                if (i === retries - 1) throw err;
+            }
+            // 等待一下再重試
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        throw new Error('超過重試次數');
+    };
+
+    // 觸發全量同步 (呼叫 n8n 工作流)
+    const handleSyncAllActivities = async () => {
+        if (isSyncingAll) return;
+
+        if (syncStats.pending === 0) {
+            alert('所有活動皆已同步完成！');
+            return;
+        }
+
+        const confirmMsg = `確定要同步 ${syncStats.pending} 個活動嗎？\n預估時間：${syncStats.estimatedTimeStr}\n優化模式：啟用併發處理與自動重試。`;
+        if (!confirm(confirmMsg)) return;
+
+        setIsSyncingAll(true);
+        const total = syncStats.pendingIds.length;
+        const chunkSize = 20;
+        const chunks = [];
+        for (let i = 0; i < total; i += chunkSize) {
+            chunks.push(syncStats.pendingIds.slice(i, i + chunkSize));
+        }
+
+        try {
+            let processedCount = 0;
+            const CONCURRENCY = 2; // 一次跑 2 個請求
+
+            for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+                const batchPromises = chunks.slice(i, i + CONCURRENCY).map(async (currentChunk, idx) => {
+                    const response = await fetchWithRetry('https://service.criterium.tw/webhook/strava-sync-all', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            athlete_id: athlete?.id,
+                            activity_ids: currentChunk,
+                            is_chunk: true,
+                            requested_at: new Date().toISOString()
+                        })
+                    });
+
+                    // 成功後更新進度與狀態
+                    processedCount += currentChunk.length;
+                    const percent = Math.round((processedCount / total) * 100);
+                    setSyncAllMessage(`正在同步中: ${percent}% (${processedCount}/${total})`);
+
+                    setAvailableStreams(prev => {
+                        const next = new Set(prev);
+                        currentChunk.forEach(id => next.add(id));
+                        return next;
+                    });
+                });
+
+                await Promise.all(batchPromises);
+            }
+
+            setSyncAllMessage('🎉 全量同步任務圓滿達成！');
+            setTimeout(() => {
+                setSyncAllMessage(null);
+                setIsSyncingAll(false);
+            }, 3000);
+
+        } catch (error) {
+            console.error('優化同步失敗:', error);
+            setSyncAllMessage('同步中斷，已保存現有進度。請確認網路後重試。');
+            setTimeout(() => {
+                setIsSyncingAll(false);
+            }, 5000);
+        }
+    };
 
     // 觸發同步 (手動呼叫 Webhook)
     const handleSyncActivity = async (e: React.MouseEvent, activity: StravaActivity) => {
@@ -776,6 +928,7 @@ const AthletePowerTrainingReport: React.FC = () => {
                 aspect_type: "create",
                 event_time: Math.floor(Date.now() / 1000),
                 object_id: Number(activity.id), // 確保為數字
+                activity_id: Number(activity.id), // 新增此欄位
                 object_type: "activity",
                 owner_id: athlete?.id,
                 subscription_id: 0,
@@ -901,15 +1054,47 @@ const AthletePowerTrainingReport: React.FC = () => {
                             </p>
                         </div>
                     </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 mr-2">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">同步進度 (最新 42 筆)</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-emerald-400">已同步: {syncStats.synced}</span>
+                                    <span className="text-slate-700">|</span>
+                                    <span className={`text-xs font-medium ${syncStats.pending > 0 ? 'text-orange-400' : 'text-slate-500'}`}>待同步: {syncStats.pending}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                            <button
+                                onClick={handleSyncAllActivities}
+                                disabled={isSyncingAll || syncStats.pending === 0}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all
+                                    ${(isSyncingAll || syncStats.pending === 0)
+                                        ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95'
+                                    }`}
+                            >
+                                <RefreshCw className={`w-4 h-4 ${isSyncingAll ? 'animate-spin' : ''}`} />
+                                {isSyncingAll ? '同步中...' : syncStats.pending === 0 ? '已全部同步' : '同步剩餘活動數據'}
+                            </button>
+                            {syncAllMessage && (
+                                <span className="text-[10px] text-blue-400 animate-pulse font-medium">
+                                    {syncAllMessage}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* 內容區域 - 直接顯示，不需折疊 */}
                 <div className="p-4 sm:p-6">
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
 
-                        {/* 上方：每日訓練趨勢圖 & PMC */}
+                        {/* 上方：PMC 圖表 */}
                         <div className="xl:col-span-12 space-y-6">
-                            <DailyTrainingChart activities={chartActivities.length > 0 ? chartActivities : recentActivities} ftp={currentFTP} />
                             <PMCChart activities={chartActivities.length > 0 ? chartActivities : recentActivities} ftp={currentFTP} />
                         </div>
 

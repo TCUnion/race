@@ -1,10 +1,10 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Activity, TrendingUp, TrendingDown, Minus, AlertCircle, Info
 } from 'lucide-react';
 import {
-    ComposedChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend
+    ComposedChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts';
 import { StravaActivity } from '../../types';
 import { format } from 'date-fns';
@@ -17,6 +17,9 @@ interface PMCChartProps {
 
 // 體能管理圖表 (Performance Management Chart)
 export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
+    const [showTSS, setShowTSS] = useState(true);
+    const [showAll, setShowAll] = useState(true); // 新增全開關
+
     const data = useMemo(() => {
         if (!activities || activities.length === 0) return [];
 
@@ -35,11 +38,17 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
             const dateStr = activity.start_date.split('T')[0];
 
             let tss = 0;
-            // 必須確認是由功率計產生 (device_watts) 避免 Strava 估算功率干擾
-            if (ftp > 0 && activity.average_watts && activity.device_watts) {
-                const np = activity.average_watts * 1.05; // 簡易估算 NP
-                const intensity = np / ftp;
-                tss = (activity.moving_time * intensity * intensity * 100) / 3600;
+            // 優先使用身心負荷 (Suffer Score)
+            const sufferScore = activity.suffer_score ? Number(activity.suffer_score) : 0;
+            if (sufferScore > 0) {
+                tss = sufferScore;
+            } else if (ftp > 0 && (activity.average_watts || (activity as any).weighted_average_watts)) {
+                // 次之使用功率計算
+                const watts = Number((activity as any).weighted_average_watts || (activity.average_watts ? activity.average_watts * 1.05 : 0));
+                if (watts > 0) {
+                    const intensity = watts / ftp;
+                    tss = (activity.moving_time * watts * intensity) / (ftp * 3600) * 100;
+                }
             }
 
             const currentTss = activityMap.get(dateStr) || 0;
@@ -81,6 +90,7 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                 ctl: Math.round(currentCTL),
                 atl: Math.round(currentATL),
                 tsb: Math.round(currentCTL - currentATL),
+                dayOfWeek: iterDate.getDay(), // 0=Sunday, 6=Saturday
             });
 
             iterDate.setDate(iterDate.getDate() + 1);
@@ -93,6 +103,19 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
 
         return fullData.filter(d => d.timestamp >= filterDate.getTime());
     }, [activities, ftp]);
+
+    // 計算 TSS 和 TSB 各自的對稱 Y 軸 domain，讓 0 都在中間
+    // 注意：此 Hook 必須在任何條件返回之前呼叫
+    const { tssDomain, tsbDomain } = useMemo(() => {
+        if (!data || data.length === 0) return { tssDomain: [-100, 100] as [number, number], tsbDomain: [-50, 50] as [number, number] };
+        // TSS 只有正值，用對稱範圍讓 0 在中間
+        const maxTss = Math.max(...data.map(d => d.tss || 0), 50);
+        const tssDomain: [number, number] = [-maxTss, maxTss];
+        // TSB 有正負值，用對稱範圍讓 0 在中間
+        const maxTsbAbs = Math.max(...data.map(d => Math.abs(d.tsb || 0)), 30);
+        const tsbDomain: [number, number] = [-maxTsbAbs, maxTsbAbs];
+        return { tssDomain, tsbDomain };
+    }, [data]);
 
     if (data.length === 0) return null;
 
@@ -112,20 +135,46 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                     </p>
                 </div>
 
-                {/* 狀態摘要卡片 */}
-                <div className="flex gap-4">
-                    <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
-                        <div className="text-[10px] text-slate-400">體能 (CTL)</div>
-                        <div className="text-lg font-bold text-indigo-400">{latest.ctl}</div>
-                    </div>
-                    <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
-                        <div className="text-[10px] text-slate-400">疲勞 (ATL)</div>
-                        <div className="text-lg font-bold text-pink-400">{latest.atl}</div>
-                    </div>
-                    <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
-                        <div className="text-[10px] text-slate-400">狀態 (TSB)</div>
-                        <div className={`text-lg font-bold ${latest.tsb >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
-                            {latest.tsb > 0 ? '+' : ''}{latest.tsb}
+                {/* 狀態摘要卡片 & 控制項 */}
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setShowTSS(!showTSS)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${showTSS
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
+                            : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-400'
+                            }`}
+                    >
+                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        訓練量 (TSS)
+                    </button>
+
+                    <button
+                        onClick={() => setShowAll(!showAll)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${showAll
+                            ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+                            : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-400'
+                            }`}
+                    >
+                        <div className={`w-1.5 h-1.5 rounded-full ${showAll ? 'bg-indigo-500' : 'bg-slate-500'}`} />
+                        {showAll ? '隱藏 PMC' : '顯示 PMC'}
+                    </button>
+
+
+
+                    <div className="flex gap-4">
+                        <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
+                            <div className="text-[10px] text-slate-400">體能 (CTL)</div>
+                            <div className="text-lg font-bold text-indigo-400">{latest.ctl}</div>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
+                            <div className="text-[10px] text-slate-400">疲勞 (ATL)</div>
+                            <div className="text-lg font-bold text-pink-400">{latest.atl}</div>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
+                            <div className="text-[10px] text-slate-400">狀態 (TSB)</div>
+                            <div className={`text-lg font-bold ${latest.tsb >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                {latest.tsb > 0 ? '+' : ''}{latest.tsb}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -143,6 +192,11 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                             interval="preserveStartEnd"
                             minTickGap={30}
                         />
+                        <XAxis
+                            xAxisId="tsb_axis"
+                            dataKey="dateStr"
+                            hide
+                        />
                         <YAxis
                             yAxisId="load"
                             stroke="#64748b"
@@ -158,10 +212,20 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                             tick={{ fontSize: 10 }}
                             tickLine={false}
                             axisLine={false}
-                            domain={[-50, 50]} // TSB 通常在這個範圍波動
-                            hide={true} // 隱藏軸標籤以保持簡潔
+                            domain={tsbDomain} // TSB 專用對稱軸，0 在中間
+                            hide={true}
                         />
-
+                        <YAxis
+                            yAxisId="tss"
+                            orientation="right"
+                            stroke="#10b981"
+                            tick={{ fontSize: 10 }}
+                            tickLine={false}
+                            axisLine={false}
+                            domain={tssDomain} // TSS 專用對稱軸，0 在中間
+                            hide={true}
+                        />
+                        {/* TSS 和 TSB 各自用對稱軸，0 點都在圖表正中間 */}
                         <Tooltip
                             cursor={{ fill: '#334155', opacity: 0.2 }}
                             content={({ active, payload, label }) => {
@@ -176,7 +240,7 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                                                 <div className={`${d.tsb >= 0 ? 'text-emerald-400' : 'text-orange-400'} font-medium`}>
                                                     狀態 (TSB): {d.tsb}
                                                 </div>
-                                                <div className="text-blue-400">TSS: {Math.round(d.tss)}</div>
+                                                <div className="text-green-500 font-medium">TSS: {Math.round(d.tss)}</div>
                                             </div>
                                         </div>
                                     );
@@ -185,20 +249,40 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                             }}
                         />
 
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                        {/* 隱藏 Recharts 內建 Legend，改用右上角自定義顯示 */}
 
-                        {/* TSB - Bar / Area in background */}
+                        {/* TSB - Bar (狀態) - Legend 顯示橘色 */}
                         <Bar
                             yAxisId="tsb"
+                            xAxisId="tsb_axis"
                             dataKey="tsb"
                             name="狀態 (TSB)"
-                            barSize={4}
-                            opacity={0.4}
+                            fill="#f97316" // 橘色，用於 Legend 顯示
+                            barSize={6}
+                            opacity={0.9}
+                            hide={!showAll}
                         >
                             {data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.tsb >= 0 ? '#10b981' : '#f97316'} />
+                                <Cell
+                                    key={`tsb-${index}`}
+                                    fill={entry.tsb >= 0 ? '#10b981' : '#f97316'}
+                                />
                             ))}
                         </Bar>
+
+                        {/* ATL - Line */}
+                        <Line
+                            yAxisId="load"
+                            type="monotone"
+                            dataKey="atl"
+                            name="疲勞 (ATL)"
+                            stroke="#f472b6"
+                            strokeWidth={3}
+                            strokeDasharray="4 4"
+                            dot={false}
+                            activeDot={{ r: 5 }}
+                            hide={!showAll}
+                        />
 
                         {/* CTL - Area */}
                         <Area
@@ -209,8 +293,9 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                             stroke="#818cf8"
                             fill="url(#colorCtlSeparate)"
                             fillOpacity={0.2}
-                            strokeWidth={2}
-                            activeDot={{ r: 4 }}
+                            strokeWidth={3}
+                            activeDot={{ r: 5 }}
+                            hide={!showAll}
                         />
                         <defs>
                             <linearGradient id="colorCtlSeparate" x1="0" y1="0" x2="0" y2="1">
@@ -219,17 +304,19 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                             </linearGradient>
                         </defs>
 
-                        {/* ATL - Line */}
-                        <Line
-                            yAxisId="load"
-                            type="monotone"
-                            dataKey="atl"
-                            name="疲勞 (ATL)"
-                            stroke="#f472b6"
-                            strokeWidth={2}
-                            strokeDasharray="3 3"
-                            dot={false}
-                            activeDot={{ r: 4 }}
+                        {/* TSB - 0 軸參考線 */}
+                        <ReferenceLine y={0} yAxisId="tsb" stroke="#475569" strokeDasharray="3 3" />
+
+                        {/* TSS - Bar (統一金黃色) */}
+                        <Bar
+                            yAxisId="tss"
+                            dataKey="tss"
+                            name="訓練量 (TSS)"
+                            fill="#f59e0b"
+                            radius={[2, 2, 0, 0]}
+                            maxBarSize={8}
+                            opacity={0.7}
+                            hide={!showTSS}
                         />
                     </ComposedChart>
                 </ResponsiveContainer>

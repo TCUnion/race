@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle } from 'lucide-react';
-import { supabaseAdmin as supabase } from '../../lib/supabase';
+import { supabaseAdmin, supabaseServiceRole } from '../../lib/supabase';
+// 如果 Service Role 可用則使用它（繞過 RLS），否則退回 supabaseAdmin
+const supabase = supabaseServiceRole || supabaseAdmin;
 import { API_BASE_URL } from '../../lib/api_config';
 import StravaLogo from '../../components/ui/StravaLogo';
 
@@ -70,9 +72,13 @@ interface StravaToken {
     lastActivityAt?: string;
 }
 
+// 🔐 管理員白名單 (athlete_id)
+const ADMIN_ATHLETE_WHITELIST = [2838277];
+
 const AdminPanel: React.FC = () => {
 
     const [session, setSession] = useState<any>(null);
+    const [stravaSession, setStravaSession] = useState<any>(null); // Strava 登入狀態
     const [loading, setLoading] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -353,37 +359,68 @@ const AdminPanel: React.FC = () => {
     };
 
     const fetchRegistrations = async (filterSegmentId: string | null = null) => {
-        let query = supabase
-            .from('registrations')
-            .select('*, segments(name, strava_id)')
-            .order('registered_at', { ascending: false });
+        try {
+            // 分離查詢避免 PGRST200 錯誤
+            let query = supabase
+                .from('registrations')
+                .select('*')
+                .order('registered_at', { ascending: false });
 
-        if (filterSegmentId) {
-            query = query.eq('segment_id', filterSegmentId);
-        }
+            if (filterSegmentId) {
+                query = query.eq('segment_id', filterSegmentId);
+            }
 
-        const { data, error } = await query;
+            const { data: regData, error: regError } = await query;
 
-        if (error) {
-            console.error('Fetch registrations error:', error);
-            setError('讀取報名資料失敗: ' + error.message);
-        } else if (data) {
-            setRegistrations(data);
+            if (regError) {
+                console.error('Fetch registrations error:', regError);
+                setError('讀取報名資料失敗: ' + regError.message);
+                return;
+            }
+
+            if (regData && regData.length > 0) {
+                // 取得所有相關的 segment_ids
+                const segmentIds = [...new Set(regData.map(r => r.segment_id).filter(Boolean))];
+
+                // 分別查詢 segments 資料
+                const { data: segmentsData } = await supabase
+                    .from('segments')
+                    .select('id, name, strava_id')
+                    .in('id', segmentIds);
+
+                // 合併資料
+                const segmentsMap = new Map(segmentsData?.map(s => [s.id, s]) || []);
+                const mergedData = regData.map(reg => ({
+                    ...reg,
+                    segments: segmentsMap.get(reg.segment_id) || null
+                }));
+
+                setRegistrations(mergedData);
+            } else {
+                setRegistrations([]);
+            }
+        } catch (err: any) {
+            console.error('Fetch registrations error:', err);
+            setError('讀取報名資料失敗: ' + err.message);
         }
     };
 
     useEffect(() => {
-        if (session) fetchRegistrations();
-    }, [session]);
+        if (session || stravaSession) fetchRegistrations();
+    }, [session, stravaSession]);
+
+    // 已移除繞過登入模式
+    const bypassLoginEnabled = false;
 
     useEffect(() => {
-        if (session) {
+        if (session || stravaSession) {
             fetchAllMembers();
             fetchStravaTokens();
             fetchSiteSettings();
             fetchManagers();
+            fetchSegments(); // 補上路段資料抓取
         }
-    }, [session]);
+    }, [session, stravaSession]);
 
     const handleUpdateSegment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -506,9 +543,164 @@ const AdminPanel: React.FC = () => {
         }
     };
 
+    // Strava OAuth 登入 (使用 n8n webhook + postMessage)
+    const authWindowRef = useRef<Window | null>(null);
+    const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const STRAVA_AUTH_CONFIG = {
+        stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
+        storageKey: 'strava_athlete_data',
+        pollingInterval: 1000,
+        pollingTimeout: 120000
+    };
+
+    const stopPolling = () => {
+        if (pollingTimerRef.current) {
+            clearInterval(pollingTimerRef.current);
+            pollingTimerRef.current = null;
+        }
+        if (authWindowRef.current && !authWindowRef.current.closed) {
+            authWindowRef.current.close();
+        }
+        authWindowRef.current = null;
+        setLoading(false);
+    };
+
+    const handleStravaLogin = () => {
+        setLoading(true);
+        setError(null);
+
+        // 清除舊的暫存
+        localStorage.removeItem(STRAVA_AUTH_CONFIG.storageKey + '_temp');
+
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+        const returnUrl = encodeURIComponent(window.location.href);
+        const url = `${STRAVA_AUTH_CONFIG.stravaAuthUrl}?return_url=${returnUrl}`;
+
+        authWindowRef.current = window.open(
+            url,
+            'strava_auth',
+            `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+        );
+
+        if (!authWindowRef.current) {
+            setLoading(false);
+            setError('請允許彈出視窗以進行 Strava 授權');
+            return;
+        }
+
+        // 開始輪詢
+        const startTime = Date.now();
+        pollingTimerRef.current = setInterval(() => {
+            // 超時檢查
+            if (Date.now() - startTime > STRAVA_AUTH_CONFIG.pollingTimeout) {
+                stopPolling();
+                setError('授權超時，請重試');
+                return;
+            }
+
+            try {
+                if (authWindowRef.current && authWindowRef.current.closed) {
+                    // 視窗關閉，檢查暫存資料
+                    const tempData = localStorage.getItem(STRAVA_AUTH_CONFIG.storageKey + '_temp');
+                    if (tempData) {
+                        try {
+                            const athleteData = JSON.parse(tempData);
+                            localStorage.removeItem(STRAVA_AUTH_CONFIG.storageKey + '_temp');
+                            validateAndSetStravaSession(athleteData);
+                        } catch (e) {
+                            console.error('處理授權暫存資料失敗', e);
+                        }
+                    }
+                    stopPolling();
+                    return;
+                }
+            } catch (e) {
+                // COOP 阻擋，繼續依賴 postMessage
+            }
+
+            // 檢查 localStorage
+            const tempData = localStorage.getItem(STRAVA_AUTH_CONFIG.storageKey + '_temp');
+            if (tempData) {
+                try {
+                    const athleteData = JSON.parse(tempData);
+                    localStorage.removeItem(STRAVA_AUTH_CONFIG.storageKey + '_temp');
+                    validateAndSetStravaSession(athleteData);
+                    stopPolling();
+                } catch (e) {
+                    console.error('處理授權暫存資料失敗', e);
+                }
+            }
+        }, STRAVA_AUTH_CONFIG.pollingInterval);
+    };
+
+    // 驗證並設定 Strava Session
+    const validateAndSetStravaSession = async (athleteData: any) => {
+        const athleteId = Number(athleteData.id || athleteData.athlete?.id);
+
+        if (!athleteId || isNaN(athleteId)) {
+            setError('無法取得運動員資訊');
+            setLoading(false);
+            return;
+        }
+
+        // 檢查是否在白名單中
+        if (!ADMIN_ATHLETE_WHITELIST.includes(athleteId)) {
+            // 也檢查 manager_roles 表
+            const { data: managerData } = await supabase
+                .from('manager_roles')
+                .select('role, is_active')
+                .eq('athlete_id', athleteId)
+                .maybeSingle();
+
+            if (!managerData || managerData.role !== 'admin' || !managerData.is_active) {
+                setError('權限不足：此 Strava 帳號未獲得管理員授權。');
+                setLoading(false);
+                return;
+            }
+        }
+
+        // 驗證通過
+        const name = `${athleteData.firstname || athleteData.firstName || ''} ${athleteData.lastname || athleteData.lastName || ''}`.trim() || 'Admin';
+        setStravaSession({
+            athlete_id: athleteId,
+            name: name
+        });
+
+        // 載入資料
+        fetchSegments();
+        fetchAllMembers();
+        fetchStravaTokens();
+        fetchSiteSettings();
+        fetchManagers();
+
+        setLoading(false);
+    };
+
+    // 監聽 postMessage
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'STRAVA_AUTH_SUCCESS') {
+                stopPolling();
+                const fullData = {
+                    ...event.data,
+                    ...(event.data.athlete || {})
+                };
+                validateAndSetStravaSession(fullData);
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setSession(null);
+        setStravaSession(null);
         setSegments([]);
     };
 
@@ -522,31 +714,32 @@ const AdminPanel: React.FC = () => {
 
             if (mError) throw mError;
 
-            // 2. 抓取 Binding 資料 (真理來源)
+            // 2. 抓取 Binding 資料
             const { data: bindings, error: bError } = await supabase
                 .from('strava_bindings')
                 .select('strava_id, tcu_member_email, tcu_account');
 
+            if (bError) console.warn('[WARN] strava_bindings 查詢失敗:', bError.message);
+
             // 建立 Search Maps
-            const accountMap = new Map(); // key: account, value: strava_id
-            const emailMap = new Map();   // key: email, value: strava_id
+            const accountMap = new Map();
+            const emailMap = new Map();
 
             if (!bError && bindings) {
                 bindings.forEach(b => {
                     if (b.tcu_account) {
                         accountMap.set(b.tcu_account, b.strava_id);
-                    }
-                    if (b.tcu_member_email) {
-                        emailMap.set(b.tcu_member_email, b.strava_id);
+                    } else if (b.tcu_member_email) {
+                        // 如果綁定紀錄沒有指定 account，才放入 emailMap 作為備援
+                        emailMap.set(b.tcu_member_email.toLowerCase(), b.strava_id);
                     }
                 });
             }
 
             // 3. 抓取 Strava 選手資料
-            // 收集所有 unique strava ids
             const stravaIds = Array.from(new Set(bindings?.map(b => b.strava_id) || []));
-
             let athleteMap = new Map();
+
             if (stravaIds.length > 0) {
                 const { data: athletes, error: aError } = await supabase
                     .from('athletes')
@@ -559,25 +752,22 @@ const AdminPanel: React.FC = () => {
             }
 
             // 4. 合併與排序
-            const sorted = (members || []).map(m => {
-                // 邏輯修正：嚴格優先使用 account 對應
-                // 如果該會員 record 有 account，則只看 accountMap 是否有對應
-                // 如果 record 沒有 account (較少見)，才 fallback 到 email
-
+            const membersWithBindings = (members || []).map(m => {
                 let stravaId = null;
 
                 if (m.account && accountMap.has(m.account)) {
                     stravaId = accountMap.get(m.account);
-                } else if (!m.account && emailMap.has(m.email)) {
-                    // 只有在會員資料本身沒有 account 欄位時，才允許用 email 寬鬆匹配
-                    stravaId = emailMap.get(m.email);
+                } else if (emailMap.has(m.email?.toLowerCase())) {
+                    stravaId = emailMap.get(m.email?.toLowerCase());
                 }
-                // 注意：如果 m.account 存在但沒對應到 binding，就算 email 相同也不視為綁定 (解決多重帳號共用 email 問題)
+
+                const athlete = stravaId ? athleteMap.get(stravaId.toString()) : null;
 
                 return {
                     ...m,
                     strava_id: stravaId,
-                    athletes: stravaId ? athleteMap.get(stravaId.toString()) : null
+                    strava_name: athlete ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : null,
+                    athletes: athlete // 關鍵：存入組件預期的 athletes 屬性
                 };
             }).sort((a, b) => {
                 const aBound = !!a.strava_id;
@@ -587,7 +777,7 @@ const AdminPanel: React.FC = () => {
                 return 0;
             });
 
-            setAllMembers(sorted);
+            setAllMembers(membersWithBindings);
         } catch (err: any) {
             console.error('Fetch members error:', err);
         }
@@ -603,9 +793,14 @@ const AdminPanel: React.FC = () => {
             console.error('Fetch managers error:', error);
         } else {
             // Fetch authorizations statistics
-            const { data: authData } = await supabase
+            const { data: authData, error: authError } = await supabase
                 .from('user_authorizations')
                 .select('manager_athlete_id, manager_email, status');
+
+            // 如果表不存在，顯示警告但繼續執行
+            if (authError) {
+                console.warn('[WARN] user_authorizations 查詢失敗:', authError.message);
+            }
 
             const managersWithStats = (managersData || []).map(m => {
                 const myAuths = (authData || []).filter(a => {
@@ -761,7 +956,8 @@ const AdminPanel: React.FC = () => {
             // 2. 抓取所有權杖資訊 (正確資料來源為 strava_tokens)
             const { data: tokens, error: tError } = await supabase
                 .from('strava_tokens')
-                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at'); // 確保包含 created_at, last_activity_at
+                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at') // 確保包含 created_at, last_activity_at
+                .order('updated_at', { ascending: true });
 
             const tokenMap = new Map();
             if (!tError && tokens) {
@@ -990,7 +1186,10 @@ const AdminPanel: React.FC = () => {
         );
     }
 
-    if (!session) {
+    // 登入驗證
+    const isAuthenticated = session || stravaSession;
+
+    if (!isAuthenticated) {
         return (
             <div className="max-w-md mx-auto my-20 p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800">
                 <h2 className="text-2xl font-black italic mb-6 uppercase tracking-tight">管理員登入</h2>
@@ -1034,6 +1233,27 @@ const AdminPanel: React.FC = () => {
                         {loading ? '登入中...' : '立即登入'}
                     </button>
                 </form>
+
+                {/* 分隔線 */}
+                <div className="flex items-center gap-4 my-6">
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                    <span className="text-xs font-bold text-slate-400 uppercase">或</span>
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                </div>
+
+                {/* Strava 登入按鈕 */}
+                <button
+                    onClick={handleStravaLogin}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 bg-[#FC4C02] hover:bg-[#E34402] text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-[#FC4C02]/30"
+                >
+                    <StravaLogo className="w-5 h-5" />
+                    {loading ? '連線中...' : '使用 Strava 登入'}
+                </button>
+
+                <p className="text-center text-xs text-slate-400 mt-4">
+                    僅限授權管理員使用
+                </p>
             </div>
         );
     }
@@ -1046,7 +1266,8 @@ const AdminPanel: React.FC = () => {
                         後台總表 <span className="text-tcu-blue text-lg not-italic opacity-50 ml-2">Backend Dashboard</span>
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 font-bold mt-1">
-                        目前登入身份: {session.user.email}
+                        目前登入身份: {session?.user?.email || stravaSession?.name || '未知'}
+                        {stravaSession && <span className="ml-2 text-[#FC4C02]">（Strava）</span>}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                         <span className="text-[10px] font-black uppercase tracking-widest bg-tcu-blue/10 text-tcu-blue px-2 py-0.5 rounded-full">
@@ -1347,20 +1568,19 @@ const AdminPanel: React.FC = () => {
                                             {manager.shop_name || '-'}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1 font-mono font-bold text-slate-600 dark:text-slate-400">
-                                                <Users className="w-3 h-3 text-slate-400" />
+                                            <div className="flex items-center gap-1 font-mono font-bold text-orange-500 bg-blue-500/20 px-2.5 py-1 rounded-lg w-fit border border-blue-500/30">
+                                                <Users className="w-3 h-3" />
                                                 {manager.authorizedCount || 0}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {(manager.pendingCount || 0) > 0 ? (
-                                                <div className="flex items-center gap-1 font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg w-fit">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {manager.pendingCount}
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-300 font-mono text-xs">-</span>
-                                            )}
+                                            <div className={`flex items-center gap-1 font-mono font-bold px-2.5 py-1 rounded-lg w-fit border transition-all
+                                                ${(manager.pendingCount || 0) > 0
+                                                    ? 'text-orange-500 bg-orange-500/20 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]'
+                                                    : 'text-slate-500 bg-slate-500/10 border-slate-500/20 opacity-40'}`}>
+                                                <AlertCircle className="w-3 h-3" />
+                                                {manager.pendingCount || 0}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             {manager.is_active ? (
@@ -2146,7 +2366,7 @@ const AdminPanel: React.FC = () => {
 
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-500 px-2 py-1 rounded-full whitespace-nowrap">
-                                    {allMembers.filter(m => m.strava_id).length} Bound
+                                    {new Set(allMembers.filter(m => m.strava_id).map(m => m.strava_id)).size} Bound
                                 </span>
                                 <button
                                     onClick={fetchAllMembers}
@@ -2172,6 +2392,13 @@ const AdminPanel: React.FC = () => {
 
                         // Sorting
                         const sortedFiltered = [...filtered].sort((a, b) => {
+                            // 1. Primary Sort: Binding Status (Always prioritize bound members)
+                            const aBound = !!a.strava_id;
+                            const bBound = !!b.strava_id;
+                            if (aBound && !bBound) return -1;
+                            if (!aBound && bBound) return 1;
+
+                            // 2. Secondary Sort: Selected Field
                             let valA, valB;
 
                             switch (memberSortField) {
@@ -2180,8 +2407,8 @@ const AdminPanel: React.FC = () => {
                                     valB = b.strava_id || '';
                                     break;
                                 case 'strava_name':
-                                    valA = a.athletes ? `${a.athletes.firstname} ${a.athletes.lastname}` : '';
-                                    valB = b.athletes ? `${b.athletes.firstname} ${b.athletes.lastname}` : '';
+                                    valA = a.strava_name || '';
+                                    valB = b.strava_name || '';
                                     break;
                                 case 'real_name': // 會員資訊
                                     const nameA = a.real_name || '';
@@ -2208,13 +2435,12 @@ const AdminPanel: React.FC = () => {
                                     valB = b.member_type || '';
                                     break;
                                 case 'action':
-                                    // 排序邏輯：有 strava_id 的 (可解除綁定) 排前面/後面
                                     valA = a.strava_id ? 'Unbind' : 'NoAction';
                                     valB = b.strava_id ? 'Unbind' : 'NoAction';
                                     break;
                                 default:
-                                    valA = a[memberSortField];
-                                    valB = b[memberSortField];
+                                    valA = a[memberSortField] || '';
+                                    valB = b[memberSortField] || '';
                             }
 
                             if (valA < valB) return memberSortOrder === 'asc' ? -1 : 1;
@@ -2259,7 +2485,7 @@ const AdminPanel: React.FC = () => {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                             {displayedMembers.map((m) => (
-                                                <tr key={m.email} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!m.strava_id ? 'opacity-60' : ''}`}>
+                                                <tr key={m.tcu_id || m.email} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!m.strava_id ? 'opacity-60' : ''}`}>
                                                     <td className="px-4 py-4">
                                                         {m.strava_id ? (
                                                             <a

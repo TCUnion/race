@@ -186,18 +186,36 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setRegistrationError(false);
 
     try {
-      // 抓取該選手的所有報名
-      const { data, error } = await supabase
+      // 抓取該選手的所有報名（不使用 embedded relationship 避免 PGRST200 錯誤）
+      const { data: regData, error: regError } = await supabase
         .from('registrations')
-        .select('*, segments(*)')
+        .select('*')
         .eq('strava_athlete_id', athleteId);
 
-      if (error) throw error;
+      if (regError) throw regError;
 
-      if (data && data.length > 0) {
-        setRegisteredSegments(data);
+      if (regData && regData.length > 0) {
+        // 取得所有相關的 segment_ids
+        const segmentIds = regData.map(r => r.segment_id).filter(Boolean);
+
+        // 分別查詢 segments 資料
+        const { data: segmentsData, error: segError } = await supabase
+          .from('segments')
+          .select('*')
+          .in('id', segmentIds);
+
+        if (segError) throw segError;
+
+        // 合併資料
+        const segmentsMap = new Map(segmentsData?.map(s => [s.id, s]) || []);
+        const mergedData = regData.map(reg => ({
+          ...reg,
+          segments: segmentsMap.get(reg.segment_id) || null
+        }));
+
+        setRegisteredSegments(mergedData);
         // 預設選擇第一個報名的路段
-        setCurrentSegmentId(data[0].segment_id);
+        setCurrentSegmentId(regData[0].segment_id);
       } else {
         setRegisteredSegments([]);
       }
