@@ -340,10 +340,28 @@ async def unbind_member(request: Request):
         existing_binding = binding_res.data[0] if binding_res.data else None
         
         is_admin = str(admin_id) in ADMIN_ATHLETE_IDS
+        
+        # [NEW] 若環境變數未包含，則搜尋資料庫確認是否為 Admin 角色
+        if not is_admin:
+            try:
+                # 查詢 manager_roles 表，確認該 athlete_id 是否具備 admin 權限
+                admin_check = supabase.table("manager_roles")\
+                    .select("role, is_active")\
+                    .eq("athlete_id", str(admin_id))\
+                    .execute()
+                
+                if admin_check.data:
+                    mgr = admin_check.data[0]
+                    if mgr.get("role") == "admin" and mgr.get("is_active"):
+                        is_admin = True
+                        print(f"[DEBUG] Admin access granted via DB for athlete_id: {admin_id}")
+            except Exception as db_err:
+                print(f"[WARN] Failed to verify admin status via DB: {db_err}")
+
         is_self = existing_binding and str(existing_binding.get("strava_id")) == str(admin_id)
         
         if not is_admin and not is_self:
-            print(f"[DEBUG] Permission denied. admin_id: {admin_id}, bound_id: {existing_binding.get('strava_id') if existing_binding else 'None'}")
+            print(f"[DEBUG] Permission denied. admin_id: {admin_id}")
             return {"success": False, "message": "Permission denied: Not an administrator or data owner"}
 
         # 2. 檢查 Token 是否存在且合法
