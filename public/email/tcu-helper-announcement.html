@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCU小幫手 全新上線</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a;
+            font-family: 'Noto Sans TC', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #0f172a;
+            padding-bottom: 60px;
+        }
+
+        .main-table {
+            background-color: #0f172a;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 600px;
+            border-spacing: 0;
+            color: #f8fafc;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .hero {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 28px;
+            font-weight: 900;
+            margin: 0 0 15px 0;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .feature-card {
+            background-color: #1e293b;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+
+        .feature-content {
+            padding: 25px;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 10px 0;
+        }
+
+        .feature-text {
+            font-size: 14px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid #334155;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .banana-accent {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <table class="main-table" align="center">
+            <tr>
+                <td class="header">
+                    <div class="logo">🍌 TCU 小幫手</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="hero">
+                    <p style="font-size: 18px; color: #e2e8f0; margin-bottom: 20px; font-weight: bold;">親愛的 TCU
+                        會員夥伴們，大家好：</p>
+                    <h1>全新改版<br><span class="banana-accent">智能進化</span></h1>
+                    <p>不只是紀錄，更是進化的開始。<br>我們為您打造了專業級的數據分析與社群體驗。</p>
+                    <div
+                        style="background-color: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); padding: 15px; border-radius: 12px; margin-top: 25px; display: inline-block;">
+                        <p style="color: #fbbf24; font-size: 14px; font-weight: bold; margin: 0;">⚠️ 僅限已綁定 STRAVA 之 TCU
+                            會員使用</p>
+                        <p style="color: #94a3b8; font-size: 13px; margin: 5px 0 0 0;">若您尚未綁定，請先前往綁定頁面。</p>
+                        <a href="https://strava.criterium.tw/"
+                            style="display: inline-block; margin-top: 8px; color: #1e293b; background-color: #fbbf24; padding: 6px 15px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold;">前往綁定
+                            STRAVA &rarr;</a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 20px;">
+
+                    <!-- 功率分析功能 - 主打特色 -->
+                    <div class="feature-card" style="border-color: #fbbf24;">
+                        <table width="100%">
+                            <tr>
+                                <td>
+                                    <img src="https://strava.criterium.tw/email/power_dashboard_banana.png" alt="功率功能預覽"
+                                        style="width: 100%; height: auto; display: block; border-bottom: 1px solid #334155;">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="feature-content">
+                                    <div
+                                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                        <div class="feature-title" style="margin: 0; color: #fbbf24;">⚡ 功率分析功能 全新上線
+                                        </div>
+                                        <span
+                                            style="background-color: #fbbf24; color: #1e293b; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: bold;">NEW</span>
+                                    </div>
+                                    <p class="feature-text">您的訓練數據現在更加完整！TCU
+                                        小幫手正式支援功率數據顯示，透過精確的圖表分析，協助您掌握輸出的每一分力量，讓訓練科學化邁向新高度。</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 小比賽功能 -->
+                    <div class="feature-card">
+                        <table width="100%">
+                            <tr>
+                                <td class="feature-content">
+                                    <div
+                                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                        <div class="feature-title" style="margin: 0;">🏆 小比賽功能</div>
+                                        <span
+                                            style="background-color: #059669; color: white; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: bold;">大家一起來比賽</span>
+                                    </div>
+                                    <p class="feature-text">熱血開騎！各類趣味小比賽現正進行中，歡迎所有會員一同參與挑戰，互相切磋交流。</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 單車保養紀錄 -->
+                    <div class="feature-card">
+                        <table width="100%">
+                            <tr>
+                                <td class="feature-content">
+                                    <div
+                                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                        <div class="feature-title" style="margin: 0;">🛠️ 單車保養紀錄</div>
+                                        <span
+                                            style="background-color: #059669; color: white; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: bold;">已上線</span>
+                                    </div>
+                                    <p class="feature-text">愛車履歷一手掌握！輕鬆記錄每次保養細節，系統持續優化中，為您的愛車提供最完善的數位照顧。</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 車隊內部挑戰賽 - 即將推出 -->
+                    <div class="feature-card" style="opacity: 0.8; border-color: #334155;">
+                        <table width="100%">
+                            <tr>
+                                <td class="feature-content">
+                                    <div
+                                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                        <div class="feature-title" style="margin: 0; color: #94a3b8;">🏁 車隊內部挑戰賽</div>
+                                        <span
+                                            style="background-color: #475569; color: #e2e8f0; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: bold;">即將推出</span>
+                                    </div>
+                                    <p class="feature-text" style="color: #64748b;">激發團隊潛能！專屬的車隊內部賽段挑戰即將登場，自動抓取成績進行即時排名。
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="cta-section">
+                    <a href="https://strava.criterium.tw/" class="btn">🍌 立即體驗全新系統</a>
+                    <p style="margin-top: 20px; font-size: 12px; color: #64748b;">*建議使用電腦或平板瀏覽以獲得最佳體驗</p>
+                </td>
+            </tr>
+            <tr>
+                <td class="footer">
+                    <p>&copy; 2026 Taiwan Cycling Union (TCU). All rights reserved.</p>
+                    <p>科學訓練 • 數據驅動 • 快樂騎乘 🍌</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>
