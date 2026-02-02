@@ -124,42 +124,23 @@ export function usePowerAnalysis(): UsePowerAnalysisReturn {
     }, []);
 
     // 計算 Normalized Power (30 秒滑動平均 + 4 次方平均)
-    // 符合 Coggan 標準算法，過濾零功率以更接近 Garmin/TrainingPeaks 結果
+    // 修正：恢復標準算法，包含 0 功率數據。
+    // 過濾 0 功率會導致 NP 異常飆高 (e.g. 178W vs Garmin 147W)，因為忽略了滑行/下坡的休息效應。
     const calculateNP = useCallback((powerData: number[]): number => {
         if (!powerData || powerData.length < 30) {
             // 數據不足，返回簡單平均
-            const validPower = powerData.filter(p => p > 0);
-            if (validPower.length === 0) return 0;
-            const sum = validPower.reduce((a, b) => a + b, 0);
-            return Math.round(sum / validPower.length) || 0;
+            const sum = powerData.reduce((a, b) => a + b, 0);
+            return Math.round(sum / powerData.length) || 0;
         }
 
-        // 過濾零功率和極低功率點（< 10W 視為無效/滑行）
-        // 注意：這裡保留原始索引以維持時間連續性，只在計算滑動平均時處理
-        const minValidPower = 10;
-
-        // 計算 30 秒滑動平均（排除零功率點的影響）
+        // 計算 30 秒滑動平均 (包含 0 值)
         const rollingAvg: number[] = [];
         for (let i = 29; i < powerData.length; i++) {
             let sum = 0;
-            let validCount = 0;
             for (let j = i - 29; j <= i; j++) {
-                if (powerData[j] >= minValidPower) {
-                    sum += powerData[j];
-                    validCount++;
-                }
+                sum += powerData[j];
             }
-            // 只有當該窗口有足夠有效數據點時才計入（至少一半）
-            if (validCount >= 15) {
-                rollingAvg.push(sum / validCount);
-            }
-        }
-
-        if (rollingAvg.length === 0) {
-            // 沒有有效的滑動平均，回退到簡單平均
-            const validPower = powerData.filter(p => p >= minValidPower);
-            if (validPower.length === 0) return 0;
-            return Math.round(validPower.reduce((a, b) => a + b, 0) / validPower.length);
+            rollingAvg.push(sum / 30);
         }
 
         // 計算 4 次方平均
