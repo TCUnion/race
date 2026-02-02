@@ -440,6 +440,7 @@ export interface ActivityPowerAnalysis {
     velocity?: number[];
     grade?: number[];
     altitude?: number[];
+    temp?: number[];
   };
 }
 

@@ -239,6 +239,7 @@ export function usePowerAnalysis(): UsePowerAnalysisReturn {
         const altitudeData = getStreamData('altitude');
         const gradeData = getStreamData('grade_smooth');
         const timeData = getStreamData('time');
+        const tempData = getStreamData('temp');
 
         // 計算功率指標
         const np = calculateNP(powerData);
@@ -293,6 +294,7 @@ export function usePowerAnalysis(): UsePowerAnalysisReturn {
                 velocity: velocityData.length > 0 ? velocityData : undefined,
                 grade: gradeData.length > 0 ? gradeData : undefined,
                 altitude: altitudeData.length > 0 ? altitudeData : undefined,
+                temp: tempData.length > 0 ? tempData : undefined,
             },
         };
     }, [calculateNP, calculateTSS, calculatePowerZones, analyzePowerZoneDistribution, analyzeHRZoneDistribution]);

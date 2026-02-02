@@ -119,8 +119,9 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
         { key: 'heartrate', label: '心率 (bpm)', color: '#EF4444', icon: Heart },
         { key: 'cadence', label: '踏頻 (rpm)', color: '#3B82F6', icon: Activity },
         { key: 'speed', label: '速度 (km/h)', color: '#06b6d4', icon: Zap },
-        { key: 'altitude', label: '海拔 (m)', color: '#10b981', icon: TrendingUp }, // Emerald-500
+        { key: 'altitude', label: '海拔 (m)', color: '#10b981', icon: TrendingUp },
         { key: 'grade', label: '坡度 (%)', color: '#A855F7', icon: TrendingUp },
+        { key: 'temp', label: '溫度 (°C)', color: '#F97316', icon: TrendingUp },
     ];
 
     // 切換指標顯示
@@ -135,7 +136,7 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
     // 轉換數據格式供 Recharts 使用 (每 10 秒取樣一次以優化效能)
     const chartData = useMemo(() => {
         if (!data?.timeSeriesData) return [];
-        const { time, watts, heartrate, cadence, grade, velocity, altitude } = data.timeSeriesData;
+        const { time, watts, heartrate, cadence, grade, velocity, altitude, temp } = data.timeSeriesData;
         const result = [];
         // 取樣頻率：每 10 點取 1 點
         for (let i = 0; i < time.length; i += 10) {
@@ -148,6 +149,7 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                 grade: grade?.[i] || 0,
                 speed: velocity?.[i] ? Number((velocity[i] * 3.6).toFixed(1)) : 0, // m/s -> km/h
                 altitude: altitude?.[i] || 0,
+                temp: temp?.[i] || null, // 溫度可能為空
             });
         }
         return result;
@@ -262,6 +264,10 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                                 <stop offset="5%" stopColor="#A855F7" stopOpacity={0.8} />
                                 <stop offset="95%" stopColor="#A855F7" stopOpacity={0} />
                             </linearGradient>
+                            <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#F97316" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#F97316" stopOpacity={0} />
+                            </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
                         <XAxis
@@ -283,6 +289,7 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                         <YAxis yAxisId="speed" stroke="#06b6d4" hide domain={[0, 100]} />
                         <YAxis yAxisId="altitude" stroke="#10b981" hide domain={['auto', 'auto']} />
                         <YAxis yAxisId="grade" stroke="#A855F7" hide domain={[-20, 20]} />
+                        <YAxis yAxisId="temp" stroke="#F97316" hide domain={['auto', 'auto']} />
 
                         <Tooltip
                             contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc', fontSize: '12px' }}
@@ -296,6 +303,7 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                                 if (name === 'speed') return [`${value}km/h`, '速度'];
                                 if (name === 'altitude') return [`${value}m`, '海拔'];
                                 if (name === 'grade') return [`${value}%`, '坡度'];
+                                if (name === 'temp') return [`${value}°C`, '溫度'];
                                 return [value, name];
                             }}
                         />
@@ -377,6 +385,20 @@ const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
                                 strokeWidth={1.5}
                                 activeDot={{ r: 4 }}
                                 animationDuration={500}
+                            />
+                        )}
+                        {selectedMetrics.includes('temp') && (
+                            <Area
+                                yAxisId="temp"
+                                type="monotone"
+                                dataKey="temp"
+                                stroke="#F97316"
+                                fillOpacity={1}
+                                fill="url(#colorTemp)"
+                                strokeWidth={1.5}
+                                activeDot={{ r: 4 }}
+                                animationDuration={500}
+                                connectNulls
                             />
                         )}
 
