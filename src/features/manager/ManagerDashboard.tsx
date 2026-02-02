@@ -239,7 +239,7 @@ function ManagerDashboard() {
     const [activityView, setActivityView] = useState<'individual' | 'date'>('individual');
     const [filterDate, setFilterDate] = useState<string>(''); // YYYY-MM-DD
     const [activityPage, setActivityPage] = useState(1);
-    const [activityRowsPerPage, setActivityRowsPerPage] = useState(10);
+    const [activityRowsPerPage, setActivityRowsPerPage] = useState(9999); // 預設顯示全部
     // 新增：紀錄每個車友展開活動列表的當前頁碼 { [athleteId]: page }
     const [activitySubPages, setActivitySubPages] = useState<Record<number, number>>({});
 
@@ -1433,6 +1433,7 @@ function ManagerDashboard() {
                                                         }}
                                                         className="bg-slate-700 border-slate-600 text-white rounded-lg focus:ring-blue-500 text-xs py-1 pl-2 pr-8"
                                                     >
+                                                        <option value={9999}>全部</option>
                                                         {[10, 20, 50, 100].map(val => (
                                                             <option key={val} value={val}>{val}</option>
                                                         ))}
@@ -1493,10 +1494,10 @@ function ManagerDashboard() {
                                                 <thead className="bg-slate-700/30">
                                                     <tr className="border-b border-slate-700/50">
                                                         <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">姓名</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">活動數</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">里程 (km)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">爬升 (m)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">時數</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日活動數</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日里程 (km)</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日爬升 (m)</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日時數</th>
                                                         {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
                                                             <>
                                                                 <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSS (本週)</th>

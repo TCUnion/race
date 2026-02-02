@@ -364,8 +364,7 @@ export function useManagerData(): UseManagerDataReturn {
             const athlete = allAthletes.find(a => a.id === athleteId);
             const bikes = allBikes.filter(b => b.athlete_id === athleteId);
 
-            if (activities.length === 0) continue;
-
+            // 即使沒有活動也要列出隊員（不再跳過）
             const ftp = athlete?.ftp || 200;
             let currentCtl = 0;
             let currentAtl = 0;
@@ -391,16 +390,19 @@ export function useManagerData(): UseManagerDataReturn {
                 a.tss = tss;
             });
 
-            const startDate = new Date(activities[0].start_date);
-            const endDate = new Date();
-            let iteratorDate = new Date(startDate);
+            // 計算 CTL/ATL（即使沒有活動也計算）
+            if (activities.length > 0) {
+                const startDate = new Date(activities[0].start_date);
+                const endDate = new Date();
+                let iteratorDate = new Date(startDate);
 
-            while (iteratorDate <= endDate) {
-                const dateKey = iteratorDate.toISOString().split('T')[0];
-                const dayTss = dailyTssMap.get(dateKey) || 0;
-                currentCtl = currentCtl * (41 / 42) + dayTss * (1 / 42);
-                currentAtl = currentAtl * (6 / 7) + dayTss * (1 / 7);
-                iteratorDate.setDate(iteratorDate.getDate() + 1);
+                while (iteratorDate <= endDate) {
+                    const dateKey = iteratorDate.toISOString().split('T')[0];
+                    const dayTss = dailyTssMap.get(dateKey) || 0;
+                    currentCtl = currentCtl * (41 / 42) + dayTss * (1 / 42);
+                    currentAtl = currentAtl * (6 / 7) + dayTss * (1 / 7);
+                    iteratorDate.setDate(iteratorDate.getDate() + 1);
+                }
             }
 
             const currentTsb = currentCtl - currentAtl;
