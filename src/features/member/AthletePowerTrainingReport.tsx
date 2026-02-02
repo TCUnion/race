@@ -1149,10 +1149,16 @@ const AthletePowerTrainingReport: React.FC = () => {
 
                                                         <div className="flex flex-col min-w-0">
                                                             <div className="flex items-center gap-2">
-                                                                <h4 className={`font-medium truncate transition-colors ${selectedActivity?.id === activity.id ? 'text-blue-300' : 'text-slate-200 group-hover:text-white'
-                                                                    }`}>
+                                                                <a
+                                                                    href={`https://www.strava.com/activities/${activity.id}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className={`font-medium truncate transition-colors hover:underline ${selectedActivity?.id === activity.id ? 'text-blue-300' : 'text-slate-200 group-hover:text-white'
+                                                                        }`}
+                                                                >
                                                                     {activity.name}
-                                                                </h4>
+                                                                </a>
                                                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 border border-slate-600">
                                                                     {activity.sport_type === 'VirtualRide' ? 'Virtual' : activity.sport_type}
                                                                 </span>
