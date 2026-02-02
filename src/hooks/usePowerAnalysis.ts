@@ -270,7 +270,10 @@ export function usePowerAnalysis(): UsePowerAnalysisReturn {
         const maxPower = powerData.length > 0
             ? Math.max(...powerData)
             : activity.max_watts || 0;
-        const duration = activity.moving_time;
+        // 使用 elapsed_time (總時間) 計算 TSS，以符合 Garmin/TrainingPeaks 邏輯 (包含休息時間的生理成本衰減較少，但持續壓力累積)
+        // Strava Streams 通常只給出 moving 部分的數據，因此 powerData.length 約等於 moving_time
+        // 但計算 TSS 時若使用 moving_time 會低估長解釋造成的疲勞 (或 Garmin 算法差異)
+        const duration = activity.elapsed_time || activity.moving_time;
 
         // 若 FTP 未設定 (為 0 或 null)，則不進行因子計算
         const tss = effectiveFtp > 0 ? calculateTSS(np, effectiveFtp, duration) : 0;
