@@ -1218,31 +1218,41 @@ const AthletePowerTrainingReport: React.FC = () => {
 
                                                     {/* 右側數據摘要 */}
                                                     <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                                                        {/* 指標顯示邏輯 */}
-                                                        {isSynced && avgWatts > 0 && (
-                                                            <>
-                                                                {/* TSS */}
-                                                                <div className="hidden sm:flex flex-col items-end">
-                                                                    <span className="text-xs font-mono text-pink-400 font-bold">{Math.round(tss)}</span>
-                                                                    <span className="text-[10px] text-slate-600">TSS</span>
-                                                                </div>
-                                                                {/* NP (Normalized Power) */}
-                                                                <div className="hidden sm:flex flex-col items-end">
-                                                                    <span className="text-xs font-mono text-orange-400 font-bold">{Math.round(np)}W</span>
-                                                                    <span className="text-[10px] text-slate-600">NP</span>
-                                                                </div>
-                                                                {/* IF (Intensity Factor) */}
-                                                                <div className="hidden md:flex flex-col items-end">
-                                                                    <span className="text-xs font-mono text-blue-400 font-bold">{intensity.toFixed(2)}</span>
-                                                                    <span className="text-[10px] text-slate-600">IF</span>
-                                                                </div>
-                                                                {/* AVG Power */}
-                                                                <div className="flex flex-col items-end">
-                                                                    <span className="text-xs font-mono text-yellow-500 font-bold">{Math.round(avgWatts)}W</span>
-                                                                    <span className="text-[10px] text-slate-600">AVG</span>
-                                                                </div>
-                                                            </>
-                                                        )}
+                                                        {/* 指標顯示邏輯 - 使用精確分析數據（若已展開）或估算數據 */}
+                                                        {(() => {
+                                                            // 若此活動已選中且有分析數據，使用精確值
+                                                            const isActiveAndAnalyzed = selectedActivity?.id === activity.id && activityAnalysis;
+                                                            const displayTss = isActiveAndAnalyzed ? activityAnalysis.trainingLoad.tss : tss;
+                                                            const displayNp = isActiveAndAnalyzed ? activityAnalysis.trainingLoad.np : np;
+                                                            const displayIf = isActiveAndAnalyzed ? activityAnalysis.trainingLoad.if : intensity;
+                                                            const displayAvg = isActiveAndAnalyzed ? activityAnalysis.trainingLoad.avgPower : avgWatts;
+
+                                                            if (!isSynced || avgWatts <= 0) return null;
+                                                            return (
+                                                                <>
+                                                                    {/* TSS */}
+                                                                    <div className="hidden sm:flex flex-col items-end">
+                                                                        <span className="text-xs font-mono text-pink-400 font-bold">{Math.round(displayTss)}</span>
+                                                                        <span className="text-[10px] text-slate-600">TSS</span>
+                                                                    </div>
+                                                                    {/* NP (Normalized Power) */}
+                                                                    <div className="hidden sm:flex flex-col items-end">
+                                                                        <span className="text-xs font-mono text-orange-400 font-bold">{Math.round(displayNp)}W</span>
+                                                                        <span className="text-[10px] text-slate-600">NP</span>
+                                                                    </div>
+                                                                    {/* IF (Intensity Factor) */}
+                                                                    <div className="hidden md:flex flex-col items-end">
+                                                                        <span className="text-xs font-mono text-blue-400 font-bold">{displayIf.toFixed(2)}</span>
+                                                                        <span className="text-[10px] text-slate-600">IF</span>
+                                                                    </div>
+                                                                    {/* AVG Power */}
+                                                                    <div className="flex flex-col items-end">
+                                                                        <span className="text-xs font-mono text-yellow-500 font-bold">{Math.round(displayAvg)}W</span>
+                                                                        <span className="text-[10px] text-slate-600">AVG</span>
+                                                                    </div>
+                                                                </>
+                                                            );
+                                                        })()}
 
                                                         {selectedActivity?.id === activity.id ? (
                                                             <ChevronUp className="w-4 h-4 text-blue-400" />
@@ -1307,7 +1317,7 @@ const AthletePowerTrainingReport: React.FC = () => {
                                                                                         : [{ type: 'heartrate', distribution_buckets: activityAnalysis.stravaZones }];
 
                                                                                     return zones
-                                                                                        .filter((z: any) => z.type === 'power')
+                                                                                        .filter((z: any) => z.type === 'power' || z.type === 'heartrate')
                                                                                         .map((z: any, idx: number) => (
                                                                                             <StravaZoneChart key={idx} data={z.distribution_buckets} type={z.type} />
                                                                                         ));
