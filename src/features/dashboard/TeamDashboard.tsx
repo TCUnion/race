@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
-import CaptainWarRoom from './CaptainWarRoom';
+const CaptainWarRoom = React.lazy(() => import('./CaptainWarRoom'));
 
 const TeamDashboard: React.FC = () => {
     const { athlete, isAdmin } = useAuth();
@@ -462,7 +462,9 @@ const TeamDashboard: React.FC = () => {
             )}
 
             {activeTab === 'war_room' && (
-                <CaptainWarRoom members={members} />
+                <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-tcu-blue" /></div>}>
+                    <CaptainWarRoom members={members} />
+                </Suspense>
             )}
         </div>
     );

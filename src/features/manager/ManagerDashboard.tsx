@@ -3,7 +3,7 @@
  * 提供車店/車隊管理者查看授權車友的保養、活動與統計資料
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { PMCChart } from '../../components/charts/PMCChart';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -61,7 +61,7 @@ import { supabase } from '../../lib/supabase';
 import { AthleteMaintenanceSummary, ActivitySummary, MaintenanceStatistics } from '../../types';
 import ManagerLogin from './ManagerLogin';
 import MaintenanceTable from '../maintenance/MaintenanceTable';
-import PowerTrainingReport from './PowerTrainingReport';
+const PowerTrainingReport = React.lazy(() => import('./PowerTrainingReport'));
 import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
 import { MaintenanceRecord } from '../../types';
 
@@ -1852,11 +1852,13 @@ function ManagerDashboard() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="space-y-6"
                             >
-                                <PowerTrainingReport
-                                    activitySummaries={activitySummaries}
-                                    defaultFTP={200}
-                                    defaultMaxHR={190}
-                                />
+                                <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="w-10 h-10 border-4 border-slate-600 border-t-violet-500 rounded-full animate-spin" /></div>}>
+                                    <PowerTrainingReport
+                                        activitySummaries={activitySummaries}
+                                        defaultFTP={200}
+                                        defaultMaxHR={190}
+                                    />
+                                </Suspense>
                             </motion.div>
                         )
                     }

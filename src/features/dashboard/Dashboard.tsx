@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { useSegmentData, formatTime } from '../../hooks/useSegmentData';
-import SegmentMap from '../map/SegmentMap';
 import { MOCK_SEGMENT_STATS } from '../../constants';
 import { Activity, ViewType } from '../../types';
+
+// 動態載入地圖組件以減少初始 Bundle Size
+const SegmentMap = React.lazy(() => import('../map/SegmentMap'));
 
 
 const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
@@ -647,7 +649,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 h-56 md:h-64 relative group shadow-lg bg-slate-100 dark:bg-slate-900">
                   <div className="absolute inset-0 transition-transform duration-1000 group-hover:scale-105">
-                    <SegmentMap polyline={selectedSegment?.polyline} />
+                    <Suspense fallback={
+                      <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 animate-pulse">
+                        <div className="text-slate-400 text-sm">載入地圖中...</div>
+                      </div>
+                    }>
+                      <SegmentMap polyline={selectedSegment?.polyline} />
+                    </Suspense>
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
                   <div className="absolute bottom-6 left-6 flex flex-col gap-1 z-10">

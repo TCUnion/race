@@ -800,7 +800,9 @@ const AthleteReport: React.FC<{
                     const found = await checkData();
                     if (!found) {
                         retries++;
-                        setTimeout(poll, 2000);
+                        // 指數退避：初始 1 秒，每次乘以 1.5，最大 8 秒
+                        const delay = Math.min(1000 * Math.pow(1.5, retries - 1), 8000);
+                        setTimeout(poll, delay);
                     }
                 };
 

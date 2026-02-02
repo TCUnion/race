@@ -144,7 +144,7 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                             : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-400'
                             }`}
                     >
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        <div className="w-2 h-2 rounded-full bg-red-500" />
                         訓練量 (TSS)
                     </button>
 
@@ -307,12 +307,12 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
                         {/* TSB - 0 軸參考線 */}
                         <ReferenceLine y={0} yAxisId="tsb" stroke="#475569" strokeDasharray="3 3" />
 
-                        {/* TSS - Bar (統一金黃色) */}
+                        {/* TSS - Bar (紅色) */}
                         <Bar
                             yAxisId="tss"
                             dataKey="tss"
                             name="訓練量 (TSS)"
-                            fill="#f59e0b"
+                            fill="#ef4444"
                             radius={[2, 2, 0, 0]}
                             maxBarSize={8}
                             opacity={0.7}
