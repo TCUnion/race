@@ -108,6 +108,38 @@ const PowerZoneChart: React.FC<{ zones: PowerZoneAnalysis[] }> = ({ zones }) => 
     );
 };
 
+// 心率區間長條圖
+const HRZoneChart: React.FC<{ zones: HRZoneAnalysis[] }> = ({ zones }) => {
+    const maxPercentage = Math.max(...zones.map(z => z.percentageTime), 1);
+
+    return (
+        <div className="space-y-2">
+            {zones.map(zone => (
+                <div key={zone.zone} className="flex items-center gap-3">
+                    <div className="w-24 text-xs text-slate-400 truncate">
+                        Z{zone.zone} {zone.name}
+                    </div>
+                    <div className="flex-1 h-5 bg-slate-700/50 rounded-full overflow-hidden">
+                        <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                                width: `${(zone.percentageTime / maxPercentage) * 100}%`,
+                                backgroundColor: zone.color,
+                            }}
+                        />
+                    </div>
+                    <div className="w-14 text-right text-xs font-mono text-slate-300">
+                        {zone.percentageTime}%
+                    </div>
+                    <div className="w-20 text-right text-xs font-mono text-slate-500">
+                        {formatDuration(zone.timeInZone)}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // 活動趨勢圖表組件
 const ActivityCharts: React.FC<{ data: any }> = ({ data }) => {
     // 預設顯示指標
@@ -1304,8 +1336,18 @@ const AthletePowerTrainingReport: React.FC = () => {
                                                                         </div>
                                                                     )}
 
-                                                                    {/* Strava 原始區間 */}
-                                                                    {activityAnalysis.stravaZones && activityAnalysis.stravaZones.length > 0 && (
+                                                                    {/* 心率區間 */}
+                                                                    {activityAnalysis.hrZones && activityAnalysis.hrZones.length > 0 && (
+                                                                        <div>
+                                                                            <h5 className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                                                                <Heart className="w-3 h-3" /> 心率區間
+                                                                            </h5>
+                                                                            <HRZoneChart zones={activityAnalysis.hrZones} />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Strava 原始區間 (若僅有 Strava 數據且無計算出的心率區間) */}
+                                                                    {activityAnalysis.stravaZones && activityAnalysis.stravaZones.length > 0 && !activityAnalysis.hrZones && (
                                                                         <div>
                                                                             <h5 className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider flex items-center gap-2">
                                                                                 <Target className="w-3 h-3" /> Strava 原始分析
