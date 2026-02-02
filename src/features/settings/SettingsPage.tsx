@@ -12,7 +12,12 @@ const SettingsPage: React.FC = () => {
         name: ''
     });
 
-    const approvedAuths = authorizations.filter(a => a.status === 'approved');
+    // 隱藏系統管理員帳號，不讓一般使用者看到
+    const HIDDEN_MANAGER_EMAILS = ['samkhlin@gmail.com', 'service@tsu.com.tw'];
+    const approvedAuths = authorizations.filter(a =>
+        a.status === 'approved' &&
+        !HIDDEN_MANAGER_EMAILS.includes(a.manager_email?.toLowerCase() || '')
+    );
 
     const handleReject = async () => {
         if (confirmModal.id) {
