@@ -1196,15 +1196,25 @@ const AthletePowerTrainingReport: React.FC = () => {
 
                                                     {/* 右側數據摘要 */}
                                                     <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                                                        {/* 指標顯示邏輯 (類似 PowerTrainingReport) */}
+                                                        {/* 指標顯示邏輯 */}
                                                         {isSynced && avgWatts > 0 && (
                                                             <>
-                                                                {/* TSS - 這裡僅為列表顯示用，實際精確計算在詳細視圖 */}
+                                                                {/* TSS */}
                                                                 <div className="hidden sm:flex flex-col items-end">
                                                                     <span className="text-xs font-mono text-pink-400 font-bold">{Math.round(tss)}</span>
                                                                     <span className="text-[10px] text-slate-600">TSS</span>
                                                                 </div>
-                                                                {/* Power */}
+                                                                {/* NP (Normalized Power) */}
+                                                                <div className="hidden sm:flex flex-col items-end">
+                                                                    <span className="text-xs font-mono text-orange-400 font-bold">{Math.round(np)}W</span>
+                                                                    <span className="text-[10px] text-slate-600">NP</span>
+                                                                </div>
+                                                                {/* IF (Intensity Factor) */}
+                                                                <div className="hidden md:flex flex-col items-end">
+                                                                    <span className="text-xs font-mono text-blue-400 font-bold">{intensity.toFixed(2)}</span>
+                                                                    <span className="text-[10px] text-slate-600">IF</span>
+                                                                </div>
+                                                                {/* AVG Power */}
                                                                 <div className="flex flex-col items-end">
                                                                     <span className="text-xs font-mono text-yellow-500 font-bold">{Math.round(avgWatts)}W</span>
                                                                     <span className="text-[10px] text-slate-600">AVG</span>
