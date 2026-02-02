@@ -1114,11 +1114,11 @@ const AthletePowerTrainingReport: React.FC = () => {
                                         const isSynced = availableStreams.has(activity.id);
                                         const isSyncing = syncStatus[activity.id] === 'syncing';
 
-                                        // 簡單計算 TSS (若有功率) 以顯示在列表中
+                                        // 使用標準 TSS 公式: (duration × NP × IF) / (FTP × 3600) × 100
                                         const avgWatts = activity.average_watts || 0;
-                                        const np = avgWatts * 1.05; // 簡易估算
+                                        const np = activity.weighted_average_watts || (avgWatts * 1.05); // 優先使用 NP，否則估算
                                         const intensity = currentFTP > 0 ? np / currentFTP : 0;
-                                        const tss = (activity.moving_time * intensity * intensity * 100) / 3600;
+                                        const tss = currentFTP > 0 ? (activity.moving_time * np * intensity) / (currentFTP * 3600) * 100 : 0;
 
                                         return (
                                             <div

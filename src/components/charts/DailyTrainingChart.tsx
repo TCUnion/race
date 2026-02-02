@@ -38,12 +38,10 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
             if (dateMap.has(dateStr)) {
                 const dayData = dateMap.get(dateStr)!;
 
-                // 計算 TSS (若無 FTP 則無法計算)
-                const sufferScore = activity.suffer_score ? Number(activity.suffer_score) : 0;
+                // 使用標準 TSS 計算公式: (duration × NP × IF) / (FTP × 3600) × 100
+                // 注意：suffer_score 是 Strava 的「相對努力度」，基於心率，不等於 TSS
                 let tss = 0;
-                if (sufferScore > 0) {
-                    tss = sufferScore;
-                } else if (ftp > 0 && (activity.average_watts || (activity as any).weighted_average_watts)) {
+                if (ftp > 0 && (activity.average_watts || (activity as any).weighted_average_watts)) {
                     const np = Number((activity as any).weighted_average_watts || (activity.average_watts ? activity.average_watts * 1.05 : 0));
                     if (np > 0) {
                         const intensity = np / ftp;

@@ -38,16 +38,15 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
             const dateStr = activity.start_date.split('T')[0];
 
             let tss = 0;
-            // 優先使用身心負荷 (Suffer Score)
-            const sufferScore = activity.suffer_score ? Number(activity.suffer_score) : 0;
-            if (sufferScore > 0) {
-                tss = sufferScore;
-            } else if (ftp > 0 && (activity.average_watts || (activity as any).weighted_average_watts)) {
-                // 次之使用功率計算
-                const watts = Number((activity as any).weighted_average_watts || (activity.average_watts ? activity.average_watts * 1.05 : 0));
-                if (watts > 0) {
-                    const intensity = watts / ftp;
-                    tss = (activity.moving_time * watts * intensity) / (ftp * 3600) * 100;
+            // 使用標準 TSS 計算公式: (duration × NP × IF) / (FTP × 3600) × 100
+            // 注意：suffer_score 是 Strava 的「相對努力度」，基於心率，不等於 TSS
+            if (ftp > 0 && (activity.average_watts || (activity as any).weighted_average_watts)) {
+                // 優先使用 weighted_average_watts (NP)，否則估算 NP = avg_watts * 1.05
+                const np = Number((activity as any).weighted_average_watts || (activity.average_watts ? activity.average_watts * 1.05 : 0));
+                if (np > 0) {
+                    const intensity = np / ftp;
+                    // TSS = (秒數 × NP × IF) / (FTP × 3600) × 100
+                    tss = (activity.moving_time * np * intensity) / (ftp * 3600) * 100;
                 }
             }
 

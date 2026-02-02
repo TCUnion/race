@@ -639,12 +639,9 @@ const AthleteReport: React.FC<{
                 return new Date(a.start_date) >= oneWeekAgo && isRide && a.average_watts;
             })
             .reduce((sum, a) => {
-                // 優先使用身心負荷 (Suffer Score)，次之使用功率估算
-                const sufferScore = a.suffer_score ? Number(a.suffer_score) : 0;
+                // 使用標準 TSS 計算公式: (duration × NP × IF) / (FTP × 3600) × 100
                 let activityTss = 0;
-                if (sufferScore > 0) {
-                    activityTss = sufferScore;
-                } else if (ftp > 0 && a.average_watts) {
+                if (ftp > 0 && a.average_watts) {
                     const np = Number(a.weighted_average_watts || (a.average_watts * 1.05) || 0);
                     const estimatedIF = np / ftp;
                     activityTss = (a.moving_time * np * estimatedIF) / (ftp * 3600) * 100;
@@ -954,16 +951,14 @@ const AthleteReport: React.FC<{
                                                     {/* 計算與顯示訓練負荷指標 */}
                                                     {(() => {
                                                         const ftp = Number(summary.ftp || 0);
-                                                        const sufferScore = activity.suffer_score ? Number(activity.suffer_score) : 0;
                                                         const np = Number(activity.weighted_average_watts || 0);
                                                         const ap = Number(activity.average_watts || 0);
-                                                        // Avoid division by zero
+                                                        // 使用標準 TSS 公式: (duration × NP × IF) / (FTP × 3600) × 100
                                                         const intensity = ftp > 0 ? np / ftp : 0;
-                                                        const tss_from_power = ftp > 0 ? (activity.moving_time * np * intensity) / (ftp * 3600) * 100 : 0;
-                                                        const tss = sufferScore > 0 ? sufferScore : tss_from_power;
+                                                        const tss = ftp > 0 ? (activity.moving_time * np * intensity) / (ftp * 3600) * 100 : 0;
 
-                                                        // 若無功率與心率數據，僅顯示時間
-                                                        if (ap === 0 && np === 0 && sufferScore === 0) return (
+                                                        // 若無功率數據，僅顯示時間
+                                                        if (ap === 0 && np === 0) return (
                                                             <span className="text-slate-400">
                                                                 {formatDuration(activity.moving_time)}
                                                             </span>
