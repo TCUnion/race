@@ -408,57 +408,66 @@ async def get_binding_status(strava_id: str):
     """
     根據 Strava ID 查詢綁定狀態。
     """
-    try:
-        print(f"[DEBUG] Checking binding status for strava_id: {strava_id}")
-        
-        # 1. 查詢綁定狀態
-        res = supabase.table("strava_bindings").select("*").eq("strava_id", strava_id).execute()
-        
-        # 2. 查詢 strava_tokens 中的名字 (User Request: 優先顯示 strava_tokens 的 name)
-        token_name = None
-        try:
-            token_res = supabase.table("strava_tokens").select("name").eq("athlete_id", strava_id).execute()
-            if token_res.data:
-                token_name = token_res.data[0].get("name")
-        except Exception as e:
-            print(f"[DEBUG] Failed to fetch name from strava_tokens: {e}")
+    print(f"[DEBUG] Checking binding status for strava_id: {strava_id}")
+    
+    # 初始化回傳結構
+    result = {
+        "isBound": False,
+        "strava_name": None
+    }
 
-        if res.data:
+    # 1. 查詢綁定狀態 (Independent Try-Except)
+    try:
+        # 明確轉型為字串查詢
+        res = supabase.table("strava_bindings").select("*").eq("strava_id", str(strava_id)).execute()
+        
+        if res.data and len(res.data) > 0:
             binding = res.data[0]
             email = binding.get("tcu_member_email")
-            print(f"[DEBUG] Binding found: {binding}")
-            
-            # 取得完整會員資料 (優先使用 tcu_account 查詢，避免同 Email 多帳號問題)
             tcu_account = binding.get("tcu_account")
-            member_res = None
-            if tcu_account:
-                 print(f"[DEBUG] Fetching member by account: {tcu_account}")
-                 member_res = supabase.table("tcu_members").select("*").eq("account", tcu_account).execute()
-            else:
-                 print(f"[DEBUG] Fetching member by email (fallback): {email}")
-                 member_res = supabase.table("tcu_members").select("*").eq("email", email).execute()
-            
-            member_data = member_res.data[0] if member_res.data and member_res.data else {}
-            
-            # 若 strava_tokens 有 name，覆蓋 member_data 或以獨立欄位回傳
-            # User request: "登入後的名字要出現，用 strava_tokens 裡面的 name"
-            # 這裡回傳 strava_name 供前端優先使用
-            
-            return {
+            print(f"[DEBUG] Binding found for {strava_id}: {binding.get('member_name')}")
+
+            # 嘗試取得完整會員資料
+            member_data = {}
+            try:
+                member_res = None
+                if tcu_account:
+                    # 優先使用 account 查詢
+                    member_res = supabase.table("tcu_members").select("*").eq("account", tcu_account).execute()
+                elif email:
+                    # Fallback to email
+                    member_res = supabase.table("tcu_members").select("*").eq("email", email).execute()
+                
+                if member_res and member_res.data:
+                    member_data = member_res.data[0]
+            except Exception as e_member:
+                 print(f"[WARN] Failed to fetch detailed member data: {e_member}")
+
+            # 更新回傳結果
+            result.update({
                 "isBound": True,
                 "email": email,
-                "tcu_account": binding.get("tcu_account"),
+                "tcu_account": tcu_account,
                 "member_name": binding.get("member_name"),
                 "bound_at": binding.get("bound_at"),
-                "member_data": member_data,
-                "strava_name": token_name  # 新增欄位
-            }
+                "member_data": member_data
+            })
         else:
-            print("[DEBUG] No binding found")
-            return {
-                "isBound": False,
-                "strava_name": token_name # Even if not bound, we might want to show the name if token exists (logged in)
-            }
+            print(f"[DEBUG] No binding found for {strava_id}")
+
     except Exception as e:
-        print(f"[DEBUG] Binding status error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
+        print(f"[ERROR] Failed to query strava_bindings: {e}")
+        # 不拋出 500，而是回傳未綁定狀態，讓前端至少能顯示基本頁面
+        # 這種情況通常是資料庫連線問題或權限問題
+    
+    # 2. 查詢 strava_tokens 中的名字 (Independent Try-Except)
+    try:
+        token_res = supabase.table("strava_tokens").select("name").eq("athlete_id", int(strava_id)).execute()
+        if token_res.data and len(token_res.data) > 0:
+            token_name = token_res.data[0].get("name")
+            result["strava_name"] = token_name
+    except Exception as e:
+        # 轉換 id 失敗或查詢失敗
+        print(f"[WARN] Failed to fetch name from strava_tokens for {strava_id}: {e}")
+
+    return result

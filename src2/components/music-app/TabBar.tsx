@@ -1,0 +1,42 @@
+import { Home, Library, Search, Settings } from 'lucide-react';
+
+interface TabBarProps {
+    activeTab: string;
+    onTabChange: (tab: string) => void;
+}
+
+const tabs = [
+    { id: 'home', label: '探索', icon: Home },
+    { id: 'library', label: '資料庫', icon: Library },
+    { id: 'search', label: '搜尋', icon: Search },
+    { id: 'settings', label: '設定', icon: Settings },
+];
+
+export function TabBar({ activeTab, onTabChange }: TabBarProps) {
+    return (
+        <nav className="flex justify-around items-center w-full h-[83px] bg-bg-glass backdrop-blur-xl px-0 pt-2 pb-7 border-t border-border">
+            {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                    <button
+                        key={tab.id}
+                        onClick={() => onTabChange(tab.id)}
+                        className="flex flex-col items-center gap-1"
+                    >
+                        <Icon
+                            size={24}
+                            className={isActive ? 'text-primary' : 'text-text-secondary'}
+                        />
+                        <span
+                            className={`text-[10px] font-medium ${isActive ? 'text-primary' : 'text-text-secondary'
+                                }`}
+                        >
+                            {tab.label}
+                        </span>
+                    </button>
+                );
+            })}
+        </nav>
+    );
+}

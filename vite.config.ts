@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => {
           main: path.resolve(__dirname, 'index.html'),
           manager: path.resolve(__dirname, 'manager.html'),
           admin: path.resolve(__dirname, 'admin.html'),
+          v2: path.resolve(__dirname, 'v2.html'),
         },
         output: {
           // 手動分割 Chunk 策略 - 優化 Bundle Size

@@ -10,6 +10,7 @@ export default {
         "./manager.html",
         "./admin.html",
         "./src/**/*.{js,ts,jsx,tsx}",
+        "./src2/**/*.{js,ts,jsx,tsx}",
     ],
     theme: {
         extend: {
@@ -27,7 +28,15 @@ export default {
                     primary: '#38BDF8', // Sky 400 (Electric Blue)
                     secondary: '#F472B6', // Pink 400 (Vibrant Accent)
                     accent: '#F97316', // Orange 500
-                }
+                },
+                // [NEW] Music App UI Colors
+                bg: '#09090b', // zinc-950
+                'bg-glass': 'rgba(9, 9, 11, 0.7)',
+                'bg-elevated': '#27272a', // zinc-800
+                'bg-card': '#18181b', // zinc-900
+                text: '#f4f4f5', // zinc-100
+                'text-secondary': '#a1a1aa', // zinc-400
+                border: '#27272a', // zinc-800
             },
             fontFamily: {
                 sans: ['Chakra Petch', 'Noto Sans TC', 'sans-serif'],
