@@ -28,27 +28,11 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
         <div className="flex flex-col w-full min-h-screen bg-bg overflow-hidden relative">
             <StatusBar />
 
+
             {/* Header */}
             <header className="flex justify-between items-center px-5 py-3">
                 <h1 className="text-white text-[34px] font-bold font-display">資料庫</h1>
-                <button className="text-primary text-base font-medium">編輯</button>
             </header>
-
-            {/* 分段選擇器 */}
-            <div className="flex gap-2 px-5 mb-4">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveSection(tab)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium ${activeSection === tab
-                            ? 'bg-primary text-white'
-                            : 'bg-bg-card text-white/70'
-                            }`}
-                    >
-                        {tab}
-                    </button>
-                ))}
-            </div>
 
             {/* 可滾動內容區 */}
             <main className="flex-1 overflow-y-auto px-5 flex flex-col gap-6 pb-24 scrollbar-hide">
