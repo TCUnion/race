@@ -12,6 +12,7 @@ import {
     X
 } from 'lucide-react';
 import AddRecordModal from '../../src/features/maintenance/AddRecordModal';
+import { StatusBar } from '../components/music-app/StatusBar';
 import type { MaintenanceType, StravaBike } from '../../src/hooks/useMaintenance';
 
 interface V2MaintenanceProps {
@@ -180,8 +181,9 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
 
     return (
         <div className="h-full flex flex-col w-full bg-background overflow-hidden relative">
+            <StatusBar />
             {/* Header */}
-            <header className="flex items-center justify-between px-5 pt-12 pb-6 bg-background/80 backdrop-blur-md z-30 flex-shrink-0">
+            <header className="flex items-center justify-between px-5 pt-1 pb-3 bg-background/80 backdrop-blur-md z-30 flex-shrink-0">
                 <button onClick={onBack} className="w-10 h-10 flex items-center justify-center bg-secondary/10 rounded-full text-muted-foreground">
                     <ChevronLeft size={24} />
                 </button>

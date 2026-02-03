@@ -13,7 +13,7 @@ export function V2AICoach({ onBack }: V2AICoachProps) {
             <StatusBar />
 
             {/* Header */}
-            <header className="px-5 py-4 flex items-center justify-between relative z-10 shrink-0">
+            <header className="px-5 pt-1 pb-3 flex items-center justify-between relative z-10 shrink-0">
                 <button
                     onClick={onBack}
                     className="w-10 h-10 -ml-2 flex items-center justify-center text-white/80 hover:text-white active:scale-95 transition-all"

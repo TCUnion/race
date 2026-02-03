@@ -48,7 +48,7 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
             <StatusBar />
 
             {/* Header */}
-            <header className="flex items-center px-4 py-4 pt-12 relative z-10">
+            <header className="flex items-center px-4 pt-1 pb-3 relative z-10">
                 <button
                     onClick={onBack}
                     className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md active:scale-95 transition-transform"
