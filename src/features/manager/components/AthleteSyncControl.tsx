@@ -7,9 +7,10 @@ interface AthleteSyncControlProps {
     athleteId: string;
     activities: StravaActivity[];
     range: number | 'all';
+    onSyncSuccess?: (activityIds: number[]) => void;
 }
 
-export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteId, activities, range }) => {
+export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteId, activities, range, onSyncSuccess }) => {
     const { checkStreamsAvailability } = usePowerAnalysis();
 
     // Global sync stats state
@@ -135,6 +136,11 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
                             pendingIds: newPending
                         };
                     });
+
+                    // Notify parent component for immediate UI feedback in activity list
+                    if (onSyncSuccess) {
+                        onSyncSuccess(currentChunk);
+                    }
                 });
 
                 await Promise.all(batchPromises);

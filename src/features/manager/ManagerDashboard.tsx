@@ -3,7 +3,7 @@
  * 提供車店/車隊管理者查看授權車友的保養、活動與統計資料
  */
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { PMCChart } from '../../components/charts/PMCChart';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -65,6 +65,7 @@ import MaintenanceTable from '../maintenance/MaintenanceTable';
 const PowerTrainingReport = React.lazy(() => import('./PowerTrainingReport'));
 import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
 import { MaintenanceRecord } from '../../types';
+import { SingleActivityAnalysis } from './components/SingleActivityAnalysis';
 
 const ROLE_NAMES: Record<string, string> = {
     shop_owner: '車店老闆',
@@ -226,6 +227,18 @@ function ManagerDashboard() {
     const [expandedActivityRows, setExpandedActivityRows] = useState<Set<number>>(new Set());
     const [expandedBikes, setExpandedBikes] = useState<Set<string>>(new Set());
     const [collapsedMaintenanceAthletes, setCollapsedMaintenanceAthletes] = useState<Set<number>>(new Set());
+    const [expandedDetailActivities, setExpandedDetailActivities] = useState<Set<number>>(new Set());
+    const [sessionSyncedActivities, setSessionSyncedActivities] = useState<Set<number>>(new Set());
+
+    const toggleActivityDetail = (activityId: number) => {
+        setExpandedDetailActivities(prev => {
+            const next = new Set(prev);
+            if (next.has(activityId)) next.delete(activityId);
+            else next.add(activityId);
+            return next;
+        });
+    };
+
 
     // 解決不同角色進入不該進入的頁籤的問題
     useEffect(() => {
@@ -262,7 +275,7 @@ function ManagerDashboard() {
 
         setSyncingActivities(prev => new Set(prev).add(activityId));
         try {
-            await fetch('https://service.criterium.tw/webhook/strava-sync-all', {
+            const response = await fetch('https://service.criterium.tw/webhook/strava-sync-all', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -272,8 +285,10 @@ function ManagerDashboard() {
                 })
             });
 
-            // Just notify user, no need to alert for success to avoid annoyance, 
-            // but user asked for "can click", we show it's working via spinner.
+            if (response.ok) {
+                // 即時標記為已同步
+                setSessionSyncedActivities(prev => new Set(prev).add(activityId));
+            }
         } catch (err) {
             console.error('Single activity sync error:', err);
             alert('同步發生錯誤，請稍後再試。');
@@ -288,6 +303,14 @@ function ManagerDashboard() {
             }, 2000);
         }
     };
+
+    const handleBatchSyncSuccess = useCallback((activityIds: number[]) => {
+        setSessionSyncedActivities(prev => {
+            const next = new Set(prev);
+            activityIds.forEach(id => next.add(id));
+            return next;
+        });
+    }, []);
 
 
     // Listen for storage changes (cross-tab/window communication) AND postMessage (popup communication)
@@ -687,7 +710,7 @@ function ManagerDashboard() {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 gap-4">
                 <div className="w-10 h-10 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin" />
-                <p className="text-slate-400 font-bold animate-pulse">正在載入車店管理資料...</p>
+                <p className="text-slate-400 font-bold animate-pulse">正在導入資料...</p>
             </div>
         );
     }
@@ -1643,6 +1666,7 @@ function ManagerDashboard() {
                                                                                                 athleteId={String(summary.athlete_id)}
                                                                                                 activities={summary.full_history_activities || summary.recent_activities || []}
                                                                                                 range={activityViewRanges[summary.athlete_id] || 42}
+                                                                                                onSyncSuccess={handleBatchSyncSuccess}
                                                                                             />
                                                                                         </div>
 
@@ -1755,70 +1779,91 @@ function ManagerDashboard() {
                                                                                                 const type = activity.sport_type || (activity as any).type || '';
 
                                                                                                 return (
-                                                                                                    <tr key={activity.id} className="hover:bg-slate-800/50">
-                                                                                                        <td className="px-4 py-2 text-slate-300">
-                                                                                                            {new Date(activity.start_date).toLocaleDateString()}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-center">
-                                                                                                            {(activity as any).is_synced ? (
-                                                                                                                <div className="flex justify-center text-emerald-500" title="已同步詳情">
-                                                                                                                    <CheckCircle2 className="w-4 h-4" />
-                                                                                                                </div>
-                                                                                                            ) : (
-                                                                                                                <button
-                                                                                                                    onClick={() => handleSingleActivitySync(summary.athlete_id, activity.id)}
-                                                                                                                    disabled={syncingActivities.has(activity.id)}
-                                                                                                                    className={`flex justify-center w-full transition-all ${syncingActivities.has(activity.id) ? 'text-indigo-400' : 'text-slate-600 hover:text-indigo-400'}`}
-                                                                                                                    title="點擊同步此活動"
-                                                                                                                >
-                                                                                                                    <RefreshCw className={`w-4 h-4 ${syncingActivities.has(activity.id) ? 'animate-spin' : ''}`} />
-                                                                                                                </button>
-                                                                                                            )}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
-                                                                                                            <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
-                                                                                                                {activity.name}
-                                                                                                            </a>
-                                                                                                        </td>
-                                                                                                        <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
-                                                                                                            {ACTIVITY_TYPE_NAMES[type] || type}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right font-mono text-blue-400 font-bold">
-                                                                                                            {Math.round((activity as any).tss || 0) || '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right font-mono text-emerald-400">
-                                                                                                            {Math.round((activity as any).np || 0) || '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right font-mono text-amber-400">
-                                                                                                            {(activity as any).if ? (activity as any).if.toFixed(2) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-amber-400 font-mono">
-                                                                                                            {activity.average_watts ? Math.round(activity.average_watts) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-amber-500 font-mono">
-                                                                                                            {activity.max_watts ? Math.round(activity.max_watts) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-red-400 font-mono">
-                                                                                                            {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-red-500 font-mono">
-                                                                                                            {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-emerald-400 font-mono">
-                                                                                                            {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
-                                                                                                        </td>
-                                                                                                        <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
-                                                                                                        <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
-                                                                                                            {bikeName}
-                                                                                                        </td>
-                                                                                                    </tr>
+                                                                                                    <React.Fragment key={activity.id}>
+                                                                                                        <tr className="hover:bg-slate-800/50">
+                                                                                                            <td className="px-4 py-2 text-slate-300">
+                                                                                                                {new Date(activity.start_date).toLocaleDateString()}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-center">
+                                                                                                                {(activity as any).is_synced || sessionSyncedActivities.has(activity.id) ? (
+                                                                                                                    <button
+                                                                                                                        onClick={() => toggleActivityDetail(activity.id)}
+                                                                                                                        className={`flex justify-center w-full transition-all hover:scale-110 ${expandedDetailActivities.has(activity.id) ? 'text-indigo-400' : 'text-emerald-500'}`}
+                                                                                                                        title={expandedDetailActivities.has(activity.id) ? "收起詳情" : "點擊展開深度分析"}
+                                                                                                                    >
+                                                                                                                        <CheckCircle2 className={`w-4 h-4 ${expandedDetailActivities.has(activity.id) ? 'drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]' : ''}`} />
+                                                                                                                    </button>
+                                                                                                                ) : (
+                                                                                                                    <button
+                                                                                                                        onClick={() => handleSingleActivitySync(summary.athlete_id, activity.id)}
+                                                                                                                        disabled={syncingActivities.has(activity.id)}
+                                                                                                                        className={`flex justify-center w-full transition-all ${syncingActivities.has(activity.id) ? 'text-indigo-400' : 'text-slate-600 hover:text-indigo-400'}`}
+                                                                                                                        title="點擊同步此活動"
+                                                                                                                    >
+                                                                                                                        <RefreshCw className={`w-4 h-4 ${syncingActivities.has(activity.id) ? 'animate-spin' : ''}`} />
+                                                                                                                    </button>
+                                                                                                                )}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
+                                                                                                                <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
+                                                                                                                    {activity.name}
+                                                                                                                </a>
+                                                                                                            </td>
+                                                                                                            <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
+                                                                                                                {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right font-mono text-blue-400 font-bold">
+                                                                                                                {Math.round((activity as any).tss || 0) || '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right font-mono text-emerald-400">
+                                                                                                                {Math.round((activity as any).np || 0) || '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right font-mono text-amber-400">
+                                                                                                                {(activity as any).if ? (activity as any).if.toFixed(2) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-amber-400 font-mono">
+                                                                                                                {activity.average_watts ? Math.round(activity.average_watts) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-amber-500 font-mono">
+                                                                                                                {activity.max_watts ? Math.round(activity.max_watts) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-red-400 font-mono">
+                                                                                                                {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-red-500 font-mono">
+                                                                                                                {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-emerald-400 font-mono">
+                                                                                                                {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
+                                                                                                            </td>
+                                                                                                            <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
+                                                                                                            <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
+                                                                                                                {bikeName}
+                                                                                                            </td>
+                                                                                                        </tr>
+                                                                                                        {/* Single Activity Detail Expansion Row */}
+                                                                                                        {expandedDetailActivities.has(activity.id) && (
+                                                                                                            <tr className="bg-slate-900/40">
+                                                                                                                <td colSpan={22} className="p-0">
+                                                                                                                    <div className="p-4 border-l-2 border-indigo-500/50 my-2 mx-4 rounded-xl overflow-hidden">
+                                                                                                                        <SingleActivityAnalysis
+                                                                                                                            activity={activity}
+                                                                                                                            athleteId={summary.athlete_id}
+                                                                                                                            defaultFtp={summary.ftp}
+                                                                                                                            defaultMaxHR={summary.max_heartrate}
+                                                                                                                        />
+                                                                                                                    </div>
+                                                                                                                </td>
+                                                                                                            </tr>
+                                                                                                        )}
+                                                                                                    </React.Fragment>
                                                                                                 );
                                                                                             })}
                                                                                     </tbody>
