@@ -329,9 +329,9 @@ export function useManagerData(): UseManagerDataReturn {
     const loadActivitySummaries = useCallback(async (athleteIds: number[]) => {
         if (athleteIds.length === 0) return [];
 
-        // 優化：將時間範圍設定為 42 天 (CTL 週期)
+        // 優化：將時間範圍設定為 180 天 (支援 120 天圖表與 180 天列表篩選)
         const fortyTwoDaysAgo = new Date();
-        fortyTwoDaysAgo.setDate(fortyTwoDaysAgo.getDate() - 42);
+        fortyTwoDaysAgo.setDate(fortyTwoDaysAgo.getDate() - 180);
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
