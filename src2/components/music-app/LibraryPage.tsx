@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Heart, Download, MapPin, MoreHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, Download, MapPin, MoreHorizontal, Plus, Calendar, Clock } from 'lucide-react';
 import { StatusBar } from './StatusBar';
 import { TabBar } from './TabBar';
+import { RaceCreationModal } from '../../../src/features/race/RaceCreationModal';
+import { supabase } from '../../../src/lib/supabase';
 
 const tabs = ['播放列表', '挑戰', '下載'];
 
@@ -21,8 +23,81 @@ interface LibraryPageProps {
     activeTab?: string;
 }
 
+interface RaceEvent {
+    id: number;
+    race_name: string;
+    description: string;
+    cover_image_url: string;
+    start_date: string;
+    end_date: string;
+    approval_status: 'pending' | 'approved' | 'rejected';
+    rejection_reason?: string;
+}
+
 export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageProps) {
     const [activeSection, setActiveSection] = useState('播放列表');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTeamManager, setIsTeamManager] = useState(false);
+    const [managerData, setManagerData] = useState<any>(null);
+    const [userRaces, setUserRaces] = useState<RaceEvent[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        checkManagerPermission();
+    }, []);
+
+    const checkManagerPermission = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                setLoading(false);
+                return;
+            }
+
+            const { data: manager } = await supabase
+                .from('manager_roles')
+                .select('id, email, role')
+                .eq('email', session.user.email)
+                .single();
+
+            if (manager && manager.role === 'team_manager') {
+                setIsTeamManager(true);
+                setManagerData(manager);
+                fetchUserRaces(manager.id);
+            }
+        } catch (err) {
+            console.error('權限檢查失敗:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchUserRaces = async (managerId: number) => {
+        const { data } = await supabase
+            .from('race_events')
+            .select('*')
+            .eq('created_by_manager_id', managerId)
+            .order('created_at', { ascending: false });
+
+        if (data) setUserRaces(data);
+    };
+
+    const handleRaceCreated = () => {
+        if (managerData) {
+            fetchUserRaces(managerData.id);
+        }
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full border border-orange-500/30">待審核</span>;
+            case 'approved':
+                return <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full border border-green-500/30">已通過</span>;
+            case 'rejected':
+                return <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full border border-red-500/30">已拒絕</span>;
+        }
+    };
 
     return (
         <div className="flex flex-col w-full min-h-screen bg-bg overflow-hidden relative">
@@ -31,27 +106,59 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
             {/* Header */}
             <header className="flex justify-between items-center px-5 py-3">
                 <h1 className="text-white text-[34px] font-bold font-display">資料庫</h1>
-                <button className="text-primary text-base font-medium">編輯</button>
-            </header>
-
-            {/* 分段選擇器 */}
-            <div className="flex gap-2 px-5 mb-4">
-                {tabs.map((tab) => (
+                {isTeamManager && (
                     <button
-                        key={tab}
-                        onClick={() => setActiveSection(tab)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium ${activeSection === tab
-                            ? 'bg-primary text-white'
-                            : 'bg-bg-card text-white/70'
-                            }`}
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
                     >
-                        {tab}
+                        <Plus className="w-4 h-4" />
+                        建立比賽
                     </button>
-                ))}
-            </div>
+                )}
+            </header>
 
             {/* 可滾動內容區 */}
             <main className="flex-1 overflow-y-auto px-5 flex flex-col gap-6 pb-24 scrollbar-hide">
+                {/* 我的比賽 - 只對車隊管理員顯示 */}
+                {isTeamManager && userRaces.length > 0 && (
+                    <section>
+                        <h2 className="text-white text-lg font-bold mb-3">我的比賽</h2>
+                        <div className="space-y-3">
+                            {userRaces.map((race) => (
+                                <div
+                                    key={race.id}
+                                    className="bg-[#1C1C1E] rounded-xl overflow-hidden border border-slate-800"
+                                >
+                                    <div className="flex gap-3 p-3">
+                                        <div
+                                            className="w-24 h-24 rounded-lg bg-cover bg-center flex-shrink-0"
+                                            style={{ backgroundImage: `url(${race.cover_image_url})` }}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-2 mb-1">
+                                                <h3 className="text-white font-medium truncate">{race.race_name}</h3>
+                                                {getStatusBadge(race.approval_status)}
+                                            </div>
+                                            {race.description && (
+                                                <p className="text-sm text-slate-400 line-clamp-2 mb-2">{race.description}</p>
+                                            )}
+                                            <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                <div className="flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" />
+                                                    {race.start_date} ~ {race.end_date}
+                                                </div>
+                                            </div>
+                                            {race.approval_status === 'rejected' && race.rejection_reason && (
+                                                <p className="text-xs text-red-400 mt-2">拒絕原因: {race.rejection_reason}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* 資料庫項目 */}
                 <section className="flex flex-col gap-2">
                     {libraryItems.map((item) => {
@@ -102,6 +209,17 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
             <div className="absolute bottom-0 left-0 right-0 z-40">
                 <TabBar activeTab={activeTab} onTabChange={onTabChange || (() => { })} />
             </div>
+
+            {/* Race Creation Modal */}
+            {isTeamManager && managerData && (
+                <RaceCreationModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={handleRaceCreated}
+                    managerId={managerData.id}
+                    managerEmail={managerData.email}
+                />
+            )}
         </div>
     );
 }
