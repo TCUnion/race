@@ -138,7 +138,7 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
                                             <p className="text-slate-400 mb-2 font-medium border-b border-slate-700 pb-1">{label}</p>
 
                                             {/* 活動名稱列表 */}
-                                            {data.activityNames && data.activityNames.length > 0 && (
+                                            {data.activityNames && data.activityNames.length > 0 ? (
                                                 <div className="mb-2 space-y-1">
                                                     {data.activityNames.map((name: string, i: number) => (
                                                         <div key={i} className="text-white font-medium truncate max-w-[200px]">
@@ -146,6 +146,8 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
                                                         </div>
                                                     ))}
                                                 </div>
+                                            ) : (
+                                                <div className="mb-2 text-slate-500 italic">無資料</div>
                                             )}
 
                                             <div className="space-y-1">

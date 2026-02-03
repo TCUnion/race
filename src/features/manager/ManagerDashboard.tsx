@@ -58,7 +58,8 @@ import {
 } from 'lucide-react';
 import { useManagerData } from '../../hooks/useManagerData';
 import { supabase } from '../../lib/supabase';
-import { AthleteMaintenanceSummary, ActivitySummary, MaintenanceStatistics } from '../../types';
+import { AthleteSyncControl } from './components/AthleteSyncControl';
+import { MaintenanceStatistics, ActivitySummary, UserAuthorization, ManagerRole, ManagerRoleData } from '../../types';
 import ManagerLogin from './ManagerLogin';
 import MaintenanceTable from '../maintenance/MaintenanceTable';
 const PowerTrainingReport = React.lazy(() => import('./PowerTrainingReport'));
@@ -242,6 +243,7 @@ function ManagerDashboard() {
     const [activityRowsPerPage, setActivityRowsPerPage] = useState(9999); // 預設顯示全部
     // 新增：紀錄每個車友展開活動列表的當前頁碼 { [athleteId]: page }
     const [activitySubPages, setActivitySubPages] = useState<Record<number, number>>({});
+    const [activityViewRanges, setActivityViewRanges] = useState<Record<number, number | 'all'>>({});
 
     // 歷史紀錄 Modal 狀態
     const [historyModalBikeId, setHistoryModalBikeId] = useState<string | null>(null);
@@ -1580,136 +1582,183 @@ function ManagerDashboard() {
 
                                                                                 {/* Recent Activities List */}
                                                                                 <div>
-                                                                                    <div className="flex items-center justify-between mb-2 pl-2 pr-2">
-                                                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">近期活動記錄</p>
-
-                                                                                        {/* 只有當活動數量超過每頁顯示筆數時才顯示分頁控制 */}
-                                                                                        {summary.recent_activities.length > activityRowsPerPage && (
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <span className="text-xs text-slate-500 mr-2">
-                                                                                                    {activitySubPages[summary.athlete_id] || 1} / {Math.ceil(summary.recent_activities.length / activityRowsPerPage)} (共 {summary.recent_activities.length} 筆)
-                                                                                                </span>
-                                                                                                <button
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        setActivitySubPages(prev => ({
-                                                                                                            ...prev,
-                                                                                                            [summary.athlete_id]: Math.max(1, (prev[summary.athlete_id] || 1) - 1)
-                                                                                                        }));
+                                                                                    <div className="flex flex-wrap items-center justify-between gap-4 mb-2 pl-2 pr-2">
+                                                                                        <div className="flex items-center gap-4">
+                                                                                            <div>
+                                                                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">近期活動記錄</p>
+                                                                                                <select
+                                                                                                    value={activityViewRanges[summary.athlete_id] === 'all' ? 'all' : (activityViewRanges[summary.athlete_id] || 42)}
+                                                                                                    onChange={(e) => {
+                                                                                                        const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
+                                                                                                        setActivityViewRanges(prev => ({ ...prev, [summary.athlete_id]: val }));
+                                                                                                        setActivitySubPages(prev => ({ ...prev, [summary.athlete_id]: 1 }));
                                                                                                     }}
-                                                                                                    disabled={(activitySubPages[summary.athlete_id] || 1) === 1}
-                                                                                                    className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                    onClick={e => e.stopPropagation()}
+                                                                                                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-1 py-0.5 focus:ring-1 focus:ring-blue-500 outline-none hover:border-slate-500 transition-colors cursor-pointer"
                                                                                                 >
-                                                                                                    <ChevronLeft className="w-3 h-3" />
-                                                                                                </button>
-                                                                                                <button
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        setActivitySubPages(prev => ({
-                                                                                                            ...prev,
-                                                                                                            [summary.athlete_id]: Math.min(
-                                                                                                                Math.ceil(summary.recent_activities.length / activityRowsPerPage),
-                                                                                                                (prev[summary.athlete_id] || 1) + 1
-                                                                                                            )
-                                                                                                        }));
-                                                                                                    }}
-                                                                                                    disabled={(activitySubPages[summary.athlete_id] || 1) >= Math.ceil(summary.recent_activities.length / activityRowsPerPage)}
-                                                                                                    className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                                                                                >
-                                                                                                    <ChevronRight className="w-3 h-3" />
-                                                                                                </button>
+                                                                                                    <option value={42}>42天</option>
+                                                                                                    <option value={84}>84天</option>
+                                                                                                    <option value={180}>180天</option>
+                                                                                                    <option value="all">全部</option>
+                                                                                                </select>
                                                                                             </div>
-                                                                                        )}
+                                                                                            <AthleteSyncControl
+                                                                                                athleteId={String(summary.athlete_id)}
+                                                                                                activities={summary.full_history_activities || summary.recent_activities || []}
+                                                                                                range={activityViewRanges[summary.athlete_id] || 42}
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        {/* Pagination Controls */}
+                                                                                        {/* Pagination Controls */}
+                                                                                        {(() => {
+                                                                                            const range = activityViewRanges[summary.athlete_id] || 42;
+                                                                                            const filteredActivities = summary.recent_activities.filter(a => {
+                                                                                                if (range === 'all') return true;
+                                                                                                const cutoff = new Date();
+                                                                                                cutoff.setDate(cutoff.getDate() - (range as number));
+                                                                                                return new Date(a.start_date) >= cutoff;
+                                                                                            });
+                                                                                            const totalPages = Math.ceil(filteredActivities.length / activityRowsPerPage);
+                                                                                            const currentPage = activitySubPages[summary.athlete_id] || 1;
+
+                                                                                            if (filteredActivities.length <= activityRowsPerPage) return null;
+
+                                                                                            return (
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="text-xs text-slate-500 mr-2">
+                                                                                                        {currentPage} / {totalPages} (共 {filteredActivities.length} 筆)
+                                                                                                    </span>
+                                                                                                    <button
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            setActivitySubPages(prev => ({
+                                                                                                                ...prev,
+                                                                                                                [summary.athlete_id]: Math.max(1, (prev[summary.athlete_id] || 1) - 1)
+                                                                                                            }));
+                                                                                                        }}
+                                                                                                        disabled={currentPage === 1}
+                                                                                                        className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                    >
+                                                                                                        <ChevronLeft className="w-3 h-3" />
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        onClick={(e) => {
+                                                                                                            e.stopPropagation();
+                                                                                                            setActivitySubPages(prev => ({
+                                                                                                                ...prev,
+                                                                                                                [summary.athlete_id]: Math.min(
+                                                                                                                    totalPages,
+                                                                                                                    (prev[summary.athlete_id] || 1) + 1
+                                                                                                                )
+                                                                                                            }));
+                                                                                                        }}
+                                                                                                        disabled={currentPage >= totalPages}
+                                                                                                        className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                    >
+                                                                                                        <ChevronRight className="w-3 h-3" />
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })()}
                                                                                     </div>
-
-                                                                                    <table className="w-full text-sm">
-                                                                                        <thead>
-                                                                                            <tr className="border-b border-slate-700 text-slate-400">
-                                                                                                <th className="px-4 py-2 text-left w-24">日期</th>
-                                                                                                <th className="px-4 py-2 text-left">名稱</th>
-                                                                                                <th className="px-4 py-2 text-left w-20">種類</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">距離 (km)</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">移動時間</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">總時間</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">均瓦</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">最大瓦</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">均心</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">最大心</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">均轉</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">最高速</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">溫度</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
-                                                                                                <th className="px-4 py-2 text-right w-20">卡路里</th>
-                                                                                                <th className="px-4 py-2 text-right w-32">使用設備</th>
-                                                                                            </tr>
-                                                                                        </thead>
-                                                                                        <tbody className="divide-y divide-slate-800">
-                                                                                            {summary.recent_activities
-                                                                                                .slice(
-                                                                                                    ((activitySubPages[summary.athlete_id] || 1) - 1) * activityRowsPerPage,
-                                                                                                    (activitySubPages[summary.athlete_id] || 1) * activityRowsPerPage
-                                                                                                )
-                                                                                                .map(activity => {
-                                                                                                    const bikeName = summary.bikes_used.find(b => b.bike_id === activity.gear_id)?.bike_name || '-';
-                                                                                                    const formatDuration = (seconds: number) => {
-                                                                                                        if (!seconds) return '-';
-                                                                                                        const h = Math.floor(seconds / 3600);
-                                                                                                        const m = Math.floor((seconds % 3600) / 60);
-                                                                                                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                                                                                                    };
-                                                                                                    // m/s to km/h: value * 3.6
-                                                                                                    const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
-
-                                                                                                    const calories = activity.calories || '-';
-                                                                                                    const type = activity.sport_type || (activity as any).type || '';
-
-                                                                                                    return (
-                                                                                                        <tr key={activity.id} className="hover:bg-slate-800/50">
-                                                                                                            <td className="px-4 py-2 text-slate-300">
-                                                                                                                {new Date(activity.start_date).toLocaleDateString()}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
-                                                                                                                <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
-                                                                                                                    {activity.name}
-                                                                                                                </a>
-                                                                                                            </td>
-                                                                                                            <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
-                                                                                                                {ACTIVITY_TYPE_NAMES[type] || type}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-amber-400 font-mono">
-                                                                                                                {activity.average_watts ? Math.round(activity.average_watts) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-amber-500 font-mono">
-                                                                                                                {activity.max_watts ? Math.round(activity.max_watts) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-red-400 font-mono">
-                                                                                                                {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-red-500 font-mono">
-                                                                                                                {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-emerald-400 font-mono">
-                                                                                                                {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
-                                                                                                                {bikeName}
-                                                                                                            </td>
-                                                                                                        </tr>
-                                                                                                    );
-                                                                                                })}
-                                                                                        </tbody>
-                                                                                    </table>
                                                                                 </div>
+
+                                                                                <table className="w-full text-sm">
+                                                                                    <thead>
+                                                                                        <tr className="border-b border-slate-700 text-slate-400">
+                                                                                            <th className="px-4 py-2 text-left w-24">日期</th>
+                                                                                            <th className="px-4 py-2 text-left">名稱</th>
+                                                                                            <th className="px-4 py-2 text-left w-20">種類</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">距離 (km)</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">移動時間</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">總時間</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">均瓦</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">最大瓦</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">均心</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">最大心</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">均轉</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">最高速</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">溫度</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">卡路里</th>
+                                                                                            <th className="px-4 py-2 text-right w-32">使用設備</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody className="divide-y divide-slate-800">
+                                                                                        {summary.recent_activities
+                                                                                            .filter(a => {
+                                                                                                const range = activityViewRanges[summary.athlete_id] || 42;
+                                                                                                if (range === 'all') return true;
+                                                                                                const cutoff = new Date();
+                                                                                                cutoff.setDate(cutoff.getDate() - (range as number));
+                                                                                                return new Date(a.start_date) >= cutoff;
+                                                                                            })
+                                                                                            .slice(
+                                                                                                ((activitySubPages[summary.athlete_id] || 1) - 1) * activityRowsPerPage,
+                                                                                                (activitySubPages[summary.athlete_id] || 1) * activityRowsPerPage
+                                                                                            )
+                                                                                            .map(activity => {
+                                                                                                const bikeName = summary.bikes_used.find(b => b.bike_id === activity.gear_id)?.bike_name || '-';
+                                                                                                const formatDuration = (seconds: number) => {
+                                                                                                    if (!seconds) return '-';
+                                                                                                    const h = Math.floor(seconds / 3600);
+                                                                                                    const m = Math.floor((seconds % 3600) / 60);
+                                                                                                    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                                                                                };
+                                                                                                // m/s to km/h: value * 3.6
+                                                                                                const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
+
+                                                                                                const calories = activity.calories || '-';
+                                                                                                const type = activity.sport_type || (activity as any).type || '';
+
+                                                                                                return (
+                                                                                                    <tr key={activity.id} className="hover:bg-slate-800/50">
+                                                                                                        <td className="px-4 py-2 text-slate-300">
+                                                                                                            {new Date(activity.start_date).toLocaleDateString()}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
+                                                                                                            <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
+                                                                                                                {activity.name}
+                                                                                                            </a>
+                                                                                                        </td>
+                                                                                                        <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
+                                                                                                            {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-amber-400 font-mono">
+                                                                                                            {activity.average_watts ? Math.round(activity.average_watts) : '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-amber-500 font-mono">
+                                                                                                            {activity.max_watts ? Math.round(activity.max_watts) : '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-red-400 font-mono">
+                                                                                                            {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-red-500 font-mono">
+                                                                                                            {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-emerald-400 font-mono">
+                                                                                                            {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
+                                                                                                        <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
+                                                                                                            {bikeName}
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                );
+                                                                                            })}
+                                                                                    </tbody>
+                                                                                </table>
                                                                             </div>
+
                                                                         </td>
                                                                     </tr>
                                                                 )}
@@ -2425,52 +2474,54 @@ function ManagerDashboard() {
 
             {/* 歷史紀錄 Modal */}
             <AnimatePresence>
-                {historyModalBikeId && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                        onClick={closeHistoryModal}
-                    >
+                {
+                    historyModalBikeId && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
-                            onClick={e => e.stopPropagation()}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                            onClick={closeHistoryModal}
                         >
-                            <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                                        <History className="w-5 h-5 text-blue-400" />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                                            <History className="w-5 h-5 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white">保養歷史紀錄</h3>
+                                            <p className="text-sm text-slate-400">{historyModalBikeName}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white">保養歷史紀錄</h3>
-                                        <p className="text-sm text-slate-400">{historyModalBikeName}</p>
-                                    </div>
+                                    <button
+                                        onClick={closeHistoryModal}
+                                        className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-white"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={closeHistoryModal}
-                                    className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-white"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
-                                <MaintenanceTable
-                                    records={historyRecords}
-                                    onDelete={handleDeleteHistoryRecord}
-                                    loading={historyLoading}
-                                    showCost={false}
-                                    showActions={false}
-                                />
-                            </div>
+                                <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+                                    <MaintenanceTable
+                                        records={historyRecords}
+                                        onDelete={handleDeleteHistoryRecord}
+                                        loading={historyLoading}
+                                        showCost={false}
+                                        showActions={false}
+                                    />
+                                </div>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )
+                }
+            </AnimatePresence >
         </div >
     );
 }
