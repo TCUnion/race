@@ -11,7 +11,7 @@ interface V2SettingsProps {
 
 export function V2Settings({ onTabChange, activeTab }: V2SettingsProps) {
     return (
-        <div className="flex flex-col w-[390px] h-[844px] bg-bg overflow-hidden relative">
+        <div className="flex flex-col w-full min-h-screen bg-bg overflow-hidden relative">
             <StatusBar />
 
             {/* Header */}

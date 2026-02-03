@@ -15,23 +15,10 @@ const THEME_STORAGE_KEY = 'tcu-theme-preference';
 
 /**
  * 取得使用者偏好的主題
- * 優先級：localStorage > 系統偏好 > 預設深色
+ * 現在強制只使用深色模式
  */
 function getInitialTheme(): Theme {
-    // 檢查 localStorage
-    if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem(THEME_STORAGE_KEY);
-        if (stored === 'light' || stored === 'dark') {
-            return stored;
-        }
-
-        // 檢查系統偏好
-        if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-            return 'light';
-        }
-    }
-
-    // 預設深色模式
+    // 強制深色模式
     return 'dark';
 }
 

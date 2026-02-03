@@ -22,7 +22,7 @@ export function SearchPage({ onTabChange, activeTab = 'search' }: SearchPageProp
     const [query, setQuery] = useState('');
 
     return (
-        <div className="flex flex-col w-[390px] h-[844px] bg-bg overflow-hidden">
+        <div className="flex flex-col w-full min-h-screen bg-bg overflow-hidden relative">
             <StatusBar />
 
             {/* Header */}
@@ -51,7 +51,7 @@ export function SearchPage({ onTabChange, activeTab = 'search' }: SearchPageProp
             </header>
 
             {/* 可滾動內容區 */}
-            <main className="flex-1 overflow-y-auto px-5 flex flex-col gap-6">
+            <main className="flex-1 overflow-y-auto px-5 flex flex-col gap-6 pb-24 scrollbar-hide">
                 {/* 熱門搜尋 */}
                 <section>
                     <h2 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
@@ -108,8 +108,10 @@ export function SearchPage({ onTabChange, activeTab = 'search' }: SearchPageProp
                 </section>
             </main>
 
-            {/* 底部導航 */}
-            <TabBar activeTab={activeTab} onTabChange={onTabChange || (() => { })} />
+            {/* 底部導航 - 絕對定位在最下方 */}
+            <div className="absolute bottom-0 left-0 right-0 z-40">
+                <TabBar activeTab={activeTab} onTabChange={onTabChange || (() => { })} />
+            </div>
         </div>
     );
 }
