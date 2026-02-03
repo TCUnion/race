@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ViewType } from '../../src/types';
 import { StatusBar } from '../components/music-app/StatusBar';
 import { ChevronLeft, User, Share2, CheckCircle2, Timer, Gauge, Trophy, Bookmark } from 'lucide-react';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useSegmentData } from '../../src/hooks/useSegmentData';
 import { useWeeklyStats } from '../../src/hooks/useWeeklyStats';
+import { generateSvgPath } from '../../src/utils/polylineUtils';
 
 interface V2DashboardProps {
     onBack: () => void;
@@ -13,18 +14,37 @@ interface V2DashboardProps {
 
 export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
     const { athlete, isBound } = useAuth();
-    const { segments } = useSegmentData();
+    const { segments, leaderboardsMap } = useSegmentData();
     const { stats } = useWeeklyStats(athlete?.id, athlete?.ftp);
 
     // Mock data for demo if no real data
     const featuredSegment = segments.length > 0 ? segments[0] : null;
+
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const index = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth);
+        setActiveIndex(index);
+    };
+
+    const activeSegment = segments[activeIndex] || null;
+    const currentLeaderboard = activeSegment ? leaderboardsMap[activeSegment.id] : [];
+
+    // Find current user stats in leaderboard
+    const userEntry = currentLeaderboard?.find(e => e.athlete_id === athlete?.id);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const handleRegisterClick = () => {
         onNavigate?.(ViewType.REGISTER);
     };
 
     return (
-        <div className="flex flex-col w-full min-h-screen bg-[#050505] overflow-hidden relative font-sans text-white">
+        <div className="w-full min-h-screen bg-[#050505] relative font-sans text-white pb-24">
             <StatusBar />
 
             {/* Header */}
@@ -38,7 +58,7 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                 <h1 className="ml-4 text-[10px] font-black tracking-[0.2em] uppercase text-white/80">CU Challenge Series</h1>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-5 pb-24 scrollbar-hide">
+            <main className="px-5">
 
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 mb-8">
@@ -87,81 +107,101 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                     <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-white/30">左右滑動切換路段詳情</span>
                         <div className="flex gap-1">
-                            <div className="w-3 h-1 rounded-full bg-[#3b82f6]"></div>
-                            <div className="w-3 h-1 rounded-full bg-white/20"></div>
+                            {segments.map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`w-3 h-1 rounded-full transition-colors duration-300 ${i === activeIndex ? 'bg-[#3b82f6]' : 'bg-white/20'}`}
+                                ></div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
                 {/* Main Challenge Card */}
-                {featuredSegment ? (
-                    <div className="relative w-full aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-[#121212] border border-white/5 mb-6 shadow-2xl shadow-blue-900/10">
-                        {/* Map Background Placeholder */}
-                        <div className="absolute inset-0 opacity-40 mix-blend-screen">
-                            {/* Using a static dark map style image or gradient if map is not available */}
-                            <img
-                                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800"
-                                alt="Map"
-                                className="w-full h-full object-cover grayscale invert contrast-125"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent"></div>
-                        </div>
-
-                        {/* Content Overlay */}
-                        <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Strava ID: {featuredSegment.strava_id}</span>
-                                    <h3 className="text-xl font-bold text-white mt-1 leading-tight max-w-[70%]">
-                                        {featuredSegment.name}
-                                    </h3>
+                {/* Main Challenge Carousel */}
+                {segments.length > 0 ? (
+                    <div
+                        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5 scrollbar-hide"
+                        onScroll={handleScroll}
+                    >
+                        {segments.map((segment) => (
+                            <div key={segment.id} className="relative w-full flex-shrink-0 snap-center aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-[#121212] border border-white/5 mb-2 shadow-2xl shadow-blue-900/10">
+                                {/* Map Background Placeholder */}
+                                <div className="absolute inset-0 opacity-40 mix-blend-screen">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800"
+                                        alt="Map"
+                                        className="w-full h-full object-cover grayscale invert contrast-125"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent"></div>
                                 </div>
-                                <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-                                    <CheckCircle2 className="w-5 h-5 text-white" />
-                                </div>
-                            </div>
 
-                            {/* Center Path Graphic Placeholder */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-80">
-                                {/* This would be the SVG path of the route */}
-                                <svg width="100" height="100" viewBox="0 0 100 100" className="text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.6)]">
-                                    <path d="M20,80 Q50,10 80,80" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                                </svg>
-                            </div>
-
-                            <div className="flex items-end justify-between mt-auto z-10">
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                                    <div>
-                                        <p className="text-[9px] text-white/50 mb-0.5">距離</p>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-2xl font-black italic text-white tracking-tighter">
-                                                {(featuredSegment.distance / 1000).toFixed(2)}
-                                            </span>
-                                            <span className="text-[10px] text-white/50 font-bold">km</span>
+                                {/* Content Overlay */}
+                                <div className="absolute inset-0 p-6 flex flex-col justify-between">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Strava ID: {segment.strava_id}</span>
+                                            <h3 className="text-xl font-bold text-white mt-1 leading-tight max-w-[70%] line-clamp-2">
+                                                {segment.name}
+                                            </h3>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                                            <CheckCircle2 className="w-5 h-5 text-white" />
                                         </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[9px] text-white/50 mb-0.5">坡度</p>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-2xl font-black italic text-white tracking-tighter">
-                                                {featuredSegment.average_grade}%
+
+                                    {/* Center Path Graphic */}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-80 z-0">
+                                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" className="text-orange-500 drop-shadow-[0_0_15px_rgba(249,115,22,0.6)] w-3/4 h-3/4">
+                                            <path
+                                                d={generateSvgPath(segment.polyline || '', 100, 100, 10)}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    <div className="flex items-end justify-between mt-auto z-10">
+                                        <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+                                            <div>
+                                                <p className="text-[9px] text-white/50 mb-0.5">距離</p>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-2xl font-black italic text-white tracking-tighter">
+                                                        {(segment.distance / 1000).toFixed(2)}
+                                                    </span>
+                                                    <span className="text-[10px] text-white/50 font-bold">km</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-white/50 mb-0.5">坡度</p>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-2xl font-black italic text-white tracking-tighter">
+                                                        {segment.average_grade}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono text-white font-bold text-xl tracking-widest">
+                                                {leaderboardsMap[segment.id]?.find(e => e.athlete_id === athlete?.id)
+                                                    ? (() => {
+                                                        const seconds = leaderboardsMap[segment.id].find(e => e.athlete_id === athlete?.id)!.elapsed_time;
+                                                        const mins = Math.floor(seconds / 60);
+                                                        const secs = seconds % 60;
+                                                        return `${mins}:${secs.toString().padStart(2, '0')}`;
+                                                    })()
+                                                    : '--:--'}
                                             </span>
+                                            <div className="px-1.5 py-0.5 rounded border border-white/20 text-[9px] font-black text-white/70">PR</div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-2">
-                                    <span className="font-mono text-white font-bold text-xl tracking-widest">--:--</span>
-                                    <div className="px-1.5 py-0.5 rounded border border-white/20 text-[9px] font-black text-white/70">PR</div>
-                                </div>
                             </div>
-
-                            {/* Bottom Actions */}
-                            <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center opacity-50">
-                                <span className="text-[10px] text-white/50">📅 --</span>
-                                <Share2 className="w-4 h-4 text-white/50" />
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="w-full h-64 rounded-[2.5rem] bg-white/5 flex items-center justify-center border border-white/5 mb-6">
@@ -178,11 +218,17 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                             <Timer className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <div className="w-4 h-1 bg-white/20 rounded-full mb-2"></div>
+                            {userEntry ? (
+                                <span className="text-2xl font-black italic text-white tracking-tighter">
+                                    {formatTime(userEntry.elapsed_time)}
+                                </span>
+                            ) : (
+                                <div className="w-4 h-1 bg-white/20 rounded-full mb-2"></div>
+                            )}
                         </div>
-                        <p className="text-[10px] font-bold text-emerald-500 mt-2 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            紀錄同步中
+                        <p className={`text-[10px] font-bold mt-2 flex items-center gap-1 ${userEntry ? 'text-emerald-500' : 'text-white/30'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${userEntry ? 'bg-emerald-500' : 'bg-white/30'}`}></span>
+                            {userEntry ? '已同步紀錄' : '尚無紀錄'}
                         </p>
                     </div>
 
@@ -193,11 +239,23 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                             <Gauge className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
                         </div>
                         <div className="flex items-baseline gap-2 mt-2">
-                            <span className="w-4 h-1 bg-white/20 rounded-full"></span>
+                            {userEntry ? (
+                                <span className="text-2xl font-black italic text-white tracking-tighter">
+                                    {(userEntry.average_speed ? (userEntry.average_speed * 3.6).toFixed(1) : '-')}
+                                </span>
+                            ) : (
+                                <div className="w-4 h-1 bg-white/20 rounded-full"></div>
+                            )}
                             <span className="text-xs text-white/30 font-bold">KM/H</span>
                         </div>
-                        <p className="text-[10px] font-bold text-emerald-500 mt-4 flex items-center gap-1">
-                            <span className="text-emerald-500">~</span> 數據保持穩定
+                        <p className={`text-[10px] font-bold mt-4 flex items-center gap-1 ${userEntry ? 'text-emerald-500' : 'text-white/30'}`}>
+                            {userEntry ? (
+                                <>
+                                    <span className="text-emerald-500">~</span> 數據保持穩定
+                                </>
+                            ) : (
+                                <span className="text-white/30">等待數據...</span>
+                            )}
                         </p>
                     </div>
                 </div>
@@ -211,7 +269,14 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                         </div>
                     </div>
                     <div className="mt-4 mb-2">
-                        <div className="w-6 h-1 bg-white/20 rounded-full"></div>
+                        {userEntry ? (
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black italic text-white tracking-tighter">{userEntry.rank}</span>
+                                <span className="text-xs text-white/40">/ {currentLeaderboard.length} 人</span>
+                            </div>
+                        ) : (
+                            <div className="w-6 h-1 bg-white/20 rounded-full"></div>
+                        )}
                     </div>
                     <p className="text-[10px] font-bold text-white/60 mt-4 flex items-center gap-1">
                         <span className="text-white/40">^</span> 努力刷新排名中

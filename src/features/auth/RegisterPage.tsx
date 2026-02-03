@@ -14,6 +14,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [athlete, setAthlete] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 轉換 segments 格式以符合 RegistrationForm props - 移至最上方以符合 Hook 規則
+  const formSegments = React.useMemo(() => segments.map(s => ({
+    id: s.id, // Supabase PK
+    name: s.name,
+    strava_id: s.strava_id
+  })), [segments]);
+
   useEffect(() => {
     const loadAthlete = () => {
       const savedData = localStorage.getItem('strava_athlete_data');
@@ -68,12 +75,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     );
   }
 
-  // 轉換 segments 格式以符合 RegistrationForm props
-  const formSegments = segments.map(s => ({
-    id: s.id,
-    name: s.name,
-    strava_id: s.strava_id
-  }));
+
 
   return (
     <div className="min-h-screen bg-slate-950 py-20 px-4">

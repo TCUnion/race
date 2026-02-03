@@ -147,11 +147,9 @@ export const useAuth = () => {
             setIsLoading(true);
             checkBindingStatus(Number(athlete.id));
         } else {
-            setMemberData(null);
-            setIsBound(null);
             setIsLoading(false);
         }
-    }, [athlete]); // 監聽整個 athlete 物件的變動 (包含 ts)
+    }, [athlete?.id]); // 僅監聽 ID 變動，避免因 name 更新導致無限迴圈
 
     const logout = () => {
         localStorage.removeItem(STORAGE_KEY);

@@ -79,10 +79,18 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     }, [isBound, memberData, athlete]);
 
     // 檢查現有報名（不使用 embedded relationship 避免 PGRST200 錯誤）
+    const lastCheckedIdRef = React.useRef<string | number | null>(null);
+
     useEffect(() => {
         const checkExisting = async () => {
+            // 避免重複檢查導致循環
+            if (lastCheckedIdRef.current === athlete.id) {
+                return;
+            }
+
             setIsLoadingExisting(true);
-            console.log('[DEBUG] Checking existing registration for athlete:', athlete.id);
+            setIsLoadingExisting(true);
+            lastCheckedIdRef.current = athlete.id;
             try {
                 const { data, error: regError } = await supabase
                     .from('registrations')
@@ -90,11 +98,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                     .eq('strava_athlete_id', athlete.id);
 
                 if (regError) {
-                    console.error('[DEBUG] Error fetching existing registrations:', regError);
                     throw regError;
                 }
 
-                console.log('[DEBUG] Existing registrations found:', data);
                 setExistingRegistrations(data || []);
 
                 // 初始化選中的路段 (使用 Supabase PK)
@@ -111,7 +117,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         };
 
         checkExisting();
-    }, [athlete.id, segments]);
+    }, [athlete.id]);
 
     const toggleSegment = (segmentId: number) => {
         setSelectedSegmentIds(prev =>
@@ -123,7 +129,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('[DEBUG] Submitting registration started...');
 
         setIsSubmitting(true);
         setError(null);
@@ -133,15 +138,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
             const existingSegmentIds = existingRegistrations.map(r => r.segment_id);
             const currentSegmentIds = selectedSegmentIds;
 
-            console.log('[DEBUG] Existing IDs:', existingSegmentIds);
-            console.log('[DEBUG] Current IDs:', currentSegmentIds);
-
             // 需要刪除的 (使用者在介面上取消勾選的)
             const toDelete = existingSegmentIds.filter(id => !currentSegmentIds.includes(id));
 
             // 1. 執行刪除
             if (toDelete.length > 0) {
-                console.log('[DEBUG] Deleting segments:', toDelete);
                 const { error: delError } = await supabase
                     .from('registrations')
                     .delete()
@@ -159,9 +160,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 const toInsert = currentSegmentIds.filter(id => !existingSegmentIds.includes(id));
                 const toUpdate = currentSegmentIds.filter(id => existingSegmentIds.includes(id));
 
-                console.log('[DEBUG] Inserting segments:', toInsert);
-                console.log('[DEBUG] Updating segments:', toUpdate);
-
                 // 新增新報名（明確產生 UUID 避免 null 約束錯誤）
                 if (toInsert.length > 0) {
                     const insertPayload = toInsert.map(id => ({
@@ -174,7 +172,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                         tcu_id: memberData?.tcu_id || null,
                         status: 'approved'
                     }));
-                    console.log('[DEBUG] Insert payload:', insertPayload);
 
                     const { error: insertError } = await supabase
                         .from('registrations')
@@ -194,7 +191,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                         tcu_id: memberData?.tcu_id || null,
                         updated_at: new Date().toISOString()
                     };
-                    console.log('[DEBUG] Update payload:', updatePayload);
 
                     const { error: updateError } = await supabase
                         .from('registrations')
@@ -208,7 +204,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 }
             }
 
-            console.log('[DEBUG] Registration update successful');
             setSuccessMessage('報名設定已更新');
 
             // Short delay to let user see success message before closing/redirecting if needed
@@ -225,7 +220,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     };
 
     return (
-        <div className="max-w-xl mx-auto p-10 bg-slate-900/40 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/5 relative overflow-hidden group">
+        <div className="w-full mx-auto p-6 sm:p-10 bg-slate-900/40 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white/5 relative overflow-hidden group">
             {/* 背景裝飾 */}
             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-tcu-blue/10 rounded-full blur-3xl group-hover:bg-tcu-blue/20 transition-colors duration-700"></div>
 

@@ -52,6 +52,7 @@ export const supabaseServiceRole = serviceRoleKey ? createClient(
     serviceRoleKey,
     {
         auth: {
+            storageKey: 'sb-service-role',
             autoRefreshToken: false,
             persistSession: false
         }

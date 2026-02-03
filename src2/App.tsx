@@ -110,7 +110,7 @@ function App() {
 
             case V2View.REGISTER:
                 return (
-                    <div className="flex flex-col w-[390px] h-[844px] bg-bg overflow-hidden relative">
+                    <div className="flex flex-col w-full h-full bg-bg overflow-hidden relative">
                         <StatusBar />
                         <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide bg-bg-dark">
                             <RegisterPage onNavigate={(v1View) => {
