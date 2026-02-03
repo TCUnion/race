@@ -1159,8 +1159,8 @@ const AdminPanel: React.FC = () => {
 
     // 根據搜尋條件過濾後的權杖
     const filteredTokens = stravaTokens.filter(t =>
-        t.athleteID.toLowerCase().includes(tokenSearchTerm.toLowerCase()) ||
-        t.name.toLowerCase().includes(tokenSearchTerm.toLowerCase())
+        String(t.athleteID).toLowerCase().includes(tokenSearchTerm.toLowerCase()) ||
+        (t.name || '').toLowerCase().includes(tokenSearchTerm.toLowerCase())
     ).sort((a, b) => {
         const factor = tokenSortOrder === 'asc' ? 1 : -1;
         const valA = a[tokenSortField] || '';
@@ -2205,7 +2205,7 @@ const AdminPanel: React.FC = () => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="搜尋姓名或 ID..."
+                                    placeholder="搜尋姓名 或 Athlete ID..."
                                     value={tokenSearchTerm}
                                     onChange={(e) => {
                                         setTokenSearchTerm(e.target.value);
@@ -2356,7 +2356,7 @@ const AdminPanel: React.FC = () => {
                             <div className="relative flex-1 md:w-64">
                                 <input
                                     type="text"
-                                    placeholder="搜尋姓名或 Email..."
+                                    placeholder="搜尋姓名, Email 或 Strava ID..."
                                     value={memberSearchTerm}
                                     onChange={(e) => {
                                         setMemberSearchTerm(e.target.value);
@@ -2403,7 +2403,8 @@ const AdminPanel: React.FC = () => {
                             (m.athletes && `${m.athletes.firstname} ${m.athletes.lastname}`.toLowerCase().includes(memberSearchTerm.toLowerCase())) ||
                             m.tcu_id?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
                             m.account?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-                            m.team?.toLowerCase().includes(memberSearchTerm.toLowerCase())
+                            m.team?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+                            m.strava_id?.toString().includes(memberSearchTerm)
                         );
 
                         // Sorting

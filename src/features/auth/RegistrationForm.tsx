@@ -82,13 +82,19 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
     useEffect(() => {
         const checkExisting = async () => {
             setIsLoadingExisting(true);
+            console.log('[DEBUG] Checking existing registration for athlete:', athlete.id);
             try {
                 const { data, error: regError } = await supabase
                     .from('registrations')
                     .select('*')
                     .eq('strava_athlete_id', athlete.id);
 
-                if (regError) throw regError;
+                if (regError) {
+                    console.error('[DEBUG] Error fetching existing registrations:', regError);
+                    throw regError;
+                }
+
+                console.log('[DEBUG] Existing registrations found:', data);
                 setExistingRegistrations(data || []);
 
                 // 初始化選中的路段 (使用 Supabase PK)
@@ -98,6 +104,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 }
             } catch (err) {
                 console.error('檢查現有報名失敗:', err);
+                // alert('無法讀取現有報名資料，請稍後再試'); // Optional: alerting on load failure might be too aggressive
             } finally {
                 setIsLoadingExisting(false);
             }
@@ -116,6 +123,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('[DEBUG] Submitting registration started...');
 
         setIsSubmitting(true);
         setError(null);
@@ -125,17 +133,24 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
             const existingSegmentIds = existingRegistrations.map(r => r.segment_id);
             const currentSegmentIds = selectedSegmentIds;
 
+            console.log('[DEBUG] Existing IDs:', existingSegmentIds);
+            console.log('[DEBUG] Current IDs:', currentSegmentIds);
+
             // 需要刪除的 (使用者在介面上取消勾選的)
             const toDelete = existingSegmentIds.filter(id => !currentSegmentIds.includes(id));
 
             // 1. 執行刪除
             if (toDelete.length > 0) {
+                console.log('[DEBUG] Deleting segments:', toDelete);
                 const { error: delError } = await supabase
                     .from('registrations')
                     .delete()
                     .eq('strava_athlete_id', athlete.id)
                     .in('segment_id', toDelete);
-                if (delError) throw delError;
+                if (delError) {
+                    console.error('[DEBUG] Delete error:', delError);
+                    throw delError;
+                }
             }
 
             // 2. 執行更新/新增（分離 insert/update 避免 ON CONFLICT 約束問題）
@@ -144,47 +159,66 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                 const toInsert = currentSegmentIds.filter(id => !existingSegmentIds.includes(id));
                 const toUpdate = currentSegmentIds.filter(id => existingSegmentIds.includes(id));
 
+                console.log('[DEBUG] Inserting segments:', toInsert);
+                console.log('[DEBUG] Updating segments:', toUpdate);
+
                 // 新增新報名（明確產生 UUID 避免 null 約束錯誤）
                 if (toInsert.length > 0) {
+                    const insertPayload = toInsert.map(id => ({
+                        id: generateUUID(),
+                        segment_id: id,
+                        strava_athlete_id: athlete.id,
+                        athlete_name: name,
+                        athlete_profile: athlete.profile,
+                        team: team,
+                        tcu_id: memberData?.tcu_id || null,
+                        status: 'approved'
+                    }));
+                    console.log('[DEBUG] Insert payload:', insertPayload);
+
                     const { error: insertError } = await supabase
                         .from('registrations')
-                        .insert(
-                            toInsert.map(id => ({
-                                id: generateUUID(),
-                                segment_id: id,
-                                strava_athlete_id: athlete.id,
-                                athlete_name: name,
-                                athlete_profile: athlete.profile,
-                                team: team,
-                                tcu_id: memberData?.tcu_id || null,
-                                status: 'approved'
-                            }))
-                        );
-                    if (insertError) throw insertError;
+                        .insert(insertPayload);
+                    if (insertError) {
+                        console.error('[DEBUG] Insert error:', insertError);
+                        throw insertError;
+                    }
                 }
 
                 // 更新現有報名
                 if (toUpdate.length > 0) {
+                    const updatePayload = {
+                        athlete_name: name,
+                        athlete_profile: athlete.profile,
+                        team: team,
+                        tcu_id: memberData?.tcu_id || null,
+                        updated_at: new Date().toISOString()
+                    };
+                    console.log('[DEBUG] Update payload:', updatePayload);
+
                     const { error: updateError } = await supabase
                         .from('registrations')
-                        .update({
-                            athlete_name: name,
-                            athlete_profile: athlete.profile,
-                            team: team,
-                            tcu_id: memberData?.tcu_id || null,
-                            updated_at: new Date().toISOString()
-                        })
+                        .update(updatePayload)
                         .eq('strava_athlete_id', athlete.id)
                         .in('segment_id', toUpdate);
-                    if (updateError) throw updateError;
+                    if (updateError) {
+                        console.error('[DEBUG] Update error:', updateError);
+                        throw updateError;
+                    }
                 }
             }
 
+            console.log('[DEBUG] Registration update successful');
             setSuccessMessage('報名設定已更新');
+
+            // Short delay to let user see success message before closing/redirecting if needed
+            // setTimeout(() => onSuccess(), 1000); 
             onSuccess();
         } catch (err: any) {
             console.error('更新失敗:', err);
-            setError(err.message || '更新失敗，請稍後再試');
+            const errMsg = err.message || '更新失敗，請稍後再試';
+            setError(errMsg);
+            alert(`提交失敗: ${errMsg}`); // Explicit alert for user
         } finally {
             setIsSubmitting(false);
         }
