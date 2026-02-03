@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle } from 'lucide-react';
+import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle, Smartphone } from 'lucide-react';
+import EquipmentList from './EquipmentList';
 import { supabaseAdmin, supabaseServiceRole } from '../../lib/supabase';
 // 如果 Service Role 可用則使用它（繞過 RLS），否則退回 supabaseAdmin
 const supabase = supabaseServiceRole || supabaseAdmin;
@@ -222,7 +223,7 @@ const AdminPanel: React.FC = () => {
     const [managers, setManagers] = useState<any[]>([]);
     const [editingManager, setEditingManager] = useState<any>(null); // New editing state
     const [managerSearchTerm, setManagerSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer'>('managers'); // 預設顯示管理員管理
+    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment'>('managers'); // 預設顯示管理員管理
 
 
     const fetchSegments = async () => {
@@ -1374,7 +1375,22 @@ const AdminPanel: React.FC = () => {
                     <Share2 className="w-4 h-4 inline-block mr-2" />
                     頁尾連結
                 </button>
+                <button
+                    onClick={() => setActiveTab('equipment')}
+                    className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'equipment'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
+                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        }`}
+                >
+                    <Smartphone className="w-4 h-4 inline-block mr-2" />
+                    器材管理
+                </button>
             </div>
+
+            {/* 器材管理 Tab */}
+            {activeTab === 'equipment' && (
+                <EquipmentList />
+            )}
 
             {/* 管理員管理 Tab */}
             {activeTab === 'managers' && (
