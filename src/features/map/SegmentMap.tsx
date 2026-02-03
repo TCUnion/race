@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 interface SegmentMapProps {
     polyline?: string;
     className?: string;
+    minimal?: boolean;
 }
 
 // 解碼 Strava polyline
@@ -49,7 +50,7 @@ const decodePolyline = (encoded: string): [number, number][] => {
     return points;
 };
 
-const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => {
+const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '', minimal = false }) => {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
     const polylineLayerRef = useRef<L.Polyline | null>(null);
@@ -62,8 +63,13 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
         // 初始化地圖（以台中 136 為中心）
         if (!mapInstanceRef.current) {
             mapInstanceRef.current = L.map(mapContainerRef.current, {
-                zoomControl: true,
+                zoomControl: !minimal, // 極簡模式下關閉縮放控制
+                attributionControl: !minimal, // 極簡模式下關閉版權宣告（版面太小）
                 scrollWheelZoom: false,
+                dragging: !minimal, // 極簡模式下禁止拖曳
+                doubleClickZoom: !minimal,
+                boxZoom: false,
+                keyboard: false,
             }).setView([24.15, 120.7], 12);
 
             // 使用 CartoDB 暗色地圖樣式
@@ -74,17 +80,7 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
             }).addTo(mapInstanceRef.current);
         }
 
-        // 清除之前的計時器
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-
-        // 清除舊的 polyline
-        if (polylineLayerRef.current) {
-            polylineLayerRef.current.remove();
-            polylineLayerRef.current = null;
-        }
+        // ... existing cleanup logic ...
 
         // 清除舊的標記
         markersRef.current.forEach(m => m.remove());
@@ -98,9 +94,9 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
                 const map = mapInstanceRef.current;
 
                 polylineLayerRef.current = L.polyline(latlngs, {
-                    color: '#FC5200', // Strava 橘色
-                    weight: 4,
-                    opacity: 0.9,
+                    color: '#FF4D00', // More vibrant Strava orange
+                    weight: minimal ? 5 : 6, // Increased weight for visibility
+                    opacity: 1, // Full opacity for the route itself
                 }).addTo(map);
 
                 const polylineLayer = polylineLayerRef.current;
@@ -109,43 +105,45 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
                 map.invalidateSize();
                 if (polylineLayer) {
                     map.fitBounds(polylineLayer.getBounds(), {
-                        padding: [30, 30],
+                        padding: minimal ? [5, 5] : [30, 30], // 小圖減少留白
                         maxZoom: 14,
                     });
                 }
 
-                // 延遲再次調整，確保 CSS 動畫/響應式佈局完成後正確顯示
+                // 延遲再次調整
                 timerRef.current = setTimeout(() => {
                     if (mapInstanceRef.current && polylineLayerRef.current) {
                         const m = mapInstanceRef.current;
                         const p = polylineLayerRef.current;
                         m.invalidateSize();
                         m.fitBounds(p.getBounds(), {
-                            padding: [30, 30],
+                            padding: minimal ? [5, 5] : [30, 30],
                             maxZoom: 14,
                         });
                     }
                 }, 300);
 
-                // 添加起點和終點標記
-                const startIcon = L.divIcon({
-                    className: 'custom-marker',
-                    html: '<div style="width:14px;height:14px;background:#22c55e;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
-                    iconSize: [14, 14],
-                    iconAnchor: [7, 7],
-                });
+                // 只在非極簡模式下顯示起終點標記，避免小圖過於雜亂
+                if (!minimal) {
+                    const startIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="width:14px;height:14px;background:#22c55e;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7],
+                    });
 
-                const endIcon = L.divIcon({
-                    className: 'custom-marker',
-                    html: '<div style="width:14px;height:14px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
-                    iconSize: [14, 14],
-                    iconAnchor: [7, 7],
-                });
+                    const endIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="width:14px;height:14px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7],
+                    });
 
-                const startMarker = L.marker(latlngs[0], { icon: startIcon }).addTo(map);
-                const endMarker = L.marker(latlngs[latlngs.length - 1], { icon: endIcon }).addTo(map);
+                    const startMarker = L.marker(latlngs[0], { icon: startIcon }).addTo(map);
+                    const endMarker = L.marker(latlngs[latlngs.length - 1], { icon: endIcon }).addTo(map);
 
-                markersRef.current = [startMarker, endMarker];
+                    markersRef.current = [startMarker, endMarker];
+                }
             }
         }
 
@@ -173,9 +171,25 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '' }) => 
     return (
         <div
             ref={mapContainerRef}
-            className={`w-full h-full min-h-[300px] rounded-xl overflow-hidden ${className}`}
+            className={`w-full h-full rounded-xl overflow-hidden z-0 ${className}`}
             style={{ background: '#1a1a2e' }}
-        />
+        >
+            <style>{`
+                .leaflet-control-zoom a {
+                    background-color: rgba(255, 255, 255, 0.2) !important;
+                    color: #fff !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+                    backdrop-filter: blur(4px);
+                }
+                .leaflet-control-zoom a:hover {
+                    background-color: rgba(255, 255, 255, 0.4) !important;
+                }
+                .leaflet-control-zoom a.leaflet-disabled {
+                    background-color: rgba(255, 255, 255, 0.1) !important;
+                    color: rgba(255, 255, 255, 0.3) !important;
+                }
+            `}</style>
+        </div>
     );
 };
 

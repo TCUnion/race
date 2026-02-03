@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -n \"frontend,backend\" -c \"blue,green\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "vite",
-    "dev:backend": "cd backend && source venv/bin/activate && uvicorn main:app --host 127.0.0.1 --port 8003 --reload",
+    "dev:backend": "cd backend && source venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8003 --reload",
     "build": "vite build",
     "preview": "vite preview",
     "start": "serve -s dist -l ${PORT:-3000}"

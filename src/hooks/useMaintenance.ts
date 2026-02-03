@@ -175,60 +175,47 @@ export const useMaintenance = () => {
         return;
       }
 
-      // 並行載入腳踏車、保養類型、保養紀錄、自訂設定、壽命設定、活動紀錄、App設定、活動輪組
-      const [bikesResult, wheelsetsResult, typesResult, recordsResult, settingsResult, lifespanSettingsResult, activitiesResult, appSettingsResult, activityWheelsetsResult] = await Promise.all([
-        supabase
-          .from('bikes')
-          .select('*')
-          .eq('athlete_id', athleteId)
-          .eq('retired', false)
-          .order('primary_gear', { ascending: false }),
-        supabase
-          .from('wheelsets')
-          .select('*')
-          .eq('athlete_id', athleteId),
-        supabase
-          .from('maintenance_types')
-          .select('*')
-          .order('sort_order'),
-        supabase
-          .from('bike_maintenance')
-          .select('*')
-          .eq('athlete_id', athleteId)
-          .order('service_date', { ascending: false }),
-        supabase
-          .from('bike_maintenance_settings')
-          .select('*')
-          .eq('athlete_id', athleteId),
-        supabase
-          .from('bike_lifespan_settings')
-          .select('*')
-          .eq('athlete_id', athleteId),
-        // 載入最近一年的活動紀錄用於計算里程
-        supabase
-          .from('strava_activities')
-          .select('id, athlete_id, name, distance, moving_time, start_date, gear_id, total_elevation_gain')
-          .eq('athlete_id', athleteId)
-          // 抓取過去 365 天的資料
-          .gte('start_date', new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString())
-          .order('start_date', { ascending: false }),
-        supabase
-          .from('app_settings')
-          .select('*')
-          .eq('athlete_id', athleteId),
-        supabase
-          .from('activity_wheelset')
-          .select('*')
-          .eq('athlete_id', athleteId)
+      // 並行載入所有資料，個別處理錯誤以避免單一表缺失導致整體失敗
+      const [
+        bikesResult,
+        wheelsetsResult,
+        typesResult,
+        recordsResult,
+        settingsResult,
+        lifespanSettingsResult,
+        activitiesResult,
+        appSettingsResult,
+        activityWheelsetsResult
+      ] = await Promise.all([
+        supabase.from('bikes').select('*').eq('athlete_id', athleteId).eq('retired', false).order('primary_gear', { ascending: false }),
+        supabase.from('wheelsets').select('*').eq('athlete_id', athleteId),
+        supabase.from('maintenance_types').select('*').order('sort_order'),
+        supabase.from('bike_maintenance').select('*').eq('athlete_id', athleteId).order('service_date', { ascending: false }),
+        supabase.from('bike_maintenance_settings').select('*').eq('athlete_id', athleteId),
+        supabase.from('bike_lifespan_settings').select('*').eq('athlete_id', athleteId),
+        supabase.from('strava_activities').select('id, athlete_id, name, distance, moving_time, start_date, gear_id, total_elevation_gain').eq('athlete_id', athleteId).gte('start_date', new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString()).order('start_date', { ascending: false }),
+        supabase.from('app_settings').select('*').eq('athlete_id', athleteId),
+        supabase.from('activity_wheelset').select('*').eq('athlete_id', athleteId)
       ]);
 
-      if (bikesResult.error) throw bikesResult.error;
-      if (wheelsetsResult.error) throw wheelsetsResult.error;
-      if (typesResult.error) throw typesResult.error;
-      if (recordsResult.error) throw recordsResult.error;
-      if (settingsResult.error) throw settingsResult.error;
+      // 檢查核心基礎資料
+      if (bikesResult.error) {
+        console.error('Critical Error loading bikes:', bikesResult.error);
+        throw bikesResult.error;
+      }
+      if (typesResult.error) {
+        console.error('Critical Error loading maintenance_types:', typesResult.error);
+        throw typesResult.error;
+      }
+
+      // 其他非核心表若失敗則顯示警告但繼續執行
+      if (wheelsetsResult.error) console.warn('載入輪組失敗:', wheelsetsResult.error);
+      if (recordsResult.error) console.warn('載入保養紀錄失敗:', recordsResult.error);
+      if (settingsResult.error) console.warn('載入保養設定失敗:', settingsResult.error);
       if (lifespanSettingsResult.error) console.warn('載入壽命設定失敗:', lifespanSettingsResult.error);
-      if (activitiesResult.error) throw activitiesResult.error;
+      if (activitiesResult.error) console.warn('載入活動數據失敗:', activitiesResult.error);
+      if (appSettingsResult.error) console.warn('載入 App 設定失敗:', appSettingsResult.error);
+      if (activityWheelsetsResult?.error) console.warn('載入活動輪組關聯失敗:', activityWheelsetsResult.error);
 
       setBikes(bikesResult.data || []);
       setWheelsets(wheelsetsResult.data || []);
@@ -601,7 +588,7 @@ export const useMaintenance = () => {
 
       // 檢查是否有自訂里程設定 -> 優先順序: 自訂 > 預估(DB) > 預設(DB)
       const setting = settings.find(s => s.bike_id === bike.id && s.maintenance_type_id === type.id);
-      const intervalKm = setting ? setting.custom_interval_km : (type.estimated_lifespan_km || type.default_interval_km);
+      const intervalKm = setting?.custom_interval_km || type.estimated_lifespan_km || type.default_interval_km || 1000;
 
       const climbingLimit = type.climbing_lifespan_m || Infinity;
 

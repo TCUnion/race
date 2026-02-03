@@ -529,7 +529,7 @@ const StravaZoneChart: React.FC<{ data: any[], type: 'power' | 'heartrate' }> = 
 
 
 
-// 訓練負荷卡片
+// 訓練負荷卡片 - 優化手機版
 const TrainingLoadCard: React.FC<{
     load: TrainingLoadSummary;
     ftp: number;
@@ -552,80 +552,78 @@ const TrainingLoadCard: React.FC<{
         setIsEditingFtp(false);
     };
 
+    const isPowerSport = sportType === 'Ride' || sportType === 'VirtualRide';
+
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
             {/* FTP (Editable) */}
-            <div className="bg-slate-800/50 rounded-xl p-4 text-center border border-slate-700/50 relative group">
+            <div className="bg-slate-800/60 rounded-lg p-2.5 sm:p-3 text-center border border-slate-700/40 relative group">
                 {isEditingFtp ? (
-                    <div className="flex flex-col items-center justify-center h-full">
+                    <div className="flex flex-col items-center justify-center">
                         <input
                             type="number"
                             value={editFtpValue}
                             onChange={(e) => setEditFtpValue(e.target.value)}
-                            className="w-16 px-1 py-0.5 bg-slate-700 border border-slate-600 rounded text-center text-white text-lg font-bold mb-1 focus:outline-none focus:border-yellow-500"
+                            className="w-14 px-1 py-0.5 bg-slate-700 border border-slate-600 rounded text-center text-white text-base font-bold mb-1 focus:outline-none focus:border-yellow-500"
                             autoFocus
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveFtp()}
                         />
-                        <div className="flex gap-2 text-xs">
-                            <button onClick={handleSaveFtp} disabled={updating} className="text-emerald-400 hover:text-emerald-300">
+                        <div className="flex gap-1 text-[10px]">
+                            <button onClick={handleSaveFtp} disabled={updating} className="text-emerald-400">
                                 {updating ? '...' : '儲存'}
                             </button>
-                            <button onClick={() => setIsEditingFtp(false)} className="text-slate-400 hover:text-slate-300">取消</button>
+                            <button onClick={() => setIsEditingFtp(false)} className="text-slate-400">取消</button>
                         </div>
                     </div>
                 ) : (
                     <>
                         <div
-                            className={`text-2xl font-bold ${ftp > 0 ? 'text-blue-400' : 'text-red-400 animate-pulse'} cursor-pointer hover:text-blue-300 flex items-center justify-center gap-1`}
+                            className={`text-lg sm:text-xl font-bold ${ftp > 0 ? 'text-blue-400' : 'text-red-400 animate-pulse'} cursor-pointer hover:text-blue-300 flex items-center justify-center gap-0.5`}
                             onClick={() => { setEditFtpValue(ftp.toString()); setIsEditingFtp(true); }}
                             title="點擊修改此活動的 FTP 設定"
                         >
-                            {ftp > 0 ? ftp : '無功率設定'}
-                            <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                            {ftp > 0 ? ftp : '--'}
+                            <Edit2 className="w-2.5 h-2.5 opacity-0 group-hover:opacity-50 transition-opacity" />
                         </div>
-                        <div className={`text-xs mt-1 ${ftp > 0 ? 'text-slate-400' : 'text-red-500 font-medium'}`}>
-                            {ftp > 0 ? '設定 FTP (W)' : '請先設定 FTP'}
+                        <div className={`text-[9px] sm:text-[10px] mt-0.5 ${ftp > 0 ? 'text-slate-500' : 'text-red-500'}`}>
+                            設定 FTP (W)
                         </div>
                     </>
                 )}
             </div>
 
-            {/* Strava Zones Status (Replacing Max HR) - Only show if synced */}
+            {/* Strava Zones Status - 更緊湊 */}
             {hasStravaZones && (
-                <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700/50">
-                    <div className="text-slate-400 text-xs mb-1">心率區間來源</div>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold text-green-400">Strava</span>
-                        <span className="text-xs text-green-500/80">已同步</span>
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
+                <div className="bg-slate-800/60 rounded-lg p-2.5 sm:p-3 text-center border border-emerald-500/20">
+                    <div className="text-lg sm:text-xl font-bold text-emerald-400">Strava</div>
+                    <div className="text-[9px] sm:text-[10px] text-emerald-500/70 mt-0.5">
                         使用官方分析數據
                     </div>
                 </div>
             )}
 
             {/* Power Metrics - Only for Ride */}
-            {(sportType === 'Ride' || sportType === 'VirtualRide') && (
+            {isPowerSport && (
                 <>
                     {/* NP */}
-                    <div className="bg-slate-800/50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-yellow-400">{load.np}</div>
-                        <div className="text-xs text-slate-400 mt-1">NP (W)</div>
+                    <div className="bg-slate-800/60 rounded-lg p-2.5 sm:p-3 text-center border border-slate-700/40">
+                        <div className="text-lg sm:text-xl font-bold text-yellow-400">{load.np}</div>
+                        <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5">NP (W)</div>
                     </div>
                     {/* IF */}
-                    <div className="bg-slate-800/50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-orange-400">{load.if.toFixed(2)}</div>
-                        <div className="text-xs text-slate-400 mt-1">強度因子</div>
+                    <div className="bg-slate-800/60 rounded-lg p-2.5 sm:p-3 text-center border border-slate-700/40">
+                        <div className="text-lg sm:text-xl font-bold text-orange-400">{load.if.toFixed(2)}</div>
+                        <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5">強度因子</div>
                     </div>
                     {/* TSS */}
-                    <div className="bg-slate-800/50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-red-400">{load.tss}</div>
-                        <div className="text-xs text-slate-400 mt-1">TSS</div>
+                    <div className="bg-slate-800/60 rounded-lg p-2.5 sm:p-3 text-center border border-slate-700/40">
+                        <div className="text-lg sm:text-xl font-bold text-red-400">{load.tss}</div>
+                        <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5">TSS</div>
                     </div>
                     {/* VI */}
-                    <div className="bg-slate-800/50 rounded-xl p-4 text-center">
-                        <div className="text-2xl font-bold text-purple-400">{load.vi.toFixed(2)}</div>
-                        <div className="text-xs text-slate-400 mt-1">變異指數</div>
+                    <div className="bg-slate-800/60 rounded-lg p-2.5 sm:p-3 text-center border border-slate-700/40">
+                        <div className="text-lg sm:text-xl font-bold text-purple-400">{load.vi.toFixed(2)}</div>
+                        <div className="text-[9px] sm:text-[10px] text-slate-500 mt-0.5">變異指數</div>
                     </div>
                 </>
             )}
@@ -1089,59 +1087,79 @@ const AthletePowerTrainingReport: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
-                {/* 標題列 */}
-                <div className="p-6 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                            <User className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                {athlete.firstname} {athlete.lastname}
-                                <span className="px-2 py-0.5 rounded text-xs font-normal bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                {/* 標題列 - 優化手機版佈局 */}
+                <div className="p-4 sm:p-6 border-b border-slate-700/50">
+                    {/* 上方：用戶資訊 */}
+                    <div className="flex items-center gap-3 mb-4">
+                        {/* 使用真實的 Strava 頭像 */}
+                        {athlete.profile_medium || athlete.profile ? (
+                            <img
+                                src={athlete.profile_medium || athlete.profile}
+                                alt={athlete.firstname}
+                                className="w-12 h-12 rounded-full object-cover border-2 border-orange-500/50"
+                            />
+                        ) : (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                                <User className="w-6 h-6 text-white" />
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 flex-wrap">
+                                <span className="truncate">{athlete.firstname} {athlete.lastname}</span>
+                                <span className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border border-blue-500/30 shrink-0">
                                     AI 功率教室
                                 </span>
                             </h2>
-                            <p className="text-sm text-slate-400 mt-1">
-                                目前設定 FTP: <span className="text-white font-mono">{currentFTP > 0 ? `${currentFTP}W` : '未設定'}</span> •
-                                本週 TSS: <span className="text-white font-mono">{Math.round(weeklyTSS)}</span>
+                            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                                目前設定 FTP: <span className="text-white font-mono font-bold">{currentFTP > 0 ? `${currentFTP}W` : '未設定'}</span>
+                                <span className="mx-1.5">·</span>
+                                本週 TSS: <span className="text-white font-mono font-bold">{Math.round(weeklyTSS)}</span>
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 mr-2">
-                            <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">同步進度 (最新 42 筆)</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-emerald-400">已同步: {syncStats.synced}</span>
-                                    <span className="text-slate-700">|</span>
-                                    <span className={`text-xs font-medium ${syncStats.pending > 0 ? 'text-orange-400' : 'text-slate-500'}`}>待同步: {syncStats.pending}</span>
+                    {/* 下方：同步進度 */}
+                    <div className="flex items-center justify-between gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-slate-500 font-medium">同步進度 (最新 42 筆)</span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-xs font-bold text-emerald-400">已同步: {syncStats.synced}</span>
+                                    <span className="text-slate-600">|</span>
+                                    <span className={`text-xs font-bold ${syncStats.pending > 0 ? 'text-orange-400' : 'text-slate-500'}`}>
+                                        待同步: {syncStats.pending}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col items-end gap-1">
                             <button
                                 onClick={handleSyncAllActivities}
                                 disabled={isSyncingAll || syncStats.pending === 0}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all
                                     ${(isSyncingAll || syncStats.pending === 0)
-                                        ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95'
+                                        ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-lg shadow-blue-500/20 active:scale-95'
                                     }`}
                             >
-                                <RefreshCw className={`w-4 h-4 ${isSyncingAll ? 'animate-spin' : ''}`} />
-                                {isSyncingAll ? '同步中...' : syncStats.pending === 0 ? '已全部同步' : '同步剩餘活動數據'}
+                                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAll ? 'animate-spin' : ''}`} />
+                                <span className="hidden sm:inline">
+                                    {isSyncingAll ? '同步中...' : syncStats.pending === 0 ? '已全部同步' : '同步全部'}
+                                </span>
+                                <span className="sm:hidden">
+                                    {isSyncingAll ? '...' : syncStats.pending === 0 ? '✓' : '同步'}
+                                </span>
                             </button>
                             {syncAllMessage && (
-                                <span className="text-[10px] text-blue-400 animate-pulse font-medium">
+                                <span className="text-[10px] text-blue-400 animate-pulse font-medium max-w-[150px] truncate">
                                     {syncAllMessage}
                                 </span>
                             )}
                         </div>
                     </div>
                 </div>
+
 
                 {/* 內容區域 - 直接顯示，不需折疊 */}
                 <div className="p-4 sm:p-6">

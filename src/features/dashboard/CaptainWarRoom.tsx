@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { resolveAvatarUrl } from '../../lib/imageUtils';
 import { Activity, Calendar, Clock, MapPin, Zap, ExternalLink, Heart, Gauge, User } from 'lucide-react';
 
 interface ActivityData {
@@ -149,7 +150,7 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center gap-3">
                                         {member.avatar ? (
-                                            <img src={member.avatar} alt={member.real_name} className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" />
+                                            <img src={resolveAvatarUrl(member.avatar) || ''} alt={member.real_name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" />
                                         ) : (
                                             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                                 <User className="w-4 h-4 text-slate-400" />

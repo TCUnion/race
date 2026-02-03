@@ -1160,7 +1160,7 @@ const MaintenanceDashboard: React.FC = () => {
                       items={sortedReminders.map(r => r.type.id)}
                       strategy={rectSortingStrategy}
                     >
-                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {sortedReminders.map(reminder => {
                           const isReplacement = reminder.type.name === '器材更換';
                           const StatusIcon = statusIcons[reminder.status];
@@ -1170,7 +1170,7 @@ const MaintenanceDashboard: React.FC = () => {
                               {isReplacement ? (
                                 <div
                                   onClick={() => setSelectedHistoryType(reminder.type)}
-                                  className="p-4 rounded-2xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group h-full"
+                                  className="p-4 rounded-2xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group h-full aspect-square flex flex-col justify-between overflow-hidden"
                                 >
                                   <div className="flex items-start justify-between mb-3">
                                     <div>
@@ -1196,7 +1196,7 @@ const MaintenanceDashboard: React.FC = () => {
                               ) : (
                                 <div
                                   onClick={() => setSelectedHistoryType(reminder.type)}
-                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full overflow-hidden`}
+                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full overflow-hidden aspect-square flex flex-col justify-between`}
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                                     <div className="flex-1 min-w-0">

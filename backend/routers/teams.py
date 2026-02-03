@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/teams", tags=["teams"])
 async def get_my_team(strava_id: str):
     """
     取得使用者的車隊資訊與權限狀態。
-    優先使用 tcu_members，若無資料則 fallback 到 strava_bindings。
+    從 strava_bindings 取得 tcu_account，再從 tcu_members 取得 team 資訊。
     """
     try:
         # 1. 從 strava_bindings 取得綁定資訊
@@ -53,33 +53,16 @@ async def get_my_team(strava_id: str):
                 "is_bound": True
             }
 
-        # 5. 取得 Team 詳細資料 (如果 teams table 沒有該車隊，自動建立)
-        team_res = supabase.table("teams").select("*").eq("name", team_name).execute()
-        
-        team_data = None
-        is_admin = False
-        
-        if team_res.data:
-            team_data = team_res.data[0]
-            is_admin = team_data.get("admin_strava_id") == str(strava_id)
-        else:
-            # 自動建立車隊記錄
-            try:
-                new_team_data = {
-                    "name": team_name,
-                    "description": f"Official team page for {team_name}",
-                    "admin_strava_id": None
-                }
-                create_res = supabase.table("teams").upsert(new_team_data, on_conflict="name").execute()
-                if create_res.data:
-                    team_data = create_res.data[0]
-            except Exception as e:
-                print(f"[WARN] Auto-create team failed: {e}")
+        # 5. 判斷是否為管理員（根據 member_type 判斷）
+        is_admin = member_type in ["付費車隊管理員", "隊長", "管理員"] if member_type else False
 
         return {
             "has_team": True,
             "team_name": team_name,
-            "team_data": team_data,
+            "team_data": {
+                "name": team_name,
+                "description": f"{team_name} 車隊"
+            },
             "is_admin": is_admin,
             "member_name": member_name,
             "member_type": member_type
@@ -88,6 +71,7 @@ async def get_my_team(strava_id: str):
     except Exception as e:
         print(f"[ERROR] Get my team error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get("/members")

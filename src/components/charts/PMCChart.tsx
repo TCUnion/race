@@ -122,62 +122,68 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
     const latest = data[data.length - 1] || { ctl: 0, atl: 0, tsb: 0 };
 
     return (
-        <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                <div>
-                    <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+        <div className="bg-slate-800/40 rounded-xl p-3 sm:p-4 border border-slate-700/30">
+            {/* 標題區域 - 優化手機版 */}
+            <div className="flex flex-col gap-3 mb-4">
+                {/* 標題和控制按鈕 */}
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
                         <Activity className="w-4 h-4 text-emerald-400" />
-                        進階體能追蹤 (PMC)
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                        追蹤您的長期體能 (Fitness) 與短期疲勞 (Fatigue) 趨勢
-                    </p>
+                        <div>
+                            <h3 className="text-sm font-medium text-slate-300">進階體能追蹤 (PMC)</h3>
+                            <p className="text-[10px] text-slate-500 mt-0.5 hidden sm:block">
+                                追蹤您的長期體能 (Fitness) 與短期疲勞 (Fatigue) 趨勢
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 控制按鈕 - 更緊湊 */}
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => setShowTSS(!showTSS)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors border ${showTSS
+                                ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                : 'bg-slate-800/50 text-slate-500 border-slate-700/50'
+                                }`}
+                        >
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            TSS
+                        </button>
+                        <button
+                            onClick={() => setShowAll(!showAll)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors border ${showAll
+                                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                                : 'bg-slate-800/50 text-slate-500 border-slate-700/50'
+                                }`}
+                        >
+                            <div className={`w-1.5 h-1.5 rounded-full ${showAll ? 'bg-indigo-500' : 'bg-slate-500'}`} />
+                            {showAll ? '隱藏' : '顯示'}
+                        </button>
+                    </div>
                 </div>
 
-                {/* 狀態摘要卡片 & 控制項 */}
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setShowTSS(!showTSS)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${showTSS
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
-                            : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-400'
-                            }`}
-                    >
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        訓練量 (TSS)
-                    </button>
-
-                    <button
-                        onClick={() => setShowAll(!showAll)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${showAll
-                            ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
-                            : 'bg-slate-800/50 text-slate-500 border-slate-700 hover:text-slate-400'
-                            }`}
-                    >
-                        <div className={`w-1.5 h-1.5 rounded-full ${showAll ? 'bg-indigo-500' : 'bg-slate-500'}`} />
-                        {showAll ? '隱藏 PMC' : '顯示 PMC'}
-                    </button>
-
-
-
-                    <div className="flex gap-4">
-                        <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
-                            <div className="text-[10px] text-slate-400">體能 (CTL)</div>
-                            <div className="text-lg font-bold text-indigo-400">{latest.ctl}</div>
+                {/* 狀態摘要卡片 - 水平排列 */}
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-slate-900/50 rounded-lg p-2 border border-slate-700/30 text-center">
+                        <div className="text-[9px] text-slate-500">體能</div>
+                        <div className="text-base sm:text-lg font-bold text-indigo-400">{latest.ctl}</div>
+                        <div className="text-[8px] text-slate-600">CTL</div>
+                    </div>
+                    <div className="bg-slate-900/50 rounded-lg p-2 border border-slate-700/30 text-center">
+                        <div className="text-[9px] text-slate-500">疲勞</div>
+                        <div className="text-base sm:text-lg font-bold text-pink-400">{latest.atl}</div>
+                        <div className="text-[8px] text-slate-600">ATL</div>
+                    </div>
+                    <div className="bg-slate-900/50 rounded-lg p-2 border border-slate-700/30 text-center">
+                        <div className="text-[9px] text-slate-500">狀態</div>
+                        <div className={`text-base sm:text-lg font-bold ${latest.tsb >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                            {latest.tsb > 0 ? '+' : ''}{latest.tsb}
                         </div>
-                        <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
-                            <div className="text-[10px] text-slate-400">疲勞 (ATL)</div>
-                            <div className="text-lg font-bold text-pink-400">{latest.atl}</div>
-                        </div>
-                        <div className="bg-slate-900/50 rounded-lg p-2 px-3 border border-slate-700/50">
-                            <div className="text-[10px] text-slate-400">狀態 (TSB)</div>
-                            <div className={`text-lg font-bold ${latest.tsb >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
-                                {latest.tsb > 0 ? '+' : ''}{latest.tsb}
-                            </div>
-                        </div>
+                        <div className="text-[8px] text-slate-600">TSB</div>
                     </div>
                 </div>
             </div>
+
 
             <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">

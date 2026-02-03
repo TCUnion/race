@@ -47,8 +47,8 @@ export const useAuth = () => {
     const checkBindingStatus = async (athleteId: number) => {
         try {
             // 使用新的 binding-status API 查詢 strava_bindings 表格
-            // 使用新的 binding-status API 查詢 strava_bindings 表格
-            const response = await fetch(`${API_BASE_URL}/api/auth/binding-status/${athleteId}`);
+            const apiUrl = `${API_BASE_URL}/api/auth/binding-status/${athleteId}`;
+            const response = await fetch(apiUrl);
 
             // 檢查是否為 JSON (避免 404/500 返回 HTML 導致 SyntaxError)
             const contentType = response.headers.get("content-type");
@@ -77,7 +77,6 @@ export const useAuth = () => {
 
                 // 如果本地名字是 undefined 或 'Undefined Undefined' 或 與伺服器不符
                 if (currentName.includes('undefined') || currentName !== serverName) {
-
 
                     // 簡單策略：將 serverName 當作 firstname
                     const newAthleteData = {

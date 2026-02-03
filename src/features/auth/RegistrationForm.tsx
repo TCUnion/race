@@ -35,6 +35,17 @@ interface RegistrationFormProps {
 
 
 
+// UUID Generator for environments where crypto.randomUUID might be missing (e.g. non-secure contexts)
+const generateUUID = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
 const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess }) => {
     const { isBound, memberData } = useAuth();
     const [selectedSegmentIds, setSelectedSegmentIds] = useState<number[]>([]);
@@ -103,9 +114,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         );
     };
 
-
-
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -142,7 +150,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                         .from('registrations')
                         .insert(
                             toInsert.map(id => ({
-                                id: crypto.randomUUID(),
+                                id: generateUUID(),
                                 segment_id: id,
                                 strava_athlete_id: athlete.id,
                                 athlete_name: name,

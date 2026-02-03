@@ -3,6 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
+import { resolveAvatarUrl } from '../../lib/imageUtils';
 const CaptainWarRoom = React.lazy(() => import('./CaptainWarRoom'));
 
 const TeamDashboard: React.FC = () => {
@@ -267,8 +268,9 @@ const TeamDashboard: React.FC = () => {
                                                 <div className="flex items-center gap-4">
                                                     <div className="relative">
                                                         <img
-                                                            src={member.avatar || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+                                                            src={resolveAvatarUrl(member.avatar) || "https://www.strava.com/assets/users/placeholder_athlete.png"}
                                                             alt={member.real_name}
+                                                            referrerPolicy="no-referrer"
                                                             className={`w-12 h-12 rounded-xl object-cover ${isAdmin ? 'ring-2 ring-purple-500'
                                                                 : isCaptain ? 'ring-2 ring-yellow-500'
                                                                     : 'ring-1 ring-slate-200 dark:ring-slate-700'

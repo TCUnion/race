@@ -1,4 +1,4 @@
-import { Home, Library, Search, Settings } from 'lucide-react';
+import { Home, LayoutDashboard, Search, Settings } from 'lucide-react';
 
 interface TabBarProps {
     activeTab: string;
@@ -7,7 +7,7 @@ interface TabBarProps {
 
 const tabs = [
     { id: 'home', label: '探索', icon: Home },
-    { id: 'library', label: '資料庫', icon: Library },
+    { id: 'library', label: '個人儀表板', icon: LayoutDashboard },
     { id: 'search', label: '搜尋', icon: Search },
     { id: 'settings', label: '設定', icon: Settings },
 ];
