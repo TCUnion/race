@@ -21,7 +21,7 @@ interface RaceEvent {
 }
 
 interface RaceAdminPanelProps {
-    adminId: number;
+    adminId: string;
 }
 
 export function RaceAdminPanel({ adminId }: RaceAdminPanelProps) {

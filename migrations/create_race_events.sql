@@ -1,7 +1,7 @@
 -- 建立比賽活動表
 CREATE TABLE IF NOT EXISTS race_events (
     id BIGSERIAL PRIMARY KEY,
-    created_by_manager_id BIGINT REFERENCES manager_roles(id) ON DELETE CASCADE,
+    created_by_manager_id UUID REFERENCES manager_roles(id) ON DELETE CASCADE,
     created_by_email TEXT NOT NULL,
     
     -- 比賽基本資訊
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS race_events (
     
     -- 審核狀態
     approval_status TEXT DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
-    approved_by_admin_id BIGINT REFERENCES manager_roles(id) ON DELETE SET NULL,
+    approved_by_admin_id UUID REFERENCES manager_roles(id) ON DELETE SET NULL,
     approved_at TIMESTAMPTZ,
     rejection_reason TEXT,
     

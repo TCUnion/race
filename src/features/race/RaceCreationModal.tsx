@@ -20,7 +20,7 @@ interface RaceCreationModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    managerId: number;
+    managerId: string;
     managerEmail: string;
 }
 
@@ -240,8 +240,8 @@ export function RaceCreationModal({ isOpen, onClose, onSuccess, managerId, manag
                                     type="button"
                                     onClick={() => setFormData({ ...formData, coverImageUrl: img.image_url })}
                                     className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${formData.coverImageUrl === img.image_url
-                                            ? 'border-blue-500 ring-2 ring-blue-500/50'
-                                            : 'border-slate-700 hover:border-slate-600'
+                                        ? 'border-blue-500 ring-2 ring-blue-500/50'
+                                        : 'border-slate-700 hover:border-slate-600'
                                         }`}
                                 >
                                     <img src={img.image_url} alt={img.theme} className="w-full h-full object-cover" />

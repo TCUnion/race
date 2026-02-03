@@ -72,7 +72,7 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
         }
     };
 
-    const fetchUserRaces = async (managerId: number) => {
+    const fetchUserRaces = async (managerId: string) => {
         const { data } = await supabase
             .from('race_events')
             .select('*')
