@@ -615,16 +615,41 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                                                     </div>
                                                 </div>
 
-                                                {/* Product Info */}
+
+                                                {/* Product Info - Enhanced */}
                                                 {(() => {
                                                     const detail = record.parts_details?.find((d: any) => d.type_id === selectedType.id);
-                                                    return (detail?.brand || detail?.model) && (
-                                                        <div className="flex items-center gap-2 text-xs mb-2">
-                                                            <span className="text-cyan-400 font-bold">{detail?.brand || ''}</span>
-                                                            {detail?.model && <span className="text-white/40">{detail.model}</span>}
+                                                    const hasBrandModel = detail?.brand || detail?.model;
+                                                    const hasOther = detail?.other;
+
+                                                    return (hasBrandModel || hasOther) && (
+                                                        <div className="space-y-1 mb-2">
+                                                            {hasBrandModel && (
+                                                                <div className="flex items-center gap-2 text-xs">
+                                                                    {detail?.brand && <span className="text-cyan-400 font-bold">{detail.brand}</span>}
+                                                                    {detail?.model && <span className="text-white/40">{detail.model}</span>}
+                                                                </div>
+                                                            )}
+                                                            {hasOther && (
+                                                                <p className="text-white/40 text-xs">{hasOther}</p>
+                                                            )}
                                                         </div>
                                                     );
                                                 })()}
+
+                                                {/* Cost and Shop Info */}
+                                                {(record.cost || record.shop_name) && (
+                                                    <div className="flex items-center gap-3 text-xs mb-2">
+                                                        {record.cost && (
+                                                            <span className="text-orange-400 font-mono font-bold">
+                                                                ${record.cost.toLocaleString()}
+                                                            </span>
+                                                        )}
+                                                        {record.shop_name && (
+                                                            <span className="text-blue-400">{record.shop_name}</span>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 {/* Notes */}
                                                 {(record.notes || record.other) && (
