@@ -55,7 +55,7 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                 >
                     <ChevronLeft className="w-6 h-6 text-white" />
                 </button>
-                <h1 className="ml-4 text-[10px] font-black tracking-[0.2em] uppercase text-white/80">CU Challenge Series</h1>
+                <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-black tracking-[0.2em] uppercase text-white/80">CU Challenge Series</h1>
             </header>
 
             <main className="px-5">
