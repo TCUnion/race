@@ -10,6 +10,7 @@ import { TabBar } from './TabBar';
 import { V2View } from '../../App';
 import { LogOut, User } from 'lucide-react';
 import { useWeeklyStats } from '../../../src/hooks/useWeeklyStats';
+import { useMemberAuthorizations } from '../../../src/hooks/useMemberAuthorizations';
 
 
 interface HomePageProps {
@@ -23,6 +24,7 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
     const { segments, statsMap, isLoading } = useSegmentData();
     const [showProfile, setShowProfile] = useState(false);
     const { stats } = useWeeklyStats(athlete?.id, athlete?.ftp);
+    const { pendingAuthorizations } = useMemberAuthorizations();
 
     // Get the featured segment based on current index
     const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
@@ -121,14 +123,19 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                 <div className="relative">
                     <button
                         onClick={() => setShowProfile(!showProfile)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform border-2 border-transparent hover:border-white/20 overflow-hidden ${athlete ? 'bg-white/10' : 'bg-[#FC5200]'}`}
+                        className={`relative w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform border-2 border-transparent hover:border-white/20 overflow-hidden ${athlete ? 'bg-white/10' : 'bg-[#FC5200]'}`}
                     >
                         {athlete ? (
-                            <img
-                                src={athlete.profile}
-                                alt={athlete.lastname}
-                                className="w-full h-full object-cover"
-                            />
+                            <>
+                                <img
+                                    src={athlete.profile}
+                                    alt={athlete.lastname}
+                                    className="w-full h-full object-cover"
+                                />
+                                {pendingAuthorizations.length > 0 && (
+                                    <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1a1a1a] animate-pulse"></span>
+                                )}
+                            </>
                         ) : (
                             <img src="/strava-logo-white.svg" alt="Strava" className="w-6 h-6" />
                         )}
@@ -180,6 +187,31 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                                         </div>
 
                                         <button
+                                            onClick={() => setShowProfile(false)}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-text hover:bg-white/5 transition-colors"
+                                        >
+                                            <User size={18} className="text-primary" />
+                                            <span>個人檔案</span>
+                                        </button>
+
+                                        {pendingAuthorizations.length > 0 && (
+                                            <button
+                                                onClick={() => {
+                                                    setShowProfile(false);
+                                                    if (onNavigate) onNavigate(V2View.DASHBOARD);
+                                                }}
+                                                className="w-full flex items-center justify-between px-4 py-3 text-sm text-text hover:bg-white/5 transition-colors border-t border-white/5"
+                                            >
+                                                <div className="flex items-center gap-3 text-red-400">
+                                                    <User size={18} />
+                                                    <span className="font-bold">授權請求通知</span>
+                                                </div>
+                                                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                                                    {pendingAuthorizations.length}
+                                                </span>
+                                            </button>
+                                        )}
+                                        <button
                                             onClick={() => {
                                                 if (window.confirm('確定要登出嗎？')) {
                                                     logout();
@@ -195,7 +227,6 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-4 text-center py-2">
-// ...
                                     <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/20">
                                         <User size={24} />
                                     </div>
