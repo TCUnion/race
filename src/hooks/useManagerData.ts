@@ -335,32 +335,64 @@ export function useManagerData(): UseManagerDataReturn {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        // 1. 批量載入資料
-        const [allActivitiesResult, allAthletesResult, allBikesResult] = await Promise.all([
-            supabase.from('strava_activities')
-                .select('*')
-                .in('athlete_id', athleteIds)
-                .gte('start_date', fortyTwoDaysAgo.toISOString())
-                .order('start_date', { ascending: true }),
+        // 1. 先取得活動資料
+        const { data: allActivities } = await supabase.from('strava_activities')
+            .select('*')
+            .in('athlete_id', athleteIds)
+            .gte('start_date', fortyTwoDaysAgo.toISOString())
+            .order('start_date', { ascending: true });
+
+        const activities = allActivities || [];
+        const activityIds = activities.map((a: any) => a.id);
+
+        // 2. 批量載入其餘資料 (基礎資料)
+        const [allAthletesResult, allBikesResult] = await Promise.all([
             supabase.from('athletes').select('id, firstname, lastname, ftp, max_heartrate').in('id', athleteIds),
             supabase.from('bikes').select('id, name, athlete_id').in('athlete_id', athleteIds)
         ]);
 
-        const allActivities = allActivitiesResult.data || [];
+        // 3. 分批載入同步狀態 (strava_streams)，避免 ID 數量過多導致查詢失敗
+        let allStreams: any[] = [];
+        if (activityIds.length > 0) {
+            const chunkSize = 100;
+            for (let i = 0; i < activityIds.length; i += chunkSize) {
+                const chunk = activityIds.slice(i, i + chunkSize);
+                const { data, error } = await supabase
+                    .from('strava_streams')
+                    .select('activity_id')
+                    .in('activity_id', chunk);
+
+                if (error) {
+                    console.error('分批載入 Streams 失敗:', error);
+                } else if (data) {
+                    allStreams = [...allStreams, ...data];
+                }
+            }
+        }
+
+
         const allAthletes = allAthletesResult.data || [];
+
         const allBikes = allBikesResult.data || [];
+        const syncedActivityIds = new Set(allStreams.map((s: any) => String(s.activity_id)));
 
         const summaries: ActivitySummary[] = [];
 
         // TSS 計算輔助函式
-        const calculateSimpleTSS = (watts: number, ftp: number, durationSeconds: number): number => {
-            if (!ftp || !watts) return 0;
-            const if_factor = watts / ftp;
-            return (durationSeconds * watts * if_factor) / (ftp * 3600) * 100;
+
+        const calculateMetrics = (watts: number, ftp: number, durationSeconds: number) => {
+            if (!ftp || !watts) return { tss: 0, if_factor: 0, np: 0 };
+
+            // 簡易估算 NP (通常比平均功率高 5-10%)
+            // 如果有 weighted_average_watts 則直接使用
+            const np = watts;
+            const if_factor = np / ftp;
+            const tss = (durationSeconds * np * if_factor) / (ftp * 3600) * 100;
+            return { tss, if_factor, np };
         };
 
         for (const athleteId of athleteIds) {
-            const activities = allActivities.filter(a => a.athlete_id === athleteId);
+            const athleteActivities = activities.filter((a: any) => a.athlete_id === athleteId);
             const athlete = allAthletes.find(a => a.id === athleteId);
             const bikes = allBikes.filter(b => b.athlete_id === athleteId);
 
@@ -370,29 +402,42 @@ export function useManagerData(): UseManagerDataReturn {
             let currentAtl = 0;
             const dailyTssMap = new Map<string, number>();
 
-            activities.forEach((a: any) => {
+            athleteActivities.forEach((a: any) => {
                 const dateKey = a.start_date.split('T')[0];
                 const isRide = ['Ride', 'VirtualRide', 'MountainBikeRide', 'GravelRide', 'EBikeRide', 'Velomobile'].includes(a.sport_type);
 
                 const sufferScore = a.suffer_score ? Number(a.suffer_score) : 0;
                 let tss = 0;
+                let np = 0;
+                let if_factor = 0;
+
                 // 優先使用身心負荷 (Suffer Score)，這對所有運動類型都有效
                 if (sufferScore > 0) {
                     tss = sufferScore;
-                } else if (isRide && ftp > 0 && (a.average_watts || a.weighted_average_watts)) {
+                }
+
+                if (isRide && ftp > 0) {
                     // 次之使用功率計算 (僅限騎乘類活動)
-                    const watts = Number(a.weighted_average_watts || (a.average_watts * 1.05) || 0);
-                    tss = calculateSimpleTSS(watts, ftp, a.moving_time);
+                    // 優先使用 weighted_average_watts (NP), 其次 average_watts * 1.05
+                    const rawWatts = a.weighted_average_watts || (a.average_watts ? a.average_watts * 1.05 : 0);
+                    const metrics = calculateMetrics(Number(rawWatts), ftp, a.moving_time);
+
+                    if (tss === 0) tss = metrics.tss; // 如果沒有 suffer score 才用功率 TSS
+                    np = metrics.np;
+                    if_factor = metrics.if_factor;
                 }
 
                 const current = dailyTssMap.get(dateKey) || 0;
                 dailyTssMap.set(dateKey, current + tss);
                 a.tss = tss;
+                a.np = Math.round(np);
+                a.if = Number(if_factor.toFixed(2));
+                a.is_synced = syncedActivityIds.has(String(a.id));
             });
 
             // 計算 CTL/ATL（即使沒有活動也計算）
-            if (activities.length > 0) {
-                const startDate = new Date(activities[0].start_date);
+            if (athleteActivities.length > 0) {
+                const startDate = new Date(athleteActivities[0].start_date);
                 const endDate = new Date();
                 let iteratorDate = new Date(startDate);
 
@@ -406,7 +451,7 @@ export function useManagerData(): UseManagerDataReturn {
             }
 
             const currentTsb = currentCtl - currentAtl;
-            const recentWeekActivities = activities.filter((a: any) => new Date(a.start_date) >= sevenDaysAgo);
+            const recentWeekActivities = athleteActivities.filter((a: any) => new Date(a.start_date) >= sevenDaysAgo);
 
             const totalDistance = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.distance || 0), 0) / 1000;
             const totalElevation = recentWeekActivities.reduce((sum: number, a: any) => sum + (a.total_elevation_gain || 0), 0);
@@ -425,7 +470,7 @@ export function useManagerData(): UseManagerDataReturn {
                 ? activitiesWithHR.reduce((sum: number, a: any) => sum + (a.average_heartrate || 0), 0) / activitiesWithHR.length
                 : undefined;
 
-            const sortedActivitiesDesc = [...activities].sort((a, b) =>
+            const sortedActivitiesDesc = [...athleteActivities].sort((a, b) =>
                 new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
             );
 
@@ -468,7 +513,7 @@ export function useManagerData(): UseManagerDataReturn {
                 ctl: Math.round(currentCtl),
                 atl: Math.round(currentAtl),
                 tsb: Math.round(currentTsb),
-                full_history_activities: activities,
+                full_history_activities: athleteActivities,
             });
         }
 

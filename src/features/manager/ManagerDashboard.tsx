@@ -255,6 +255,40 @@ function ManagerDashboard() {
     const [isBindingStrava, setIsBindingStrava] = useState(false);
     const authWindowRef = React.useRef<Window | null>(null);
     const pollingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const [syncingActivities, setSyncingActivities] = useState<Set<number>>(new Set());
+
+    const handleSingleActivitySync = async (athleteId: number, activityId: number) => {
+        if (syncingActivities.has(activityId)) return;
+
+        setSyncingActivities(prev => new Set(prev).add(activityId));
+        try {
+            await fetch('https://service.criterium.tw/webhook/strava-sync-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    athlete_id: athleteId,
+                    activity_ids: [activityId],
+                    requested_at: new Date().toISOString()
+                })
+            });
+
+            // Just notify user, no need to alert for success to avoid annoyance, 
+            // but user asked for "can click", we show it's working via spinner.
+        } catch (err) {
+            console.error('Single activity sync error:', err);
+            alert('同步發生錯誤，請稍後再試。');
+        } finally {
+            // Keep it in set for a bit to show success or let it refetch
+            setTimeout(() => {
+                setSyncingActivities(prev => {
+                    const next = new Set(prev);
+                    next.delete(activityId);
+                    return next;
+                });
+            }, 2000);
+        }
+    };
+
 
     // Listen for storage changes (cross-tab/window communication) AND postMessage (popup communication)
     useEffect(() => {
@@ -517,7 +551,7 @@ function ManagerDashboard() {
     const tabs = [
         // { id: 'overview' as const, label: '總覽', icon: Store },
         { id: 'activity' as const, label: '活動報表', icon: Activity },
-        { id: 'power_analysis' as const, label: '功率分析', icon: Zap },
+
         { id: 'members' as const, label: `${athleteLabel}管理`, icon: Users },
         { id: 'maintenance' as const, label: '保養報表', icon: Wrench },
         { id: 'statistics' as const, label: '統計分析', icon: BarChart3 },
@@ -526,18 +560,21 @@ function ManagerDashboard() {
     ].filter(tab => {
         // 車店老闆不需要活動報表、功率分析跟統計分析
         if (managerRole?.role === 'shop_owner') {
-            return !['activity', 'statistics', 'power_analysis'].includes(tab.id);
+            return !['activity', 'statistics'].includes(tab.id);
         }
         // 車隊教練不需要保養報表跟統計分析
         if (managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') {
             return !['maintenance', 'statistics'].includes(tab.id);
         }
         // 功率分析只顯示給功率教練與車隊教練
+        /*
         if (tab.id === 'power_analysis') {
             if (!managerRole) return false;
             const role = managerRole.role as string;
             return role === 'power_coach' || role === 'team_coach';
         }
+        */
+        return true;
         return true;
     });
 
@@ -1564,7 +1601,7 @@ function ManagerDashboard() {
                                                                                 {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.recent_activities && (
                                                                                     <div className="mb-6">
                                                                                         <DailyTrainingChart
-                                                                                            activities={summary.recent_activities}
+                                                                                            activities={summary.full_history_activities}
                                                                                             ftp={summary.ftp || 200}
                                                                                         />
                                                                                     </div>
@@ -1668,8 +1705,12 @@ function ManagerDashboard() {
                                                                                     <thead>
                                                                                         <tr className="border-b border-slate-700 text-slate-400">
                                                                                             <th className="px-4 py-2 text-left w-24">日期</th>
+                                                                                            <th className="px-4 py-2 text-center w-12">同步</th>
                                                                                             <th className="px-4 py-2 text-left">名稱</th>
                                                                                             <th className="px-4 py-2 text-left w-20">種類</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">TSS</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">NP</th>
+                                                                                            <th className="px-4 py-2 text-right w-20">IF</th>
                                                                                             <th className="px-4 py-2 text-right w-20">距離 (km)</th>
                                                                                             <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
                                                                                             <th className="px-4 py-2 text-right w-20">移動時間</th>
@@ -1718,6 +1759,22 @@ function ManagerDashboard() {
                                                                                                         <td className="px-4 py-2 text-slate-300">
                                                                                                             {new Date(activity.start_date).toLocaleDateString()}
                                                                                                         </td>
+                                                                                                        <td className="px-4 py-2 text-center">
+                                                                                                            {(activity as any).is_synced ? (
+                                                                                                                <div className="flex justify-center text-emerald-500" title="已同步詳情">
+                                                                                                                    <CheckCircle2 className="w-4 h-4" />
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <button
+                                                                                                                    onClick={() => handleSingleActivitySync(summary.athlete_id, activity.id)}
+                                                                                                                    disabled={syncingActivities.has(activity.id)}
+                                                                                                                    className={`flex justify-center w-full transition-all ${syncingActivities.has(activity.id) ? 'text-indigo-400' : 'text-slate-600 hover:text-indigo-400'}`}
+                                                                                                                    title="點擊同步此活動"
+                                                                                                                >
+                                                                                                                    <RefreshCw className={`w-4 h-4 ${syncingActivities.has(activity.id) ? 'animate-spin' : ''}`} />
+                                                                                                                </button>
+                                                                                                            )}
+                                                                                                        </td>
                                                                                                         <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
                                                                                                             <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
                                                                                                                 {activity.name}
@@ -1725,6 +1782,15 @@ function ManagerDashboard() {
                                                                                                         </td>
                                                                                                         <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
                                                                                                             {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right font-mono text-blue-400 font-bold">
+                                                                                                            {Math.round((activity as any).tss || 0) || '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right font-mono text-emerald-400">
+                                                                                                            {Math.round((activity as any).np || 0) || '-'}
+                                                                                                        </td>
+                                                                                                        <td className="px-4 py-2 text-right font-mono text-amber-400">
+                                                                                                            {(activity as any).if ? (activity as any).if.toFixed(2) : '-'}
                                                                                                         </td>
                                                                                                         <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
                                                                                                         <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>

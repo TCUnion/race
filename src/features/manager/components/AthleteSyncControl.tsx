@@ -22,7 +22,15 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
     const [isSyncingAll, setIsSyncingAll] = useState(false);
     const [syncAllMessage, setSyncAllMessage] = useState<string | null>(null);
 
-    // Calculate derived stats
+    // 1. Calculate filtered activities based on range
+    const visibleActivities = useMemo(() => {
+        if (range === 'all') return activities;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - Number(range));
+        return activities.filter(a => new Date(a.start_date) >= cutoff);
+    }, [activities, range]);
+
+    // 2. Calculate derived stats based on visible activities
     const syncStats = useMemo(() => {
         const synced = globalSyncStats.syncedCount;
         const pending = globalSyncStats.pendingIds.length;
@@ -41,12 +49,12 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
     // Check availability on mount or when activities change
     useEffect(() => {
         const checkAvailability = async () => {
-            if (!activities.length) {
+            if (!visibleActivities.length) {
                 setGlobalSyncStats({ syncedCount: 0, pendingIds: [] });
                 return;
             }
 
-            const allIds = activities.map(a => a.id);
+            const allIds = visibleActivities.map(a => a.id);
             const availableIds = await checkStreamsAvailability(allIds);
             const availableSet = new Set(availableIds.map(String));
 
@@ -60,7 +68,7 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
         };
 
         checkAvailability();
-    }, [activities, checkStreamsAvailability]);
+    }, [visibleActivities, checkStreamsAvailability]);
 
     // Helper: Fetch with retry
     const fetchWithRetry = async (url: string, options: any, retries = 3) => {
