@@ -7,9 +7,10 @@ interface AthleteSyncControlProps {
     athleteId: string;
     activities: StravaActivity[];
     range: number | 'all';
+    onSyncSuccess?: (activityIds: number[]) => void;
 }
 
-export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteId, activities, range }) => {
+export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteId, activities, range, onSyncSuccess }) => {
     const { checkStreamsAvailability } = usePowerAnalysis();
 
     // Global sync stats state
@@ -22,7 +23,15 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
     const [isSyncingAll, setIsSyncingAll] = useState(false);
     const [syncAllMessage, setSyncAllMessage] = useState<string | null>(null);
 
-    // Calculate derived stats
+    // 1. Calculate filtered activities based on range
+    const visibleActivities = useMemo(() => {
+        if (range === 'all') return activities;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - Number(range));
+        return activities.filter(a => new Date(a.start_date) >= cutoff);
+    }, [activities, range]);
+
+    // 2. Calculate derived stats based on visible activities
     const syncStats = useMemo(() => {
         const synced = globalSyncStats.syncedCount;
         const pending = globalSyncStats.pendingIds.length;
@@ -41,12 +50,12 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
     // Check availability on mount or when activities change
     useEffect(() => {
         const checkAvailability = async () => {
-            if (!activities.length) {
+            if (!visibleActivities.length) {
                 setGlobalSyncStats({ syncedCount: 0, pendingIds: [] });
                 return;
             }
 
-            const allIds = activities.map(a => a.id);
+            const allIds = visibleActivities.map(a => a.id);
             const availableIds = await checkStreamsAvailability(allIds);
             const availableSet = new Set(availableIds.map(String));
 
@@ -60,7 +69,7 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
         };
 
         checkAvailability();
-    }, [activities, checkStreamsAvailability]);
+    }, [visibleActivities, checkStreamsAvailability]);
 
     // Helper: Fetch with retry
     const fetchWithRetry = async (url: string, options: any, retries = 3) => {
@@ -127,6 +136,11 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
                             pendingIds: newPending
                         };
                     });
+
+                    // Notify parent component for immediate UI feedback in activity list
+                    if (onSyncSuccess) {
+                        onSyncSuccess(currentChunk);
+                    }
                 });
 
                 await Promise.all(batchPromises);
