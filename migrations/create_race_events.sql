@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS race_events (
     description TEXT,
     cover_image_url TEXT,
     
-    -- 賽事路段
-    segment_id BIGINT REFERENCES segments(id) ON DELETE SET NULL,
+    -- 賽事路段 (不使用外鍵約束，因為 segments 表可能缺少主鍵)
+    segment_id BIGINT,
     
     -- 時間設定
     start_date DATE NOT NULL,
