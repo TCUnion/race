@@ -48,6 +48,7 @@ import {
   TrendingUp,
   BarChart3,
   Award,
+  Calendar,
   ChevronsUp,
   Star,
   Bike,
@@ -276,10 +277,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     // ... (unchanged)
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
-        <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
-          <Link2Off className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="bg-card text-card-foreground p-10 rounded-3xl border border-border shadow-xl max-w-md">
+          <Link2Off className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-black uppercase italic mb-2">尚未連結 Strava</h2>
-          <p className="text-slate-500 text-sm mb-6">請先返回首頁連結您的 Strava 帳號，以便取得您的活動數據並進行報名。</p>
+          <p className="text-muted-foreground text-sm mb-6">請先返回首頁連結您的 Strava 帳號，以便取得您的活動數據並進行報名。</p>
           <button
             onClick={() => window.location.hash = ''}
             className="bg-tcu-blue text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-tcu-blue-light transition-all"
@@ -317,10 +318,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   if (registeredSegments.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-10 text-center">
-        <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md">
+        <div className="bg-card text-card-foreground p-10 rounded-3xl border border-border shadow-xl max-w-md">
           <UserCheck className={`w-16 h-16 ${theme.text} mx-auto mb-4`} />
-          <h2 className="text-xl font-black uppercase italic mb-2 text-slate-900 dark:text-white">尚未報名任何路段</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
+          <h2 className="text-xl font-black uppercase italic mb-2 text-foreground">尚未報名任何路段</h2>
+          <p className="text-muted-foreground text-sm mb-6">您尚未參與任何挑戰路段。請前往報名頁面選擇感興趣的路段，開始您的挑戰之旅！</p>
           <div className="flex flex-col gap-3">
             <button
               onClick={() => onNavigate?.(ViewType.REGISTER)}
@@ -399,13 +400,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <h1 className="text-slate-900 dark:text-white text-[10px] font-black leading-none tracking-tight uppercase italic drop-shadow-sm">
+                <h1 className="text-foreground text-[10px] font-black leading-none tracking-tight uppercase italic drop-shadow-sm">
                   {athlete ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : '個人儀表板'}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary/10 border border-border">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                    <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
                       {athlete ? `ATHLETE #${athlete.id}` : 'LOADING...'}
                     </p>
                   </div>
@@ -414,16 +415,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
 
+
           <div className="flex flex-col gap-4">
             <button
               onClick={() => onNavigate?.(ViewType.REGISTER)}
-              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl h-12 px-6 bg-white/5 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:${theme.border} text-slate-900 dark:text-white transition-all active:scale-95 group shadow-sm`}
+              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl h-12 px-6 bg-secondary/10 border border-border hover:${theme.border} text-foreground transition-all active:scale-95 group shadow-sm`}
             >
               <UserCheck className={`w-4 h-4 ${theme.textLight}`} />
               <span className="text-[11px] font-black uppercase tracking-[0.2em]">管理報名 / 報名新路段</span>
             </button>
             <div className="text-center">
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-widest font-bold">目前系統顯示為最新同步數據</p>
+              <p className="text-[9px] text-muted-foreground leading-relaxed uppercase tracking-widest font-bold">目前系統顯示為最新同步數據</p>
             </div>
           </div>
         </section>
@@ -469,11 +471,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* Draggable Card Area - Integrated Map & Info */}
               <section className="flex justify-center">
                 <div className="relative w-full max-w-[450px]">
-                  <div className={`bg-white dark:bg-slate-900 rounded-3xl border-2 ${theme.border} shadow-2xl flex flex-col h-[280px] relative overflow-hidden group transition-all duration-500`}>
+                  <div className={`bg-card rounded-3xl border-2 ${theme.border} shadow-2xl flex flex-col h-[280px] relative overflow-hidden group transition-all duration-500`}>
 
                     {/* Integrated Map Section (Higher visibility) */}
                     <div className="absolute inset-0 opacity-80 dark:opacity-60 pointer-events-none">
-                      <Suspense fallback={<div className="w-full h-full bg-slate-100 dark:bg-slate-800 animate-pulse" />}>
+                      <Suspense fallback={<div className="w-full h-full bg-muted animate-pulse" />}>
                         <SegmentMap polyline={selectedSegment?.polyline} minimal={true} />
                       </Suspense>
                     </div>
@@ -481,8 +483,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <div className="relative z-10 flex flex-col h-full p-6 bg-gradient-to-b from-white/80 via-white/20 to-white/80 dark:from-slate-900/80 dark:via-slate-900/20 dark:to-slate-900/80 pointer-events-none">
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col max-w-[70%]">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">STRAVA ID: {registeredSegments[currentIdx]?.segments?.strava_id}</span>
-                          <h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-tight mt-1 mb-2 drop-shadow-sm">
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter">STRAVA ID: {registeredSegments[currentIdx]?.segments?.strava_id}</span>
+                          <h3 className="text-xl md:text-2xl font-black text-foreground leading-tight mt-1 mb-2 drop-shadow-sm">
                             {registeredSegments[currentIdx]?.segments?.description || registeredSegments[currentIdx]?.segments?.name}
                           </h3>
                         </div>
@@ -494,44 +496,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       {/* Integrated Detailed Stats */}
                       <div className="grid grid-cols-3 gap-2 my-auto">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">距離</span>
-                          <span className="text-lg font-black text-slate-900 dark:text-white">
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">距離</span>
+                          <span className="text-lg font-black text-foreground">
                             {selectedSegment ? (selectedSegment.distance / 1000).toFixed(2) : '--'} <span className="text-[10px] font-normal opacity-60">km</span>
                           </span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">坡度</span>
-                          <span className="text-lg font-black text-slate-900 dark:text-white">
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">坡度</span>
+                          <span className="text-lg font-black text-foreground">
                             {selectedSegment ? selectedSegment.average_grade : '--'} <span className="text-[10px] font-normal opacity-60">%</span>
                           </span>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">爬升</span>
-                          <span className="text-lg font-black text-slate-900 dark:text-white">
-                            {selectedSegment ? Math.round(selectedSegment.total_elevation_gain) : '--'} <span className="text-[10px] font-normal opacity-60">m</span>
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-black italic uppercase text-card-foreground tracking-tighter">
+                            {athleteEffort ? formatTime(athleteEffort.elapsed_time) : '--:--'}
+                          </h3>
+                          <div className={`px-2 py-0.5 rounded bg-${theme.primary}/10 border border-${theme.primary}/20`}>
+                            <span className={`text-[10px] font-bold ${theme.text}`}>
+                              PR
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-end justify-between mt-4">
-                        <div className="flex gap-2">
-                          <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm ${registeredSegments[currentIdx]?.status === 'approved' ? 'bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400'}`}>
-                            {registeredSegments[currentIdx]?.status === 'approved' ? '已核准參賽' : '報名審核中'}
-                          </span>
-                          <span className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest shadow-sm">
-                            #{registeredSegments[currentIdx]?.number || '未配號'}
+                      {/* Footer - Date & Link */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Calendar className="w-3 h-3" />
+                          <span className="text-[10px] font-medium tracking-wider">
+                            {athleteEffort ? new Date((athleteEffort as any).start_date_local || (athleteEffort as any).start_date).toLocaleDateString('zh-TW') : '--'}
                           </span>
                         </div>
-
-                        {/* Strava 連結整合 */}
-                        {selectedSegment?.link && (
+                        {selectedSegment?.strava_id && (
                           <a
-                            href={selectedSegment.link}
+                            href={`https://www.strava.com/activities/${athleteEffort?.activity_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`size-8 flex items-center justify-center rounded-lg bg-white/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:${theme.text} hover:${theme.border} transition-all pointer-events-auto`}
+                            className={`p-1.5 rounded-lg hover:bg-${theme.primary}/10 text-muted-foreground hover:${theme.text} transition-colors ${!athleteEffort ? 'pointer-events-none opacity-50' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                       </div>
@@ -551,12 +555,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 ) : (
                   <>
                     {/* Best Time */}
-                    <div className={`flex flex-col gap-2 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300 group hover:${theme.border}/50 shadow-sm`}>
+                    <div className={`flex flex-col gap-2 rounded-2xl p-4 border border-border bg-card/50 backdrop-blur-sm transition-all duration-300 group hover:${theme.border}/50 shadow-sm`}>
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">最佳時間</p>
+                        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest whitespace-nowrap">最佳時間</p>
                         <Timer className={`w-4 h-4 ${theme.textLight} transition-colors duration-500`} />
                       </div>
-                      <p className="text-slate-900 dark:text-white tracking-tight text-3xl font-black leading-none truncate">
+                      <p className="text-foreground tracking-tight text-3xl font-black leading-none truncate">
                         {athleteEffort ? formatTime(athleteEffort.elapsed_time) : '-'}
                       </p>
                       <div className="flex items-center gap-1 text-emerald-500 mt-1">
@@ -566,14 +570,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
 
                     {/* Average Speed */}
-                    <div className={`flex flex-col gap-2 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-300 group hover:${theme.border}/50 shadow-sm`}>
+                    <div className={`flex flex-col gap-2 rounded-2xl p-4 border border-border bg-card/50 backdrop-blur-sm transition-all duration-300 group hover:${theme.border}/50 shadow-sm`}>
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">平均時速</p>
+                        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest whitespace-nowrap">平均時速</p>
                         <Gauge className={`w-4 h-4 ${theme.textLight} transition-colors duration-500`} />
                       </div>
-                      <p className="text-slate-900 dark:text-white tracking-tight text-3xl font-black leading-none truncate">
+                      <p className="text-foreground tracking-tight text-3xl font-black leading-none truncate">
                         {athleteEffort?.average_speed ? (athleteEffort.average_speed * 3.6).toFixed(1) : '-'}{' '}
-                        <span className="text-sm font-normal text-slate-500 uppercase">km/h</span>
+                        <span className="text-sm font-normal text-muted-foreground uppercase">km/h</span>
                       </p>
                       <div className="flex items-center gap-1 text-emerald-500 mt-1">
                         <TrendingUp className="w-3 h-3 font-bold" />
@@ -590,7 +594,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <p className={`${theme.textLight} text-[10px] font-black uppercase tracking-widest transition-colors duration-500`}>目前排名</p>
                         <Award className={`w-5 h-5 ${theme.textLight} transition-colors duration-500`} />
                       </div>
-                      <p className="text-slate-900 dark:text-white tracking-tight text-4xl font-black leading-none relative z-10">
+                      <p className="text-foreground tracking-tight text-4xl font-black leading-none relative z-10">
                         {athleteEffort ? `#${athleteEffort.rank}` : '-'}
                       </p>
                       <div className={`flex items-center gap-1 ${theme.textLight} mt-1 relative z-10`}>
@@ -605,22 +609,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </section>
 
               {/* Goal Progress - Synchronized */}
-              <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/10 p-5 shadow-sm backdrop-blur-sm">
+              <section className="rounded-2xl border border-border bg-card/50 p-5 shadow-sm backdrop-blur-sm">
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-end">
                     <div>
-                      <h3 className="text-slate-900 dark:text-white text-base font-black uppercase tracking-tight">挑戰目標進度</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold">距離前 10% 僅差一步之遙</p>
+                      <h3 className="text-foreground text-base font-black uppercase tracking-tight">挑戰目標進度</h3>
+                      <p className="text-muted-foreground text-[10px] font-bold">距離前 10% 僅差一步之遙</p>
                     </div>
                     <p className={`${theme.textLight} text-2xl font-black transition-colors duration-500`}>85%</p>
                   </div>
-                  <div className="relative w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div className="relative w-full h-3 rounded-full bg-secondary/20 overflow-hidden">
                     <div
                       className={`absolute top-0 left-0 h-full bg-gradient-to-r ${theme.gradient} rounded-full shadow-[0_0_8px_rgba(0,123,255,0.3)] transition-all duration-1000 ease-out`}
                       style={{ width: isLoading ? '0%' : '85%' }}
                     ></div>
                   </div>
-                  <div className="flex justify-between text-[8px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-black">
+                  <div className="flex justify-between text-[8px] text-muted-foreground uppercase tracking-widest font-black">
                     <span>START</span>
                     <span className={theme.textLight}>TOP 10% GOAL</span>
                   </div>
@@ -630,7 +634,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* Recent Activities - Synchronized */}
               <section className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-slate-900 dark:text-white text-lg font-black leading-tight tracking-tight uppercase italic">近期嘗試紀錄</h2>
+                  <h2 className="text-foreground text-lg font-black leading-tight tracking-tight uppercase italic">近期嘗試紀錄</h2>
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -641,19 +645,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </>
                   ) : activities.length > 0 ? (
                     activities.map((activity) => (
-                      <div key={activity.id} className={`flex items-center justify-between p-4 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:${theme.border}/50 transition-all group shadow-sm hover:shadow-md backdrop-blur-sm`}>
+                      <div key={activity.id} className={`flex items-center justify-between p-4 rounded-2xl bg-card border border-border hover:${theme.border}/50 transition-all group shadow-sm hover:shadow-md backdrop-blur-sm`}>
                         <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                          <div className={`flex shrink-0 size-10 md:size-12 items-center justify-center rounded-full transition-transform group-hover:scale-110 ${activity.is_pr ? `${theme.bg} ${theme.textLight} shadow-inner` : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                          <div className={`flex shrink-0 size-10 md:size-12 items-center justify-center rounded-full transition-transform group-hover:scale-110 ${activity.is_pr ? `${theme.bg} ${theme.textLight} shadow-inner` : 'bg-muted text-muted-foreground'}`}>
                             {activity.is_pr ? <Star className="w-5 h-5 fill-current" /> : <Bike className="w-5 h-5" />}
                           </div>
                           <div className="truncate">
-                            <h4 className={`text-slate-900 dark:text-white font-bold truncate block text-sm md:text-base group-hover:${theme.textLight} transition-colors`}>{activity.title}</h4>
-                            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-medium">{activity.date}</p>
+                            <h4 className={`text-foreground font-bold truncate block text-sm md:text-base group-hover:${theme.textLight} transition-colors`}>{activity.title}</h4>
+                            <p className="text-muted-foreground text-[10px] md:text-xs font-medium">{activity.date}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 md:gap-8 text-right shrink-0">
                           <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-[9px] uppercase font-bold tracking-widest">Time</p>
+                            <p className="text-muted-foreground text-[9px] uppercase font-bold tracking-widest">Time</p>
                             <p className={`${theme.text} dark:${theme.textLight} font-black text-xl transition-colors duration-500`}>{activity.time}</p>
                           </div>
                         </div>
@@ -672,8 +676,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </AnimatePresence>
         </div>
 
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

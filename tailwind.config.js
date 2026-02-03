@@ -15,6 +15,41 @@ export default {
     theme: {
         extend: {
             colors: {
+                border: "var(--color-border)",
+                input: "var(--color-input)",
+                ring: "var(--color-ring)",
+                background: "var(--color-background)",
+                foreground: "var(--color-foreground)",
+                primary: {
+                    DEFAULT: "var(--color-primary)",
+                    foreground: "var(--color-primary-foreground)",
+                },
+                secondary: {
+                    DEFAULT: "var(--color-secondary)",
+                    foreground: "var(--color-secondary-foreground)",
+                },
+                destructive: {
+                    DEFAULT: "var(--color-destructive)",
+                    foreground: "var(--color-destructive-foreground)",
+                },
+                muted: {
+                    DEFAULT: "var(--color-muted)",
+                    foreground: "var(--color-muted-foreground)",
+                },
+                accent: {
+                    DEFAULT: "var(--color-accent)",
+                    foreground: "var(--color-accent-foreground)",
+                },
+                popover: {
+                    DEFAULT: "var(--color-popover)",
+                    foreground: "var(--color-popover-foreground)",
+                },
+                card: {
+                    DEFAULT: "var(--color-card)",
+                    foreground: "var(--color-card-foreground)",
+                },
+
+                // Legacy Colors (Mapped to new variables where possible or kept for compat)
                 "tcu-blue": "#0056A4",
                 "tcu-blue-light": "#007bff",
                 "strava-orange": "#FC6100",
@@ -22,21 +57,21 @@ export default {
                 "strava-grey-light": "#A1A1A1",
                 "background-dark": "#0f172a",
                 "background-black": "#121212",
-                // [NEW] Modern Aero Dynamic Palette
+
+                // [Deep Space Blue equivalent]
                 brand: {
-                    dark: '#0B1121', // Deep Space Blue
-                    primary: '#38BDF8', // Sky 400 (Electric Blue)
-                    secondary: '#F472B6', // Pink 400 (Vibrant Accent)
-                    accent: '#F97316', // Orange 500
+                    dark: '#0B1121',
+                    primary: '#38BDF8',
+                    secondary: '#F472B6',
+                    accent: '#F97316',
                 },
-                // [NEW] Music App UI Colors
-                bg: '#09090b', // zinc-950
+                // [NEW] Music App UI Colors (Mapped to Semantic Vars where appropriate)
+                bg: "var(--color-background)",
                 'bg-glass': 'rgba(9, 9, 11, 0.7)',
-                'bg-elevated': '#27272a', // zinc-800
-                'bg-card': '#18181b', // zinc-900
-                text: '#f4f4f5', // zinc-100
-                'text-secondary': '#a1a1aa', // zinc-400
-                border: '#27272a', // zinc-800
+                'bg-elevated': '#27272a',
+                'bg-card': "var(--color-card)",
+                text: "var(--color-foreground)",
+                'text-secondary': "var(--color-muted-foreground)",
             },
             fontFamily: {
                 sans: ['Chakra Petch', 'Noto Sans TC', 'sans-serif'],
