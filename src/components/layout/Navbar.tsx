@@ -20,10 +20,10 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import StravaLogo from '../ui/StravaLogo';
-import ThemeToggle from '../ui/ThemeToggle';
+// ThemeToggle removed - app is dark mode only
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 import { useAuth, StravaAthlete } from '../../hooks/useAuth';
-import { useTheme } from '../../hooks/useTheme';
+// useTheme removed - dark mode only
 import { useFontSize, FontSize } from '../../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../../lib/api_config';
@@ -50,7 +50,7 @@ const CONFIG = {
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const { athlete, isBound, isAdmin, logout } = useAuth();
-  const { theme } = useTheme();
+  // Dark mode only - theme toggle removed
   const { fontSize, setFontSize } = useFontSize();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
@@ -90,8 +90,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 根據主題選擇 Logo
-  const logoSrc = theme === 'dark' ? '/tcu-logo-light.png' : '/tcu-logo-dark.png';
+  // 固定使用深色 Logo
+  const logoSrc = '/tcu-logo-light.png';
 
   const saveAndSetAthlete = async (athleteData: any) => {
     // 規範化資料
@@ -301,7 +301,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
           <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 flex-shrink-0">
             <LanguageSwitcher />
-            <ThemeToggle />
+            {/* ThemeToggle removed - dark mode only */}
             {isLoading ? (
               <div className="flex items-center gap-2 text-tcu-blue">
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -381,7 +381,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
         {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center gap-2">
           <LanguageSwitcher />
-          <ThemeToggle />
+          {/* ThemeToggle removed - dark mode only */}
           {!athlete && !isLoading && (
             <button
               onClick={handleConnect}

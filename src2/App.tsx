@@ -160,13 +160,13 @@ function App() {
     return (
         <>
             {/* 桌面版：置中的手機模擬器 */}
-            <div className="hidden md:min-h-screen md:bg-bg-dark md:flex md:items-center md:justify-center font-sans antialiased text-text selection:bg-accent/30 box-border dark">
+            <div className="hidden md:min-h-screen md:bg-background md:flex md:items-center md:justify-center font-sans antialiased text-foreground selection:bg-accent/30 box-border dark">
                 <div className="relative shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden rounded-[40px] border-[8px] border-[#1a1a1a] w-[390px] h-[844px]">
                     {renderView()}
                 </div>
             </div>
             {/* 手機版：全螢幕 */}
-            <div className="md:hidden min-h-screen bg-bg-dark font-sans antialiased text-text selection:bg-accent/30 box-border dark">
+            <div className="md:hidden min-h-screen bg-background font-sans antialiased text-foreground selection:bg-accent/30 box-border dark">
                 {renderView()}
             </div>
         </>
