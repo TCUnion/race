@@ -113,7 +113,7 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
             <StatusBar />
 
             {/* Header */}
-            <header className="flex justify-between items-center px-5 py-3 relative z-50">
+            <header className="flex justify-between items-center px-5 pt-1 pb-3 relative z-50">
                 <div className="flex items-center gap-2">
                     <img src="/tcu-logo-light.png" alt="TCU Logo" className="h-8 w-auto" />
                     <h1 className="text-white text-[28px] font-bold font-display tracking-tight">TCU小幫手</h1>
