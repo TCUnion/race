@@ -464,22 +464,25 @@ const AdminPanel: React.FC = () => {
             });
             error = insertError;
         } else {
+            const payload = {
+                strava_id: editingSegment.strava_id,
+                name: editingSegment.name,
+                description: editingSegment.description,
+                link: editingSegment.link,
+                distance: editingSegment.distance,
+                average_grade: editingSegment.average_grade,
+                maximum_grade: editingSegment.maximum_grade,
+                elevation_gain: editingSegment.elevation_gain,
+                polyline: editingSegment.polyline,
+                is_active: editingSegment.is_active,
+                // [FIX] 將本地時間字串 (YYYY-MM-DDTHH:mm) 轉換為 ISO 字串，確保包含正確的時區與秒數
+                start_date: new Date(editingSegment.start_date).toISOString(),
+                end_date: new Date(editingSegment.end_date).toISOString()
+            };
+
             const { error: updateError } = await supabase
                 .from('segments')
-                .update({
-                    strava_id: editingSegment.strava_id,
-                    name: editingSegment.name,
-                    description: editingSegment.description,
-                    link: editingSegment.link,
-                    distance: editingSegment.distance,
-                    average_grade: editingSegment.average_grade,
-                    maximum_grade: editingSegment.maximum_grade,
-                    elevation_gain: editingSegment.elevation_gain,
-                    polyline: editingSegment.polyline,
-                    is_active: editingSegment.is_active,
-                    start_date: editingSegment.start_date,
-                    end_date: editingSegment.end_date
-                })
+                .update(payload)
                 .eq('id', editingSegment.id);
             error = updateError;
         }
