@@ -88,6 +88,7 @@ interface StravaToken {
     name?: string;
     isBound?: boolean;
     lastActivityAt?: string;
+    loginTime?: string; // [NEW] Add loginTime
 }
 
 // 🔐 管理員白名單 (athlete_id)
@@ -974,7 +975,7 @@ const AdminPanel: React.FC = () => {
             // 2. 抓取所有權杖資訊 (正確資料來源為 strava_tokens)
             const { data: tokens, error: tError } = await supabase
                 .from('strava_tokens')
-                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at, name') // [FIX] 加入 name 欄位
+                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at, name, login_time') // [FIX] 加入 login_time
                 .order('updated_at', { ascending: true });
 
             const tokenMap = new Map();
@@ -2340,7 +2341,7 @@ const AdminPanel: React.FC = () => {
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="text-[10px] font-bold text-slate-400">
-                                                    {token.updatedAt ? new Date(token.updatedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '-'}
+                                                    {token.loginTime ? new Date(token.loginTime).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '-'}
                                                 </div>
                                             </td>
                                         </tr>
