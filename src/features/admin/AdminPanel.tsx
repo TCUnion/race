@@ -974,7 +974,7 @@ const AdminPanel: React.FC = () => {
             // 2. 抓取所有權杖資訊 (正確資料來源為 strava_tokens)
             const { data: tokens, error: tError } = await supabase
                 .from('strava_tokens')
-                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at') // 確保包含 created_at, last_activity_at
+                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at, name') // [FIX] 加入 name 欄位
                 .order('updated_at', { ascending: true });
 
             const tokenMap = new Map();
@@ -1006,15 +1006,13 @@ const AdminPanel: React.FC = () => {
                 const athlete = (athletes || []).find(a => a.id.toString() === id);
                 const token = tokenMap.get(id);
 
-                // 只有當有 Token 或是 Athlete 資料時才顯示
-                // 但為了修正 "API 權杖管理" 的數量差異，我們應該優先顯示有 Token 的資料
-                // 如果只有 Athlete 但沒有 Token，這通常只是單純的會員資料，不屬於 "API 權杖" 的管理範疇
-                // 但原本的邏輯似乎是想顯示所有 Athlete 的狀態 (有無 Token)
-                // 為了符合 "API 權杖管理" 的語意，這裡我們調整為：顯示所有有 Token 的 ID，以及所有在 athletes 表中的 ID
+                // [FIX] 優先使用 athlete 表的名字，若無則使用 token 表的名字，最後才顯示 Unknown
+                const athleteName = athlete ? `${athlete.firstname} ${athlete.lastname}` : null;
+                const tokenName = token?.name || null;
 
                 return {
                     athleteID: id,
-                    name: athlete ? `${athlete.firstname} ${athlete.lastname}` : 'Unknown Athlete',
+                    name: athleteName || tokenName || 'Unknown Athlete',
                     createdAt: token?.created_at || null,
                     updatedAt: token?.updated_at || null,
                     expires_at: token?.expires_at || null,
