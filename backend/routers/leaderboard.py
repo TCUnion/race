@@ -24,9 +24,13 @@ def get_leaderboard(segment_id: int):
     if end_date:
         query_builder = query_builder.lte("start_date", end_date)
         
-    query = query_builder.order("elapsed_time", desc=False).execute()    # 處理重複的選手，只取最佳成績
+    query = query_builder.order("elapsed_time", desc=False).execute()
+    
+    # 處理重複的選手，只取最佳成績
     seen_athletes = {}
-    ranked_list = []    for effort in query.data:
+    ranked_list = []
+    
+    for effort in query.data:
         aid = effort["athlete_id"]
         if aid not in seen_athletes:
             seen_athletes[aid] = True
