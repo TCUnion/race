@@ -1,6 +1,6 @@
-fastapi==0.109.0
-uvicorn==0.27.0
+fastapi
+uvicorn
 supabase==1.2.0
-python-dotenv==1.0.0
-requests==2.31.0
+python-dotenv
+requests
 pydantic==1.10.13
