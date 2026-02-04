@@ -288,13 +288,20 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                         const reg = regMap.get(aid);
                         const ath = athleteMap.get(aid);
 
-                        // 優先級：Strava Athletes 表名字 (First + Last) > 報名表名字 > 成績表名字 > 預設值
+                        // 優先級：報名表名字 > Strava Athletes 表名字 (First + Last) > 成績表名字 > 預設值
                         let finalName = '';
-                        if (ath) {
+                        // 1. 優先查看報名資料 (為了顯示如 "大里 閃電鳥" 等自訂報名名稱)
+                        if (reg?.athlete_name) {
+                            finalName = reg.athlete_name;
+                        }
+                        // 2. 其次查看綁定會員資料
+                        else if (ath) {
                             finalName = `${ath.firstname || ''} ${ath.lastname || ''}`.trim();
                         }
+
+                        // 3. 最後使用成績表上的 Strava 原始名稱
                         if (!finalName) {
-                            finalName = reg?.athlete_name || e.athlete_name || `選手 ${aid}`;
+                            finalName = e.athlete_name || `選手 ${aid}`;
                         }
 
                         return {
