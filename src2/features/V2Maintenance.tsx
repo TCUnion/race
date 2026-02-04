@@ -9,7 +9,9 @@ import {
     Clock,
     CheckCircle2,
     Plus,
-    X
+    X,
+    Save,
+    Trash2
 } from 'lucide-react';
 import AddRecordModal from '../../src/features/maintenance/AddRecordModal';
 import { StatusBar } from '../components/music-app/StatusBar';
@@ -38,8 +40,12 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
         getRecordsByBike,
         maintenanceTypes,
         addMaintenanceRecord,
+        deleteMaintenanceRecord,
+        updateMaintenanceRecord,
         updateBike,
         calculateMetricsBetweenDates,
+        calculateMetricsSinceDate,
+        calculateTotalDistanceAtDate,
         loading
     } = useMaintenance();
 
@@ -56,17 +62,36 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
 
     // 過濾特定保養類型的歷史紀錄
     const filteredRecords = selectedType
-        ? historyRecords.filter(r => r.maintenance_type.includes(selectedType.id))
+        ? historyRecords.filter(r => {
+            // 處理多項保養內容的分隔，同時支持 "," 與 ", "
+            const types = r.maintenance_type.split(',').map((t: string) => t.trim());
+
+            // 1. 完全匹配 ID (例如: "chain_lube")
+            const isIdMatch = types.includes(selectedType.id);
+
+            // 2. 匹配名稱 (例如: "鏈條上油") - 增加備份相容性
+            const isNameMatch = types.includes(selectedType.name) || r.maintenance_type.includes(selectedType.name);
+
+            // 3. 全車保養始終包含在內 (與 V1 一致)
+            const isFullService = types.includes('full_service') ||
+                types.includes('全車保養') ||
+                r.maintenance_type.includes('全車保養');
+
+            return isIdMatch || isNameMatch || isFullService;
+        })
         : [];
 
     // 計算兩筆紀錄之間的間隔（使用實際活動數據）
     const calculateInterval = (currentRecord: any, prevRecord: any, bikeId: string) => {
-        if (!prevRecord) return { km: 0, hours: 0, days: 0 };
-        const stats = calculateMetricsBetweenDates(bikeId, prevRecord.service_date, currentRecord.service_date);
+        const stats = prevRecord
+            ? calculateMetricsBetweenDates(bikeId, prevRecord.service_date, currentRecord.service_date)
+            : calculateMetricsSinceDate(bikeId, currentRecord.service_date);
+
         return {
             km: Math.round(stats.distanceKm),
             hours: Math.round(stats.movingTimeHours),
-            days: stats.days
+            days: stats.days,
+            isAccumulated: !prevRecord
         };
     };
 
@@ -273,6 +298,31 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                             </button>
                         </div>
 
+                        {/* Sync Button (Only in History Tab) */}
+                        {activeTab === 'history' && historyRecords.length > 0 && (
+                            <div className="flex justify-end px-1 -mb-2 mt-2">
+                                <button
+                                    onClick={async () => {
+                                        if (!selectedBike || !historyRecords.length) return;
+                                        if (!window.confirm(`確定要同步這 ${historyRecords.length} 筆紀錄的里程嗎？`)) return;
+                                        let count = 0;
+                                        for (const r of historyRecords) {
+                                            const est = calculateTotalDistanceAtDate(selectedBike, r.service_date);
+                                            if (Math.abs((r.mileage_at_service || 0) - est) > 0.1) {
+                                                await updateMaintenanceRecord(r.id, { mileage_at_service: est });
+                                                count++;
+                                            }
+                                        }
+                                        alert(`同步完成！共更新 ${count} 筆。`);
+                                    }}
+                                    className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 font-bold uppercase py-1 px-2 rounded-lg bg-primary/5 border border-primary/10 transition-colors"
+                                >
+                                    <Save size={10} />
+                                    同步里程
+                                </button>
+                            </div>
+                        )}
+
                         {/* Reminders Grid */}
                         {activeTab === 'reminders' && (
                             <section className="grid grid-cols-2 gap-4">
@@ -333,12 +383,16 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                             <AddRecordModal
                                 isOpen={isAddModalOpen}
                                 onClose={() => setIsAddModalOpen(false)}
-                                maintenanceTypes={maintenanceTypes}
-                                bikeId={selectedBike.id}
-                                bikeName={selectedBike.name}
-                                currentMileage={Math.round(selectedBike.converted_distance)}
-                                onAdd={async (record) => {
-                                    await addMaintenanceRecord(record);
+                                vehicleId={selectedBike.id}
+                                onSubmit={async (record) => {
+                                    // 獲取目前的使用者 ID
+                                    const savedData = localStorage.getItem('strava_athlete_data');
+                                    const athleteId = savedData ? JSON.parse(savedData).id : null;
+
+                                    await addMaintenanceRecord({
+                                        ...record,
+                                        athlete_id: String(athleteId)
+                                    });
                                     setIsAddModalOpen(false);
                                 }}
                             />
@@ -545,12 +599,12 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
 
             {/* Detail Modal */}
             {selectedType && (
-                <div className="absolute inset-0 z-50 flex items-end justify-center pointer-events-none">
+                <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
                     <div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
                         onClick={() => setSelectedType(null)}
                     />
-                    <div className="relative w-full max-h-[85vh] bg-card rounded-t-3xl border-t border-border overflow-hidden flex flex-col pointer-events-auto shadow-2xl">
+                    <div className="relative w-full max-h-[85vh] bg-card rounded-t-3xl border-t border-border overflow-hidden flex flex-col pointer-events-auto shadow-2xl z-10">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
                             <div>
@@ -583,14 +637,26 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                                                         <p className="text-foreground font-bold">
                                                             {new Date(record.service_date).toLocaleDateString('zh-TW')}
                                                         </p>
-                                                        <p className="text-muted-foreground text-xs">
-                                                            {record.mileage_at_service?.toLocaleString() || 0} km
+                                                        <p className="text-white/30 text-[10px] font-mono mt-0.5">
+                                                            {Math.round(calculateTotalDistanceAtDate(selectedBike, record.service_date)).toLocaleString()} km
                                                         </p>
                                                     </div>
 
                                                     <span className={`px-2 py-1 rounded-lg text-xs font-bold ${record.is_diy ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
                                                         {record.is_diy ? 'DIY' : (record.shop_name || '店家')}
                                                     </span>
+
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (window.confirm('確定要刪除此筆紀錄嗎？')) {
+                                                                await deleteMaintenanceRecord(record.id);
+                                                            }
+                                                        }}
+                                                        className="p-2 text-red-500/40 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 </div>
 
                                                 {/* Interval Stats */}
@@ -599,7 +665,9 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                                                         <p className="text-orange-400 font-mono text-sm font-bold">
                                                             {interval.km.toLocaleString()}
                                                         </p>
-                                                        <p className="text-white/30 text-[9px] uppercase">km</p>
+                                                        <p className="text-white/30 text-[9px] uppercase">
+                                                            {interval.isAccumulated ? '累積' : 'km'}
+                                                        </p>
                                                     </div>
                                                     <div className="bg-black/40 rounded-xl p-2 text-center">
                                                         <p className="text-white font-mono text-sm font-bold">
@@ -623,15 +691,15 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                                                     const hasOther = detail?.other;
 
                                                     return (hasBrandModel || hasOther) && (
-                                                        <div className="space-y-1 mb-2">
+                                                        <div className="space-y-1 mb-2 bg-black/20 rounded-xl p-2 border border-white/5">
                                                             {hasBrandModel && (
-                                                                <div className="flex items-center gap-2 text-xs">
+                                                                <div className="flex flex-col gap-0.5 text-xs">
                                                                     {detail?.brand && <span className="text-cyan-400 font-bold">{detail.brand}</span>}
-                                                                    {detail?.model && <span className="text-white/40">{detail.model}</span>}
+                                                                    {detail?.model && <span className="text-white/40 leading-tight">{detail.model}</span>}
                                                                 </div>
                                                             )}
                                                             {hasOther && (
-                                                                <p className="text-white/40 text-xs">{hasOther}</p>
+                                                                <p className="text-white/40 text-[10px] mt-1 italic">{hasOther}</p>
                                                             )}
                                                         </div>
                                                     );
