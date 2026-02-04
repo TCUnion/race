@@ -1841,7 +1841,12 @@ const AdminPanel: React.FC = () => {
                                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">開始日期</label>
                                         <input
                                             type="datetime-local"
-                                            value={editingSegment.start_date ? new Date(editingSegment.start_date).toISOString().slice(0, 16) : ''}
+                                            value={editingSegment.start_date ? (() => {
+                                                const d = new Date(editingSegment.start_date);
+                                                // 修正: 手動格式化為本地時間字串 (YYYY-MM-DDTHH:mm) 以避免 toISOString 的 UTC 轉換導致時區偏移
+                                                const pad = (n: number) => n.toString().padStart(2, '0');
+                                                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                            })() : ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, start_date: e.target.value })}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
                                         />
@@ -1850,7 +1855,11 @@ const AdminPanel: React.FC = () => {
                                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">結束日期</label>
                                         <input
                                             type="datetime-local"
-                                            value={editingSegment.end_date ? new Date(editingSegment.end_date).toISOString().slice(0, 16) : ''}
+                                            value={editingSegment.end_date ? (() => {
+                                                const d = new Date(editingSegment.end_date);
+                                                const pad = (n: number) => n.toString().padStart(2, '0');
+                                                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                            })() : ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, end_date: e.target.value })}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
                                         />
