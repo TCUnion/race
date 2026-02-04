@@ -224,7 +224,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             const [effortsResult, registrationsResult, athletesResult] = await Promise.all([
                 supabase
-                    .from('segment_efforts')
+                    .from('segment_efforts_v2')
                     .select('*')
                     .in('segment_id', segmentIds)
                     .order('elapsed_time', { ascending: true }),

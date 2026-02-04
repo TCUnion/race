@@ -109,7 +109,7 @@ async def receive_webhook(event: StravaEvent):
             
             # Upsert effort (resolution=merge-duplicates is handled by supabase-py if configured? 
             # supabase-py upsert default is merge if PK exists)
-            supabase.table("segment_efforts").upsert(data_to_upsert).execute()
+            supabase.table("segment_efforts_v2").upsert(data_to_upsert).execute()
 
             # 6. 更新同步狀態 (sync_metadata)
             # n8n 邏輯: 
