@@ -19,21 +19,14 @@ def get_leaderboard(segment_id: int):
         start_date = seg_query.data[0].get("start_date")
         end_date = seg_query.data[0].get("end_date")
 
-    # 2. 從 segment_efforts 取得該路段的所有努力
-    query_builder = supabase.table("segment_efforts").select("*").eq("segment_id", segment_id)
-    
     if start_date:
         query_builder = query_builder.gte("start_date", start_date)
     if end_date:
         query_builder = query_builder.lte("start_date", end_date)
         
-    query = query_builder.order("elapsed_time", desc=False).execute()
-    
-    # 處理重複的選手，只取最佳成績
+    query = query_builder.order("elapsed_time", desc=False).execute()    # 處理重複的選手，只取最佳成績
     seen_athletes = {}
-    ranked_list = []
-    
-    for effort in query.data:
+    ranked_list = []    for effort in query.data:
         aid = effort["athlete_id"]
         if aid not in seen_athletes:
             seen_athletes[aid] = True
@@ -63,9 +56,7 @@ async def sync_leaderboard(segment_id: int, background_tasks: BackgroundTasks):
 def perform_sync(segment_id: int):
     # 1. 取得所有報名該路段的選手
     registrations = supabase.table("registrations").select("strava_athlete_id").eq("segment_id", segment_id).execute()
-    registered_athlete_ids = {r["strava_athlete_id"] for r in registrations.data}
-    
-    # 2. 批量同步：取得路段排行榜 (前 50 名)
+    registered_athlete_ids = {r["strava_athlete_id"] for r in registrations.data}    # 2. 批量同步：取得路段排行榜 (前 50 名)
     leaderboard = StravaService.get_segment_leaderboard(segment_id)
     if leaderboard and "entries" in leaderboard:
         print(f"Sync: Processing {len(leaderboard['entries'])} leaderboard entries for segment {segment_id}")
