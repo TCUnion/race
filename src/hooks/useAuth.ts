@@ -44,7 +44,7 @@ export const useAuth = () => {
 
     const syncToken = useCallback(async (athleteData: StravaAthlete) => {
         const now = Date.now();
-        if (now - lastSyncTime.current < 2000) {
+        if (now - lastSyncTime.current < 1000) {
             console.log('[Auth] 同步冷卻中，跳過重複請求');
             return;
         }
