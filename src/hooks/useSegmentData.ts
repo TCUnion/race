@@ -261,14 +261,15 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                         rank: index + 1,
                         athlete_id: aid,
                         name: row.athlete_name || `選手 ${aid}`,
-                        profile_medium: row.profile || "", // View 中的 profile
-                        team: row.team || "", // View 中的 team
-                        number: row.number || "", // View 中的 number (假設有)
+                        profile_medium: row.profile_medium || row.profile || "", // 優先使用中尺寸，fallback 到大圖
+                        profile: row.profile || "",
+                        team: row.team || "",
+                        number: row.number || "",
                         elapsed_time: row.best_time,
-                        moving_time: row.best_time, // View 目前只有 best_time，暫時用一樣的
+                        moving_time: row.best_time,
                         average_speed: seg.distance / (row.best_time || 1),
                         average_watts: row.power,
-                        average_heartrate: 0, // View 暫無心率
+                        average_heartrate: 0,
                         start_date: row.achieved_at,
                         activity_id: row.activity_id,
                         is_tcu: !!tcuId

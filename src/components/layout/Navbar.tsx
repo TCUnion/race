@@ -93,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   // 固定使用深色 Logo
   const logoSrc = '/tcu-logo-light.png';
 
-  const saveAndSetAthlete = async (athleteData: any) => {
+  const saveAndSetAthlete = (athleteData: any) => {
     // 規範化資料
     const normalizedData = {
       ...athleteData,
@@ -102,28 +102,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
       ts: Date.now()
     };
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
-
-    // 同步 Token 到後端
-    const numericId = Number(athleteData.id);
-    if (athleteData.access_token && !isNaN(numericId) && numericId !== 0) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-
-        await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            athlete_id: numericId,
-            access_token: athleteData.access_token,
-            refresh_token: (athleteData as any).refresh_token || '',
-            expires_at: (athleteData as any).expires_at || Math.floor(Date.now() / 1000) + 21600,
-            user_id: user?.id
-          })
-        }).catch(err => console.warn('Navbar: 後端同步失敗', err));
-      } catch (e) {
-        console.error('Navbar: 儲存 Token 到後端過程發生錯誤', e);
-      }
-    }
 
     // 發送事件通知 useAuth
     window.dispatchEvent(new Event('strava-auth-changed'));

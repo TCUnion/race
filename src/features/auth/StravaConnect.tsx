@@ -1,25 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Check from 'lucide-react/dist/esm/icons/check';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
+import { Check, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
 import StravaLogo from '../../components/ui/StravaLogo';
-import { supabase } from '../../lib/supabase';
 
 interface StravaAthlete {
     id: string | number;
     username?: string;
     firstname?: string;
     lastname?: string;
-    firstName?: string; // 補強相容性
-    lastName?: string;  // 補強相容性
+    firstName?: string;
+    lastName?: string;
     profile?: string;
     profile_medium?: string;
     access_token?: string;
+    refresh_token?: string;
+    expires_at?: number;
 }
 
 const CONFIG = {
-    // 統一使用 service.criterium.tw 域名，確保 Webhook 處理邏輯一致
-    // NOTE: n8n 端的 Strava Auth Webhook 必須包含 scope: activity:read,activity:read_all
     stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
     storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
@@ -28,13 +26,7 @@ const CONFIG = {
         'https://service.criterium.tw',
         'https://criterium.tw',
         'https://strava.criterium.tw',
-        'https://race.criterium.tw',
-        'https://tcu.criterium.tw',
-        'https://www.criterium.tw',
         'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3001',
         'http://localhost:5173',
         API_BASE_URL,
     ]
@@ -46,125 +38,6 @@ const StravaConnect: React.FC = () => {
     const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
     const authWindowRef = useRef<Window | null>(null);
 
-    // 初始化時從 localStorage 讀取已儲存的資料
-    useEffect(() => {
-        const savedData = localStorage.getItem(CONFIG.storageKey);
-        if (savedData) {
-            try {
-                setAthlete(JSON.parse(savedData));
-            } catch (e) {
-                console.error('解析已儲存的 Strava 資料失敗', e);
-            }
-        }
-    }, []);
-
-    // 監聽 postMessage（與 136.html 相同）
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            const isAllowedOrigin = event.origin && CONFIG.allowedOrigins.includes(event.origin);
-            const isNullOriginSafeSuccess =
-                event.origin === "null" &&
-                event.data?.type === "STRAVA_AUTH_SUCCESS" &&
-                event.data?.athlete?.id;
-
-            if (!isAllowedOrigin && !isNullOriginSafeSuccess) {
-                if (event.data?.type?.startsWith('STRAVA_')) {
-
-                }
-                return;
-            }
-
-
-
-            if (event.data.type === 'STRAVA_AUTH_SUCCESS') {
-                stopPolling();
-                // Merge top-level data (which contains 'id') with athlete object to ensure we have the ID
-                const fullData = {
-                    ...event.data,
-                    ...(event.data.athlete || {})
-                };
-
-                saveAndSetAthlete(fullData);
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
-
-    // 監聽來自其他元件的狀態變更
-    useEffect(() => {
-        const handleAuthChange = () => {
-            const savedData = localStorage.getItem(CONFIG.storageKey);
-            if (savedData) {
-                try {
-                    setAthlete(JSON.parse(savedData));
-                } catch (e) {
-                    setAthlete(null);
-                }
-            } else {
-                setAthlete(null);
-            }
-        };
-
-        window.addEventListener('strava-auth-changed', handleAuthChange);
-        window.addEventListener('storage', handleAuthChange);
-        return () => {
-            window.removeEventListener('strava-auth-changed', handleAuthChange);
-            window.removeEventListener('storage', handleAuthChange);
-        };
-    }, []);
-
-    const saveAndSetAthlete = async (athleteData: StravaAthlete) => {
-        if (!athleteData.id || String(athleteData.id).toLowerCase() === 'undefined') {
-
-        }
-        const fullData = {
-            ...athleteData,
-            firstname: athleteData.firstname || athleteData.firstName || '',
-            lastname: athleteData.lastname || athleteData.lastName || '',
-            ts: Date.now()
-        };
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
-        setAthlete(fullData);
-        setIsLoading(false);
-
-        // 同步 Token 到後端
-        if (athleteData.access_token) {
-            try {
-                // 取得當前 Supabase 使用者 ID
-                const { data: { user } } = await supabase.auth.getUser();
-
-                const athleteId = Number(athleteData.id);
-                if (isNaN(athleteId)) {
-                    console.error('Invalid athlete ID:', athleteData.id);
-                    return;
-                }
-
-                const payload = {
-                    athlete_id: athleteId, // 確保為數字
-                    access_token: athleteData.access_token || '', // 確保非空字串 (雖然應該要是有的)
-                    refresh_token: (athleteData as any).refresh_token || '', // 若無 refresh token 則給空字串
-                    expires_at: Number((athleteData as any).expires_at) || Math.floor(Date.now() / 1000) + 21600, // 確保為數字
-                    user_id: user?.id || null // 若無 user 則為 null
-                };
-
-
-
-                await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } catch (e) {
-                console.error('儲存 Token 到後端失敗', e);
-            }
-        }
-
-        // 通知其他元件狀態已更新
-        window.dispatchEvent(new Event('strava-auth-changed'));
-    };
-
     const stopPolling = () => {
         if (pollingTimerRef.current) {
             clearInterval(pollingTimerRef.current);
@@ -175,6 +48,21 @@ const StravaConnect: React.FC = () => {
         }
         authWindowRef.current = null;
         setIsLoading(false);
+    };
+
+    const saveAndSetAthlete = (athleteData: StravaAthlete) => {
+        const fullData = {
+            ...athleteData,
+            firstname: athleteData.firstname || athleteData.firstName || '',
+            lastname: athleteData.lastname || athleteData.lastName || '',
+            ts: Date.now()
+        };
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
+        setAthlete(fullData);
+        setIsLoading(false);
+
+        // 通知全局狀態更新 (由 useAuth 監聽並同步 Token)
+        window.dispatchEvent(new Event('strava-auth-changed'));
     };
 
     const checkStoredData = () => {
@@ -196,38 +84,25 @@ const StravaConnect: React.FC = () => {
     const startPolling = () => {
         const startTime = Date.now();
         pollingTimerRef.current = setInterval(() => {
-            // 超時檢查
             if (Date.now() - startTime > CONFIG.pollingTimeout) {
                 stopPolling();
                 alert('授權超時，請重試');
                 return;
             }
 
-            // 用 try-catch 處理 COOP (Cross-Origin-Opener-Policy) 錯誤
             try {
                 if (authWindowRef.current && authWindowRef.current.closed) {
-
-                    const found = checkStoredData();
-                    if (found) {
-
-                    }
+                    checkStoredData();
                     stopPolling();
                     return;
                 }
-            } catch (e) {
-                // COOP 阻擋了 window.closed 檢查，這是正常的
-                // 繼續依賴 postMessage 或 localStorage 輪詢
-            }
-
-            // 無論視窗檢查是否成功，都持續檢查 localStorage
+            } catch (e) { }
             checkStoredData();
         }, CONFIG.pollingInterval);
     };
 
     const handleConnect = () => {
         setIsLoading(true);
-
-        // 清除舊的暫存
         localStorage.removeItem(CONFIG.storageKey + '_temp');
 
         const width = 600;
@@ -248,20 +123,16 @@ const StravaConnect: React.FC = () => {
             alert('請允許彈出視窗以進行 Strava 授權');
             return;
         }
-
         startPolling();
     };
 
     const handleDisconnect = async () => {
-        if (athlete) {
+        if (athlete?.id) {
             try {
-                // 發送 Webhook 通知的邏輯
                 await fetch('https://service.criterium.tw/webhook/strava/auth/cancel', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        athlete_id: athlete.id
-                    })
+                    body: JSON.stringify({ athlete_id: athlete.id })
                 });
             } catch (e) {
                 console.error('發送取消連結 Webhook 失敗', e);
@@ -271,10 +142,39 @@ const StravaConnect: React.FC = () => {
         localStorage.removeItem(CONFIG.storageKey);
         localStorage.removeItem(CONFIG.storageKey + '_temp');
         setAthlete(null);
-
-        // 通知其他元件狀態已更新
         window.dispatchEvent(new Event('strava-auth-changed'));
     };
+
+    useEffect(() => {
+        const savedData = localStorage.getItem(CONFIG.storageKey);
+        if (savedData) {
+            try { setAthlete(JSON.parse(savedData)); } catch (e) { }
+        }
+
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'STRAVA_AUTH_SUCCESS') {
+                stopPolling();
+                const fullData = { ...event.data, ...(event.data.athlete || {}) };
+                saveAndSetAthlete(fullData);
+            }
+        };
+
+        const handleAuthChange = () => {
+            const saved = localStorage.getItem(CONFIG.storageKey);
+            setAthlete(saved ? JSON.parse(saved) : null);
+        };
+
+        window.addEventListener('message', handleMessage);
+        window.addEventListener('strava-auth-changed', handleAuthChange);
+        window.addEventListener('storage', handleAuthChange);
+
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            window.removeEventListener('strava-auth-changed', handleAuthChange);
+            window.removeEventListener('storage', handleAuthChange);
+            stopPolling();
+        };
+    }, []);
 
     if (athlete) {
         return (
@@ -292,11 +192,7 @@ const StravaConnect: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                         <h4 className="text-slate-900 dark:text-white font-black text-base uppercase truncate leading-tight">
-                            {(athlete.firstname || athlete.lastname)
-                                ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim()
-                                : (athlete.firstName || athlete.lastName)
-                                    ? `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim()
-                                    : `Athlete #${athlete.id}`}
+                            {`${athlete.firstname || athlete.firstName || ''} ${athlete.lastname || athlete.lastName || ''}`.trim() || `Athlete #${athlete.id}`}
                         </h4>
                         <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">
                             Strava ID: {athlete.id}
@@ -309,9 +205,6 @@ const StravaConnect: React.FC = () => {
                 >
                     中斷連結
                 </button>
-                <div className="flex justify-center">
-                    <StravaLogo className="h-4 w-auto grayscale opacity-50" color="currentColor" />
-                </div>
             </div>
         );
     }
@@ -323,19 +216,11 @@ const StravaConnect: React.FC = () => {
                 disabled={isLoading}
                 className={`w-full flex items-center justify-center gap-3 bg-strava-orange text-white py-4 px-6 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
             >
-                {isLoading ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                    <StravaLogo className="h-5 w-auto" color="white" />
-                )}
+                {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <StravaLogo className="h-5 w-auto" color="white" />}
                 <span className="text-sm font-black uppercase tracking-wider">
                     {isLoading ? '授權中...' : 'Connect with Strava'}
                 </span>
             </button>
-
-            <div className="flex justify-center pt-2">
-                <StravaLogo className="h-5 w-auto" />
-            </div>
         </div>
     );
 };

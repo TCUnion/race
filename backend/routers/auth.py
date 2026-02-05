@@ -6,6 +6,9 @@ import ssl
 from database import supabase
 from typing import Optional
 from datetime import datetime, timezone
+import os
+import requests
+from fastapi.responses import RedirectResponse, HTMLResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -14,11 +17,8 @@ class StravaTokenRequest(BaseModel):
     access_token: str
     refresh_token: str
     expires_at: int
+    name: Optional[str] = None
     user_id: Optional[str] = None
-
-import os
-import requests
-from fastapi.responses import RedirectResponse, HTMLResponse
 
 @router.get("/strava-login")
 def strava_login():
@@ -71,14 +71,7 @@ def strava_callback(code: str, scope: str = ""):
         
         if not refresh_token:
             print(f"[ERROR] No refresh_token received for athlete {athlete_id}")
-            # Consider how to handle this - maybe fail? But for now let's log loudly.
-            # Strava doc says: "The refresh token may change...". 
-            # For initial exchange, it SHOULD be there.
 
-        
-        # Save to DB (Optional here, frontend also does it, but safer to do it here too)
-        # But to match n8n behavior, we pass data back to frontend via window.opener
-        
         # Upsert Token immediately to ensure backend has it
         try:
            data = {
@@ -139,6 +132,9 @@ def save_strava_token(req: StravaTokenRequest):
             "login_time": datetime.now(timezone.utc).isoformat()
         }
         
+        if req.name:
+            data["name"] = req.name
+            
         if req.user_id:
             data["user_id"] = req.user_id
             
@@ -315,16 +311,8 @@ async def confirm_binding(request: Request):
 
 
 # ========== Admin 權限定義 ==========
-import os
-
-# ========== Admin 權限定義 ==========
-# 從環境變數讀取 Admin IDs (逗號分隔)，預設為空
 admin_ids_str = os.getenv("ADMIN_ATHLETE_IDS", "")
 ADMIN_ATHLETE_IDS = [x.strip() for x in admin_ids_str.split(",") if x.strip()]
-if not ADMIN_ATHLETE_IDS:
-    # Fallback only for dev/migration safety if env var is missing, but better to enforce env var
-    # print("[WARN] ADMIN_ATHLETE_IDS not set in environment.")
-    pass
 
 @router.post("/unbind")
 async def unbind_member(request: Request):
@@ -352,56 +340,36 @@ async def unbind_member(request: Request):
         if not is_admin:
             try:
                 # 查詢 manager_roles 表，確認該 athlete_id 是否具備 admin 權限
-                # 同時嘗試字串和數字查詢
                 admin_check = supabase.table("manager_roles")\
                     .select("email, role, is_active, athlete_id")\
                     .execute()
                 
-                print(f"[DEBUG] manager_roles data: {admin_check.data}")
-                
                 for mgr in (admin_check.data or []):
                     mgr_athlete_id = mgr.get("athlete_id")
-                    # 比較時統一轉為字串
                     if mgr_athlete_id and str(mgr_athlete_id) == str(admin_id):
                         if mgr.get("role") == "admin" and mgr.get("is_active"):
                             is_admin = True
-                            print(f"[DEBUG] Admin access granted via DB for athlete_id: {admin_id}, email: {mgr.get('email')}")
+                            print(f"[DEBUG] Admin access granted via DB for athlete_id: {admin_id}")
                             break
             except Exception as db_err:
                 print(f"[WARN] Failed to verify admin status via DB: {db_err}")
 
-        # 檢查是否為資料擁有者（使用數字比較）
+        # 檢查是否為資料擁有者
         binding_strava_id = existing_binding.get("strava_id") if existing_binding else None
-        print(f"[DEBUG] Checking is_self: binding_strava_id={binding_strava_id}, admin_id={admin_id}")
         is_self = binding_strava_id is not None and str(binding_strava_id) == str(admin_id)
         
-        print(f"[DEBUG] is_admin={is_admin}, is_self={is_self}")
-        
         if not is_admin and not is_self:
-            print(f"[DEBUG] Permission denied. admin_id: {admin_id}, ADMIN_ATHLETE_IDS: {ADMIN_ATHLETE_IDS}")
-            return {"success": False, "message": "Permission denied: Not an administrator or data owner"}
-
-        # 2. 檢查 Token 是否存在且合法
-        token_res = supabase.table("strava_tokens").select("*").eq("athlete_id", int(admin_id)).execute()
-        if not token_res.data:
-            print("[DEBUG] No valid token found for admin")
-            return {"success": False, "message": "Authentication failed: No valid token found"}
+            return {"success": False, "message": "Permission denied"}
 
         # 3. 從 strava_bindings 刪除記錄
-        print(f"[DEBUG] Deleting binding for email: {email}")
         res = supabase.table("strava_bindings").delete().eq("tcu_member_email", email).execute()
-        print(f"[DEBUG] Delete result: {res.data}")
 
-        # 4. 清除 tcu_members 中的綁定和 OTP 資料（保持會員狀態乾淨）
-        try:
-            supabase.table("tcu_members").update({
-                "strava_id": None,
-                "otp_code": None,
-                "otp_expires_at": None
-            }).eq("email", email).execute()
-            print(f"[DEBUG] strava_id and OTP data cleared for email: {email}")
-        except Exception as otp_error:
-            print(f"[DEBUG] Failed to clear member data (non-critical): {otp_error}")
+        # 4. 清除 tcu_members 中的綁定資料
+        supabase.table("tcu_members").update({
+            "strava_id": None,
+            "otp_code": None,
+            "otp_expires_at": None
+        }).eq("email", email).execute()
 
         return {"success": True, "message": "Unbound successfully"}
     except Exception as e:
@@ -417,15 +385,12 @@ async def get_binding_status(strava_id: str):
     """
     print(f"[DEBUG] Checking binding status for strava_id: {strava_id}")
     
-    # 初始化回傳結構
     result = {
         "isBound": False,
         "strava_name": None
     }
 
-    # 1. 查詢綁定狀態 (Independent Try-Except)
     try:
-        # 明確轉型為字串查詢
         res = supabase.table("strava_bindings").select("*").eq("strava_id", str(strava_id)).execute()
         
         if res.data and len(res.data) > 0:
@@ -434,23 +399,19 @@ async def get_binding_status(strava_id: str):
             tcu_account = binding.get("tcu_account")
             print(f"[DEBUG] Binding found for {strava_id}: {binding.get('member_name')}")
 
-            # 嘗試取得完整會員資料
             member_data = {}
             try:
                 member_res = None
                 if tcu_account:
-                    # 優先使用 account 查詢
                     member_res = supabase.table("tcu_members").select("*").eq("account", tcu_account).execute()
                 elif email:
-                    # Fallback to email
                     member_res = supabase.table("tcu_members").select("*").eq("email", email).execute()
                 
                 if member_res and member_res.data:
                     member_data = member_res.data[0]
             except Exception as e_member:
-                 print(f"[WARN] Failed to fetch detailed member data: {e_member}")
+                 print(f"[WARN] Failed to fetch member data: {e_member}")
 
-            # 更新回傳結果
             result.update({
                 "isBound": True,
                 "email": email,
@@ -459,22 +420,15 @@ async def get_binding_status(strava_id: str):
                 "bound_at": binding.get("bound_at"),
                 "member_data": member_data
             })
-        else:
-            print(f"[DEBUG] No binding found for {strava_id}")
 
     except Exception as e:
         print(f"[ERROR] Failed to query strava_bindings: {e}")
-        # 不拋出 500，而是回傳未綁定狀態，讓前端至少能顯示基本頁面
-        # 這種情況通常是資料庫連線問題或權限問題
     
-    # 2. 查詢 strava_tokens 中的名字 (Independent Try-Except)
     try:
         token_res = supabase.table("strava_tokens").select("name").eq("athlete_id", int(strava_id)).execute()
         if token_res.data and len(token_res.data) > 0:
-            token_name = token_res.data[0].get("name")
-            result["strava_name"] = token_name
+            result["strava_name"] = token_res.data[0].get("name")
     except Exception as e:
-        # 轉換 id 失敗或查詢失敗
-        print(f"[WARN] Failed to fetch name from strava_tokens for {strava_id}: {e}")
+        print(f"[WARN] Failed to fetch name from tokens: {e}")
 
     return result

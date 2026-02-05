@@ -183,7 +183,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                       </td>
                       <td className="py-4">
                         <div className="flex items-center gap-3">
-                          <img src={p.profile_medium || p.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} alt={p.name} className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-tcu-blue transition-colors" />
+                          <img src={p.profile_medium || p.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} alt={p.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-tcu-blue transition-colors" />
                           <div>
                             <div className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-tcu-blue transition-colors flex items-center gap-1.5">
                               {p.name}

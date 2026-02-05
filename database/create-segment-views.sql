@@ -26,9 +26,10 @@ WHERE
 -- 2. 建立首頁排行榜 View (每人一筆最佳成績)
 -- 用途：首頁排行榜、頒獎
 -- 邏輯：針對每個路段與選手，只取一筆最佳時間 (elapsed_time 最小)
+-- 包含：報名資訊 (隊伍、號碼布)、頭像 (大/中)
 CREATE OR REPLACE VIEW view_leaderboard_best AS
 SELECT 
-    DISTINCT ON (segment_id, athlete_id)
+    DISTINCT ON (v.segment_id, v.athlete_id)
     v.athlete_id,
     v.segment_id,
     v.elapsed_time as best_time,
@@ -36,25 +37,29 @@ SELECT
     v.average_watts as power,
     v.activity_id,
     v.activity_name,
-    COALESCE(t.name, 'Unknown') as athlete_name,
-    t.profile
+    COALESCE(reg.athlete_name, auth.firstname || ' ' || auth.lastname, 'Unknown') as athlete_name,
+    COALESCE(reg.athlete_profile, auth.profile) as profile,
+    auth.profile_medium,
+    reg.team,
+    reg.number
 FROM 
     view_all_segment_efforts v
-LEFT JOIN strava_tokens t ON t.athlete_id = v.athlete_id
+LEFT JOIN registrations reg ON reg.strava_athlete_id = v.athlete_id AND reg.segment_id = v.segment_id
+LEFT JOIN athletes auth ON auth.id = v.athlete_id
 ORDER BY 
-    segment_id, athlete_id, elapsed_time ASC; -- 這裡的排序決定了 DISTINCT 取哪一筆 (取最快的)
+    v.segment_id, v.athlete_id, v.elapsed_time ASC;
 
 -- 3. 建立個人全紀錄 View (所有成績)
 -- 用途：個人儀表板、歷程分析
--- 邏輯：列出所有成績，不進行過濾
 CREATE OR REPLACE VIEW view_athlete_segment_history AS
 SELECT 
     v.*,
-    COALESCE(t.name, 'Unknown') as athlete_name,
-    t.profile
+    COALESCE(auth.firstname || ' ' || auth.lastname, 'Unknown') as athlete_name,
+    auth.profile,
+    auth.profile_medium
 FROM 
     view_all_segment_efforts v
-LEFT JOIN strava_tokens t ON t.athlete_id = v.athlete_id;
+LEFT JOIN athletes auth ON auth.id = v.athlete_id;
 
 -- 權限設定 (允許 API 讀取)
 GRANT SELECT ON view_all_segment_efforts TO postgres, anon, authenticated, service_role;

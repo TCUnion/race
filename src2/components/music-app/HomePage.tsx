@@ -128,7 +128,7 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                         {athlete ? (
                             <>
                                 <img
-                                    src={athlete.profile}
+                                    src={athlete.profile || '/strava-logo-white.svg'}
                                     alt={athlete.lastname}
                                     className="w-full h-full object-cover"
                                 />
@@ -153,6 +153,7 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                                         <img
                                             src={athlete.profile}
                                             alt="Profile"
+                                            referrerPolicy="no-referrer"
                                             className="w-12 h-12 rounded-full border-2 border-[#0EA5E9]"
                                         />
                                         <div className="flex flex-col min-w-0">
