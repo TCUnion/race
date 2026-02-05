@@ -1,171 +1,182 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '../lib/supabase';
 import { API_BASE_URL } from '../lib/api_config';
 
 export interface StravaAthlete {
     id: number;
+    username: string;
     firstname: string;
     lastname: string;
     profile: string;
-    [key: string]: any;
-}
-
-export interface MemberData {
-    real_name: string;
-    tcu_id: string;
-    email: string;
-    strava_id: string;
-    account?: string;
-    member_name?: string;
-    bound_at?: string;
-    [key: string]: any;
+    access_token: string;
+    refresh_token?: string;
+    expires_at?: number;
 }
 
 const STORAGE_KEY = 'strava_athlete_data';
-// 從環境變數讀取 Admin IDs，格式為逗號分隔字串
-const ADMIN_ATHLETE_IDS = (import.meta.env.VITE_ADMIN_ATHLETE_IDS || '').split(',').map((id: string) => id.trim()).filter(Boolean);
+const AUTH_EVENT = 'strava-auth-changed';
 
 export const useAuth = () => {
     const [athlete, setAthlete] = useState<StravaAthlete | null>(null);
-    const [memberData, setMemberData] = useState<MemberData | null>(null);
-    const [isBound, setIsBound] = useState<boolean | null>(null);
+    const [isBound, setIsBound] = useState(false);
+    const [memberData, setMemberData] = useState<any>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    const loadAthleteFromStorage = () => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
+    // 記憶快取防止一秒內重複同步
+    const lastSyncTime = useRef<number>(0);
+
+    const loadAthleteFromStorage = useCallback(() => {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData) {
             try {
-                setAthlete(JSON.parse(saved));
-            } catch (e) {
-                console.error('Failed to parse athlete data', e);
-                setAthlete(null);
+                const athleteData = JSON.parse(savedData);
+                setAthlete(athleteData);
+                return athleteData;
+            } catch (err) {
+                console.error('Failed to parse athlete data', err);
+                return null;
             }
-        } else {
-            setAthlete(null);
         }
-    };
+        setAthlete(null);
+        return null;
+    }, []);
 
-    const checkBindingStatus = async (athleteId: number) => {
-        try {
-            // 使用新的 binding-status API 查詢 strava_bindings 表格
-            const apiUrl = `${API_BASE_URL}/api/auth/binding-status/${athleteId}`;
-            const response = await fetch(apiUrl);
+    const syncToken = useCallback(async (athleteData: StravaAthlete) => {
+        const now = Date.now();
+        if (now - lastSyncTime.current < 2000) {
+            console.log('[Auth] 同步冷卻中，跳過重複請求');
+            return;
+        }
+        lastSyncTime.current = now;
 
-            // 檢查是否為 JSON (避免 404/500 返回 HTML 導致 SyntaxError)
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                const text = await response.text();
-                if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
-                    console.error("Detected HTML fallback on API route. Proxy configuration might be missing.");
-                    throw new Error("伺服器設定錯誤：API 路由未正確轉發 (得到 HTML)。");
-                }
-                throw new Error("Received non-JSON response from server");
+        const numericId = Number(athleteData.id);
+        if (athleteData.access_token && !isNaN(numericId) && numericId !== 0) {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        athlete_id: numericId,
+                        access_token: athleteData.access_token,
+                        refresh_token: athleteData.refresh_token || '',
+                        expires_at: athleteData.expires_at || Math.floor(now / 1000) + 21600,
+                        name: `${athleteData.firstname || ''} ${athleteData.lastname || ''}`.trim() || null,
+                        user_id: user?.id
+                    })
+                });
+                console.log('[Auth] Token 已同步至伺服器');
+            } catch (e) {
+                console.warn('[Auth] Token 同步失敗', e);
             }
+        }
+    }, []);
 
-            const data = await response.json();
+    const checkBindingStatus = useCallback(async (athleteId: number) => {
+        try {
+            const apiRes = await fetch(`${API_BASE_URL}/api/auth/binding-status/${athleteId}`);
+            if (!apiRes.ok) throw new Error('API request failed');
 
-            // 如果後端有回傳 strava_name，更新本地 Athlete 資料 (User Request)
+            const data = await apiRes.json();
+            setIsBound(data.isBound || false);
+            setMemberData(data.member_data || null);
+
+            // 如果後端回傳的名字與本地不符，或是本地有 undefined，進行修復
             if (data.strava_name) {
-                const currentAthlete = localStorage.getItem(STORAGE_KEY);
-                let athleteObj = currentAthlete ? JSON.parse(currentAthlete) : {};
+                const savedDataStr = localStorage.getItem(STORAGE_KEY);
+                const currentAthlete = savedDataStr ? JSON.parse(savedDataStr) : null;
 
-                // 檢查是否需要更新 (避免無限迴圈或不必要寫入)
-                // 這裡簡單假設 strava_name 為全名，塞入 firstname，lastname 清空
-                // 除非 strava_name 包含空白，可嘗試分割
+                const serverName = data.strava_name;
+                const currentName = `${currentAthlete?.firstname || ''} ${currentAthlete?.lastname || ''}`.trim();
 
-                const serverName = data.strava_name.trim();
-                const currentName = `${athleteObj.firstname || ''} ${athleteObj.lastname || ''}`.trim();
-
-                // 如果本地名字是 undefined 或 'Undefined Undefined' 或 與伺服器不符
-                if (currentName.includes('undefined') || currentName !== serverName) {
-
-                    // 簡單策略：將 serverName 當作 firstname
+                if (currentName.includes('undefined') || (currentName !== serverName && serverName !== '')) {
+                    console.log(`[Auth] 名稱不符 (Local: "${currentName}" vs Server: "${serverName}")，啟動更新`);
                     const newAthleteData = {
-                        ...athleteObj,
-                        id: athleteId, // 確保 ID 存在
+                        ...currentAthlete,
                         firstname: serverName,
-                        lastname: ''
+                        lastname: '',
+                        ts: Date.now()
                     };
 
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(newAthleteData));
-                    // 手動觸發更新
                     setAthlete(newAthleteData as StravaAthlete);
+
+                    // 名字不符時，主動同步一次 Token 到後端以校正其 name 欄位
+                    syncToken(newAthleteData as StravaAthlete);
                 }
             }
-
-            if (data.isBound) {
-                const apiMemberData = data.member_data || {};
-                setMemberData({
-                    real_name: apiMemberData.real_name || data.member_name || '',
-                    tcu_id: apiMemberData.tcu_id || data.tcu_account || '',
-                    email: apiMemberData.email || data.email || '',
-                    strava_id: athleteId.toString(),
-                    account: apiMemberData.account || data.tcu_account,
-                    member_name: apiMemberData.real_name || data.member_name,
-                    bound_at: data.bound_at,
-                    member_type: apiMemberData.member_type,
-                    ...apiMemberData
-                });
-                setIsBound(true);
-            } else {
-                setMemberData(null);
-                setIsBound(false);
-            }
-        } catch (e) {
-            console.error('Failed to check binding status', e);
-            setIsBound(false);
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.warn('[Auth] 檢查綁定狀態失敗:', err);
         }
-    };
+    }, [syncToken]);
 
-    useEffect(() => {
-        loadAthleteFromStorage();
+    const checkAdminStatus = useCallback(async (athleteId: number) => {
+        try {
+            const { data, error } = await supabase
+                .from('manager_roles')
+                .select('role, is_active')
+                .eq('athlete_id', athleteId)
+                .maybeSingle();
 
-        const handleAuthChange = () => loadAthleteFromStorage();
-        window.addEventListener('strava-auth-changed', handleAuthChange);
-        window.addEventListener('storage', handleAuthChange);
-        window.addEventListener('tcu-binding-success', async () => {
-
-            // 立即嘗試更新
-            if (athlete?.id) {
-                await checkBindingStatus(athlete.id);
-            }
-            // 500ms 後再次嘗試，確保資料庫寫入完成並同步
-            setTimeout(() => {
-                if (athlete?.id) checkBindingStatus(athlete.id);
-            }, 500);
-        });
-
-        return () => {
-            window.removeEventListener('strava-auth-changed', handleAuthChange);
-            window.removeEventListener('storage', handleAuthChange);
-        };
+            if (error) throw error;
+            setIsAdmin(data?.role === 'admin' && data?.is_active === true);
+        } catch (err) {
+            console.error('Failed to check admin status', err);
+            setIsAdmin(false);
+        }
     }, []);
-
-    useEffect(() => {
-        if (athlete?.id && String(athlete.id) !== 'undefined' && athlete.id !== 0) {
-            setIsLoading(true);
-            checkBindingStatus(Number(athlete.id));
-        } else {
-            setIsLoading(false);
-        }
-    }, [athlete?.id]); // 僅監聽 ID 變動，避免因 name 更新導致無限迴圈
 
     const logout = () => {
         localStorage.removeItem(STORAGE_KEY);
         setAthlete(null);
+        setIsBound(false);
         setMemberData(null);
-        setIsBound(null);
-        window.dispatchEvent(new Event('strava-auth-changed'));
+        setIsAdmin(false);
+        window.dispatchEvent(new Event(AUTH_EVENT));
     };
+
+    // 初始化與監聽
+    useEffect(() => {
+        const loaded = loadAthleteFromStorage();
+        if (loaded) {
+            checkBindingStatus(Number(loaded.id));
+            checkAdminStatus(Number(loaded.id));
+            syncToken(loaded);
+        } else {
+            setIsLoading(false);
+        }
+
+        const handleAuthChange = () => {
+            const current = loadAthleteFromStorage();
+            if (current) {
+                checkBindingStatus(Number(current.id));
+                checkAdminStatus(Number(current.id));
+                syncToken(current);
+            }
+        };
+
+        window.addEventListener(AUTH_EVENT, handleAuthChange);
+        window.addEventListener('storage', handleAuthChange);
+
+        window.addEventListener('tcu-binding-success', () => {
+            const current = loadAthleteFromStorage();
+            if (current) checkBindingStatus(Number(current.id));
+        });
+
+        return () => {
+            window.removeEventListener(AUTH_EVENT, handleAuthChange);
+            window.removeEventListener('storage', handleAuthChange);
+        };
+    }, [loadAthleteFromStorage, checkBindingStatus, checkAdminStatus, syncToken]);
 
     return {
         athlete,
-        memberData,
         isBound,
-        isAdmin: athlete?.id ? ADMIN_ATHLETE_IDS.includes(athlete.id.toString()) : false,
+        memberData,
+        isAdmin,
         isLoading,
         logout,
-        refreshBinding: () => athlete && checkBindingStatus(athlete.id)
+        refreshBinding: () => athlete?.id && checkBindingStatus(Number(athlete.id))
     };
 };

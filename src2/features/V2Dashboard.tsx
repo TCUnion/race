@@ -67,6 +67,7 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                             <img
                                 src={athlete?.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
                                 alt="Profile"
+                                referrerPolicy="no-referrer"
                                 className="w-full h-full rounded-full object-cover"
                             />
                         </div>

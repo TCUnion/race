@@ -222,7 +222,7 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                         {p.rank}
                                     </span>
                                 </div>
-                                <img src={p.profile_medium || 'default_avatar_url'} alt={p.name} className="w-10 h-10 rounded-xl bg-bg border border-white/10" />
+                                <img src={p.profile_medium || 'default_avatar_url'} alt={p.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-xl bg-bg border border-white/10" />
                                 <div className="flex-1 min-w-0">
                                     <h4 className="text-white text-sm font-bold truncate">{p.name}</h4>
                                     <p className="text-white/40 text-[10px] uppercase font-medium">{p.team || '個人'}</p>

@@ -445,53 +445,76 @@ const AdminPanel: React.FC = () => {
         e.preventDefault();
         if (!editingSegment) return;
 
-        let error;
-        if (editingSegment.id === 'new') {
-            const { error: insertError } = await supabase.from('segments').insert({
-                id: editingSegment.strava_id, // 顯式傳遞 Strava ID 作為主鍵
-                strava_id: editingSegment.strava_id,
-                name: editingSegment.name,
-                description: editingSegment.description,
-                link: editingSegment.link,
-                distance: editingSegment.distance,
-                average_grade: editingSegment.average_grade,
-                maximum_grade: editingSegment.maximum_grade,
-                elevation_gain: editingSegment.elevation_gain,
-                polyline: editingSegment.polyline,
-                is_active: editingSegment.is_active,
-                start_date: editingSegment.start_date,
-                end_date: editingSegment.end_date
-            });
-            error = insertError;
-        } else {
-            const payload = {
-                strava_id: editingSegment.strava_id,
-                name: editingSegment.name,
-                description: editingSegment.description,
-                link: editingSegment.link,
-                distance: editingSegment.distance,
-                average_grade: editingSegment.average_grade,
-                maximum_grade: editingSegment.maximum_grade,
-                elevation_gain: editingSegment.elevation_gain,
-                polyline: editingSegment.polyline,
-                is_active: editingSegment.is_active,
-                // [FIX] 將本地時間字串 (YYYY-MM-DDTHH:mm) 轉換為 ISO 字串，確保包含正確的時區與秒數
-                start_date: new Date(editingSegment.start_date).toISOString(),
-                end_date: new Date(editingSegment.end_date).toISOString()
+        console.log("🚀 Starting segment update/insert...", editingSegment);
+
+        try {
+            let error;
+            // 處理日期格式，避免空字串導致 toISOString() 崩潰
+            const formatDate = (dateStr: any) => {
+                if (!dateStr) return null;
+                try {
+                    const d = new Date(dateStr);
+                    return isNaN(d.getTime()) ? null : d.toISOString();
+                } catch (e) {
+                    return null;
+                }
             };
 
-            const { error: updateError } = await supabase
-                .from('segments')
-                .update(payload)
-                .eq('id', editingSegment.id);
-            error = updateError;
-        }
+            const startDate = formatDate(editingSegment.start_date);
+            const endDate = formatDate(editingSegment.end_date);
 
-        if (error) {
-            alert((editingSegment.id === 'new' ? '新增' : '更新') + '失敗: ' + error.message);
-        } else {
-            setEditingSegment(null);
-            fetchSegments();
+            if (editingSegment.id === 'new') {
+                const { error: insertError } = await supabase.from('segments').insert({
+                    id: editingSegment.strava_id,
+                    strava_id: editingSegment.strava_id,
+                    name: editingSegment.name,
+                    description: editingSegment.description,
+                    link: editingSegment.link,
+                    distance: editingSegment.distance,
+                    average_grade: editingSegment.average_grade,
+                    maximum_grade: editingSegment.maximum_grade,
+                    elevation_gain: editingSegment.elevation_gain,
+                    polyline: editingSegment.polyline,
+                    is_active: editingSegment.is_active,
+                    start_date: startDate,
+                    end_date: endDate
+                });
+                error = insertError;
+            } else {
+                const payload = {
+                    strava_id: editingSegment.strava_id,
+                    name: editingSegment.name,
+                    description: editingSegment.description,
+                    link: editingSegment.link,
+                    distance: editingSegment.distance,
+                    average_grade: editingSegment.average_grade,
+                    maximum_grade: editingSegment.maximum_grade,
+                    elevation_gain: editingSegment.elevation_gain,
+                    polyline: editingSegment.polyline,
+                    is_active: editingSegment.is_active,
+                    start_date: startDate,
+                    end_date: endDate
+                };
+
+                const { error: updateError } = await supabase
+                    .from('segments')
+                    .update(payload)
+                    .eq('id', editingSegment.id);
+                error = updateError;
+            }
+
+            if (error) {
+                console.error("❌ Database operation failed:", error);
+                alert((editingSegment.id === 'new' ? '新增' : '更新') + '失敗: ' + (error.message || '未知資料庫錯誤'));
+            } else {
+                console.log("✅ Operation successful");
+                alert((editingSegment.id === 'new' ? '新增' : '更新') + '成功！');
+                setEditingSegment(null);
+                fetchSegments();
+            }
+        } catch (err: any) {
+            console.error("💥 Critical error in handleUpdateSegment:", err);
+            alert('系統發生嚴重錯誤: ' + err.message);
         }
     };
 

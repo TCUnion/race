@@ -63,19 +63,22 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
     // 過濾特定保養類型的歷史紀錄
     const filteredRecords = selectedType
         ? historyRecords.filter(r => {
+            if (!r.maintenance_type) return false;
+
             // 處理多項保養內容的分隔，同時支持 "," 與 ", "
-            const types = r.maintenance_type.split(',').map((t: string) => t.trim());
+            const types = String(r.maintenance_type).split(',').map((t: string) => t.trim());
 
             // 1. 完全匹配 ID (例如: "chain_lube")
             const isIdMatch = types.includes(selectedType.id);
 
             // 2. 匹配名稱 (例如: "鏈條上油") - 增加備份相容性
-            const isNameMatch = types.includes(selectedType.name) || r.maintenance_type.includes(selectedType.name);
+            const isNameMatch = types.includes(selectedType.name) ||
+                String(r.maintenance_type).includes(selectedType.name);
 
             // 3. 全車保養始終包含在內 (與 V1 一致)
             const isFullService = types.includes('full_service') ||
                 types.includes('全車保養') ||
-                r.maintenance_type.includes('全車保養');
+                String(r.maintenance_type).includes('全車保養');
 
             return isIdMatch || isNameMatch || isFullService;
         })
@@ -389,10 +392,26 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                                     const savedData = localStorage.getItem('strava_athlete_data');
                                     const athleteId = savedData ? JSON.parse(savedData).id : null;
 
+                                    // 欄位映射：System A -> System B (V1)
                                     await addMaintenanceRecord({
-                                        ...record,
-                                        athlete_id: String(athleteId)
+                                        bike_id: record.vehicle_id || selectedBike.id,
+                                        athlete_id: String(athleteId),
+                                        maintenance_type: selectedType?.id || '',
+                                        service_date: record.date || new Date().toISOString().split('T')[0],
+                                        mileage_at_service: Number(record.mileage) || 0,
+                                        cost: Number(record.total_cost) || 0,
+                                        notes: record.description || '',
+                                        is_diy: record.service_type === 'DIY',
+                                        other: '',
+                                        // 如果有選定類型，也同步到 parts_details 以保持相容性
+                                        parts_details: selectedType ? [{
+                                            type_id: selectedType.id,
+                                            brand: '',
+                                            model: '',
+                                            other: ''
+                                        }] : []
                                     });
+                                    setSelectedType(null);
                                     setIsAddModalOpen(false);
                                 }}
                             />
@@ -635,10 +654,10 @@ export function V2Maintenance({ onBack }: V2MaintenanceProps) {
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
                                                         <p className="text-foreground font-bold">
-                                                            {new Date(record.service_date).toLocaleDateString('zh-TW')}
+                                                            {record.service_date}
                                                         </p>
                                                         <p className="text-white/30 text-[10px] font-mono mt-0.5">
-                                                            {Math.round(calculateTotalDistanceAtDate(selectedBike, record.service_date)).toLocaleString()} km
+                                                            {record.mileage_at_service ? Math.round(record.mileage_at_service).toLocaleString() : Math.round(calculateTotalDistanceAtDate(selectedBike, record.service_date)).toLocaleString()} km
                                                         </p>
                                                     </div>
 
