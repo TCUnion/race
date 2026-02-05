@@ -35,11 +35,26 @@ class StravaService:
             new_token = response.json()
             data = {
                 "access_token": new_token["access_token"],
-                "refresh_token": new_token["refresh_token"],
                 "expires_at": new_token["expires_at"],
             }
+            # Only update refresh_token if Strava provided a new one
+            if "refresh_token" in new_token and new_token["refresh_token"]:
+                data["refresh_token"] = new_token["refresh_token"]
+            else:
+                # If Strava didn't return a new refresh token, keep using the old one
+                # Note: We don't need to update it in DB if it hasn't changed, 
+                # but if we are updating other fields, it's fine to omit this key from 'data' 
+                # so the DB keeps the existing value.
+                # For the return value, we ensure it's present.
+                pass
             supabase.table("strava_tokens").update(data).eq("athlete_id", athlete_id).execute()
-            return {**data, "athlete_id": athlete_id}
+            
+            # Ensure return value has the refresh token (either new or old)
+            result = {**data, "athlete_id": athlete_id}
+            if "refresh_token" not in result:
+                result["refresh_token"] = refresh_token
+                
+            return result
         return None
 
     @staticmethod

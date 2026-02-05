@@ -69,6 +69,13 @@ def strava_callback(code: str, scope: str = ""):
         athlete = res_data.get("athlete", {})
         athlete_id = athlete.get("id")
         
+        if not refresh_token:
+            print(f"[ERROR] No refresh_token received for athlete {athlete_id}")
+            # Consider how to handle this - maybe fail? But for now let's log loudly.
+            # Strava doc says: "The refresh token may change...". 
+            # For initial exchange, it SHOULD be there.
+
+        
         # Save to DB (Optional here, frontend also does it, but safer to do it here too)
         # But to match n8n behavior, we pass data back to frontend via window.opener
         

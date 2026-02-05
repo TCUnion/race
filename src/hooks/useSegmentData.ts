@@ -212,8 +212,6 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 return;
             }
 
-            // 1. & 2. 並行請求：直接從 Supabase 抓取所有成績資料 與 報名資料
-            // 確保 ID 為數字且去重，過濾無效 ID
             const segmentIds = Array.from(new Set(activeSegments.map(s => Number(s.id)).filter(id => !isNaN(id) && id !== 0)));
 
             if (segmentIds.length === 0) {
@@ -222,105 +220,60 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 return;
             }
 
-            const [effortsResult, registrationsResult, athletesResult] = await Promise.all([
-                supabase
-                    .from('segment_efforts_v2')
-                    .select('*')
-                    .in('segment_id', segmentIds)
-                    .order('elapsed_time', { ascending: true }),
-                supabase
-                    .from('registrations')
-                    .select('segment_id, strava_athlete_id, number, team, athlete_name, athlete_profile, tcu_id')
-                    .in('segment_id', segmentIds),
-                supabase
-                    .from('athletes')
-                    .select('id, firstname, lastname')
-            ]);
+            // 1. 從 View 直接取得排行榜資料 (已排序、已去重、已包含名字與隊伍)
+            const { data: leaderboardData, error: viewError } = await supabase
+                .from('view_leaderboard_best')
+                .select('*')
+                .in('segment_id', segmentIds)
+                .order('best_time', { ascending: true }); // View 雖然有預設排序，但這裡再排一次保險
 
-            const { data: allEfforts, error: effortsError } = effortsResult;
-            const { data: allRegData, error: regError } = registrationsResult;
-            const { data: allAthletes, error: athletesError } = athletesResult;
+            // 2. 額外查詢 Registrations 以取得 tcu_id (判斷是否為會員) - 若 View 後續補上此欄位可省略
+            const { data: regData } = await supabase
+                .from('registrations')
+                .select('segment_id, strava_athlete_id, tcu_id')
+                .in('segment_id', segmentIds);
 
-            if (effortsError) throw effortsError;
-            // 報名資料與選手資料讀取失敗不應阻擋顯示，僅記 log
-            if (regError) console.error('Fetch registrations error:', regError);
-            if (athletesError) console.error('Fetch athletes error:', athletesError);
+            if (viewError) throw viewError;
 
-            // 建立選手資料地圖
-            const athleteMap = new Map<number, any>();
-            if (allAthletes) {
-                allAthletes.forEach(a => athleteMap.set(Number(a.id), a));
-            }
-
-            // 建立報名資料地圖
-            const regMapBySegment: Record<number, Map<number, any>> = {};
-            if (allRegData) {
-                allRegData.forEach(reg => {
-                    const sid = Number(reg.segment_id);
-                    if (!regMapBySegment[sid]) regMapBySegment[sid] = new Map();
-                    regMapBySegment[sid].set(Number(reg.strava_athlete_id), reg);
+            // 建立 TCU 會員查找表
+            const tcuMap = new Map<string, string>(); // key: `${segmentId}_${athleteId}`, value: tcu_id
+            if (regData) {
+                regData.forEach(r => {
+                    tcuMap.set(`${r.segment_id}_${r.strava_athlete_id}`, r.tcu_id);
                 });
             }
 
             const newLeaderboards: Record<number, LeaderboardEntry[]> = {};
             const newStats: Record<number, SegmentStats> = {};
 
-            // 3. 處理每個路段的排行榜
+            // 3. 整理資料
             activeSegments.forEach(seg => {
-                const segmentEfforts = (allEfforts || []).filter(e => Number(e.segment_id) === Number(seg.id));
-                // console.log(`[useSegmentData] Segment ${seg.id} (${seg.name}) matched efforts: ${segmentEfforts.length}`);
-                const regMap = regMapBySegment[seg.id] || new Map();
+                // 篩選出該路段的資料
+                const segmentEntries = (leaderboardData || []).filter(row => Number(row.segment_id) === Number(seg.id));
 
-                // 每個選手只保留「最佳成績」
-                const bestEffortsMap = new Map<number, any>();
-                segmentEfforts.forEach(e => {
-                    const aid = Number(e.athlete_id);
-                    if (!bestEffortsMap.has(aid) || (e.elapsed_time && e.elapsed_time < bestEffortsMap.get(aid).elapsed_time)) {
-                        bestEffortsMap.set(aid, e);
-                    }
+                // 轉換格式
+                const ranked: LeaderboardEntry[] = segmentEntries.map((row, index) => {
+                    const aid = Number(row.athlete_id);
+                    const sid = Number(row.segment_id);
+                    const tcuId = tcuMap.get(`${sid}_${aid}`);
+
+                    return {
+                        rank: index + 1,
+                        athlete_id: aid,
+                        name: row.athlete_name || `選手 ${aid}`,
+                        profile_medium: row.profile || "", // View 中的 profile
+                        team: row.team || "", // View 中的 team
+                        number: row.number || "", // View 中的 number (假設有)
+                        elapsed_time: row.best_time,
+                        moving_time: row.best_time, // View 目前只有 best_time，暫時用一樣的
+                        average_speed: seg.distance / (row.best_time || 1),
+                        average_watts: row.power,
+                        average_heartrate: 0, // View 暫無心率
+                        start_date: row.achieved_at,
+                        activity_id: row.activity_id,
+                        is_tcu: !!tcuId
+                    };
                 });
-
-                // 轉換為 LeaderboardEntry 格式
-                const ranked = Array.from(bestEffortsMap.values())
-                    .sort((a, b) => (a.elapsed_time || 999999) - (b.elapsed_time || 999999))
-                    .map((e, index) => {
-                        const aid = Number(e.athlete_id);
-                        const reg = regMap.get(aid);
-                        const ath = athleteMap.get(aid);
-
-                        // 優先級：報名表名字 > Strava Athletes 表名字 (First + Last) > 成績表名字 > 預設值
-                        let finalName = '';
-                        // 1. 優先查看報名資料 (為了顯示如 "大里 閃電鳥" 等自訂報名名稱)
-                        if (reg?.athlete_name) {
-                            finalName = reg.athlete_name;
-                        }
-                        // 2. 其次查看綁定會員資料
-                        else if (ath) {
-                            finalName = `${ath.firstname || ''} ${ath.lastname || ''}`.trim();
-                        }
-
-                        // 3. 最後使用成績表上的 Strava 原始名稱
-                        if (!finalName) {
-                            finalName = e.athlete_name || `選手 ${aid}`;
-                        }
-
-                        return {
-                            rank: index + 1,
-                            athlete_id: e.athlete_id,
-                            name: finalName,
-                            profile_medium: reg?.athlete_profile || "",
-                            team: reg?.team || "",
-                            number: reg?.number || "",
-                            elapsed_time: e.elapsed_time,
-                            moving_time: e.moving_time,
-                            average_speed: seg.distance / (e.elapsed_time || 1), // 計算時速 m/s
-                            average_watts: e.average_watts,
-                            average_heartrate: e.average_heartrate,
-                            start_date: e.start_date,
-                            activity_id: e.activity_id,
-                            is_tcu: !!reg?.tcu_id
-                        };
-                    });
 
                 newLeaderboards[seg.id] = ranked;
                 newStats[seg.id] = calculateStats(ranked);
