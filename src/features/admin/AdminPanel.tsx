@@ -1073,9 +1073,10 @@ const AdminPanel: React.FC = () => {
             if (aError) throw aError;
 
             // 2. 抓取所有權杖資訊 (正確資料來源為 strava_tokens)
+            // [NEW] 加入 access_token 和 refresh_token 以檢查異常狀態
             const { data: tokens, error: tError } = await supabase
                 .from('strava_tokens')
-                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at, name, login_time') // [FIX] 加入 login_time
+                .select('athlete_id, updated_at, expires_at, created_at, last_activity_at, name, login_time, access_token, refresh_token')
                 .order('updated_at', { ascending: true });
 
             const tokenMap = new Map();
@@ -1111,6 +1112,11 @@ const AdminPanel: React.FC = () => {
                 const athleteName = athlete ? `${athlete.firstname} ${athlete.lastname}` : null;
                 const tokenName = token?.name || null;
 
+                // [NEW] 檢查 token 是否有效 (access_token 和 refresh_token 都不能為空)
+                const hasValidToken = token &&
+                    token.access_token && token.access_token.trim() !== '' &&
+                    token.refresh_token && token.refresh_token.trim() !== '';
+
                 return {
                     athleteID: id,
                     name: athleteName || tokenName || 'Unknown Athlete',
@@ -1119,6 +1125,7 @@ const AdminPanel: React.FC = () => {
                     expires_at: token?.expires_at || null,
                     isBound: boundSet.has(id),
                     hasToken: !!token,
+                    hasValidToken: hasValidToken, // [NEW] Token 有效性標記
                     // @ts-ignore
                     lastActivityAt: token?.last_activity_at || null,
                     // @ts-ignore
@@ -1132,6 +1139,9 @@ const AdminPanel: React.FC = () => {
                 // 這裡我們保留所有資料，並在 UI 上做區分或排序
                 .filter(item => item.hasToken) // 只顯示有 Token 的資料，符合 "API 權杖管理" 的定義
                 .sort((a, b) => {
+                    // [NEW] 異常 token 優先顯示
+                    if (!a.hasValidToken && b.hasValidToken) return -1;
+                    if (a.hasValidToken && !b.hasValidToken) return 1;
                     if (a.updatedAt && !b.updatedAt) return -1;
                     if (!a.updatedAt && b.updatedAt) return 1;
                     return a.name.localeCompare(b.name, 'zh-TW');
@@ -2425,16 +2435,23 @@ const AdminPanel: React.FC = () => {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {displayedTokens
                                     .map((token) => (
-                                        <tr key={token.athleteID} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <tr key={token.athleteID} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!token.hasValidToken ? 'bg-red-50/50 dark:bg-red-900/10' : ''}`}>
                                             <td className="px-4 py-3 font-mono text-xs">
-                                                <a
-                                                    href={`https://www.strava.com/athletes/${token.athleteID}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="hover:text-tcu-blue hover:underline transition-colors font-bold"
-                                                >
-                                                    {token.athleteID}
-                                                </a>
+                                                <div className="flex items-center gap-2">
+                                                    <a
+                                                        href={`https://www.strava.com/athletes/${token.athleteID}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={`hover:underline transition-colors font-bold ${!token.hasValidToken ? 'text-red-500' : 'hover:text-tcu-blue'}`}
+                                                    >
+                                                        {token.athleteID}
+                                                    </a>
+                                                    {!token.hasValidToken && (
+                                                        <span className="px-1.5 py-0.5 bg-red-500 text-white rounded text-[8px] font-black uppercase animate-pulse" title="Access Token 或 Refresh Token 為空">
+                                                            ⚠️ 異常
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 font-bold">{token.name}</td>
                                             <td className="px-4 py-3 text-slate-500">
