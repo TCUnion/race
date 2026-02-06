@@ -61,6 +61,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import WorkshopAuthorizationInbox from '../admin/WorkshopAuthorizationInbox';
+import AnnouncementBanner from './AnnouncementBanner';
 
 interface DashboardProps {
   onNavigate: (view: ViewType) => void;
@@ -429,6 +430,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
         </section>
+
+        {/* Announcement Banner */}
+        <AnnouncementBanner />
 
         {/* Workshop Authorization Inbox */}
         <WorkshopAuthorizationInbox />

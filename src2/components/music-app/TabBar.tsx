@@ -1,5 +1,6 @@
 import { Home, LayoutDashboard, Search, Settings } from 'lucide-react';
 import { useMemberAuthorizations } from '../../../src/hooks/useMemberAuthorizations';
+import { useActiveAnnouncements } from '../../../src/hooks/useActiveAnnouncements';
 
 interface TabBarProps {
     activeTab: string;
@@ -15,7 +16,9 @@ const tabs = [
 
 export function TabBar({ activeTab, onTabChange }: TabBarProps) {
     const { pendingAuthorizations } = useMemberAuthorizations();
-    const hasNotifications = pendingAuthorizations.length > 0;
+    const { hasActiveAnnouncements } = useActiveAnnouncements();
+    const hasNotifications = pendingAuthorizations.length > 0 || hasActiveAnnouncements;
+
 
     return (
         <nav className="flex justify-around items-center w-full h-[83px] bg-bg-glass backdrop-blur-xl px-0 pt-2 pb-7 border-t border-border">
@@ -34,7 +37,7 @@ export function TabBar({ activeTab, onTabChange }: TabBarProps) {
                                 className={isActive ? 'text-primary' : 'text-text-secondary'}
                             />
                             {tab.id === 'library' && hasNotifications && (
-                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background animate-pulse"></span>
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#1a1a1a] animate-pulse z-10"></span>
                             )}
                         </div>
                         <span

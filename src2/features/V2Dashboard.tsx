@@ -6,6 +6,7 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useSegmentData } from '../../src/hooks/useSegmentData';
 import { useWeeklyStats } from '../../src/hooks/useWeeklyStats';
 import { generateSvgPath } from '../../src/utils/polylineUtils';
+import AnnouncementBanner from '../../src/features/dashboard/AnnouncementBanner';
 
 interface V2DashboardProps {
     onBack: () => void;
@@ -59,6 +60,10 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
             </header>
 
             <main className="px-5">
+                {/* Announcement Banner */}
+                <div className="-mx-5 -mb-6">
+                    <AnnouncementBanner />
+                </div>
 
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 mb-8">

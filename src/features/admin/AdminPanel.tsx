@@ -225,10 +225,15 @@ const AdminPanel: React.FC = () => {
     const [managers, setManagers] = useState<any[]>([]);
     const [editingManager, setEditingManager] = useState<any>(null); // New editing state
     const [managerSearchTerm, setManagerSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races'>('managers'); // 預設顯示管理員管理
+    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'announcements'>('managers'); // 預設顯示管理員管理
+
+    // 廣告/公告管理
+    const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [editingAnnouncement, setEditingAnnouncement] = useState<any>(null);
+    const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
 
 
-    const fetchSegments = async () => {
+    async function fetchSegments() {
         const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error('Fetch error:', error);
@@ -236,7 +241,22 @@ const AdminPanel: React.FC = () => {
         } else if (data) {
             setSegments(data);
         }
-    };
+    }
+
+    async function fetchAnnouncements() {
+        try {
+            const { data, error } = await supabase
+                .from('announcements')
+                .select('*')
+                .order('priority', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (data) setAnnouncements(data);
+        } catch (err: any) {
+            console.error('Fetch announcements error:', err);
+        }
+    }
 
     const handleRefreshSegment = async (seg: any) => {
         if (!confirm(`確定要重新整理「${seg.name}」的資料與地圖嗎？`)) return;
@@ -377,7 +397,8 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    const fetchRegistrations = async (filterSegmentId: string | null = null) => {
+    async function fetchRegistrations(filterSegmentId: string | null = null) {
+        setLoading(true);
         try {
             // 分離查詢避免 PGRST200 錯誤
             let query = supabase
@@ -389,13 +410,9 @@ const AdminPanel: React.FC = () => {
                 query = query.eq('segment_id', filterSegmentId);
             }
 
-            const { data: regData, error: regError } = await query;
+            const { data: regData, error } = await query;
 
-            if (regError) {
-                console.error('Fetch registrations error:', regError);
-                setError('讀取報名資料失敗: ' + regError.message);
-                return;
-            }
+            if (error) throw error;
 
             if (regData && regData.length > 0) {
                 // 取得所有相關的 segment_ids
@@ -421,8 +438,10 @@ const AdminPanel: React.FC = () => {
         } catch (err: any) {
             console.error('Fetch registrations error:', err);
             setError('讀取報名資料失敗: ' + err.message);
+        } finally {
+            setLoading(false);
         }
-    };
+    }
 
     useEffect(() => {
         if (session || stravaSession) fetchRegistrations();
@@ -438,8 +457,63 @@ const AdminPanel: React.FC = () => {
             fetchSiteSettings();
             fetchManagers();
             fetchSegments(); // 補上路段資料抓取
+            fetchAnnouncements(); // 補上廣告公告抓取
         }
     }, [session, stravaSession]);
+
+    const handleSaveAnnouncement = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingAnnouncement) return;
+
+        setIsSavingAnnouncement(true);
+        try {
+            const payload = {
+                title: editingAnnouncement.title,
+                content: editingAnnouncement.content,
+                image_url: editingAnnouncement.image_url,
+                button_url: editingAnnouncement.button_url,
+                button_text: editingAnnouncement.button_text || '了解更多',
+                target_group: editingAnnouncement.target_group || 'all',
+                priority: parseInt(editingAnnouncement.priority) || 0,
+                is_active: editingAnnouncement.is_active ?? true,
+                start_date: editingAnnouncement.start_date || new Date().toISOString(),
+                end_date: editingAnnouncement.end_date || null,
+                updated_at: new Date().toISOString()
+            };
+
+            let error;
+            if (editingAnnouncement.id === 'new') {
+                const { error: err } = await supabase.from('announcements').insert(payload);
+                error = err;
+            } else {
+                const { error: err } = await supabase
+                    .from('announcements')
+                    .update(payload)
+                    .eq('id', editingAnnouncement.id);
+                error = err;
+            }
+
+            if (error) throw error;
+            alert('公告已儲存');
+            setEditingAnnouncement(null);
+            fetchAnnouncements();
+        } catch (err: any) {
+            alert('儲存失敗: ' + err.message);
+        } finally {
+            setIsSavingAnnouncement(false);
+        }
+    };
+
+    const handleDeleteAnnouncement = async (id: string) => {
+        if (!confirm('確定要刪除此公告嗎？')) return;
+        try {
+            const { error } = await supabase.from('announcements').delete().eq('id', id);
+            if (error) throw error;
+            fetchAnnouncements();
+        } catch (err: any) {
+            alert('刪除失敗: ' + err.message);
+        }
+    };
 
     const handleUpdateSegment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1046,7 +1120,9 @@ const AdminPanel: React.FC = () => {
                     isBound: boundSet.has(id),
                     hasToken: !!token,
                     // @ts-ignore
-                    lastActivityAt: token?.last_activity_at || null
+                    lastActivityAt: token?.last_activity_at || null,
+                    // @ts-ignore
+                    loginTime: token?.login_time || null
                 };
             })
                 // 過濾掉沒有 Token 的資料 (如果只想看有 Token 的)
@@ -1421,332 +1497,348 @@ const AdminPanel: React.FC = () => {
                     <ClipboardCheck className="w-4 h-4 inline-block mr-2" />
                     比賽審核
                 </button>
+                <button
+                    onClick={() => setActiveTab('announcements')}
+                    className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'announcements'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
+                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        }`}
+                >
+                    <MessageCircle className="w-4 h-4 inline-block mr-2" />
+                    廣告推送
+                </button>
             </div>
 
             {/* 器材管理 Tab */}
-            {activeTab === 'equipment' && (
-                <EquipmentList />
-            )}
+            {
+                activeTab === 'equipment' && (
+                    <EquipmentList />
+                )
+            }
 
             {/* 比賽審核 Tab */}
-            {activeTab === 'races' && session && (
-                <RaceAdminPanel adminId={session.user.id} />
-            )}
+            {
+                activeTab === 'races' && session && (
+                    <RaceAdminPanel adminId={session.user.id} />
+                )
+            }
 
             {/* 管理員管理 Tab */}
-            {activeTab === 'managers' && (
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-black">管理員清單</h3>
-                        <div className="relative">
-                            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="搜尋 Email 或名稱..."
-                                value={managerSearchTerm}
-                                onChange={(e) => setManagerSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-tcu-blue w-64"
-                            />
+            {
+                activeTab === 'managers' && (
+                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-black">管理員清單</h3>
+                            <div className="relative">
+                                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="搜尋 Email 或名稱..."
+                                    value={managerSearchTerm}
+                                    onChange={(e) => setManagerSearchTerm(e.target.value)}
+                                    className="pl-10 pr-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-tcu-blue w-64"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    {editingManager && (
-                        <div className="mb-8 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-tcu-blue border-dashed">
-                            <h4 className="font-bold text-tcu-blue mb-4 flex items-center gap-2">
-                                <Edit2 className="w-4 h-4" />
-                                編輯管理員: {editingManager.email}
-                            </h4>
-                            <form onSubmit={handleUpdateManagerSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">單位名稱 (車店/車隊)</label>
-                                    <input
-                                        type="text"
-                                        value={editingManager.shop_name || ''}
-                                        onChange={(e) => setEditingManager({ ...editingManager, shop_name: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-tcu-blue"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">角色權限</label>
-                                    <select
-                                        value={editingManager.role}
-                                        onChange={(e) => setEditingManager({ ...editingManager, role: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-tcu-blue"
-                                    >
-                                        <option value="shop_owner">Shop Owner (車店老闆)</option>
-                                        <option value="team_coach">Team Coach (車隊教練)</option>
-                                        <option value="power_coach">Power Coach (功率教練)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Strava 綁定狀態</label>
-                                    <div className="flex items-center gap-2 h-[42px]">
-                                        {editingManager.athlete_id ? (
-                                            <>
-                                                <span className="font-mono font-bold text-[#FC4C02]">
-                                                    ID: {editingManager.athlete_id}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleUnbindManagerStrava}
-                                                    className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold rounded-lg transition-colors"
-                                                >
-                                                    解除綁定
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <span className="text-slate-400 text-sm italic">未綁定 Strava 帳號</span>
-                                        )}
+                        {editingManager && (
+                            <div className="mb-8 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-tcu-blue border-dashed">
+                                <h4 className="font-bold text-tcu-blue mb-4 flex items-center gap-2">
+                                    <Edit2 className="w-4 h-4" />
+                                    編輯管理員: {editingManager.email}
+                                </h4>
+                                <form onSubmit={handleUpdateManagerSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">單位名稱 (車店/車隊)</label>
+                                        <input
+                                            type="text"
+                                            value={editingManager.shop_name || ''}
+                                            onChange={(e) => setEditingManager({ ...editingManager, shop_name: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-tcu-blue"
+                                        />
                                     </div>
-                                </div>
-                                <div className="md:col-span-2 flex justify-end gap-2 mt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingManager(null)}
-                                        className="px-4 py-2 rounded-lg text-slate-500 font-bold hover:bg-slate-200 transaction-colors"
-                                    >
-                                        取消
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-6 py-2 rounded-lg bg-tcu-blue text-white font-bold hover:brightness-110 transaction-colors shadow-lg shadow-tcu-blue/20"
-                                    >
-                                        儲存變更
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* 待審核管理員列表 */}
-                    {managers.some(m => !m.is_active) && (
-                        <div className="mb-8">
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className="relative flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                                </span>
-                                <h4 className="text-lg font-bold text-red-500">待審核管理員 (Pending Approval)</h4>
-                            </div>
-                            <div className="overflow-x-auto bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-200 dark:border-red-900/30">
-                                <table className="w-full text-left">
-                                    <thead className="text-red-400 uppercase text-xs font-bold">
-                                        <tr>
-                                            <th className="px-6 py-4">管理員姓名</th>
-                                            <th className="px-6 py-4">Email 帳號</th>
-                                            <th className="px-6 py-4">角色</th>
-                                            <th className="px-4 py-4">單位名稱</th>
-                                            <th className="px-6 py-4 text-right">操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-red-100 dark:divide-red-900/30">
-                                        {managers.filter(m => !m.is_active).map((manager) => (
-                                            <tr key={manager.id} className="hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-900 dark:text-white">
-                                                        {manager.real_name || '管理者'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="text-sm font-mono text-slate-500">
-                                                        {manager.email || '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
-                                                        {manager.role}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">角色權限</label>
+                                        <select
+                                            value={editingManager.role}
+                                            onChange={(e) => setEditingManager({ ...editingManager, role: e.target.value })}
+                                            className="w-full px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-tcu-blue"
+                                        >
+                                            <option value="shop_owner">Shop Owner (車店老闆)</option>
+                                            <option value="team_coach">Team Coach (車隊教練)</option>
+                                            <option value="power_coach">Power Coach (功率教練)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Strava 綁定狀態</label>
+                                        <div className="flex items-center gap-2 h-[42px]">
+                                            {editingManager.athlete_id ? (
+                                                <>
+                                                    <span className="font-mono font-bold text-[#FC4C02]">
+                                                        ID: {editingManager.athlete_id}
                                                     </span>
-                                                </td>
-                                                <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
-                                                    {manager.shop_name || '-'}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (confirm(`確定要啟用 ${manager.real_name || manager.email} 嗎？`)) {
-                                                                    await handleUpdateManagerStatus(manager.id, true);
-                                                                }
-                                                            }}
-                                                            className="flex items-center gap-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                                                        >
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            核准啟用
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteManager(manager)}
-                                                            className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
-                                                            title="拒絕/刪除"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
-                                <tr>
-                                    <th className="px-6 py-4 rounded-l-xl">管理員姓名</th>
-                                    <th className="px-6 py-4">Email 帳號</th>
-                                    <th className="px-6 py-4">角色</th>
-                                    <th className="px-4 py-4">單位名稱</th>
-                                    <th className="px-6 py-4">已授權</th>
-                                    <th className="px-6 py-4">待授權</th>
-                                    <th className="px-6 py-4">狀態</th>
-                                    <th className="px-6 py-4 rounded-r-xl text-right">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {managers.filter(m =>
-                                (m.email?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
-                                    m.shop_name?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
-                                    String(m.athlete_id || '').includes(managerSearchTerm))
-                                ).map((manager) => (
-                                    <tr key={manager.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${!manager.is_active ? 'opacity-50 grayscale' : ''}`}>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900 dark:text-white">
-                                                {manager.real_name || '管理者'}
-                                                {!manager.is_active && <span className="ml-2 text-[10px] bg-slate-200 text-slate-500 px-1 rounded">停用中</span>}
-                                            </div>
-                                            <div className={`text-xs mt-0.5 font-bold ${manager.athlete_id ? 'text-[#FC4C02]' : 'text-slate-500'}`}>
-                                                Strava ID: {manager.athlete_id || '未綁定'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-mono text-tcu-blue dark:text-tcu-blue-light">
-                                                {manager.email || '-'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase
-                                                ${manager.role === 'shop_owner' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                                                    manager.role === 'team_coach' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
-                                                        manager.role === 'power_coach' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
-                                                            'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                                                {manager.role === 'shop_owner' ? 'Shop Owner' :
-                                                    manager.role === 'team_coach' ? 'Team Coach' :
-                                                        manager.role === 'power_coach' ? 'Power Coach' :
-                                                            manager.role}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
-                                            {manager.shop_name || '-'}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1 font-mono font-bold text-orange-500 bg-blue-500/20 px-2.5 py-1 rounded-lg w-fit border border-blue-500/30">
-                                                <Users className="w-3 h-3" />
-                                                {manager.authorizedCount || 0}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className={`flex items-center gap-1 font-mono font-bold px-2.5 py-1 rounded-lg w-fit border transition-all
-                                                ${(manager.pendingCount || 0) > 0
-                                                    ? 'text-orange-500 bg-orange-500/20 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]'
-                                                    : 'text-slate-500 bg-slate-500/10 border-slate-500/20 opacity-40'}`}>
-                                                <AlertCircle className="w-3 h-3" />
-                                                {manager.pendingCount || 0}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {manager.is_active ? (
-                                                <span className="flex items-center gap-1 text-emerald-500 text-xs font-bold">
-                                                    <CheckCircle2 className="w-3 h-3" />
-                                                    啟用中
-                                                </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleUnbindManagerStrava}
+                                                        className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold rounded-lg transition-colors"
+                                                    >
+                                                        解除綁定
+                                                    </button>
+                                                </>
                                             ) : (
-                                                <span className="flex items-center gap-1 text-red-500 text-xs font-bold">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    已停用
-                                                </span>
+                                                <span className="text-slate-400 text-sm italic">未綁定 Strava 帳號</span>
                                             )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={async () => {
-                                                        if (!manager.email) {
-                                                            alert('此帳號無 Email 資訊，無法重設密碼。');
-                                                            return;
-                                                        }
-
-                                                        // 1. 詢問新密碼
-                                                        const newPassword = prompt(`請為 ${manager.email} 輸入新的登入密碼：`);
-                                                        if (!newPassword || newPassword.trim().length < 6) {
-                                                            alert('密碼長度至少需 6 碼，操作已取消。');
-                                                            return;
-                                                        }
-
-                                                        if (!confirm(`確定要將密碼重設為「${newPassword}」嗎？`)) return;
-
-                                                        try {
-                                                            // 2. 呼叫 Webhook 重設密碼
-                                                            const response = await fetch('https://service.criterium.tw/webhook/reset-auth-password', {
-                                                                method: 'POST',
-                                                                headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({
-                                                                    email: manager.email,
-                                                                    password: newPassword
-                                                                })
-                                                            });
-
-                                                            if (response.ok) {
-                                                                alert('密碼重設成功！請通知使用者使用新密碼登入。');
-                                                            } else {
-                                                                throw new Error('Webhook 回傳錯誤');
-                                                            }
-                                                        } catch (err: any) {
-                                                            alert('重設失敗: ' + err.message);
-                                                        }
-                                                    }}
-                                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-500 transition-colors"
-                                                    title="重設密碼"
-                                                >
-                                                    <Lock className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEditManager(manager)}
-                                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
-                                                    title="編輯"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleUpdateManagerStatus(manager.id, !manager.is_active)}
-                                                    className={`p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ${manager.is_active ? 'text-slate-400 hover:text-orange-500' : 'text-slate-400 hover:text-emerald-500'
-                                                        }`}
-                                                    title={manager.is_active ? "停用" : "啟用"}
-                                                >
-                                                    {manager.is_active ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteManager(manager)}
-                                                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
-                                                    title="永久刪除"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {managers.length === 0 && (
-                            <div className="text-center py-12 text-slate-400">
-                                暫無管理員資料
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditingManager(null)}
+                                            className="px-4 py-2 rounded-lg text-slate-500 font-bold hover:bg-slate-200 transaction-colors"
+                                        >
+                                            取消
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-6 py-2 rounded-lg bg-tcu-blue text-white font-bold hover:brightness-110 transaction-colors shadow-lg shadow-tcu-blue/20"
+                                        >
+                                            儲存變更
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         )}
+
+                        {/* 待審核管理員列表 */}
+                        {managers.some(m => !m.is_active) && (
+                            <div className="mb-8">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                    </span>
+                                    <h4 className="text-lg font-bold text-red-500">待審核管理員 (Pending Approval)</h4>
+                                </div>
+                                <div className="overflow-x-auto bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-200 dark:border-red-900/30">
+                                    <table className="w-full text-left">
+                                        <thead className="text-red-400 uppercase text-xs font-bold">
+                                            <tr>
+                                                <th className="px-6 py-4">管理員姓名</th>
+                                                <th className="px-6 py-4">Email 帳號</th>
+                                                <th className="px-6 py-4">角色</th>
+                                                <th className="px-4 py-4">單位名稱</th>
+                                                <th className="px-6 py-4 text-right">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-red-100 dark:divide-red-900/30">
+                                            {managers.filter(m => !m.is_active).map((manager) => (
+                                                <tr key={manager.id} className="hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-slate-900 dark:text-white">
+                                                            {manager.real_name || '管理者'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm font-mono text-slate-500">
+                                                            {manager.email || '-'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                                            {manager.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
+                                                        {manager.shop_name || '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (confirm(`確定要啟用 ${manager.real_name || manager.email} 嗎？`)) {
+                                                                        await handleUpdateManagerStatus(manager.id, true);
+                                                                    }
+                                                                }}
+                                                                className="flex items-center gap-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                                                            >
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                核准啟用
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteManager(manager)}
+                                                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                                                                title="拒絕/刪除"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
+                                    <tr>
+                                        <th className="px-6 py-4 rounded-l-xl">管理員姓名</th>
+                                        <th className="px-6 py-4">Email 帳號</th>
+                                        <th className="px-6 py-4">角色</th>
+                                        <th className="px-4 py-4">單位名稱</th>
+                                        <th className="px-6 py-4">已授權</th>
+                                        <th className="px-6 py-4">待授權</th>
+                                        <th className="px-6 py-4">狀態</th>
+                                        <th className="px-6 py-4 rounded-r-xl text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {managers.filter(m =>
+                                    (m.email?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
+                                        m.shop_name?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
+                                        String(m.athlete_id || '').includes(managerSearchTerm))
+                                    ).map((manager) => (
+                                        <tr key={manager.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${!manager.is_active ? 'opacity-50 grayscale' : ''}`}>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900 dark:text-white">
+                                                    {manager.real_name || '管理者'}
+                                                    {!manager.is_active && <span className="ml-2 text-[10px] bg-slate-200 text-slate-500 px-1 rounded">停用中</span>}
+                                                </div>
+                                                <div className={`text-xs mt-0.5 font-bold ${manager.athlete_id ? 'text-[#FC4C02]' : 'text-slate-500'}`}>
+                                                    Strava ID: {manager.athlete_id || '未綁定'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-mono text-tcu-blue dark:text-tcu-blue-light">
+                                                    {manager.email || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase
+                                                ${manager.role === 'shop_owner' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                                                        manager.role === 'team_coach' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
+                                                            manager.role === 'power_coach' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
+                                                                'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                                    {manager.role === 'shop_owner' ? 'Shop Owner' :
+                                                        manager.role === 'team_coach' ? 'Team Coach' :
+                                                            manager.role === 'power_coach' ? 'Power Coach' :
+                                                                manager.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
+                                                {manager.shop_name || '-'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-1 font-mono font-bold text-orange-500 bg-blue-500/20 px-2.5 py-1 rounded-lg w-fit border border-blue-500/30">
+                                                    <Users className="w-3 h-3" />
+                                                    {manager.authorizedCount || 0}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className={`flex items-center gap-1 font-mono font-bold px-2.5 py-1 rounded-lg w-fit border transition-all
+                                                ${(manager.pendingCount || 0) > 0
+                                                        ? 'text-orange-500 bg-orange-500/20 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]'
+                                                        : 'text-slate-500 bg-slate-500/10 border-slate-500/20 opacity-40'}`}>
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    {manager.pendingCount || 0}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {manager.is_active ? (
+                                                    <span className="flex items-center gap-1 text-emerald-500 text-xs font-bold">
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        啟用中
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-red-500 text-xs font-bold">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        已停用
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!manager.email) {
+                                                                alert('此帳號無 Email 資訊，無法重設密碼。');
+                                                                return;
+                                                            }
+
+                                                            // 1. 詢問新密碼
+                                                            const newPassword = prompt(`請為 ${manager.email} 輸入新的登入密碼：`);
+                                                            if (!newPassword || newPassword.trim().length < 6) {
+                                                                alert('密碼長度至少需 6 碼，操作已取消。');
+                                                                return;
+                                                            }
+
+                                                            if (!confirm(`確定要將密碼重設為「${newPassword}」嗎？`)) return;
+
+                                                            try {
+                                                                // 2. 呼叫 Webhook 重設密碼
+                                                                const response = await fetch('https://service.criterium.tw/webhook/reset-auth-password', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        email: manager.email,
+                                                                        password: newPassword
+                                                                    })
+                                                                });
+
+                                                                if (response.ok) {
+                                                                    alert('密碼重設成功！請通知使用者使用新密碼登入。');
+                                                                } else {
+                                                                    throw new Error('Webhook 回傳錯誤');
+                                                                }
+                                                            } catch (err: any) {
+                                                                alert('重設失敗: ' + err.message);
+                                                            }
+                                                        }}
+                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-500 transition-colors"
+                                                        title="重設密碼"
+                                                    >
+                                                        <Lock className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleEditManager(manager)}
+                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
+                                                        title="編輯"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleUpdateManagerStatus(manager.id, !manager.is_active)}
+                                                        className={`p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ${manager.is_active ? 'text-slate-400 hover:text-orange-500' : 'text-slate-400 hover:text-emerald-500'
+                                                            }`}
+                                                        title={manager.is_active ? "停用" : "啟用"}
+                                                    >
+                                                        {manager.is_active ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteManager(manager)}
+                                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                                                        title="永久刪除"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {managers.length === 0 && (
+                                <div className="text-center py-12 text-slate-400">
+                                    暫無管理員資料
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
@@ -2325,8 +2417,8 @@ const AdminPanel: React.FC = () => {
                                     <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('lastActivityAt')}>
                                         最後活動 {tokenSortField === 'lastActivityAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('updatedAt')}>
-                                        最後登入 {tokenSortField === 'updatedAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('loginTime')}>
+                                        最後登入 {tokenSortField === 'loginTime' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                 </tr>
                             </thead>
@@ -2774,8 +2866,209 @@ const AdminPanel: React.FC = () => {
                         </div>
                     </div>
                 )}
+
+                {/* 廣告/公告管理 Tab */}
+                {activeTab === 'announcements' && (
+                    <div className="space-y-6 md:col-span-2">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-black">廣告公告清單</h3>
+                                <button
+                                    onClick={() => setEditingAnnouncement({ id: 'new', title: '', content: '', target_group: 'all', priority: 0, is_active: true, button_text: '立即參加' })}
+                                    className="flex items-center gap-2 px-6 py-2 bg-tcu-blue hover:bg-tcu-blue-light text-white font-bold rounded-xl transition-all shadow-lg shadow-tcu-blue/20"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    新增廣告
+                                </button>
+                            </div>
+
+                            {editingAnnouncement && (
+                                <div className="mb-8 p-8 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-tcu-blue border-dashed animate-in fade-in slide-in-from-top-4">
+                                    <h4 className="font-bold text-tcu-blue mb-4 flex items-center gap-2">
+                                        <Edit2 className="w-4 h-4" />
+                                        {editingAnnouncement.id === 'new' ? '新增廣告' : '編輯廣告'}
+                                    </h4>
+                                    <form onSubmit={handleSaveAnnouncement} className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="md:col-span-2">
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">廣告標題</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingAnnouncement.title}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, title: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">廣告內容</label>
+                                                <textarea
+                                                    value={editingAnnouncement.content}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, content: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue h-32"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">圖片 URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingAnnouncement.image_url || ''}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, image_url: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">目標對象</label>
+                                                <select
+                                                    value={editingAnnouncement.target_group}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, target_group: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue font-bold"
+                                                >
+                                                    <option value="all">所有會員 (All)</option>
+                                                    <option value="bound">僅限已綁定 (Bound only)</option>
+                                                    <option value="unbound">僅限未綁定 (Unbound only)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">按鈕文字</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingAnnouncement.button_text || ''}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, button_text: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    placeholder="了解更多"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">連結 URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingAnnouncement.button_url || ''}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, button_url: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">優先級 (數字大較前)</label>
+                                                <input
+                                                    type="number"
+                                                    value={editingAnnouncement.priority}
+                                                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, priority: e.target.value })}
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="isActive"
+                                                        checked={editingAnnouncement.is_active}
+                                                        onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, is_active: e.target.checked })}
+                                                        className="w-5 h-5 rounded border-slate-300 text-tcu-blue focus:ring-tcu-blue"
+                                                    />
+                                                    <label htmlFor="isActive" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">啟用公告</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingAnnouncement(null)}
+                                                className="px-6 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                            >
+                                                取消編輯
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={isSavingAnnouncement}
+                                                className="px-8 py-2 bg-tcu-blue text-white font-bold rounded-xl transition-all shadow-lg shadow-tcu-blue/20 hover:brightness-110 flex items-center gap-2"
+                                            >
+                                                {isSavingAnnouncement ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                                儲存公告
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
+                                        <tr>
+                                            <th className="px-6 py-4 rounded-l-xl">優先級</th>
+                                            <th className="px-6 py-4 text-center">狀態</th>
+                                            <th className="px-6 py-4">標題</th>
+                                            <th className="px-6 py-4">目標</th>
+                                            <th className="px-6 py-4">按鈕</th>
+                                            <th className="px-6 py-4 rounded-r-xl text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {announcements.map((item) => (
+                                            <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-6 py-4 font-mono font-bold text-slate-400 group-hover:text-tcu-blue transition-colors">
+                                                    {item.priority}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {item.is_active ? (
+                                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30" title="啟用中"></span>
+                                                    ) : (
+                                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" title="已停用"></span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-slate-900 dark:text-white truncate max-w-md">{item.title}</div>
+                                                    <div className="text-xs text-slate-500 truncate max-w-md mt-0.5">{item.content}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${item.target_group === 'bound' ? 'bg-blue-100 text-blue-600' :
+                                                        item.target_group === 'unbound' ? 'bg-orange-100 text-orange-600' :
+                                                            'bg-slate-100 text-slate-600'
+                                                        }`}>
+                                                        {item.target_group}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-xs font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600">
+                                                        {item.button_text}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <button
+                                                            onClick={() => setEditingAnnouncement(item)}
+                                                            className="p-2 hover:bg-tcu-blue/10 rounded-lg text-slate-400 hover:text-tcu-blue transition-all"
+                                                            title="編輯"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteAnnouncement(item.id)}
+                                                            className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-all"
+                                                            title="刪除"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {announcements.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-bold italic">
+                                                    目前沒有廣告公告
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
-        </div >
+        </div>
     );
 };
 

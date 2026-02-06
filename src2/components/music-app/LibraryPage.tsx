@@ -4,6 +4,7 @@ import { StatusBar } from './StatusBar';
 import { TabBar } from './TabBar';
 import { RaceCreationModal } from '../../../src/features/race/RaceCreationModal';
 import { supabase } from '../../../src/lib/supabase';
+import AnnouncementBanner from '../../../src/features/dashboard/AnnouncementBanner';
 
 const tabs = ['播放列表', '挑戰', '下載'];
 
@@ -119,6 +120,11 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
 
             {/* 可滾動內容區 */}
             <main className="flex-1 overflow-y-auto px-5 flex flex-col gap-6 pb-24 scrollbar-hide">
+                {/* Announcement Banner */}
+                <div className="-mx-5 -mb-6">
+                    <AnnouncementBanner />
+                </div>
+
                 {/* 我的比賽 - 只對車隊管理員顯示 */}
                 {isTeamManager && userRaces.length > 0 && (
                     <section>

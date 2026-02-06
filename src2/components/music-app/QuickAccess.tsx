@@ -22,7 +22,13 @@ interface QuickAccessProps {
     isBound?: boolean | null;
 }
 
+import { useMemberAuthorizations } from '../../../src/hooks/useMemberAuthorizations';
+import { useActiveAnnouncements } from '../../../src/hooks/useActiveAnnouncements';
+
 export function QuickAccess({ onItemClick, isBound }: QuickAccessProps) {
+    const { pendingAuthorizations } = useMemberAuthorizations();
+    const { hasActiveAnnouncements } = useActiveAnnouncements();
+    const hasNotifications = pendingAuthorizations.length > 0 || hasActiveAnnouncements;
     return (
         <div className="w-full">
             <div className="flex overflow-x-auto gap-3 px-5 pb-2 scrollbar-hide snap-x">
@@ -52,6 +58,9 @@ export function QuickAccess({ onItemClick, isBound }: QuickAccessProps) {
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl">
                                         <Lock size={14} className="text-white" />
                                     </div>
+                                )}
+                                {item.id === 'dashboard' && hasNotifications && (
+                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1a1a1a] animate-pulse z-10"></span>
                                 )}
                             </div>
                             <span className="text-white text-xs font-medium">{item.label}</span>

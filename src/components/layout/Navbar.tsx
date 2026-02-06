@@ -28,6 +28,7 @@ import { useFontSize, FontSize } from '../../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
+import { useActiveAnnouncements } from '../../hooks/useActiveAnnouncements';
 
 interface NavbarProps {
   currentView: ViewType;
@@ -59,7 +60,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const authWindowRef = useRef<Window | null>(null);
+
   const { pendingAuthorizations } = useMemberAuthorizations();
+  const { hasActiveAnnouncements } = useActiveAnnouncements();
 
   // 監聽 postMessage (確保 Navbar 也能收到)
   useEffect(() => {
@@ -225,7 +228,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               className={`relative text-[10px] xl:text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex items-center gap-1 whitespace-nowrap ${currentView === ViewType.DASHBOARD ? 'text-tcu-blue border-b-2 border-tcu-blue pb-1' : 'text-slate-400 hover:text-tcu-blue'}`}
             >
               {t('nav.dashboard')}
-              {pendingAuthorizations.length > 0 && (
+              {(pendingAuthorizations.length > 0 || hasActiveAnnouncements) && (
                 <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               )}
             </button>
@@ -417,7 +420,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               <LayoutDashboard className="w-5 h-5 mr-3" />
               {t('nav.dashboard')}
-              {pendingAuthorizations.length > 0 && (
+              {t('nav.dashboard')}
+              {(pendingAuthorizations.length > 0 || hasActiveAnnouncements) && (
                 <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               )}
             </button>
