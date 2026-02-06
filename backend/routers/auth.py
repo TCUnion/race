@@ -69,23 +69,23 @@ def strava_callback(code: str, scope: str = ""):
         athlete = res_data.get("athlete", {})
         athlete_id = athlete.get("id")
         
-        if not refresh_token:
-            print(f"[ERROR] No refresh_token received for athlete {athlete_id}")
-
-        # Upsert Token immediately to ensure backend has it
-        try:
-           data = {
-                "athlete_id": athlete_id,
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "expires_at": expires_at,
-                "name": f"{athlete.get('firstname')} {athlete.get('lastname')}".strip(),
-                "profile": athlete.get("profile"),
-                "login_time": datetime.now(timezone.utc).isoformat()
-            }
-           supabase.table("strava_tokens").upsert(data).execute()
-        except Exception as e:
-           print(f"[WARN] Failed to save token in callback (Frontend should retry): {e}")
+        if access_token and refresh_token:
+            # Upsert Token immediately to ensure backend has it
+            try:
+                data = {
+                    "athlete_id": athlete_id,
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "expires_at": expires_at,
+                    "name": f"{athlete.get('firstname', '')} {athlete.get('lastname', '')}".strip(),
+                    "profile": athlete.get("profile"),
+                    "login_time": datetime.now(timezone.utc).isoformat()
+                }
+                supabase.table("strava_tokens").upsert(data).execute()
+            except Exception as e:
+                print(f"[WARN] Failed to save token in callback: {e}")
+        else:
+            print(f"[ERROR] Received incomplete tokens: access={bool(access_token)}, refresh={bool(refresh_token)}")
 
         # Return HTML to close popup and pass data
         html_content = f"""
@@ -122,8 +122,13 @@ def strava_callback(code: str, scope: str = ""):
         return HTMLResponse(content=f"<h1>Error processing callback: {str(e)}</h1>", status_code=500)
 
 @router.post("/strava-token")
-def save_strava_token(req: StravaTokenRequest):
     try:
+        # 強制驗證重要欄位，防止 "undefined" 字串或空值進入資料庫
+        if not req.access_token or req.access_token == "undefined" or \
+           not req.refresh_token or req.refresh_token == "undefined":
+            print(f"[ERROR] Rejecting invalid token save request for athlete {req.athlete_id}")
+            return {"status": "ignored", "reason": "invalid_tokens"}
+
         data = {
             "athlete_id": req.athlete_id,
             "access_token": req.access_token,
@@ -139,7 +144,7 @@ def save_strava_token(req: StravaTokenRequest):
             data["user_id"] = req.user_id
             
         # 使用 upsert
-        response = supabase.table("strava_tokens").upsert(data).execute()
+        supabase.table("strava_tokens").upsert(data).execute()
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
