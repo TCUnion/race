@@ -240,7 +240,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       try {
         const { data, error } = await supabase
-          .from('segment_efforts')
+          .from('segment_efforts_v2')
           .select('*')
           .eq('athlete_id', athlete.id)
           .eq('segment_id', currentSegmentId)

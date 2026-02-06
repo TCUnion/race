@@ -1958,9 +1958,8 @@ const AdminPanel: React.FC = () => {
                                         type="text"
                                         value={editingSegment.link || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, link: e.target.value })}
-                                        className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
                                         placeholder="https://..."
-                                        readOnly={editingSegment.id !== 'new'}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -2114,7 +2113,10 @@ const AdminPanel: React.FC = () => {
                                                                 <Database className="w-4 h-4" />
                                                             </button>
                                                             <button
-                                                                onClick={() => setEditingSegment(seg)}
+                                                                onClick={() => setEditingSegment({
+                                                                    ...seg,
+                                                                    link: seg.link || `https://www.strava.com/segments/${seg.id}`
+                                                                })}
                                                                 className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
                                                                 title="編輯路段"
                                                             >
