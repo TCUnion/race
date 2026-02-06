@@ -139,8 +139,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (err) {
             console.error('Failed to check admin status', err);
             setIsAdmin(false);
-        } finally {
-            setIsLoading(false);
         }
     }, []);
 
@@ -163,23 +161,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [athlete?.id, checkBindingStatus]);
 
     useEffect(() => {
-        const loaded = loadAthleteFromStorage();
-        if (loaded) {
-            checkBindingStatus(Number(loaded.id));
-            checkAdminStatus(Number(loaded.id));
-            syncToken(loaded);
-        } else {
-            setIsLoading(false);
-        }
-
-        const handleAuthChange = () => {
+        const handleAuthChange = async () => {
             const current = loadAthleteFromStorage();
             if (current) {
-                checkBindingStatus(Number(current.id));
-                checkAdminStatus(Number(current.id));
+                setIsLoading(true);
+                const aid = Number(current.id);
+                try {
+                    // 同步執行 binding 和 admin 檢查
+                    await Promise.all([
+                        checkBindingStatus(aid),
+                        checkAdminStatus(aid)
+                    ]);
+                } finally {
+                    setIsLoading(false);
+                }
+                // 背景同步 token
                 syncToken(current);
+            } else {
+                setIsLoading(false);
             }
         };
+
+        // 初始載入
+        handleAuthChange();
 
         window.addEventListener(AUTH_EVENT, handleAuthChange);
         window.addEventListener('storage', handleAuthChange);

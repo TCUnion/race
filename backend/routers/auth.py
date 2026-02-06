@@ -122,6 +122,7 @@ def strava_callback(code: str, scope: str = ""):
         return HTMLResponse(content=f"<h1>Error processing callback: {str(e)}</h1>", status_code=500)
 
 @router.post("/strava-token")
+def save_strava_token(req: StravaTokenRequest):
     try:
         # 強制驗證重要欄位，防止 "undefined" 字串或空值進入資料庫
         if not req.access_token or req.access_token == "undefined" or \
