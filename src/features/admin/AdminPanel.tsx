@@ -1096,8 +1096,49 @@ const AdminPanel: React.FC = () => {
                 });
             }
 
+            // 4. [NEW] 抓取每個 athlete 的 strava_activities 數量
+            const { data: activitiesCounts, error: actError } = await supabase
+                .from('strava_activities')
+                .select('athlete_id');
 
-            // 4. 合併資料 - 改為以 strava_tokens 為主，確保顯示所有權杖
+            const activitiesCountMap = new Map<string, number>();
+            if (!actError && activitiesCounts) {
+                activitiesCounts.forEach(a => {
+                    const id = a.athlete_id?.toString();
+                    if (id) {
+                        activitiesCountMap.set(id, (activitiesCountMap.get(id) || 0) + 1);
+                    }
+                });
+            }
+
+            // 5. [NEW] 抓取已同步 strava_streams 的數量 (透過 activity_id 關聯)
+            const { data: streamsCounts, error: streamError } = await supabase
+                .from('strava_streams')
+                .select('activity_id');
+
+            // 需要先取得 activity_id 對應的 athlete_id
+            const { data: activitiesForStreams, error: actForStreamError } = await supabase
+                .from('strava_activities')
+                .select('id, athlete_id');
+
+            const activityToAthleteMap = new Map<string, string>();
+            if (!actForStreamError && activitiesForStreams) {
+                activitiesForStreams.forEach(a => {
+                    activityToAthleteMap.set(a.id?.toString(), a.athlete_id?.toString());
+                });
+            }
+
+            const streamsCountMap = new Map<string, number>();
+            if (!streamError && streamsCounts) {
+                streamsCounts.forEach(s => {
+                    const athleteId = activityToAthleteMap.get(s.activity_id?.toString());
+                    if (athleteId) {
+                        streamsCountMap.set(athleteId, (streamsCountMap.get(athleteId) || 0) + 1);
+                    }
+                });
+            }
+
+            // 6. 合併資料 - 改為以 strava_tokens 為主，確保顯示所有權杖
             // 建立所有獨特的 IDSet (聯集)
             const allIds = new Set<string>();
             (athletes || []).forEach(a => allIds.add(a.id.toString()));
@@ -1126,6 +1167,8 @@ const AdminPanel: React.FC = () => {
                     isBound: boundSet.has(id),
                     hasToken: !!token,
                     hasValidToken: hasValidToken, // [NEW] Token 有效性標記
+                    activitiesCount: activitiesCountMap.get(id) || 0, // [NEW] 活動數量
+                    streamsCount: streamsCountMap.get(id) || 0, // [NEW] 已同步串流數量
                     // @ts-ignore
                     lastActivityAt: token?.last_activity_at || null,
                     // @ts-ignore
@@ -2418,6 +2461,12 @@ const AdminPanel: React.FC = () => {
                                     <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('createdAt')}>
                                         建立日期 {tokenSortField === 'createdAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors text-center" onClick={() => toggleTokenSort('activitiesCount')}>
+                                        活動數 {tokenSortField === 'activitiesCount' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors text-center" onClick={() => toggleTokenSort('streamsCount')}>
+                                        串流數 {tokenSortField === 'streamsCount' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                    </th>
                                     <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('expires_at')}>
                                         過期時間 {tokenSortField === 'expires_at' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
@@ -2456,6 +2505,16 @@ const AdminPanel: React.FC = () => {
                                             <td className="px-4 py-3 font-bold">{token.name}</td>
                                             <td className="px-4 py-3 text-slate-500">
                                                 {token.createdAt ? new Date(token.createdAt).toLocaleDateString('zh-TW') : '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`font-mono font-bold ${token.activitiesCount > 0 ? 'text-tcu-blue' : 'text-slate-400'}`}>
+                                                    {token.activitiesCount.toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`font-mono font-bold ${token.streamsCount > 0 ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                                    {token.streamsCount.toLocaleString()}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3 text-xs">
                                                 <span className={getExpiryColor(token.expires_at)}>
