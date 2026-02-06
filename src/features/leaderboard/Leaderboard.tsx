@@ -93,7 +93,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
           <div className={`flex items-start gap-3 sm:gap-4 border-l-4 sm:border-l-8 ${barColor} pl-3 sm:pl-6 w-full`}>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter font-display break-words leading-tight">
-                {segment.name}
+                {segment.description || segment.name}
               </h2>
               <div className="flex flex-wrap items-center gap-y-1 gap-x-2 sm:gap-x-3 mt-1">
                 <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
