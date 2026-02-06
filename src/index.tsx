@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
 import { FontSizeProvider } from './hooks/useFontSize';
+import { AuthProvider } from './contexts/AuthContext';
 import './lib/i18n';
 import './index.css';
 import '../src2/index.css'; // 確保 V2 的樣式也被載入
@@ -83,12 +84,14 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ThemeProvider>
-      <FontSizeProvider>
-        <ErrorBoundary>
-          <ResponsiveAppLoader />
-        </ErrorBoundary>
-      </FontSizeProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <FontSizeProvider>
+          <ErrorBoundary>
+            <ResponsiveAppLoader />
+          </ErrorBoundary>
+        </FontSizeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

@@ -1,8 +1,8 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import AdminPanel from './features/admin/AdminPanel';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import { AuthProvider } from './contexts/AuthContext';
 import './lib/i18n';
 import './index.css';
 
@@ -14,8 +14,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
     <React.StrictMode>
-        <ErrorBoundary>
-            <AdminPanel />
-        </ErrorBoundary>
+        <AuthProvider>
+            <ErrorBoundary>
+                <AdminPanel />
+            </ErrorBoundary>
+        </AuthProvider>
     </React.StrictMode>
 );

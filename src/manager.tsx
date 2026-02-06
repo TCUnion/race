@@ -4,6 +4,7 @@ import ManagerDashboard from './features/manager/ManagerDashboard';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { ThemeProvider } from './hooks/useTheme';
 import { FontSizeProvider } from './hooks/useFontSize';
+import { AuthProvider } from './contexts/AuthContext';
 import './lib/i18n';
 import './index.css';
 
@@ -19,9 +20,6 @@ if (!rootElement) {
 
     // Only intercept if we have the specific parameter 'athlete' which indicates a Strava callback
     if (athleteParam) {
-        // DEBUG: Alert user to confirm script is running
-        // alert('Debug: Manager Entry intercepted Strava callback. Processing...');
-
         try {
             // Verify it's valid JSON
             JSON.parse(athleteParam);
@@ -66,14 +64,16 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
     <React.StrictMode>
-        <ThemeProvider>
-            <FontSizeProvider>
-                <ErrorBoundary>
-                    <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                        <ManagerDashboard />
-                    </React.Suspense>
-                </ErrorBoundary>
-            </FontSizeProvider>
-        </ThemeProvider>
+        <AuthProvider>
+            <ThemeProvider>
+                <FontSizeProvider>
+                    <ErrorBoundary>
+                        <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <ManagerDashboard />
+                        </React.Suspense>
+                    </ErrorBoundary>
+                </FontSizeProvider>
+            </ThemeProvider>
+        </AuthProvider>
     </React.StrictMode>
 );
