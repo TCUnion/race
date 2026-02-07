@@ -235,11 +235,31 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             if (viewError) throw viewError;
 
-            // 建立 TCU 會員查找表
+            // 建立已報名清單與 TCU 會員查找表
+            const registeredSet = new Set<string>(); // key: `${segmentId}_${athleteId}`
             const tcuMap = new Map<string, string>(); // key: `${segmentId}_${athleteId}`, value: tcu_id
+            const athleteIdsToCheck = new Set<number>();
+
             if (regData) {
                 regData.forEach(r => {
-                    tcuMap.set(`${r.segment_id}_${r.strava_athlete_id}`, r.tcu_id);
+                    const key = `${r.segment_id}_${r.strava_athlete_id}`;
+                    registeredSet.add(key);
+                    if (r.tcu_id) tcuMap.set(key, r.tcu_id);
+                    athleteIdsToCheck.add(r.strava_athlete_id);
+                });
+            }
+
+            // 3. 查詢 Athletes 表取得 Strava 真實姓名
+            const { data: athletesData } = await supabase
+                .from('athletes')
+                .select('id, firstname, lastname')
+                .in('id', Array.from(athleteIdsToCheck));
+
+            const athleteNameMap = new Map<number, string>();
+            if (athletesData) {
+                athletesData.forEach(a => {
+                    const fullName = [a.firstname, a.lastname].filter(Boolean).join(' ');
+                    athleteNameMap.set(a.id, fullName);
                 });
             }
 
@@ -248,8 +268,11 @@ export const useSegmentData = (): UseSegmentDataReturn => {
 
             // 3. 整理資料
             activeSegments.forEach(seg => {
-                // 篩選出該路段的資料
-                const segmentEntries = (leaderboardData || []).filter(row => Number(row.segment_id) === Number(seg.id));
+                // 篩選出該路段的資料，並且必須已報名
+                const segmentEntries = (leaderboardData || []).filter(row => {
+                    return Number(row.segment_id) === Number(seg.id) &&
+                        registeredSet.has(`${row.segment_id}_${row.athlete_id}`);
+                });
 
                 // 轉換格式
                 const ranked: LeaderboardEntry[] = segmentEntries.map((row, index) => {
@@ -260,7 +283,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     return {
                         rank: index + 1,
                         athlete_id: aid,
-                        name: row.athlete_name || `選手 ${aid}`,
+                        name: athleteNameMap.get(aid) || row.athlete_name || `選手 ${aid}`,
                         profile_medium: row.profile_medium || row.profile || "", // 優先使用中尺寸，fallback 到大圖
                         profile: row.profile || "",
                         team: row.team || "",
