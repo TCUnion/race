@@ -151,7 +151,7 @@ const TeamDashboard: React.FC = () => {
                     distance: fetchedSegment?.distance,
                     average_grade: fetchedSegment?.average_grade,
                     elevation_gain: fetchedSegment?.total_elevation_gain || fetchedSegment?.elevation_gain,
-                    polyline: fetchedSegment?.map?.polyline || fetchedSegment?.polyline
+                    polyline: typeof fetchedSegment?.map === 'string' ? fetchedSegment.map : (fetchedSegment?.map?.polyline || fetchedSegment?.polyline)
                 })
             });
 
