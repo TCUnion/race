@@ -234,7 +234,8 @@ async def create_team_race(request: Request):
             "created_by": strava_id,
             "distance": distance,
             "average_grade": average_grade,
-            "elevation_gain": elevation_gain
+            "elevation_gain": elevation_gain,
+            "polyline": body.get("polyline")
         }
         
         res = supabase.table("team_races").insert(data).execute()

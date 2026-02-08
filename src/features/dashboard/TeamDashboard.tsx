@@ -4,6 +4,7 @@ import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
+import SegmentMap from '../map/SegmentMap';
 const CaptainWarRoom = React.lazy(() => import('./CaptainWarRoom'));
 
 const TeamDashboard: React.FC = () => {
@@ -149,7 +150,8 @@ const TeamDashboard: React.FC = () => {
                     // 包含路段統計資料
                     distance: fetchedSegment?.distance,
                     average_grade: fetchedSegment?.average_grade,
-                    elevation_gain: fetchedSegment?.total_elevation_gain || fetchedSegment?.elevation_gain
+                    elevation_gain: fetchedSegment?.total_elevation_gain || fetchedSegment?.elevation_gain,
+                    polyline: fetchedSegment?.map?.polyline || fetchedSegment?.polyline
                 })
             });
 
@@ -655,8 +657,14 @@ const TeamDashboard: React.FC = () => {
                                         </div>
                                     )}
 
+                                    {/* Map Preview */}
+                                    <div className="relative h-40 overflow-hidden bg-slate-800/50">
+                                        <SegmentMap polyline={race.polyline} className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent pointer-events-none" />
+                                    </div>
+
                                     {/* 內容區 */}
-                                    <div className="p-5 space-y-4">
+                                    <div className="p-5 space-y-4 relative">
                                         {/* 標題 */}
                                         <h3 className="text-xl font-black text-white tracking-tight line-clamp-1 group-hover:text-strava-orange transition-colors">
                                             {race.name}
