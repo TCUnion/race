@@ -207,13 +207,18 @@ async def create_team_race(request: Request):
         if member.get("team") != team_name:
             raise HTTPException(status_code=403, detail="您不屬於此車隊")
         
-        # 4. 驗證是否有管理權限
+        # 4. 驗證是否為隊長（只有隊長可以建立賽事）
         member_type = member.get("member_type") or ""
-        is_admin = any(role in member_type for role in ["付費車隊管理員", "隊長", "管理員"])
-        if not is_admin:
-            raise HTTPException(status_code=403, detail="您沒有建立賽事的權限")
+        is_captain = "隊長" in member_type
+        if not is_captain:
+            raise HTTPException(status_code=403, detail="只有隊長可以建立賽事")
         
-        # 5. 建立賽事資料
+        # 5. 檢查是否已有進行中的賽事（一個車隊只能有一個賽事）
+        existing_race = supabase.table("team_races").select("id").eq("team_name", team_name).eq("is_active", True).execute()
+        if existing_race.data and len(existing_race.data) > 0:
+            raise HTTPException(status_code=400, detail="車隊已有進行中的賽事，請先結束現有賽事")
+        
+        # 6. 建立賽事資料
         data = {
             "team_name": team_name,
             "segment_id": int(segment_id),

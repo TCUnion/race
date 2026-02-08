@@ -24,6 +24,8 @@ const MAINTENANCE_ITEM_TRANSLATIONS: Record<string, string> = {
   'bartape': '把手帶',
   'cables': '線材',
   'bearing': '培林/軸承',
+  'bottom_bracket': 'BB保養更換',
+  'di2_charging': '電變充電',
 };
 
 const MaintenanceTable: React.FC<MaintenanceTableProps> = ({

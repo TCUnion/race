@@ -227,11 +227,12 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 .in('segment_id', segmentIds)
                 .order('best_time', { ascending: true }); // View 雖然有預設排序，但這裡再排一次保險
 
-            // 2. 額外查詢 Registrations 以取得 tcu_id (判斷是否為會員) - 若 View 後續補上此欄位可省略
+            // 2. 額外查詢 Registrations 以取得 tcu_id (判斷是否為會員)
             const { data: regData } = await supabase
                 .from('registrations')
                 .select('segment_id, strava_athlete_id, tcu_id')
-                .in('segment_id', segmentIds);
+                .in('segment_id', segmentIds)
+                .eq('status', 'approved');
 
             if (viewError) throw viewError;
 
