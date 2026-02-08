@@ -19,6 +19,7 @@ const MaintenanceDashboard = React.lazy(() => import('./features/maintenance/Mai
 const ACPowerTraining = React.lazy(() => import('./features/dashboard/ACPowerTraining'));
 const TeamDashboard = React.lazy(() => import('./features/dashboard/TeamDashboard'));
 const SettingsPage = React.lazy(() => import('./features/settings/SettingsPage'));
+const RacePage = React.lazy(() => import('./features/race/RacePage'));
 
 // Suspense Fallback 組件
 const PageLoader = () => (
@@ -41,6 +42,8 @@ const App: React.FC = () => {
         return <Dashboard onNavigate={setCurrentView} />;
       case ViewType.LEADERBOARD:
         return <Leaderboard />;
+      case ViewType.RACE:
+        return <RacePage />;
       case ViewType.ADMIN:
         if (isLoading) {
           return (

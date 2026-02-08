@@ -9,7 +9,7 @@ interface TabBarProps {
 
 const tabs = [
     { id: 'home', label: '探索', icon: Home },
-    { id: 'library', label: '比賽', icon: LayoutDashboard },
+    { id: 'library', label: '挑戰', icon: LayoutDashboard },
     { id: 'search', label: '搜尋', icon: Search },
     { id: 'settings', label: '設定', icon: Settings },
 ];
