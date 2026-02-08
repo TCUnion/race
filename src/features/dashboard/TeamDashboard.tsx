@@ -483,22 +483,24 @@ const TeamDashboard: React.FC = () => {
                                 {/* Step 1: 輸入 Segment ID */}
                                 {raceCreationStep === 'input_id' && (
                                     <div>
-                                        <h3 className="font-bold text-lg mb-4">建立新賽事 - 步驟 1/2</h3>
-                                        <p className="text-sm text-slate-500 mb-4">輸入 Strava 路段 ID，系統會自動取得路段資訊</p>
-                                        <div className="flex gap-3">
+                                        <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">建立新賽事 - 步驟 1/2</h3>
+                                        <p className="text-sm text-slate-700 dark:text-slate-400 mb-4">輸入 Strava 路段 ID，系統會自動取得路段資訊</p>
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <input
-                                                type="text"
+                                                type="number"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 placeholder="Strava Segment ID (例如: 12345678)"
                                                 value={segmentIdInput}
-                                                onChange={e => setSegmentIdInput(e.target.value)}
-                                                className="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                                                onChange={e => setSegmentIdInput(e.target.value.replace(/\D/g, ''))}
+                                                className="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                 disabled={fetchingSegment}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={handleFetchSegment}
                                                 disabled={fetchingSegment}
-                                                className="px-6 py-3 bg-tcu-blue text-white rounded-xl font-bold hover:bg-tcu-blue-dark disabled:opacity-50 flex items-center gap-2"
+                                                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap"
                                             >
                                                 {fetchingSegment ? (
                                                     <>
@@ -517,7 +519,7 @@ const TeamDashboard: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleCancelCreateRace}
-                                                className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
+                                                className="px-4 py-2 text-slate-700 dark:text-slate-400 font-bold hover:text-slate-900 dark:hover:text-slate-200"
                                             >
                                                 取消
                                             </button>
@@ -528,7 +530,7 @@ const TeamDashboard: React.FC = () => {
                                 {/* Step 2: 確認路段資訊並設定日期 */}
                                 {raceCreationStep === 'confirm' && fetchedSegment && (
                                     <form onSubmit={handleCreateRace}>
-                                        <h3 className="font-bold text-lg mb-4">建立新賽事 - 步驟 2/2</h3>
+                                        <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">建立新賽事 - 步驟 2/2</h3>
 
                                         {/* 路段資訊預覽 */}
                                         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 mb-4 border border-slate-200 dark:border-slate-700">
@@ -543,16 +545,16 @@ const TeamDashboard: React.FC = () => {
                                             </div>
                                             <div className="grid grid-cols-3 gap-4 text-sm">
                                                 <div>
-                                                    <span className="text-slate-500">距離</span>
-                                                    <p className="font-bold">{((fetchedSegment.distance || 0) / 1000).toFixed(2)} km</p>
+                                                    <span className="text-slate-600 dark:text-slate-400">距離</span>
+                                                    <p className="font-bold text-slate-900 dark:text-white">{((fetchedSegment.distance || 0) / 1000).toFixed(2)} km</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-500">爬升</span>
-                                                    <p className="font-bold">{fetchedSegment.total_elevation_gain || fetchedSegment.elevation_gain || 0} m</p>
+                                                    <span className="text-slate-600 dark:text-slate-400">爬升</span>
+                                                    <p className="font-bold text-slate-900 dark:text-white">{fetchedSegment.total_elevation_gain || fetchedSegment.elevation_gain || 0} m</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-500">平均坡度</span>
-                                                    <p className="font-bold">{fetchedSegment.average_grade || 0}%</p>
+                                                    <span className="text-slate-600 dark:text-slate-400">平均坡度</span>
+                                                    <p className="font-bold text-slate-900 dark:text-white">{fetchedSegment.average_grade || 0}%</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -560,56 +562,56 @@ const TeamDashboard: React.FC = () => {
                                         {/* 賽事設定 */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">賽事名稱</label>
+                                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">賽事名稱</label>
                                                 <input
                                                     type="text"
                                                     value={newRace.name}
                                                     onChange={e => setNewRace({ ...newRace, name: e.target.value })}
-                                                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
+                                                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
                                                     required
                                                 />
                                             </div>
                                             <div></div>
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">開始時間</label>
+                                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">開始時間</label>
                                                 <input
                                                     type="datetime-local"
                                                     value={newRace.start_date}
                                                     onChange={e => setNewRace({ ...newRace, start_date: e.target.value })}
-                                                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
+                                                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
                                                     required
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">結束時間</label>
+                                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">結束時間</label>
                                                 <input
                                                     type="datetime-local"
                                                     value={newRace.end_date}
                                                     onChange={e => setNewRace({ ...newRace, end_date: e.target.value })}
-                                                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
+                                                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
                                                     required
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2 justify-end mt-4">
+                                        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end mt-4">
                                             <button
                                                 type="button"
                                                 onClick={() => setRaceCreationStep('input_id')}
-                                                className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
+                                                className="w-full sm:w-auto px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
                                             >
                                                 返回
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={handleCancelCreateRace}
-                                                className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
+                                                className="w-full sm:w-auto px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
                                             >
                                                 取消
                                             </button>
                                             <button
                                                 type="submit"
-                                                className="px-6 py-2 bg-tcu-blue text-white rounded-xl font-bold hover:bg-tcu-blue-dark"
+                                                className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700"
                                             >
                                                 建立賽事
                                             </button>

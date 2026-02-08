@@ -263,7 +263,7 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
                     {/* Modal Header with Back Button */}
                     <div className="relative">
                         {/* Map Header */}
-                        <div className="h-40 relative overflow-hidden">
+                        <div className="h-80 relative overflow-hidden">
                             {selectedRace.polyline ? (
                                 <SegmentMap polyline={selectedRace.polyline} className="w-full h-full" minimal={true} />
                             ) : (
@@ -327,16 +327,21 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
                         ) : (
                             <div className="divide-y divide-slate-800/50">
                                 {(showAllEntries ? leaderboard : leaderboard.slice(0, 10)).map((entry) => (
-                                    <div key={entry.athlete_id} className="flex items-center gap-3 px-4 py-3 active:bg-slate-800/30">
+                                    <div key={entry.athlete_id} className={`flex items-center gap-2 sm:gap-3 px-4 py-3 active:bg-slate-800/30 ${entry.rank === 1 ? 'bg-gradient-to-r from-yellow-500/10 to-transparent' : ''}`}>
                                         {/* 排名 */}
-                                        {getRankDisplay(entry.rank)}
+                                        <div className="w-5 text-center flex-shrink-0">
+                                            <span className={`text-sm font-black italic ${entry.rank === 1 ? 'text-yellow-500' : entry.rank === 2 ? 'text-gray-400' : entry.rank === 3 ? 'text-amber-600' : 'text-white/30'}`}>
+                                                {entry.rank}
+                                            </span>
+                                        </div>
 
                                         {/* 頭像 */}
-                                        <div className="relative">
+                                        <div className="relative flex-shrink-0">
                                             <img
                                                 src={entry.profile_medium || '/placeholder-avatar.png'}
                                                 alt=""
-                                                className="w-10 h-10 rounded-full object-cover border-2 border-slate-700"
+                                                referrerPolicy="no-referrer"
+                                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-white/10"
                                             />
                                             {entry.is_tcu && (
                                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center border border-bg">
@@ -346,18 +351,27 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
                                         </div>
 
                                         {/* 名稱 */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-white font-medium text-sm truncate">{entry.name}</div>
-                                            {entry.team && (
-                                                <div className="text-slate-500 text-xs truncate">{entry.team}</div>
-                                            )}
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                            <div className="text-white font-bold text-xs sm:text-sm truncate">{entry.name}</div>
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                                <span className="text-white/40 text-[9px] sm:text-[10px] uppercase font-medium whitespace-nowrap">{entry.team || '個人'}</span>
+                                                {entry.attempt_count !== undefined && entry.attempt_count > 0 && (
+                                                    <span className="text-white/30 text-[9px] sm:text-[10px] whitespace-nowrap">· 挑戰{entry.attempt_count}次</span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* 最佳成績與日期 */}
-                                        <div className="text-right min-w-[60px]">
-                                            <div className="text-white font-mono font-bold text-sm">{formatTime(entry.best_time)}</div>
-                                            <div className="text-slate-500 text-[10px]">
-                                                {entry.achieved_at ? new Date(entry.achieved_at).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) : '--'}
+                                        <div className="text-right flex-shrink-0">
+                                            <div className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold whitespace-nowrap">最佳完成時間</div>
+                                            <div className="text-white font-mono font-bold text-xs sm:text-sm whitespace-nowrap">{formatTime(entry.best_time)}</div>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <span className="text-white/40 text-[9px] sm:text-[10px] whitespace-nowrap">
+                                                    {entry.achieved_at ? new Date(entry.achieved_at).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) : '--'}
+                                                </span>
+                                                {entry.average_watts && (
+                                                    <span className="text-primary text-[9px] sm:text-[10px] font-bold whitespace-nowrap">{entry.average_watts}W</span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -368,9 +382,9 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="p-1.5 rounded-lg bg-strava-orange/10 text-strava-orange active:scale-95"
+                                                className="p-1 sm:p-1.5 rounded-lg bg-primary/10 text-primary active:scale-95 flex-shrink-0"
                                             >
-                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                             </a>
                                         )}
                                     </div>

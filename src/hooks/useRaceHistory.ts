@@ -33,6 +33,7 @@ export interface RaceLeaderboardEntry {
     achieved_at?: string;
     activity_id?: number;
     attempt_count: number;
+    average_watts?: number;
     is_tcu?: boolean;
 }
 
@@ -235,6 +236,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                 achieved_at: row.achieved_at,
                 activity_id: row.activity_id,
                 attempt_count: attemptMap.get(row.athlete_id) || 0,
+                average_watts: row.power,
                 is_tcu: tcuSet.has(row.athlete_id),
             }));
 
