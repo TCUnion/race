@@ -176,6 +176,11 @@ async def create_team_race(request: Request):
         start_date = body.get("start_date")  # ISO String
         end_date = body.get("end_date")      # ISO String
         
+        # 路段統計資料（從前端傳入）
+        distance = body.get("distance")
+        average_grade = body.get("average_grade")
+        elevation_gain = body.get("elevation_gain")
+        
         if not all([strava_id, team_name, segment_id, start_date, end_date]):
             raise HTTPException(status_code=400, detail="缺少必要參數")
         
@@ -218,7 +223,7 @@ async def create_team_race(request: Request):
         if existing_race.data and len(existing_race.data) > 0:
             raise HTTPException(status_code=400, detail="車隊已有進行中的賽事，請先結束現有賽事")
         
-        # 6. 建立賽事資料
+        # 6. 建立賽事資料（包含路段統計）
         data = {
             "team_name": team_name,
             "segment_id": int(segment_id),
@@ -226,7 +231,10 @@ async def create_team_race(request: Request):
             "start_date": start_date,
             "end_date": end_date,
             "is_active": True,
-            "created_by": strava_id
+            "created_by": strava_id,
+            "distance": distance,
+            "average_grade": average_grade,
+            "elevation_gain": elevation_gain
         }
         
         res = supabase.table("team_races").insert(data).execute()
