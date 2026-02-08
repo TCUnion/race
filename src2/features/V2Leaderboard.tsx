@@ -1,7 +1,8 @@
 import React, { useState, useEffect, TouchEvent } from 'react';
-import { ChevronLeft, Filter, ChevronRight, Crown } from 'lucide-react';
+import { ChevronLeft, Filter, ChevronRight, Crown, Users } from 'lucide-react';
 import { useSegmentData, formatTime } from '../../src/hooks/useSegmentData';
 import { StatusBar } from '../components/music-app/StatusBar';
+import { getTeamColor } from '../../src/utils/teamColors';
 
 interface V2LeaderboardProps {
     onBack: () => void;
@@ -156,8 +157,19 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-1">
-                                <div className="px-2 py-1 rounded-lg" style={{ backgroundColor: currentColor }}>
-                                    <span className="text-white text-[10px] font-black italic">RANKING</span>
+                                <div className="flex items-center gap-2">
+                                    {currentSegment.team && (
+                                        <div
+                                            className="px-2 py-1 rounded-lg flex items-center gap-1"
+                                            style={{ backgroundColor: getTeamColor(currentSegment.team) }}
+                                        >
+                                            <Users className="w-2.5 h-2.5 text-white" />
+                                            <span className="text-white text-[10px] font-black">{currentSegment.team}</span>
+                                        </div>
+                                    )}
+                                    <div className="px-2 py-1 rounded-lg" style={{ backgroundColor: currentColor }}>
+                                        <span className="text-white text-[10px] font-black italic">RANKING</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -180,9 +180,20 @@ const TeamDashboard: React.FC = () => {
         }
     };
 
-    // 刪除賽事
-    const handleDeleteRace = async (raceId: number) => {
-        if (!confirm('確定要刪除此賽事嗎？此操作無法復原。')) return;
+
+
+    // 取消建立賽事
+    const handleCancelCreateRace = () => {
+        setIsCreatingRace(false);
+        setRaceCreationStep('input_id');
+        setSegmentIdInput('');
+        setFetchedSegment(null);
+        setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
+    };
+
+    // 刪除賽事 (Admin Only)
+    const handleDeleteRace = async (raceId: number, raceName: string) => {
+        if (!confirm(`確定要刪除賽事「${raceName}」嗎？此操作無法復原。`)) return;
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/teams/races/${raceId}`, {
@@ -195,27 +206,18 @@ const TeamDashboard: React.FC = () => {
             });
 
             if (response.ok) {
-                alert('賽事已刪除');
                 // Refresh races
                 const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
-                const racesJson = await racesRes.json();
-                setRaces(Array.isArray(racesJson) ? racesJson : []);
+                const racesData = await racesRes.json();
+                setRaces(racesData);
             } else {
-                const errorData = await response.json().catch(() => ({}));
-                alert('刪除失敗: ' + (errorData.detail || '未知錯誤'));
+                const err = await response.json();
+                alert('刪除失敗: ' + (err.detail || '未知錯誤'));
             }
-        } catch (err) {
-            alert('刪除失敗');
+        } catch (error) {
+            console.error('Delete race error:', error);
+            alert('刪除發生錯誤');
         }
-    };
-
-    // 取消建立賽事
-    const handleCancelCreateRace = () => {
-        setIsCreatingRace(false);
-        setRaceCreationStep('input_id');
-        setSegmentIdInput('');
-        setFetchedSegment(null);
-        setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
     };
 
     if (loading) {
@@ -474,7 +476,7 @@ const TeamDashboard: React.FC = () => {
 
             {activeTab === 'races' && (
                 <div className="space-y-6">
-                    {/* 管理員或隊長且沒有進行中的賽事才能建立 */}
+                    {/* 管理員或隊長且目前沒有賽事才能建立 (限制一場) */}
                     {canSeeWarRoom && races.length === 0 && (
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">{isCreatingRace ? (
                             <div className="space-y-4">
@@ -642,7 +644,8 @@ const TeamDashboard: React.FC = () => {
                                 <div
                                     key={race.id}
                                     className={`
-                                        group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer
+                                        group relative overflow-hidden rounded-2xl border transition-all duration-300
+                                        flex flex-col sm:flex-row
                                         ${isOngoing
                                             ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-strava-orange/30 hover:border-strava-orange/60 hover:shadow-xl hover:shadow-strava-orange/10'
                                             : 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700/50 hover:border-slate-600 hover:shadow-lg'
@@ -651,67 +654,60 @@ const TeamDashboard: React.FC = () => {
                                 >
                                     {/* 進行中標籤 */}
                                     {isOngoing && (
-                                        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-strava-orange text-white text-[10px] font-black uppercase tracking-wider shadow-lg">
+                                        <div className="absolute top-2 right-2 sm:top-auto sm:bottom-3 sm:right-3 z-20 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-strava-orange text-white text-[10px] font-black uppercase tracking-wider shadow-lg">
                                             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                             進行中
                                         </div>
                                     )}
 
-                                    {/* Map Preview */}
-                                    <div className="relative h-40 overflow-hidden bg-slate-800/50">
-                                        <SegmentMap polyline={race.polyline} className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent pointer-events-none" />
+                                    {/* Map Preview - Square on All Devices */}
+                                    <div className="relative w-full aspect-square sm:w-40 sm:h-auto sm:aspect-square shrink-0 bg-slate-800/50 border-b sm:border-b-0 sm:border-r border-white/5">
+                                        <SegmentMap polyline={race.polyline} minimal className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                        {/* Mobile Gradient Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent sm:hidden pointer-events-none" />
+
+                                        {/* Desktop Gradient Overlay (Right side fade) */}
+                                        <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-transparent to-slate-900/50 pointer-events-none" />
                                     </div>
 
                                     {/* 內容區 */}
-                                    <div className="p-5 space-y-4 relative">
-                                        {/* 標題 */}
-                                        <h3 className="text-xl font-black text-white tracking-tight line-clamp-1 group-hover:text-strava-orange transition-colors">
-                                            {race.name}
-                                        </h3>
+                                    <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between relative">
+                                        <div className="space-y-3">
+                                            <h3 className="text-xl font-black text-white tracking-tight line-clamp-1 group-hover:text-strava-orange transition-colors">
+                                                {race.name}
+                                            </h3>
 
-                                        {/* 統計數據 */}
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
-                                            {race.distance && (
-                                                <span className="flex items-center gap-1.5">
-                                                    <MapPin className="w-4 h-4 text-tcu-blue" />
-                                                    <span className="font-bold text-white">{(race.distance / 1000).toFixed(1)}</span>
-                                                    <span>km</span>
+                                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                                <span className="flex items-center gap-1">
+                                                    <MapPin className="w-3.5 h-3.5 text-tcu-blue" />
+                                                    {(race.distance / 1000).toFixed(1)}km
                                                 </span>
-                                            )}
-                                            {race.average_grade !== undefined && (
-                                                <span className="flex items-center gap-1.5">
-                                                    <TrendingUp className="w-4 h-4 text-emerald-500" />
-                                                    <span className="font-bold text-white">{race.average_grade?.toFixed(1) || '0.0'}</span>
-                                                    <span>% avg</span>
+                                                <span className="flex items-center gap-1">
+                                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                                    {race.average_grade}%
                                                 </span>
-                                            )}
-                                            {race.elevation_gain && (
-                                                <span className="flex items-center gap-1.5">
-                                                    <Mountain className="w-4 h-4 text-amber-500" />
-                                                    <span className="font-bold text-white">{Math.round(race.elevation_gain)}</span>
-                                                    <span>m</span>
+                                                <span className="flex items-center gap-1">
+                                                    <Mountain className="w-3.5 h-3.5 text-amber-500" />
+                                                    {Math.round(race.elevation_gain)}m
                                                 </span>
-                                            )}
+                                            </div>
                                         </div>
 
-                                        {/* 底部資訊 */}
-                                        <div className="flex items-center justify-between pt-3 border-t border-slate-700/50">
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex items-center gap-2 text-sm text-slate-400">
-                                                    <Trophy className="w-4 h-4 text-yellow-500" />
-                                                    <span className="font-bold text-white">0</span>
-                                                    <span>人</span>
+                                        <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    {formatDate(startDate)} - {formatDate(endDate)}
                                                 </div>
 
-                                                {/* 刪除按鈕（管理員或隊長可見） */}
                                                 {canSeeWarRoom && (
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleDeleteRace(race.id);
+                                                            handleDeleteRace(race.id, race.name);
                                                         }}
-                                                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                                                        className="flex items-center gap-1.5 text-xs font-bold text-red-500/50 hover:text-red-400 transition-colors ml-2"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                         刪除
@@ -719,15 +715,15 @@ const TeamDashboard: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/30 text-xs text-slate-300">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                {formatDate(startDate)} - {formatDate(endDate)}
-                                            </div>
+                                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all group-hover:translate-x-1">
+                                                查看排行榜
+                                                <Users2 className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Hover 效果 */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-strava-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                    {/* Hover Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-strava-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                 </div>
                             );
                         })}

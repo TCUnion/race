@@ -308,7 +308,8 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                         distance: `${(segment.distance / 1000).toFixed(1)}km`,
                         gradient: `${segment.average_grade}%`,
                         imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop",
-                        polyline: segment.polyline
+                        polyline: segment.polyline,
+                        team: segment.team
                     }))}
                     onChallengeClick={(id) => {
                         if (onNavigate) {

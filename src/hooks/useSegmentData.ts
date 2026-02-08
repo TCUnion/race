@@ -20,6 +20,7 @@ export interface StravaSegment {
     athlete_count?: number;
     start_date?: string;
     end_date?: string;
+    team?: string;
 }
 
 export interface WeatherData {
@@ -166,6 +167,19 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 return [];
             }
 
+            // 取得所有進行中的車隊賽事以標記主辦車隊
+            const { data: teamRaces } = await supabase
+                .from('team_races')
+                .select('segment_id, team_name')
+                .eq('is_active', true);
+
+            const teamRaceMap = new Map<number, string>();
+            if (teamRaces) {
+                teamRaces.forEach(r => {
+                    teamRaceMap.set(r.segment_id, r.team_name);
+                });
+            }
+
             if (data && data.length > 0) {
                 const mappedSegments: StravaSegment[] = data.map(s => ({
                     id: s.id, // Supabase PK
@@ -183,6 +197,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                     description: s.description,
                     start_date: s.start_date,
                     end_date: s.end_date,
+                    team: teamRaceMap.get(s.id), // Add team info
                 }));
                 setSegments(mappedSegments);
                 segmentsRef.current = mappedSegments;

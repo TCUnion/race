@@ -105,8 +105,8 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '', minim
                 map.invalidateSize();
                 if (polylineLayer) {
                     map.fitBounds(polylineLayer.getBounds(), {
-                        padding: minimal ? [5, 5] : [30, 30], // 小圖減少留白
-                        maxZoom: 14,
+                        padding: minimal ? [20, 20] : [50, 50],
+                        maxZoom: 17,
                     });
                 }
 
@@ -117,8 +117,8 @@ const SegmentMap: React.FC<SegmentMapProps> = ({ polyline, className = '', minim
                         const p = polylineLayerRef.current;
                         m.invalidateSize();
                         m.fitBounds(p.getBounds(), {
-                            padding: minimal ? [5, 5] : [30, 30],
-                            maxZoom: 14,
+                            padding: minimal ? [20, 20] : [50, 50],
+                            maxZoom: 17,
                         });
                     }
                 }, 300);
