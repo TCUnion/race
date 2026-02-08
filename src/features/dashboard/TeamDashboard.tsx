@@ -472,8 +472,8 @@ const TeamDashboard: React.FC = () => {
 
             {activeTab === 'races' && (
                 <div className="space-y-6">
-                    {/* 只有隊長且沒有進行中的賽事才能建立 */}
-                    {isCaptain && races.length === 0 && (
+                    {/* 管理員或隊長且沒有進行中的賽事才能建立 */}
+                    {canSeeWarRoom && races.length === 0 && (
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">{isCreatingRace ? (
                             <div className="space-y-4">
                                 {/* Step 1: 輸入 Segment ID */}
@@ -696,8 +696,8 @@ const TeamDashboard: React.FC = () => {
                                                     <span>人</span>
                                                 </div>
 
-                                                {/* 刪除按鈕（僅隊長可見） */}
-                                                {isCaptain && (
+                                                {/* 刪除按鈕（管理員或隊長可見） */}
+                                                {canSeeWarRoom && (
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
