@@ -353,14 +353,12 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
                                             )}
                                         </div>
 
-                                        {/* 挑戰次數 */}
-                                        <div className="text-xs text-slate-500 text-right">
-                                            <span className="text-slate-400 font-bold">{entry.attempt_count}</span> 次
-                                        </div>
-
-                                        {/* 最佳成績 */}
+                                        {/* 最佳成績與日期 */}
                                         <div className="text-right min-w-[60px]">
                                             <div className="text-white font-mono font-bold text-sm">{formatTime(entry.best_time)}</div>
+                                            <div className="text-slate-500 text-[10px]">
+                                                {entry.achieved_at ? new Date(entry.achieved_at).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) : '--'}
+                                            </div>
                                         </div>
 
                                         {/* Strava 連結 */}

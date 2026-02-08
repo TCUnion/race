@@ -1,5 +1,5 @@
 import React, { useState, useEffect, TouchEvent } from 'react';
-import { ChevronLeft, Filter, ChevronRight, Crown, Users } from 'lucide-react';
+import { ArrowLeft, Crown, Filter, ChevronLeft, ChevronRight, Users, ExternalLink } from 'lucide-react';
 import { useSegmentData, formatTime } from '../../src/hooks/useSegmentData';
 import { StatusBar } from '../components/music-app/StatusBar';
 import { getTeamColor } from '../../src/utils/teamColors';
@@ -167,9 +167,6 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                             <span className="text-white text-[10px] font-black">{currentSegment.team}</span>
                                         </div>
                                     )}
-                                    <div className="px-2 py-1 rounded-lg" style={{ backgroundColor: currentColor }}>
-                                        <span className="text-white text-[10px] font-black italic">RANKING</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -179,8 +176,12 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                 <span className="text-white text-xs font-bold">{currentStats?.bestTime ? formatTime(currentStats.bestTime) : '--'}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-white/40 text-[9px] uppercase font-bold">參與人數</span>
-                                <span className="text-white text-xs font-bold">{currentStats?.totalAthletes || 0}</span>
+                                <span className="text-white/40 text-[9px] uppercase font-bold">報名人數</span>
+                                <span className="text-white text-xs font-bold">{currentStats?.registeredCount || 0}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-white/40 text-[9px] uppercase font-bold">完成人數</span>
+                                <span className="text-white text-xs font-bold">{currentStats?.completedAthletes || 0}</span>
                             </div>
 
                             {/* Countdown Display */}
@@ -221,12 +222,12 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                         filteredParticipants.map((p, index) => (
                             <div
                                 key={p.rank}
-                                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all active:scale-[0.98] ${index === 0
+                                className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-2xl border transition-all active:scale-[0.98] ${index === 0
                                     ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-yellow-500/20'
                                     : 'bg-bg-card border-white/5'
                                     }`}
                             >
-                                <div className="w-6 text-center">
+                                <div className="w-5 sm:w-6 text-center flex-shrink-0">
                                     <span className={`text-sm font-black italic ${p.rank === 1 ? 'text-yellow-500' :
                                         p.rank === 2 ? 'text-gray-400' :
                                             p.rank === 3 ? 'text-amber-600' : 'text-white/30'
@@ -234,18 +235,39 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                         {p.rank}
                                     </span>
                                 </div>
-                                <img src={p.profile_medium || 'default_avatar_url'} alt={p.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-xl bg-bg border border-white/10" />
-                                <div className="flex-1 min-w-0">
+                                <img src={p.profile_medium || 'default_avatar_url'} alt={p.name} referrerPolicy="no-referrer" className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg border border-white/10 flex-shrink-0" />
+                                <div className="flex-1 min-w-0 overflow-hidden">
                                     <div className="flex items-center gap-1.5 min-w-0">
-                                        <h4 className="text-white text-sm font-bold truncate">{p.name}</h4>
-                                        {p.is_tcu && <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />}
+                                        <h4 className="text-white text-xs sm:text-sm font-bold truncate">{p.name}</h4>
+                                        {p.is_tcu && <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />}
                                     </div>
-                                    <p className="text-white/40 text-[10px] uppercase font-medium">{p.team || '個人'}</p>
+                                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                                        <p className="text-white/40 text-[9px] sm:text-[10px] uppercase font-medium whitespace-nowrap">{p.team || '個人'}</p>
+                                        {p.attempt_count !== undefined && p.attempt_count > 0 && (
+                                            <span className="text-white/30 text-[9px] sm:text-[10px] whitespace-nowrap">· 挑戰{p.attempt_count}次</span>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-white text-sm font-bold tracking-tight">{formatTime(p.elapsed_time)}</span>
-                                    <span className="text-primary text-[10px] font-bold">{p.average_watts || '--'}W</span>
+                                <div className="flex flex-col items-end flex-shrink-0">
+                                    <span className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold whitespace-nowrap">最佳完成時間</span>
+                                    <span className="text-white text-xs sm:text-sm font-bold tracking-tight whitespace-nowrap">{formatTime(p.elapsed_time)}</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-white/40 text-[9px] sm:text-[10px] whitespace-nowrap">{p.start_date ? new Date(p.start_date).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''}</span>
+                                        <span className="text-primary text-[9px] sm:text-[10px] font-bold whitespace-nowrap">{p.average_watts || '--'}W</span>
+                                    </div>
                                 </div>
+                                {/* Strava 連結 */}
+                                {p.activity_id && (
+                                    <a
+                                        href={`https://www.strava.com/activities/${p.activity_id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="p-1 sm:p-1.5 rounded-lg bg-primary/10 text-primary active:scale-95 flex-shrink-0"
+                                    >
+                                        <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    </a>
+                                )}
                             </div>
                         ))
                     ) : (

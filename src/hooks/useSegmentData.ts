@@ -57,11 +57,13 @@ export interface LeaderboardEntry {
     activity_id?: number;
     start_date?: string;
     is_tcu?: boolean;
+    attempt_count?: number;
 }
 
 export interface SegmentStats {
     totalAthletes: number;
     completedAthletes: number;
+    registeredCount: number;
     bestTime: number | null;
     avgTime: number | null;
     maxPower: number | null;
@@ -137,7 +139,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
     const isFetching = useRef(false);
 
     // 計算統計數據的輔助函數
-    const calculateStats = (data: LeaderboardEntry[]): SegmentStats => {
+    const calculateStats = (data: LeaderboardEntry[], registeredCount: number): SegmentStats => {
         const completed = data.filter(e => e.elapsed_time > 0);
         const times = completed.map(e => e.elapsed_time).filter(t => t > 0);
         const powers = completed.map(e => e.average_watts || 0).filter(p => p > 0);
@@ -146,6 +148,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
         return {
             totalAthletes: data.length,
             completedAthletes: completed.length,
+            registeredCount: registeredCount,
             bestTime: times.length > 0 ? Math.min(...times) : null,
             avgTime: times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : null,
             maxPower: powers.length > 0 ? Math.max(...powers) : null,
@@ -279,15 +282,43 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 });
             }
 
+            // 4. 查詢每位選手在各路段的挑戰次數
+            const { data: attemptsData } = await supabase
+                .from('segment_efforts_v2')
+                .select('segment_id, athlete_id')
+                .in('segment_id', segmentIds)
+                .in('athlete_id', Array.from(athleteIdsToCheck));
+
+            const attemptMap = new Map<string, number>(); // key: `${segmentId}_${athleteId}`, value: count
+            if (attemptsData) {
+                attemptsData.forEach(a => {
+                    const key = `${a.segment_id}_${a.athlete_id}`;
+                    attemptMap.set(key, (attemptMap.get(key) || 0) + 1);
+                });
+            }
+
             const newLeaderboards: Record<number, LeaderboardEntry[]> = {};
             const newStats: Record<number, SegmentStats> = {};
 
             // 3. 整理資料
             activeSegments.forEach(seg => {
-                // 篩選出該路段的資料，並且必須已報名
                 const segmentEntries = (leaderboardData || []).filter(row => {
-                    return Number(row.segment_id) === Number(seg.id) &&
+                    // 基本檢查：路段 ID 必須相符，且選手已報名
+                    const isMatch = Number(row.segment_id) === Number(seg.id) &&
                         registeredSet.has(`${row.segment_id}_${row.athlete_id}`);
+
+                    if (!isMatch) return false;
+
+                    // 日期檢查：如果有設定挑戰期間，成績必須在期間內
+                    if (seg.start_date && seg.end_date && row.achieved_at) {
+                        const achievedAt = new Date(row.achieved_at);
+                        const startDate = new Date(seg.start_date);
+                        const endDate = new Date(seg.end_date);
+                        // 包含開始與結束當天 (注意時區問題，這裡簡單比較 timestamp)
+                        return achievedAt >= startDate && achievedAt <= endDate;
+                    }
+
+                    return true;
                 });
 
                 // 轉換格式
@@ -311,12 +342,15 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                         average_heartrate: 0,
                         start_date: row.achieved_at,
                         activity_id: row.activity_id,
-                        is_tcu: !!tcuId
+                        is_tcu: !!tcuId,
+                        attempt_count: attemptMap.get(`${sid}_${aid}`) || 0
                     };
                 });
 
                 newLeaderboards[seg.id] = ranked;
-                newStats[seg.id] = calculateStats(ranked);
+                // 計算此路段的報名人數
+                const segRegisteredCount = (regData || []).filter(r => r.segment_id === seg.id).length;
+                newStats[seg.id] = calculateStats(ranked, segRegisteredCount);
             });
 
             setLeaderboardsMap(newLeaderboards);

@@ -186,6 +186,13 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
             const athleteIds = registrations.map(r => r.strava_athlete_id);
             const tcuSet = new Set(registrations.filter(r => r.tcu_id).map(r => r.strava_athlete_id));
 
+            // 1.5 取得路段日期資訊以進行篩選
+            const { data: segment } = await supabase
+                .from('segments')
+                .select('start_date, end_date')
+                .eq('id', segmentId)
+                .single();
+
             // 2. 取得排行榜資料（只取已報名選手）
             const { data: leaderboard } = await supabase
                 .from('view_leaderboard_best')
@@ -217,8 +224,8 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                 nameMap.set(a.id, [a.firstname, a.lastname].filter(Boolean).join(' '));
             });
 
-            // 5. 組合排行榜資料
-            return (leaderboard || []).map((row, index) => ({
+            // 5. 組合排行榜資料並篩選日期
+            const initialLeaderboard = (leaderboard || []).map((row, index) => ({
                 rank: index + 1,
                 athlete_id: row.athlete_id,
                 name: nameMap.get(row.athlete_id) || row.athlete_name || `選手 ${row.athlete_id}`,
@@ -230,6 +237,20 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                 attempt_count: attemptMap.get(row.athlete_id) || 0,
                 is_tcu: tcuSet.has(row.athlete_id),
             }));
+
+            // 執行日期篩選
+            if (segment?.start_date && segment?.end_date) {
+                const startDate = new Date(segment.start_date);
+                const endDate = new Date(segment.end_date);
+
+                return initialLeaderboard.filter(entry => {
+                    if (!entry.achieved_at) return true;
+                    const achievedAt = new Date(entry.achieved_at);
+                    return achievedAt >= startDate && achievedAt <= endDate;
+                });
+            }
+
+            return initialLeaderboard;
         } catch (err) {
             console.error('載入排行榜失敗:', err);
             return [];
