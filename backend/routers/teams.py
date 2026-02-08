@@ -247,9 +247,9 @@ async def create_team_race(request: Request):
         segment_data = {
             "id": int(segment_id),
             "name": name or f"路段 {segment_id}",
-            "distance": distance,
+            "distance": int(distance) if distance else None,
             "average_grade": average_grade,
-            "total_elevation_gain": elevation_gain,
+            "total_elevation_gain": int(elevation_gain) if elevation_gain else None,
             "polyline": body.get("polyline"),
             "start_date": start_date,
             "end_date": end_date,
