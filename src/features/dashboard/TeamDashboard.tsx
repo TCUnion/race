@@ -68,11 +68,17 @@ const TeamDashboard: React.FC = () => {
                 setMembers(Array.isArray(membersJson) ? membersJson : []);
             }
 
-            // 3. Fetch Races (if team exists in DB)
-            if (teamJson.team_data?.id) {
-                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_id=${teamJson.team_data.id}`);
-                const racesJson = await racesRes.json();
-                setRaces(racesJson);
+            // 3. Fetch Races (using team_name)
+            if (teamJson.team_name) {
+                try {
+                    const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamJson.team_name)}`);
+                    const racesJson = await racesRes.json();
+                    // 防禦性編碼：確保 races 是陣列
+                    setRaces(Array.isArray(racesJson) ? racesJson : []);
+                } catch (raceErr) {
+                    console.error('[TeamDashboard] Fetch races error:', raceErr);
+                    setRaces([]);
+                }
             }
 
         } catch (err: any) {
@@ -91,7 +97,7 @@ const TeamDashboard: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     strava_id: athlete?.id,
-                    team_id: teamData.team_data.id,
+                    team_name: teamData.team_name,
                     ...newRace
                 })
             });
@@ -101,7 +107,7 @@ const TeamDashboard: React.FC = () => {
                 setIsCreatingRace(false);
                 setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
                 // Refresh races
-                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_id=${teamData.team_data.id}`);
+                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
                 const racesJson = await racesRes.json();
                 setRaces(racesJson);
             } else {

@@ -165,42 +165,79 @@ async def get_team_members(team_name: str):
 async def create_team_race(request: Request):
     """
     建立車隊賽事 (Admin Only)
+    使用 team_name + strava_id 驗證權限
     """
     try:
         body = await request.json()
-        strava_id = body.get("strava_id")
-        team_id = body.get("team_id")
+        strava_id = str(body.get("strava_id"))
+        team_name = body.get("team_name")
         segment_id = body.get("segment_id")
         name = body.get("name")
-        start_date = body.get("start_date") # ISO String
-        end_date = body.get("end_date")     # ISO String
+        start_date = body.get("start_date")  # ISO String
+        end_date = body.get("end_date")      # ISO String
         
-        # 驗證 Admin 權限
-        # 這裡再 query 一次確保安全
-        team_res = supabase.table("teams").select("admin_strava_id").eq("id", team_id).execute()
-        if not team_res.data or team_res.data[0]["admin_strava_id"] != str(strava_id):
-            raise HTTPException(status_code=403, detail="Permission denied")
-            
+        if not all([strava_id, team_name, segment_id, start_date, end_date]):
+            raise HTTPException(status_code=400, detail="缺少必要參數")
+        
+        # 1. 從 strava_bindings 取得 tcu_member_email
+        binding_res = supabase.table("strava_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
+        if not binding_res.data:
+            raise HTTPException(status_code=403, detail="未綁定 Strava 帳號")
+        
+        binding = binding_res.data[0]
+        email = binding.get("tcu_member_email")
+        tcu_account = binding.get("tcu_account")
+        
+        # 2. 從 tcu_members 驗證是否為該車隊的管理員/隊長
+        member = None
+        if tcu_account:
+            member_res = supabase.table("tcu_members").select("team, member_type").eq("account", tcu_account).execute()
+            if member_res.data:
+                member = member_res.data[0]
+        
+        if not member and email:
+            member_res = supabase.table("tcu_members").select("team, member_type").eq("email", email).execute()
+            if member_res.data:
+                member = member_res.data[0]
+        
+        if not member:
+            raise HTTPException(status_code=403, detail="找不到 TCU 成員資料")
+        
+        # 3. 驗證是否為該車隊成員
+        if member.get("team") != team_name:
+            raise HTTPException(status_code=403, detail="您不屬於此車隊")
+        
+        # 4. 驗證是否有管理權限
+        member_type = member.get("member_type") or ""
+        is_admin = any(role in member_type for role in ["付費車隊管理員", "隊長", "管理員"])
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="您沒有建立賽事的權限")
+        
+        # 5. 建立賽事資料
         data = {
-            "team_id": team_id,
-            "segment_id": segment_id,
-            "name": name,
+            "team_name": team_name,
+            "segment_id": int(segment_id),
+            "name": name or f"路段 {segment_id}",
             "start_date": start_date,
             "end_date": end_date,
-            "is_active": True
+            "is_active": True,
+            "created_by": strava_id
         }
         
         res = supabase.table("team_races").insert(data).execute()
         return {"success": True, "data": res.data}
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[ERROR] Create race error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/races")
-async def get_team_races(team_id: str):
+async def get_team_races(team_name: str):
+    """取得車隊賽事列表"""
     try:
-        res = supabase.table("team_races").select("*").eq("team_id", team_id).order("created_at", desc=True).execute()
+        res = supabase.table("team_races").select("*").eq("team_name", team_name).order("created_at", desc=True).execute()
         return res.data if res.data else []
     except Exception as e:
         print(f"[ERROR] Get races error: {str(e)}")
