@@ -255,3 +255,62 @@ async def get_team_races(team_name: str):
     except Exception as e:
         print(f"[ERROR] Get races error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/races/{race_id}")
+async def delete_team_race(race_id: int, request: Request):
+    """
+    刪除車隊賽事 (僅限隊長)
+    """
+    try:
+        body = await request.json()
+        strava_id = str(body.get("strava_id"))
+        team_name = body.get("team_name")
+        
+        if not strava_id or not team_name:
+            raise HTTPException(status_code=400, detail="缺少必要參數")
+        
+        # 1. 驗證賽事是否存在且屬於該車隊
+        race_res = supabase.table("team_races").select("*").eq("id", race_id).execute()
+        if not race_res.data:
+            raise HTTPException(status_code=404, detail="賽事不存在")
+        
+        race = race_res.data[0]
+        if race.get("team_name") != team_name:
+            raise HTTPException(status_code=403, detail="您無權刪除此賽事")
+        
+        # 2. 驗證權限（僅限隊長）
+        binding_res = supabase.table("strava_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
+        if not binding_res.data:
+            raise HTTPException(status_code=403, detail="未綁定 Strava 帳號")
+        
+        binding = binding_res.data[0]
+        email = binding.get("tcu_member_email")
+        tcu_account = binding.get("tcu_account")
+        
+        member = None
+        if tcu_account:
+            member_res = supabase.table("tcu_members").select("team, member_type").eq("account", tcu_account).execute()
+            if member_res.data:
+                member = member_res.data[0]
+        
+        if not member and email:
+            member_res = supabase.table("tcu_members").select("team, member_type").eq("email", email).execute()
+            if member_res.data:
+                member = member_res.data[0]
+        
+        if not member or member.get("team") != team_name:
+            raise HTTPException(status_code=403, detail="您不屬於此車隊")
+        
+        member_type = member.get("member_type") or ""
+        if "隊長" not in member_type:
+            raise HTTPException(status_code=403, detail="只有隊長可以刪除賽事")
+        
+        # 3. 刪除賽事
+        supabase.table("team_races").delete().eq("id", race_id).execute()
+        return {"success": True, "message": "賽事已刪除"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Delete race error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

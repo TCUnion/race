@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap, TrendingUp, Mountain } from 'lucide-react';
+import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap, TrendingUp, Mountain, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
@@ -175,6 +175,35 @@ const TeamDashboard: React.FC = () => {
             }
         } catch (err) {
             alert("建立失敗");
+        }
+    };
+
+    // 刪除賽事
+    const handleDeleteRace = async (raceId: number) => {
+        if (!confirm('確定要刪除此賽事嗎？此操作無法復原。')) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/teams/races/${raceId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    strava_id: athlete?.id,
+                    team_name: teamData.team_name
+                })
+            });
+
+            if (response.ok) {
+                alert('賽事已刪除');
+                // Refresh races
+                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
+                const racesJson = await racesRes.json();
+                setRaces(Array.isArray(racesJson) ? racesJson : []);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                alert('刪除失敗: ' + (errorData.detail || '未知錯誤'));
+            }
+        } catch (err) {
+            alert('刪除失敗');
         }
     };
 
@@ -660,10 +689,26 @@ const TeamDashboard: React.FC = () => {
 
                                         {/* 底部資訊 */}
                                         <div className="flex items-center justify-between pt-3 border-t border-slate-700/50">
-                                            <div className="flex items-center gap-2 text-sm text-slate-400">
-                                                <Trophy className="w-4 h-4 text-yellow-500" />
-                                                <span className="font-bold text-white">0</span>
-                                                <span>人</span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2 text-sm text-slate-400">
+                                                    <Trophy className="w-4 h-4 text-yellow-500" />
+                                                    <span className="font-bold text-white">0</span>
+                                                    <span>人</span>
+                                                </div>
+
+                                                {/* 刪除按鈕（僅隊長可見） */}
+                                                {isCaptain && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteRace(race.id);
+                                                        }}
+                                                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        刪除
+                                                    </button>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/30 text-xs text-slate-300">
