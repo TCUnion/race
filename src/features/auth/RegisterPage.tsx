@@ -18,6 +18,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const formSegments = React.useMemo(() => segments.map(s => ({
     id: s.id, // Supabase PK
     name: s.name,
+    description: s.description, // 路段說明
     strava_id: s.strava_id
   })), [segments]);
 

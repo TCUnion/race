@@ -17,6 +17,7 @@ interface Segment {
     id: number; // Supabase PK
     strava_id: number; // Strava ID
     name: string;
+    description?: string; // 路段說明
 }
 
 interface RegistrationFormProps {
@@ -281,7 +282,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         )}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-white font-bold">{seg.name}</p>
+                                        <p className="text-white font-bold">{seg.description || seg.name}</p>
                                         <p className="text-slate-500 text-xs">Strava ID: {seg.strava_id}</p>
                                     </div>
                                 </label>
