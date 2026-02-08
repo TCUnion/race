@@ -239,6 +239,36 @@ async def create_team_race(request: Request):
         }
         
         res = supabase.table("team_races").insert(data).execute()
+        
+        # 7. 同步到 segments 表讓賽事出現在挑戰列表
+        # 先檢查 segment 是否已存在
+        existing_segment = supabase.table("segments").select("id").eq("id", int(segment_id)).execute()
+        
+        segment_data = {
+            "id": int(segment_id),
+            "name": name or f"路段 {segment_id}",
+            "distance": distance,
+            "average_grade": average_grade,
+            "total_elevation_gain": elevation_gain,
+            "polyline": body.get("polyline"),
+            "start_date": start_date,
+            "end_date": end_date,
+            "is_active": True,
+            "hosted_by": team_name  # 標記主辦車隊
+        }
+        
+        if existing_segment.data:
+            # 更新現有 segment 的日期和主辦權
+            supabase.table("segments").update({
+                "start_date": start_date,
+                "end_date": end_date,
+                "is_active": True,
+                "hosted_by": team_name
+            }).eq("id", int(segment_id)).execute()
+        else:
+            # 建立新 segment
+            supabase.table("segments").insert(segment_data).execute()
+        
         return {"success": True, "data": res.data}
         
     except HTTPException:
