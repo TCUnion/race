@@ -15,8 +15,12 @@ const TeamDashboard: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'members' | 'races' | 'war_room'>('members');
 
-    // Admin: Create Race State
+    // Admin: Create Race State (兩階段流程)
     const [isCreatingRace, setIsCreatingRace] = useState(false);
+    const [raceCreationStep, setRaceCreationStep] = useState<'input_id' | 'confirm'>('input_id');
+    const [segmentIdInput, setSegmentIdInput] = useState('');
+    const [fetchingSegment, setFetchingSegment] = useState(false);
+    const [fetchedSegment, setFetchedSegment] = useState<any>(null);
     const [newRace, setNewRace] = useState({
         name: '',
         segment_id: '',
@@ -89,6 +93,48 @@ const TeamDashboard: React.FC = () => {
         }
     };
 
+    // Step 1: 取得路段資料（從 n8n webhook）
+    const handleFetchSegment = async () => {
+        if (!segmentIdInput.trim()) {
+            alert('請輸入 Strava Segment ID');
+            return;
+        }
+
+        setFetchingSegment(true);
+        try {
+            const response = await fetch('https://service.criterium.tw/webhook/segment_set', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ segment_id: segmentIdInput.trim() })
+            });
+
+            const responseText = await response.text();
+            if (!responseText || responseText.trim() === "") {
+                throw new Error("伺服器回傳了空內容");
+            }
+
+            const segmentData = JSON.parse(responseText);
+            if (!segmentData || !segmentData.id) {
+                throw new Error("無法取得路段資料，請確認 Segment ID 是否正確");
+            }
+
+            // 設定取得的路段資料
+            setFetchedSegment(segmentData);
+            setNewRace({
+                name: segmentData.name || `路段 ${segmentIdInput}`,
+                segment_id: segmentIdInput.trim(),
+                start_date: '',
+                end_date: ''
+            });
+            setRaceCreationStep('confirm');
+        } catch (err: any) {
+            alert('取得路段資料失敗: ' + err.message);
+        } finally {
+            setFetchingSegment(false);
+        }
+    };
+
+    // Step 2: 確認並建立賽事
     const handleCreateRace = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -104,18 +150,36 @@ const TeamDashboard: React.FC = () => {
 
             if (response.ok) {
                 alert("賽事建立成功！");
+                // 重設所有狀態
                 setIsCreatingRace(false);
+                setRaceCreationStep('input_id');
+                setSegmentIdInput('');
+                setFetchedSegment(null);
                 setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
                 // Refresh races
-                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
-                const racesJson = await racesRes.json();
-                setRaces(racesJson);
+                try {
+                    const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
+                    const racesJson = await racesRes.json();
+                    setRaces(Array.isArray(racesJson) ? racesJson : []);
+                } catch {
+                    setRaces([]);
+                }
             } else {
-                alert("建立失敗");
+                const errorData = await response.json().catch(() => ({}));
+                alert("建立失敗: " + (errorData.detail || "未知錯誤"));
             }
         } catch (err) {
             alert("建立失敗");
         }
+    };
+
+    // 取消建立賽事
+    const handleCancelCreateRace = () => {
+        setIsCreatingRace(false);
+        setRaceCreationStep('input_id');
+        setSegmentIdInput('');
+        setFetchedSegment(null);
+        setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
     };
 
     if (loading) {
@@ -377,56 +441,144 @@ const TeamDashboard: React.FC = () => {
                     {teamData?.is_admin && (
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
                             {isCreatingRace ? (
-                                <form onSubmit={handleCreateRace} className="space-y-4">
-                                    <h3 className="font-bold text-lg mb-4">建立新賽事</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input
-                                            type="text"
-                                            placeholder="賽事名稱"
-                                            value={newRace.name}
-                                            onChange={e => setNewRace({ ...newRace, name: e.target.value })}
-                                            className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
-                                            required
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Strava Segment ID"
-                                            value={newRace.segment_id}
-                                            onChange={e => setNewRace({ ...newRace, segment_id: e.target.value })}
-                                            className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
-                                            required
-                                        />
-                                        <input
-                                            type="datetime-local"
-                                            value={newRace.start_date}
-                                            onChange={e => setNewRace({ ...newRace, start_date: e.target.value })}
-                                            className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
-                                            required
-                                        />
-                                        <input
-                                            type="datetime-local"
-                                            value={newRace.end_date}
-                                            onChange={e => setNewRace({ ...newRace, end_date: e.target.value })}
-                                            className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="flex gap-2 justify-end mt-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsCreatingRace(false)}
-                                            className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
-                                        >
-                                            取消
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="px-6 py-2 bg-tcu-blue text-white rounded-xl font-bold hover:bg-tcu-blue-dark"
-                                        >
-                                            建立
-                                        </button>
-                                    </div>
-                                </form>
+                                <div className="space-y-4">
+                                    {/* Step 1: 輸入 Segment ID */}
+                                    {raceCreationStep === 'input_id' && (
+                                        <div>
+                                            <h3 className="font-bold text-lg mb-4">建立新賽事 - 步驟 1/2</h3>
+                                            <p className="text-sm text-slate-500 mb-4">輸入 Strava 路段 ID，系統會自動取得路段資訊</p>
+                                            <div className="flex gap-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Strava Segment ID (例如: 12345678)"
+                                                    value={segmentIdInput}
+                                                    onChange={e => setSegmentIdInput(e.target.value)}
+                                                    className="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                                                    disabled={fetchingSegment}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleFetchSegment}
+                                                    disabled={fetchingSegment}
+                                                    className="px-6 py-3 bg-tcu-blue text-white rounded-xl font-bold hover:bg-tcu-blue-dark disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    {fetchingSegment ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            取得中...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <MapPin className="w-4 h-4" />
+                                                            取得路段
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <div className="flex justify-end mt-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelCreateRace}
+                                                    className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
+                                                >
+                                                    取消
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Step 2: 確認路段資訊並設定日期 */}
+                                    {raceCreationStep === 'confirm' && fetchedSegment && (
+                                        <form onSubmit={handleCreateRace}>
+                                            <h3 className="font-bold text-lg mb-4">建立新賽事 - 步驟 2/2</h3>
+
+                                            {/* 路段資訊預覽 */}
+                                            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 mb-4 border border-slate-200 dark:border-slate-700">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg">
+                                                        <MapPin className="w-5 h-5 text-green-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-800 dark:text-white">{fetchedSegment.name}</p>
+                                                        <p className="text-xs text-slate-500">Segment ID: {newRace.segment_id}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                                    <div>
+                                                        <span className="text-slate-500">距離</span>
+                                                        <p className="font-bold">{((fetchedSegment.distance || 0) / 1000).toFixed(2)} km</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-500">爬升</span>
+                                                        <p className="font-bold">{fetchedSegment.total_elevation_gain || fetchedSegment.elevation_gain || 0} m</p>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-500">平均坡度</span>
+                                                        <p className="font-bold">{fetchedSegment.average_grade || 0}%</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 賽事設定 */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">賽事名稱</label>
+                                                    <input
+                                                        type="text"
+                                                        value={newRace.name}
+                                                        onChange={e => setNewRace({ ...newRace, name: e.target.value })}
+                                                        className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div></div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">開始時間</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={newRace.start_date}
+                                                        onChange={e => setNewRace({ ...newRace, start_date: e.target.value })}
+                                                        className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">結束時間</label>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={newRace.end_date}
+                                                        onChange={e => setNewRace({ ...newRace, end_date: e.target.value })}
+                                                        className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-full"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2 justify-end mt-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRaceCreationStep('input_id')}
+                                                    className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
+                                                >
+                                                    返回
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelCreateRace}
+                                                    className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700"
+                                                >
+                                                    取消
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    className="px-6 py-2 bg-tcu-blue text-white rounded-xl font-bold hover:bg-tcu-blue-dark"
+                                                >
+                                                    建立賽事
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+                                </div>
                             ) : (
                                 <button
                                     onClick={() => setIsCreatingRace(true)}
