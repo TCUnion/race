@@ -50,26 +50,47 @@ const normalizeSegment = (raw: any): any => {
 
     // 🚀 多重備援 Key 檢查 (Strava API 有時會變動，或經過 n8n 轉換)
     const elevation = data.total_elevation_gain || data.elevation_gain || (data.elevationDetail?.total_gain) || 0;
-    const id = data.id || data.strava_id || data.segment_id;
+
+    // 🔒 確保 id 為有效的整數（避免 average_grade 等小數被誤用為 id）
+    const extractValidId = (val: any): number | null => {
+        if (val === null || val === undefined) return null;
+        const num = Number(val);
+        // 必須是正整數且不能是小數
+        if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
+            return num;
+        }
+        return null;
+    };
+
+    const id = extractValidId(data.id) || extractValidId(data.strava_id) || extractValidId(data.segment_id);
+
+    // 如果沒有有效的 id，返回 null
+    if (!id) {
+        console.error('[normalizeSegment] 無法取得有效的 segment ID，原始資料:', data);
+        return null;
+    }
+
+    // 🔧 確保所有 bigint 欄位都是整數（四捨五入）
+    const toInt = (val: any): number => Math.round(Number(val) || 0);
 
     return {
         id: id,
-        strava_id: data.strava_id || id, // 確保 strava_id 存在
+        strava_id: id, // 確保 strava_id 也是有效的整數
         name: data.name || "未命名路段",
-        distance: data.distance || 0,
-        average_grade: data.average_grade || 0,
-        maximum_grade: data.maximum_grade || 0,
-        elevation_gain: elevation,
-        elevation_high: data.elevation_high || 0,
-        elevation_low: data.elevation_low || 0,
-        total_elevation_gain: elevation,
+        distance: toInt(data.distance), // bigint
+        average_grade: data.average_grade || 0, // 這個可以是浮點數
+        maximum_grade: data.maximum_grade || 0, // 這個可以是浮點數
+        elevation_gain: toInt(elevation), // bigint - 必須是整數
+        elevation_high: toInt(data.elevation_high), // bigint
+        elevation_low: toInt(data.elevation_low), // bigint
+        total_elevation_gain: toInt(elevation), // bigint - 必須是整數
         activity_type: data.activity_type || "Ride",
-        climb_category: data.climb_category || 0,
+        climb_category: toInt(data.climb_category), // bigint
         city: data.city || "",
         state: data.state || "",
         country: data.country || "",
-        star_count: data.star_count || 0,
-        athlete_count: data.athlete_count || 0,
+        star_count: toInt(data.star_count), // bigint
+        athlete_count: toInt(data.athlete_count), // bigint
         kom: data.kom || data.xoms?.kom || "",
         qom: data.QOM || data.qom || data.qom_time || data.xoms?.qom || "",
         pr_elapsed_time: data.pr_elapsed_time || data.athlete_segment_stats?.pr_elapsed_time,

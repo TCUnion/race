@@ -1,5 +1,5 @@
 import React, { useState, useEffect, TouchEvent } from 'react';
-import { ChevronLeft, Filter, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Filter, ChevronRight, Crown } from 'lucide-react';
 import { useSegmentData, formatTime } from '../../src/hooks/useSegmentData';
 import { StatusBar } from '../components/music-app/StatusBar';
 
@@ -224,7 +224,10 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                 </div>
                                 <img src={p.profile_medium || 'default_avatar_url'} alt={p.name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-xl bg-bg border border-white/10" />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-white text-sm font-bold truncate">{p.name}</h4>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <h4 className="text-white text-sm font-bold truncate">{p.name}</h4>
+                                        {p.is_tcu && <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />}
+                                    </div>
                                     <p className="text-white/40 text-[10px] uppercase font-medium">{p.team || '個人'}</p>
                                 </div>
                                 <div className="flex flex-col items-end">
