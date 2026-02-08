@@ -170,38 +170,41 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 return [];
             }
 
-            // 取得所有進行中的車隊賽事以標記主辦車隊
+            // 取得所有進行中的車隊賽事以標記主辦車隊和賽事名稱
             const { data: teamRaces } = await supabase
                 .from('team_races')
-                .select('segment_id, team_name')
+                .select('segment_id, team_name, name')
                 .eq('is_active', true);
 
-            const teamRaceMap = new Map<number, string>();
+            const teamRaceMap = new Map<number, { team: string, name: string }>();
             if (teamRaces) {
                 teamRaces.forEach(r => {
-                    teamRaceMap.set(r.segment_id, r.team_name);
+                    teamRaceMap.set(r.segment_id, { team: r.team_name, name: r.name });
                 });
             }
 
             if (data && data.length > 0) {
-                const mappedSegments: StravaSegment[] = data.map(s => ({
-                    id: s.id, // Supabase PK
-                    strava_id: s.strava_id || s.id, // Fallback if strava_id is null
-                    name: s.name,
-                    distance: s.distance || 0,
-                    average_grade: s.average_grade || 0,
-                    maximum_grade: s.maximum_grade || 0,
-                    elevation_low: s.elevation_low || 0,
-                    elevation_high: s.elevation_high || 0,
-                    total_elevation_gain: s.elevation_gain || 0,
-                    activity_type: 'Ride',
-                    polyline: s.polyline,
-                    link: s.link,
-                    description: s.description,
-                    start_date: s.start_date,
-                    end_date: s.end_date,
-                    team: teamRaceMap.get(s.id), // Add team info
-                }));
+                const mappedSegments: StravaSegment[] = data.map(s => {
+                    const raceInfo = teamRaceMap.get(s.id);
+                    return {
+                        id: s.id, // Supabase PK
+                        strava_id: s.strava_id || s.id, // Fallback if strava_id is null
+                        name: s.name,
+                        distance: s.distance || 0,
+                        average_grade: s.average_grade || 0,
+                        maximum_grade: s.maximum_grade || 0,
+                        elevation_low: s.elevation_low || 0,
+                        elevation_high: s.elevation_high || 0,
+                        total_elevation_gain: s.elevation_gain || 0,
+                        activity_type: 'Ride',
+                        polyline: s.polyline,
+                        link: s.link,
+                        description: raceInfo?.name || s.description, // 優先使用賽事名稱，否則使用資料庫描述
+                        start_date: s.start_date,
+                        end_date: s.end_date,
+                        team: raceInfo?.team, // Add team info
+                    };
+                });
                 setSegments(mappedSegments);
                 segmentsRef.current = mappedSegments;
                 // 如果目前的路段是預設的 fallback (id: 1) 或者還沒設定，就換成第一個抓到的路段

@@ -253,17 +253,15 @@ async def create_team_race(request: Request):
             "polyline": body.get("polyline"),
             "start_date": start_date,
             "end_date": end_date,
-            "is_active": True,
-            "description": name or f"車隊賽事 {segment_id}"
+            "is_active": True
         }
         
         if existing_segment.data:
-            # 更新現有 segment 的日期和說明
+            # 更新現有 segment 的日期
             supabase.table("segments").update({
                 "start_date": start_date,
                 "end_date": end_date,
-                "is_active": True,
-                "description": name or f"車隊賽事 {segment_id}"
+                "is_active": True
             }).eq("id", int(segment_id)).execute()
         else:
             # 建立新 segment
