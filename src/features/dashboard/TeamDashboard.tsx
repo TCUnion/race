@@ -767,42 +767,45 @@ const TeamDashboard: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5">
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                                     <Calendar className="w-3.5 h-3.5" />
                                                     {formatDate(startDate)} - {formatDate(endDate)}
                                                 </div>
 
                                                 {canSeeWarRoom && (
-                                                    <>
+                                                    <div className="flex items-center gap-1.5">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleStartEdit(race);
                                                             }}
-                                                            className="flex items-center gap-1.5 text-xs font-bold text-blue-500/70 hover:text-blue-400 transition-colors ml-2"
+                                                            className="flex items-center gap-1 text-xs font-bold text-blue-500/70 hover:text-blue-400 transition-colors"
+                                                            title="編輯賽事"
                                                         >
                                                             <Save className="w-3.5 h-3.5" />
-                                                            編輯
+                                                            <span className="hidden sm:inline">編輯</span>
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeleteRace(race.id, race.name);
                                                             }}
-                                                            className="flex items-center gap-1.5 text-xs font-bold text-red-500/50 hover:text-red-400 transition-colors ml-2"
+                                                            className="flex items-center gap-1 text-xs font-bold text-red-500/50 hover:text-red-400 transition-colors"
+                                                            title="刪除賽事"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
-                                                            刪除
+                                                            <span className="hidden sm:inline">刪除</span>
                                                         </button>
-                                                    </>
+                                                    </div>
                                                 )}
-                                            </div>
 
-                                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all group-hover:translate-x-1">
-                                                查看排行榜
-                                                <Users2 className="w-3.5 h-3.5" />
-                                            </button>
+                                                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all group-hover:translate-x-1 ml-auto">
+                                                    <span className="hidden sm:inline">查看排行榜</span>
+                                                    <span className="sm:hidden">排行榜</span>
+                                                    <Users2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
