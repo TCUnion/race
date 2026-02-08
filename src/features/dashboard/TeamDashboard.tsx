@@ -29,6 +29,14 @@ const TeamDashboard: React.FC = () => {
         end_date: ''
     });
 
+    // Admin: Edit Race State
+    const [editingRace, setEditingRace] = useState<any>(null);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        start_date: '',
+        end_date: ''
+    });
+
     useEffect(() => {
         if (athlete) {
             fetchTeamData();
@@ -156,7 +164,12 @@ const TeamDashboard: React.FC = () => {
             });
 
             if (response.ok) {
-                alert("賽事建立成功！");
+                // Generate share link
+                const shareUrl = `${window.location.origin}/dashboard?segment_id=${newRace.segment_id}`;
+
+                // Show link to user
+                window.prompt('賽事建立成功！請複製以下連結分享給隊員：', shareUrl);
+
                 // 重設所有狀態
                 setIsCreatingRace(false);
                 setRaceCreationStep('input_id');
@@ -189,6 +202,63 @@ const TeamDashboard: React.FC = () => {
         setSegmentIdInput('');
         setFetchedSegment(null);
         setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
+    };
+
+    // 編輯賽事 - 開始編輯
+    const handleStartEdit = (race: any) => {
+        const startDate = new Date(race.start_date);
+        const endDate = new Date(race.end_date);
+
+        setEditingRace(race);
+        setEditFormData({
+            name: race.name,
+            start_date: startDate.toISOString().slice(0, 16),
+            end_date: endDate.toISOString().slice(0, 16)
+        });
+    };
+
+    // 編輯賽事 - 取消編輯
+    const handleCancelEdit = () => {
+        setEditingRace(null);
+        setEditFormData({ name: '', start_date: '', end_date: '' });
+    };
+
+    // 編輯賽事 - 儲存變更
+    const handleUpdateRace = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!editFormData.name || !editFormData.start_date || !editFormData.end_date) {
+            alert('請填寫所有欄位');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/teams/races/${editingRace.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    strava_id: athlete?.id,
+                    team_name: teamData.team_name,
+                    name: editFormData.name,
+                    start_date: editFormData.start_date,
+                    end_date: editFormData.end_date
+                })
+            });
+
+            if (response.ok) {
+                // Refresh races
+                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
+                const racesData = await racesRes.json();
+                setRaces(racesData);
+                handleCancelEdit();
+            } else {
+                const err = await response.json();
+                alert('更新失敗: ' + (err.detail || '未知錯誤'));
+            }
+        } catch (error) {
+            console.error('Update race error:', error);
+            alert('更新發生錯誤');
+        }
     };
 
     // 刪除賽事 (Admin Only)
@@ -704,16 +774,28 @@ const TeamDashboard: React.FC = () => {
                                                 </div>
 
                                                 {canSeeWarRoom && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteRace(race.id, race.name);
-                                                        }}
-                                                        className="flex items-center gap-1.5 text-xs font-bold text-red-500/50 hover:text-red-400 transition-colors ml-2"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        刪除
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleStartEdit(race);
+                                                            }}
+                                                            className="flex items-center gap-1.5 text-xs font-bold text-blue-500/70 hover:text-blue-400 transition-colors ml-2"
+                                                        >
+                                                            <Save className="w-3.5 h-3.5" />
+                                                            編輯
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteRace(race.id, race.name);
+                                                            }}
+                                                            className="flex items-center gap-1.5 text-xs font-bold text-red-500/50 hover:text-red-400 transition-colors ml-2"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            刪除
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
 
@@ -742,6 +824,78 @@ const TeamDashboard: React.FC = () => {
                 <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-tcu-blue" /></div>}>
                     <CaptainWarRoom members={members} />
                 </Suspense>
+            )}
+
+            {/* 編輯賽事 Modal */}
+            {editingRace && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+                        <h3 className="font-bold text-xl mb-4 text-slate-900 dark:text-white">編輯賽事</h3>
+
+                        <form onSubmit={handleUpdateRace} className="space-y-4">
+                            {/* 賽事名稱 */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    賽事名稱
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
+                                    required
+                                    placeholder="例如：禮拜三的約會"
+                                />
+                            </div>
+
+                            {/* 開始時間 */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    開始時間
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={editFormData.start_date}
+                                    onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
+                                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
+                                    required
+                                />
+                            </div>
+
+                            {/* 結束時間 */}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    結束時間
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={editFormData.end_date}
+                                    onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
+                                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
+                                    required
+                                />
+                            </div>
+
+                            {/* 按鈕 */}
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    儲存變更
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );

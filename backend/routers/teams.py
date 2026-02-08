@@ -285,6 +285,75 @@ async def get_team_races(team_name: str):
         print(f"[ERROR] Get races error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.put("/races/{race_id}")
+async def update_team_race(race_id: int, request: Request):
+    """
+    更新車隊賽事 (僅限隊長)
+    """
+    try:
+        body = await request.json()
+        strava_id = str(body.get("strava_id"))
+        team_name = body.get("team_name")
+        name = body.get("name")
+        start_date = body.get("start_date")
+        end_date = body.get("end_date")
+        
+        if not strava_id or not team_name or not name or not start_date or not end_date:
+            raise HTTPException(status_code=400, detail="缺少必要參數")
+        
+        # 1. 驗證賽事是否存在且屬於該車隊
+        race_res = supabase.table("team_races").select("*").eq("id", race_id).execute()
+        if not race_res.data:
+            raise HTTPException(status_code=404, detail="賽事不存在")
+        
+        race = race_res.data[0]
+        if race.get("team_name") != team_name:
+            raise HTTPException(status_code=403, detail="您無權更新此賽事")
+        
+        # 2. 驗證權限（僅限隊長/管理員）
+        binding_res = supabase.table("strava_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
+        if not binding_res.data:
+            raise HTTPException(status_code=403, detail="未綁定 Strava 帳號")
+        
+        binding = binding_res.data[0]
+        email = binding.get("tcu_member_email")
+        tcu_account = binding.get("tcu_account")
+        
+        member = None
+        if tcu_account:
+            member_res = supabase.table("tcu_members").select("team, member_type").eq("account", tcu_account).execute()
+            if member_res.data:
+                member = member_res.data[0]
+        
+        if not member and email:
+            member_res = supabase.table("tcu_members").select("team, member_type").eq("email", email).execute()
+            if member_res.data:
+                member = member_res.data[0]
+        
+        if not member or member.get("team") != team_name:
+            raise HTTPException(status_code=403, detail="您不屬於此車隊")
+        
+        member_type = member.get("member_type") or ""
+        is_authorized = "隊長" in member_type or "管理員" in member_type
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="只有隊長或管理員可以更新賽事")
+        
+        # 3. 更新賽事
+        update_data = {
+            "name": name,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+        
+        supabase.table("team_races").update(update_data).eq("id", race_id).execute()
+        return {"success": True, "message": "賽事已更新"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Update race error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/races/{race_id}")
 async def delete_team_race(race_id: int, request: Request):
     """
