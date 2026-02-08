@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap, TrendingUp, Mountain, Trash2 } from 'lucide-react';
+import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap, TrendingUp, Mountain, Trash2, Pencil } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
@@ -766,46 +766,62 @@ const TeamDashboard: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5">
-                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                        {/* 底部資訊區 */}
+                                        <div className="space-y-3 pt-3 mt-2 border-t border-white/5">
+                                            {/* 第一行：日期 + 編輯/刪除按鈕 */}
+                                            <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                                     <Calendar className="w-3.5 h-3.5" />
                                                     {formatDate(startDate)} - {formatDate(endDate)}
                                                 </div>
 
                                                 {canSeeWarRoom && (
-                                                    <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleStartEdit(race);
                                                             }}
-                                                            className="flex items-center gap-1 text-xs font-bold text-blue-500/70 hover:text-blue-400 transition-colors"
+                                                            className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors"
                                                             title="編輯賽事"
                                                         >
-                                                            <Save className="w-3.5 h-3.5" />
-                                                            <span className="hidden sm:inline">編輯</span>
+                                                            <Pencil className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeleteRace(race.id, race.name);
                                                             }}
-                                                            className="flex items-center gap-1 text-xs font-bold text-red-500/50 hover:text-red-400 transition-colors"
+                                                            className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
                                                             title="刪除賽事"
                                                         >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                            <span className="hidden sm:inline">刪除</span>
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 )}
-
-                                                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-white transition-all group-hover:translate-x-1 ml-auto">
-                                                    <span className="hidden sm:inline">查看排行榜</span>
-                                                    <span className="sm:hidden">排行榜</span>
-                                                    <Users2 className="w-3.5 h-3.5" />
-                                                </button>
                                             </div>
+
+                                            {/* 第二行：報名與活動狀態 */}
+                                            <div className="flex items-center gap-4 text-xs">
+                                                <div className="flex items-center gap-1.5 text-slate-400">
+                                                    <Users2 className="w-3.5 h-3.5" />
+                                                    <span className="font-semibold">報名人數:</span>
+                                                    <span className="text-white font-bold">{race.participant_count || 0}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    {isOngoing ? (
+                                                        <span className="px-2 py-0.5 rounded-full bg-strava-orange/20 text-strava-orange text-xs font-bold">進行中</span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 text-xs font-bold">已結束</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* 第三行：排行榜按鈕 */}
+                                            <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:scale-[1.02]">
+                                                <Users2 className="w-4 h-4" />
+                                                查看排行榜
+                                            </button>
                                         </div>
                                     </div>
 
