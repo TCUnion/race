@@ -17,6 +17,7 @@ export interface RaceSegment {
     start_date?: string;
     end_date?: string;
     participant_count: number;
+    team?: string;
 }
 
 /**
@@ -92,6 +93,20 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                 .order('start_date', { ascending: false });
 
             if (segmentError) throw segmentError;
+
+            // 取得所有進行中的車隊賽事以標記主辦車隊
+            const { data: teamRaces } = await supabase
+                .from('team_races')
+                .select('segment_id, team_name')
+                .eq('is_active', true);
+
+            const teamRaceMap = new Map<number, string>();
+            if (teamRaces) {
+                teamRaces.forEach(r => {
+                    teamRaceMap.set(r.segment_id, r.team_name);
+                });
+            }
+
             if (!segments || segments.length === 0) {
                 setOngoingRaces([]);
                 setEndedRaces([]);
@@ -130,6 +145,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                     start_date: s.start_date,
                     end_date: s.end_date,
                     participant_count: countMap.get(s.id) || 0,
+                    team: teamRaceMap.get(s.id), // Add team info
                 };
 
                 const startDate = new Date(s.start_date);

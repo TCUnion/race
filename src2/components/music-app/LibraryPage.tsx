@@ -5,7 +5,7 @@ import { TabBar } from './TabBar';
 import { useRaceHistory, RaceSegment, RaceLeaderboardEntry } from '../../../src/hooks/useRaceHistory';
 import SegmentMap from '../../../src/features/map/SegmentMap';
 import AnnouncementBanner from '../../../src/features/dashboard/AnnouncementBanner';
-
+import { getTeamColor } from '../../../src/utils/teamColors';
 interface LibraryPageProps {
     onTabChange?: (tab: string) => void;
     activeTab?: string;
@@ -72,6 +72,10 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
     // 當前顯示的比賽列表
     const currentRaces = activeSection === 'ongoing' ? ongoingRaces : endedRaces;
 
+
+
+    // ... existing code ...
+
     // 渲染比賽卡片 - 符合 mockup 設計
     const renderRaceCard = (race: RaceSegment, isOngoing: boolean) => (
         <button
@@ -99,9 +103,20 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
 
                 {/* 進行中標籤 - 右上角 */}
                 {isOngoing && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-strava-orange rounded-full">
+                    <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-strava-orange rounded-full shadow-lg z-10">
                         <Flame className="w-2.5 h-2.5 text-white" />
                         <span className="text-[9px] font-bold text-white">進行中</span>
+                    </div>
+                )}
+
+                {/* 主辦車隊標籤 - 左上角 */}
+                {race.team && (
+                    <div
+                        className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full shadow-lg z-10 border border-white/10"
+                        style={{ backgroundColor: getTeamColor(race.team) }}
+                    >
+                        <Users className="w-2.5 h-2.5 text-white" />
+                        <span className="text-[9px] font-bold text-white shadow-black drop-shadow-sm">{race.team}</span>
                     </div>
                 )}
             </div>
@@ -268,8 +283,19 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
 
                         {/* 標題區 */}
                         <div className="absolute bottom-4 left-4 right-4">
-                            <h2 className="text-white text-lg font-bold line-clamp-1">{selectedRace.description || selectedRace.name}</h2>
-                            <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                            <div className="flex items-center justify-between mb-1">
+                                <h2 className="text-white text-lg font-bold line-clamp-1 flex-1 mr-2">{selectedRace.description || selectedRace.name}</h2>
+                                {selectedRace.team && (
+                                    <div
+                                        className="flex items-center gap-1 px-2 py-1 rounded-full shadow-lg border border-white/10 shrink-0"
+                                        style={{ backgroundColor: getTeamColor(selectedRace.team) }}
+                                    >
+                                        <Users className="w-3 h-3 text-white" />
+                                        <span className="text-[10px] font-bold text-white shadow-black drop-shadow-sm">{selectedRace.team}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-slate-400">
                                 <span>{(selectedRace.distance / 1000).toFixed(1)} km</span>
                                 <span>•</span>
                                 <span>{selectedRace.average_grade.toFixed(1)}%</span>
