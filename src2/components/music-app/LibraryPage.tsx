@@ -108,8 +108,8 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
 
             {/* 資訊區 - 符合 mockup 佈局 */}
             <div className="p-3">
-                {/* 標題 */}
-                <h3 className="text-white font-bold text-sm mb-2 line-clamp-1">{race.name}</h3>
+                {/* 標題 - 優先使用敘述欄位（對應首頁標題） */}
+                <h3 className="text-white font-bold text-sm mb-2 line-clamp-1">{race.description || race.name}</h3>
 
                 {/* 統計資料行 */}
                 <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-2">
@@ -268,7 +268,7 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
 
                         {/* 標題區 */}
                         <div className="absolute bottom-4 left-4 right-4">
-                            <h2 className="text-white text-lg font-bold line-clamp-1">{selectedRace.name}</h2>
+                            <h2 className="text-white text-lg font-bold line-clamp-1">{selectedRace.description || selectedRace.name}</h2>
                             <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
                                 <span>{(selectedRace.distance / 1000).toFixed(1)} km</span>
                                 <span>•</span>
