@@ -212,11 +212,11 @@ async def create_team_race(request: Request):
         if member.get("team") != team_name:
             raise HTTPException(status_code=403, detail="您不屬於此車隊")
         
-        # 4. 驗證是否為隊長（只有隊長可以建立賽事）
+        # 4. 驗證是否為隊長或管理員
         member_type = member.get("member_type") or ""
-        is_captain = "隊長" in member_type
-        if not is_captain:
-            raise HTTPException(status_code=403, detail="只有隊長可以建立賽事")
+        is_authorized = "隊長" in member_type or "管理員" in member_type
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="只有隊長或管理員可以建立賽事")
         
         # 5. 檢查是否已有進行中的賽事（一個車隊只能有一個賽事）
         existing_race = supabase.table("team_races").select("id").eq("team_name", team_name).eq("is_active", True).execute()
@@ -302,8 +302,9 @@ async def delete_team_race(race_id: int, request: Request):
             raise HTTPException(status_code=403, detail="您不屬於此車隊")
         
         member_type = member.get("member_type") or ""
-        if "隊長" not in member_type:
-            raise HTTPException(status_code=403, detail="只有隊長可以刪除賽事")
+        is_authorized = "隊長" in member_type or "管理員" in member_type
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="只有隊長或管理員可以刪除賽事")
         
         # 3. 刪除賽事
         supabase.table("team_races").delete().eq("id", race_id).execute()
