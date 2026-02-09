@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
 import SegmentMap from '../map/SegmentMap';
+import ShareButtons from '../../components/ui/ShareButtons';
 const CaptainWarRoom = React.lazy(() => import('./CaptainWarRoom'));
 
 const TeamDashboard: React.FC = () => {
@@ -15,6 +16,7 @@ const TeamDashboard: React.FC = () => {
     const [races, setRaces] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'members' | 'races' | 'war_room'>('members');
+    const [highlightedRaceId, setHighlightedRaceId] = useState<number | null>(null);
 
     // Admin: Create Race State (兩階段流程)
     const [isCreatingRace, setIsCreatingRace] = useState(false);
@@ -58,6 +60,44 @@ const TeamDashboard: React.FC = () => {
             setActiveTab('war_room');
         }
     }, [members, athlete?.id, canSeeWarRoom]);
+
+    // Handle URL query parameters for deep linking to specific race
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const segmentIdParam = params.get('segment_id');
+
+        console.log('[TeamDashboard] URL Param Check:', {
+            segmentIdParam,
+            racesCount: races.length,
+            races: races.map(r => ({ id: r.id, segment_id: r.segment_id, name: r.name }))
+        });
+
+        if (segmentIdParam && races.length > 0) {
+            // 找到對應的賽事 (支援字串和數字比對)
+            const targetRace = races.find(r =>
+                String(r.segment_id) === String(segmentIdParam)
+            );
+
+            console.log('[TeamDashboard] Target Race:', targetRace);
+
+            if (targetRace) {
+                // 自動切換到「車隊賽事」頁籤
+                setActiveTab('races');
+                // 設定高亮顯示
+                setHighlightedRaceId(targetRace.id);
+
+                console.log('[TeamDashboard] Highlighting race:', targetRace.id);
+
+                // 3 秒後取消高亮
+                const timer = setTimeout(() => {
+                    setHighlightedRaceId(null);
+                    console.log('[TeamDashboard] Highlight cleared');
+                }, 3000);
+
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [races]);
 
     const fetchTeamData = async () => {
         try {
@@ -718,6 +758,10 @@ const TeamDashboard: React.FC = () => {
                                     className={`
                                         group relative overflow-hidden rounded-2xl border transition-all duration-300
                                         flex flex-col sm:flex-row
+                                        ${highlightedRaceId === race.id
+                                            ? 'ring-4 ring-strava-orange ring-offset-2 ring-offset-slate-900 animate-pulse'
+                                            : ''
+                                        }
                                         ${isOngoing
                                             ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-strava-orange/30 hover:border-strava-orange/60 hover:shadow-xl hover:shadow-strava-orange/10'
                                             : 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700/50 hover:border-slate-600 hover:shadow-lg'
@@ -822,6 +866,19 @@ const TeamDashboard: React.FC = () => {
                                                 <Users2 className="w-4 h-4" />
                                                 查看排行榜
                                             </button>
+
+                                            {/* 第四行:分享按鈕 */}
+                                            <div className="pt-2 border-t border-white/5">
+                                                <div className="flex items-center justify-center">
+                                                    <ShareButtons
+                                                        title={race.name}
+                                                        description={`${race.segment_name || ''} | ${formatDate(startDate)} - ${formatDate(endDate)}`}
+                                                        url={`${window.location.origin}/dashboard?segment_id=${race.segment_id}`}
+                                                        size="sm"
+                                                        className="scale-90"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
