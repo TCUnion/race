@@ -89,7 +89,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
     {
       label: t('landing.distance'),
       value: segment ? `${(segment.distance / 1000).toFixed(1)} KM` : (isLoading ? '...' : '-'),
-      footer: segment?.name || (isLoading ? 'Loading...' : '-')
+      footer: segment?.description || segment?.name || (isLoading ? 'Loading...' : '-')
     },
     {
       label: t('landing.participants'),

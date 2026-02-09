@@ -105,6 +105,7 @@ export interface Activity {
 export interface SegmentData {
   id: number | string;
   name: string;
+  description?: string;
   activity_type: string;
   distance: number;
   average_grade: number;
