@@ -9,11 +9,11 @@ router = APIRouter(prefix="/api/teams", tags=["teams"])
 async def get_my_team(strava_id: str):
     """
     取得使用者的車隊資訊與權限狀態。
-    從 strava_bindings 取得 tcu_account，再從 tcu_members 取得 team 資訊。
+    從 strava_member_bindings 取得 tcu_account，再從 tcu_members 取得 team 資訊。
     """
     try:
-        # 1. 從 strava_bindings 取得綁定資訊
-        binding_res = supabase.table("strava_bindings").select("*").eq("strava_id", strava_id).execute()
+        # 1. 從 strava_member_bindings 取得綁定資訊
+        binding_res = supabase.table("strava_member_bindings").select("*").eq("strava_id", strava_id).execute()
         if not binding_res.data:
             return {"has_team": False, "message": "User not bound"}
             
@@ -25,7 +25,7 @@ async def get_my_team(strava_id: str):
         # 2. 嘗試從 tcu_members 取得成員資料 (包含 Team)
         member = None
         team_name = None
-        member_name = member_name_from_binding  # 預設使用 strava_bindings 的 member_name
+        member_name = member_name_from_binding  # 預設使用 strava_member_bindings 的 member_name
         member_type = "隊員"  # 預設為隊員
         
         if tcu_account:
@@ -78,7 +78,7 @@ async def get_my_team(strava_id: str):
 async def get_team_members(team_name: str):
     """
     取得車隊成員列表 (含詳細資料)
-    strava_id 從 strava_bindings 取得
+    strava_id 從 strava_member_bindings 取得
     排序：付費車隊管理員 > 隊長 > 隊員
     """
     try:
@@ -91,7 +91,7 @@ async def get_team_members(team_name: str):
         if not members:
             return []
         
-        # 2. 從 strava_bindings 獲取 strava_id (用 email 關聯)
+        # 2. 從 strava_member_bindings 獲取 strava_id (用 email 關聯)
         emails = [m["email"] for m in members if m.get("email")]
         binding_map = {}
         if emails:
@@ -184,8 +184,8 @@ async def create_team_race(request: Request):
         if not all([strava_id, team_name, segment_id, start_date, end_date]):
             raise HTTPException(status_code=400, detail="缺少必要參數")
         
-        # 1. 從 strava_bindings 取得 tcu_member_email
-        binding_res = supabase.table("strava_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
+        # 1. 從 strava_member_bindings 取得 tcu_member_email
+        binding_res = supabase.table("strava_member_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
         if not binding_res.data:
             raise HTTPException(status_code=403, detail="未綁定 Strava 帳號")
         
@@ -311,7 +311,7 @@ async def update_team_race(race_id: int, request: Request):
             raise HTTPException(status_code=403, detail="您無權更新此賽事")
         
         # 2. 驗證權限（僅限隊長/管理員）
-        binding_res = supabase.table("strava_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
+        binding_res = supabase.table("strava_member_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
         if not binding_res.data:
             raise HTTPException(status_code=403, detail="未綁定 Strava 帳號")
         
@@ -377,7 +377,7 @@ async def delete_team_race(race_id: int, request: Request):
             raise HTTPException(status_code=403, detail="您無權刪除此賽事")
         
         # 2. 驗證權限（僅限隊長）
-        binding_res = supabase.table("strava_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
+        binding_res = supabase.table("strava_member_bindings").select("tcu_member_email, tcu_account").eq("strava_id", strava_id).execute()
         if not binding_res.data:
             raise HTTPException(status_code=403, detail="未綁定 Strava 帳號")
         
