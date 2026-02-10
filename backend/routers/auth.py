@@ -154,9 +154,9 @@ def save_strava_token(req: StravaTokenRequest):
 @router.post("/member-binding")
 async def proxy_member_binding(request: Request):
     """
-    處理會員綁定邏輯（使用 strava_bindings 表格）：
+    處理會員綁定邏輯（使用 strava_member_bindings 表格）：
     1. 驗證 tcu_members 中是否存在該會員
-    2. 檢查 strava_bindings 中是否已有綁定
+    2. 檢查 strava_member_bindings 中是否已有綁定
     3. 若未綁定，代理請求至 n8n 發送 OTP
     """
     try:
@@ -264,11 +264,11 @@ async def proxy_member_binding(request: Request):
         return {"success": False, "message": f"處理請求時發生錯誤: {str(e)}"}
 
 
-# ========== 綁定確認 (OTP 驗證後寫入 strava_bindings) ==========
+# ========== 綁定確認 (OTP 驗證後寫入 strava_member_bindings) ==========
 @router.post("/confirm-binding")
 async def confirm_binding(request: Request):
     """
-    OTP 驗證成功後，將綁定關係寫入 strava_bindings 表格。
+    OTP 驗證成功後，將綁定關係寫入 strava_member_bindings 表格。
     """
     try:
         body = await request.json()
@@ -283,7 +283,7 @@ async def confirm_binding(request: Request):
         if not email or not strava_id:
             return {"success": False, "message": "Missing email or stravaId"}
         
-        # Upsert 到 strava_bindings
+        # Upsert 到 strava_member_bindings
         data_to_save = {
             "tcu_member_email": email,
             "strava_id": str(strava_id),
@@ -323,7 +323,7 @@ ADMIN_ATHLETE_IDS = [x.strip() for x in admin_ids_str.split(",") if x.strip()]
 @router.post("/unbind")
 async def unbind_member(request: Request):
     """
-    解除會員綁定（從 strava_bindings 刪除記錄）。
+    解除會員綁定（從 strava_member_bindings 刪除記錄）。
     僅限 Admin 權限操作。
     """
     try:
@@ -367,7 +367,7 @@ async def unbind_member(request: Request):
         if not is_admin and not is_self:
             return {"success": False, "message": "Permission denied"}
 
-        # 3. 從 strava_bindings 刪除記錄
+        # 3. 從 strava_member_bindings 刪除記錄
         res = supabase.table("strava_member_bindings").delete().eq("tcu_member_email", email).execute()
 
         # 4. 清除 tcu_members 中的綁定資料
@@ -428,7 +428,7 @@ async def get_binding_status(strava_id: str):
             })
 
     except Exception as e:
-        print(f"[ERROR] Failed to query strava_bindings: {e}")
+        print(f"[ERROR] Failed to query strava_member_bindings: {e}")
     
     try:
         token_res = supabase.table("strava_tokens").select("name").eq("athlete_id", int(strava_id)).execute()
