@@ -171,7 +171,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                 // 取得當前 Supabase Auth User ID (若有的話)
                 const { data: { user } } = await supabase.auth.getUser();
 
-                // 呼叫 confirm-binding API 寫入 strava_bindings 表格
+                // 呼叫 confirm-binding API 寫入 strava_member_bindings 表格
                 const response = await fetch(`${API_BASE_URL}/api/auth/confirm-binding`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -401,7 +401,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                                 <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                                                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">若要修正能力分組，請前往</span>
                                                 <a
-                                                    href={`https://strava.criterium.tw/skill?tcu_id=${memberData.tcu_id}`}
+                                                    href={`/skill/?tcu_id=${memberData.tcu_id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-[10px] font-black text-tcu-blue hover:text-tcu-blue-light hover:underline flex items-center gap-1 transition-colors"

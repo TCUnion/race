@@ -294,7 +294,7 @@ async def confirm_binding(request: Request):
         if user_id:
             data_to_save["user_id"] = user_id
             
-        res = supabase.table("strava_bindings").upsert(data_to_save).execute()
+        res = supabase.table("strava_member_bindings").upsert(data_to_save).execute()
         
         # 取得完整會員資料以回傳給前端顯示 (優先使用 account)
         if tcu_account:

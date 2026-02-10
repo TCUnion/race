@@ -40,7 +40,7 @@ const EquipmentList: React.FC = () => {
 
             // 2. Fetch Strava Bindings to link TCU -> Strava
             const { data: bindings, error: bError } = await supabaseAdmin
-                .from('strava_bindings')
+                .from('strava_member_bindings')
                 .select('strava_id, tcu_member_email, tcu_account');
 
             if (bError) throw bError;

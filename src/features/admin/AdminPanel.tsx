@@ -246,7 +246,13 @@ const AdminPanel: React.FC = () => {
     const [managers, setManagers] = useState<any[]>([]);
     const [editingManager, setEditingManager] = useState<any>(null); // New editing state
     const [managerSearchTerm, setManagerSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'announcements'>('managers'); // 預設顯示管理員管理
+    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'team_races' | 'announcements'>('managers'); // 預設顯示管理員管理
+
+    // 車隊賽事管理
+    const [teamRaces, setTeamRaces] = useState<any[]>([]);
+    const [editingTeamRace, setEditingTeamRace] = useState<any>(null);
+    const [isSavingTeamRace, setIsSavingTeamRace] = useState(false);
+    const [teamRaceSearchTerm, setTeamRaceSearchTerm] = useState('');
 
     // 廣告/公告管理
     const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -278,6 +284,96 @@ const AdminPanel: React.FC = () => {
             console.error('Fetch announcements error:', err);
         }
     }
+
+    async function fetchTeamRaces() {
+        try {
+            // Join segments to get the default name if needed, though we store 'name' in team_races now
+            const { data, error } = await supabase
+                .from('team_races')
+                .select(`
+                    *,
+                    segment:segments(name)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (data) setTeamRaces(data);
+        } catch (err: any) {
+            console.error('Fetch team races error:', err);
+            setError('讀取車隊賽事失敗: ' + err.message);
+        }
+    }
+
+    const handleUpdateTeamRace = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingTeamRace) return;
+
+        setIsSavingTeamRace(true);
+        try {
+            const payload = {
+                team_name: editingTeamRace.team_name,
+                segment_id: editingTeamRace.segment_id, // Must be selected from existing segments
+                name: editingTeamRace.name,
+                start_date: editingTeamRace.start_date,
+                end_date: editingTeamRace.end_date,
+                is_active: editingTeamRace.is_active,
+                // created_by should be set on insert, maybe from session user
+            };
+
+            // Basic validation
+            if (!payload.team_name || !payload.segment_id || !payload.name) {
+                alert('請填寫所有必填欄位 (車隊名稱, 路段, 賽事名稱)');
+                setIsSavingTeamRace(false);
+                return;
+            }
+
+            let error;
+            if (editingTeamRace.id === 'new') {
+                const { error: insertError } = await supabase
+                    .from('team_races')
+                    .insert([{
+                        ...payload,
+                        created_by: session?.user?.id
+                    }]);
+                error = insertError;
+            } else {
+                const { error: updateError } = await supabase
+                    .from('team_races')
+                    .update(payload)
+                    .eq('id', editingTeamRace.id);
+                error = updateError;
+            }
+
+            if (error) throw error;
+
+            alert(editingTeamRace.id === 'new' ? '新增成功' : '更新成功');
+            setEditingTeamRace(null);
+            fetchTeamRaces();
+        } catch (err: any) {
+            console.error('Save team race error:', err);
+            alert('儲存失敗: ' + err.message);
+        } finally {
+            setIsSavingTeamRace(false);
+        }
+    };
+
+    const handleDeleteTeamRace = async (id: number) => {
+        if (!confirm('確定要刪除此車隊賽事嗎？此動作無法復原。')) return;
+
+        try {
+            const { error } = await supabase
+                .from('team_races')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            alert('刪除成功');
+            fetchTeamRaces();
+        } catch (err: any) {
+            console.error('Delete team race error:', err);
+            alert('刪除失敗: ' + err.message);
+        }
+    };
 
     const handleRefreshSegment = async (seg: any) => {
         if (!confirm(`確定要重新整理「${seg.name}」的資料與地圖嗎？`)) return;
@@ -856,10 +952,10 @@ const AdminPanel: React.FC = () => {
 
             // 2. 抓取 Binding 資料
             const { data: bindings, error: bError } = await supabase
-                .from('strava_bindings')
+                .from('strava_member_bindings')
                 .select('strava_id, tcu_member_email, tcu_account');
 
-            if (bError) console.warn('[WARN] strava_bindings 查詢失敗:', bError.message);
+            if (bError) console.warn('[WARN] strava_member_bindings 查詢失敗:', bError.message);
 
             // 建立 Search Maps
             const accountMap = new Map();
@@ -1105,9 +1201,9 @@ const AdminPanel: React.FC = () => {
                 tokens.forEach(t => tokenMap.set(t.athlete_id.toString(), t));
             }
 
-            // 3. 抓取會員綁定資訊 (改從 strava_bindings 抓取，這是新的 Single Source of Truth)
+            // 3. 抓取會員綁定資訊 (改從 strava_member_bindings 抓取，這是新的 Single Source of Truth)
             const { data: bindings, error: bError } = await supabase
-                .from('strava_bindings')
+                .from('strava_member_bindings')
                 .select('strava_id');
 
             const boundSet = new Set();

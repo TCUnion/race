@@ -181,7 +181,7 @@ async def proxy_member_binding(request: Request):
             }
 
         # 2. Check Existing Binding
-        binding_res = supabase.table("strava_bindings").select("*").eq("tcu_member_email", email).execute()
+        binding_res = supabase.table("strava_member_bindings").select("*").eq("tcu_member_email", email).execute()
         bindings = binding_res.data
         
         if action == "generate_otp":

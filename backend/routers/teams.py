@@ -95,7 +95,7 @@ async def get_team_members(team_name: str):
         emails = [m["email"] for m in members if m.get("email")]
         binding_map = {}
         if emails:
-            binding_res = supabase.table("strava_bindings").select("tcu_member_email, strava_id").in_("tcu_member_email", emails).execute()
+            binding_res = supabase.table("strava_member_bindings").select("tcu_member_email, strava_id").in_("tcu_member_email", emails).execute()
             binding_map = {b["tcu_member_email"]: b["strava_id"] for b in binding_res.data}
         
         # 3. 收集 strava_ids 用於 fallback 頭像 (當 profile_photo 為空時)
