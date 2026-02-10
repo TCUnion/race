@@ -190,11 +190,11 @@ async def proxy_member_binding(request: Request):
         
         member = members[0]
 
-        # --- 檢查綁定狀態 (從 strava_bindings) ---
-        print(f"[DEBUG] Checking strava_bindings for email: {email}")
-        binding_res = supabase.table("strava_bindings").select("*").eq("tcu_member_email", email).execute()
+        # --- 檢查綁定狀態 (從 strava_member_bindings) ---
+        print(f"[DEBUG] Checking strava_member_bindings for email: {email}")
+        binding_res = supabase.table("strava_member_bindings").select("*").eq("tcu_member_email", email).execute()
         bindings = binding_res.data
-        print(f"[DEBUG] strava_bindings query result: {len(bindings) if bindings else 0} bindings found")
+        print(f"[DEBUG] strava_member_bindings query result: {len(bindings) if bindings else 0} bindings found")
         
         if action == "generate_otp":
             if bindings:
@@ -294,7 +294,7 @@ async def confirm_binding(request: Request):
         if user_id:
             data_to_save["user_id"] = user_id
             
-        res = supabase.table("strava_member_bindings").upsert(data_to_save).execute()
+        res = supabase.table("strava_member_bindings").upsert(data_to_save, on_conflict="tcu_member_email").execute()
         
         # 取得完整會員資料以回傳給前端顯示 (優先使用 account)
         if tcu_account:
@@ -337,7 +337,7 @@ async def unbind_member(request: Request):
             return {"success": False, "message": "Missing email or admin_id"}
 
         # 1. 查詢現有綁定以進行權限驗證
-        binding_res = supabase.table("strava_bindings").select("*").eq("tcu_member_email", email).execute()
+        binding_res = supabase.table("strava_member_bindings").select("*").eq("tcu_member_email", email).execute()
         existing_binding = binding_res.data[0] if binding_res.data else None
         
         is_admin = str(admin_id) in ADMIN_ATHLETE_IDS
@@ -368,7 +368,7 @@ async def unbind_member(request: Request):
             return {"success": False, "message": "Permission denied"}
 
         # 3. 從 strava_bindings 刪除記錄
-        res = supabase.table("strava_bindings").delete().eq("tcu_member_email", email).execute()
+        res = supabase.table("strava_member_bindings").delete().eq("tcu_member_email", email).execute()
 
         # 4. 清除 tcu_members 中的綁定資料
         supabase.table("tcu_members").update({
@@ -397,7 +397,7 @@ async def get_binding_status(strava_id: str):
     }
 
     try:
-        res = supabase.table("strava_bindings").select("*").eq("strava_id", str(strava_id)).execute()
+        res = supabase.table("strava_member_bindings").select("*").eq("strava_id", str(strava_id)).execute()
         
         if res.data and len(res.data) > 0:
             binding = res.data[0]
