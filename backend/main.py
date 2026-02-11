@@ -33,7 +33,8 @@ if "*" in origins:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="http://localhost:.*", # 支援本地所有開發埠號
+    # 支援 *.criterium.tw 及本地開發來源 (localhost, 10.*, 192.168.*, 127.*)
+    allow_origin_regex=r"https?://.*\.criterium\.tw|http://localhost:.*|http://10\..*|http://192\.168\..*|http://127\..*",
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],

@@ -111,6 +111,15 @@ export default defineConfig(({ mode }) => {
           ]
         }
       }),
+      // ✅ 新增：HTML 變數替換插件
+      {
+        name: 'html-transform',
+        transformIndexHtml(html) {
+          return html.replace(/%(VITE_[_A-Z0-9]+)%/g, (match, key) => {
+            return env[key] || match;
+          });
+        },
+      },
     ],
     define: {
       // 移除 VITE_SUPABASE_URL 與 VITE_SUPABASE_ANON_KEY 的手動 define，
@@ -127,6 +136,7 @@ export default defineConfig(({ mode }) => {
           manager: path.resolve(__dirname, 'manager.html'),
           admin: path.resolve(__dirname, 'admin.html'),
           v2: path.resolve(__dirname, 'v2.html'),
+          skill: path.resolve(__dirname, 'skill/index.html'),
         },
         output: {
           // 手動分割 Chunk 策略 - 優化 Bundle Size

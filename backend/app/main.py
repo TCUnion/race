@@ -10,7 +10,8 @@ origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="http://localhost:.*",
+    # 支援本地開發來源 (localhost, 10.*, 192.168.*, 127.*)
+    allow_origin_regex=r"http://localhost:.*|http://10\..*|http://192\.168\..*|http://127\..*",
     allow_origins=origins if "*" not in origins else [],
     allow_credentials=True,
     allow_methods=["*"],

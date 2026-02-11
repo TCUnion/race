@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { API_BASE_URL } from '../lib/api_config';
+// import { API_BASE_URL } from '../lib/api_config';
+import { apiClient } from '../lib/apiClient';
 
 export interface StravaAthlete {
     id: number;
@@ -63,25 +64,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         lastSyncTime.current = now;
 
         const numericId = Number(athleteData.id);
-        if (athleteData.access_token && !isNaN(numericId) && numericId !== 0) {
+        // ✅ 修正：必須同時擁有 access_token 與 refresh_token 才進行同步，避免觸發後端 invalid token 錯誤
+        if (athleteData.access_token && athleteData.refresh_token && !isNaN(numericId) && numericId !== 0) {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
-                await fetch(`${API_BASE_URL}/api/auth/strava-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        athlete_id: numericId,
-                        access_token: athleteData.access_token,
-                        refresh_token: athleteData.refresh_token || '',
-                        expires_at: athleteData.expires_at || Math.floor(now / 1000) + 21600,
-                        name: `${athleteData.firstname || ''} ${athleteData.lastname || ''}`.trim() || null,
-                        user_id: user?.id
-                    })
+                await apiClient.post('/api/auth/strava-token', {
+                    athlete_id: numericId,
+                    access_token: athleteData.access_token,
+                    refresh_token: athleteData.refresh_token,
+                    expires_at: athleteData.expires_at || Math.floor(now / 1000) + 21600,
+                    name: `${athleteData.firstname || ''} ${athleteData.lastname || ''}`.trim() || null,
+                    user_id: user?.id
                 });
                 console.log('[AuthContext] Token 已同步');
             } catch (e) {
                 console.warn('[AuthContext] Token 同步失敗', e);
                 lastSyncTime.current = 0;
+            }
+        } else {
+            // 如果只有基本資料但沒有 token，則安靜地跳過，不報錯
+            if (athleteData.access_token || athleteData.refresh_token) {
+                console.debug('[AuthContext] 憑證不完整，跳過同步');
             }
         }
     }, []);
@@ -94,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         lastBindingCheckTime.current = now;
 
         try {
-            const apiRes = await fetch(`${API_BASE_URL}/api/auth/binding-status/${athleteId}`);
+            const apiRes = await apiClient.get(`/api/auth/binding-status/${athleteId}`);
             if (!apiRes.ok) throw new Error('API request failed');
 
             const data = await apiRes.json();
