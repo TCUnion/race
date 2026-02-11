@@ -980,21 +980,30 @@
         // ✅ URL 參數自動填入與登入
         window.addEventListener('load', function () {
             const urlParams = new URLSearchParams(window.location.search);
-            const tcuId = urlParams.get('tcu_id');
+            // 支援多種可能的參數名稱
+            let tcuId = urlParams.get('tcu_id') || urlParams.get('tcuId') || urlParams.get('id');
+
+            // 安全檢查：過濾掉字串形式的 "undefined" 或 "null"
+            if (tcuId === 'undefined' || tcuId === 'null') {
+                tcuId = null;
+            }
 
             if (tcuId) {
                 console.log('🚀 TCU ID detected in URL:', tcuId);
                 const idInput = document.getElementById('memberIdCard');
-                idInput.value = tcuId;
+                if (idInput) {
+                    idInput.value = tcuId;
 
-                // 視覺優化：隱藏查詢區直接進入載入狀態
-                document.getElementById('querySection').classList.add('hidden');
-                document.getElementById('loadingSection').classList.remove('hidden');
+                    // 視覺優化：隱藏查詢區直接進入載入狀態
+                    document.getElementById('querySection').classList.add('hidden');
+                    document.getElementById('loadingSection').classList.remove('hidden');
 
-                // 稍微延遲確保初始化完成
-                setTimeout(() => {
-                    queryMember();
-                }, 500);
+                    // 稍微延遲確保初始化完成
+                    setTimeout(() => {
+                        console.log('🔄 Triggering automatic query for:', tcuId);
+                        queryMember();
+                    }, 500);
+                }
             }
         });
     </script>

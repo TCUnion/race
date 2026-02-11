@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { API_BASE_URL } from '../../lib/api_config';
+// import { API_BASE_URL } from '../../lib/api_config';
+import { apiClient } from '../../lib/apiClient';
 import { useAuth } from '../../hooks/useAuth';
 import {
     UserCheck,
@@ -106,18 +107,16 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
         }
     };
 
+    // ...
+
     const triggerOtp = async (email: string, name: string, inputId: string) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/member-binding`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    memberName: name,
-                    stravaId: athlete?.id,
-                    input_id: inputId,
-                    action: 'generate_otp'
-                })
+            const response = await apiClient.post('/api/auth/member-binding', {
+                email,
+                memberName: name,
+                stravaId: athlete?.id,
+                input_id: inputId,
+                action: 'generate_otp'
             });
             const text = await response.text();
 
@@ -144,7 +143,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
             }
         } catch (err) {
             console.error('OTP trigger failed:', err);
-            return { success: false, message: '與伺服器連線失敗' };
+            return { success: false, message: '與伺服器連線失敗 (Primary & Backup)' };
         }
     };
 
@@ -172,16 +171,12 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                 const { data: { user } } = await supabase.auth.getUser();
 
                 // 呼叫 confirm-binding API 寫入 strava_member_bindings 表格
-                const response = await fetch(`${API_BASE_URL}/api/auth/confirm-binding`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: data.email,
-                        stravaId: athlete.id,
-                        tcu_account: data.account || tcuId,
-                        member_name: data.real_name,
-                        user_id: user?.id // 傳遞 Auth ID 建立綁定
-                    })
+                const response = await apiClient.post('/api/auth/confirm-binding', {
+                    email: data.email,
+                    stravaId: athlete.id,
+                    tcu_account: data.account || tcuId,
+                    member_name: data.real_name,
+                    user_id: user?.id // 傳遞 Auth ID 建立綁定
                 });
 
                 const result = await response.json();
@@ -218,13 +213,9 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
         setIsUnbinding(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/unbind`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: memberData.email,
-                    admin_id: athlete.id.toString()
-                })
+            const response = await apiClient.post('/api/auth/unbind', {
+                email: memberData.email,
+                admin_id: athlete.id.toString()
             });
             const result = await response.json();
             if (result.success) {
@@ -401,7 +392,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                                 <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                                                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">若要修正能力分組，請前往</span>
                                                 <a
-                                                    href={`/skill/?tcu_id=${memberData.tcu_id}`}
+                                                    href="https://strava.criterium.tw/skill"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-[10px] font-black text-tcu-blue hover:text-tcu-blue-light hover:underline flex items-center gap-1 transition-colors"
