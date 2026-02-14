@@ -14,13 +14,31 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [athlete, setAthlete] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 轉換 segments 格式以符合 RegistrationForm props - 移至最上方以符合 Hook 規則
-  const formSegments = React.useMemo(() => segments.map(s => ({
-    id: s.id, // Supabase PK
-    name: s.name,
-    description: s.description, // 路段說明
-    strava_id: s.strava_id
-  })), [segments]);
+  // 過濾已過期路段：end_date 已過的挑戰不出現在報名表中
+  const formSegments = React.useMemo(() => {
+    const now = new Date();
+    return segments
+      .filter(s => {
+        // 沒有 end_date 的路段視為永久有效
+        if (!s.end_date) return true;
+        // end_date 當天仍有效（比較到日期結束）
+        const endDate = new Date(s.end_date);
+        endDate.setHours(23, 59, 59, 999);
+        return endDate >= now;
+      })
+      .map(s => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        strava_id: s.strava_id
+      }));
+  }, [segments]);
+
+  const initialSegmentId = React.useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('segment_id');
+    return id ? parseInt(id, 10) : undefined;
+  }, []);
 
   useEffect(() => {
     const loadAthlete = () => {
@@ -78,12 +96,15 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
 
 
+
+
   return (
     <div className="min-h-screen bg-slate-950 py-20 px-4">
       <RegistrationForm
         athlete={athlete}
         segments={formSegments}
         onSuccess={() => onNavigate(ViewType.DASHBOARD)}
+        initialSegmentId={initialSegmentId}
       />
     </div>
   );
