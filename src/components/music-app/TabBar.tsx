@@ -1,4 +1,4 @@
-import { Home, LayoutDashboard, Search, Settings } from 'lucide-react';
+import { Home, LayoutDashboard, Search, Settings, Wrench } from 'lucide-react';
 import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
 import { useActiveAnnouncements } from '../../hooks/useActiveAnnouncements';
 
@@ -10,6 +10,7 @@ interface TabBarProps {
 const tabs = [
     { id: 'home', label: '探索', icon: Home },
     { id: 'library', label: '挑戰', icon: LayoutDashboard },
+    { id: 'maintenance', label: '保養', icon: Wrench },
     { id: 'search', label: '搜尋', icon: Search },
     { id: 'settings', label: '設定', icon: Settings },
 ];
