@@ -222,6 +222,7 @@ function App() {
                             if (tab === 'search') setView(V2View.SEARCH);
                             if (tab === 'library') setView(V2View.LIBRARY);
                             if (tab === 'settings') setView(V2View.SETTINGS);
+                            if (tab === 'maintenance') setView(V2View.MAINTENANCE);
                         }} />
                     )}
                 </div>
