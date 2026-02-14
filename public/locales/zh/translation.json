@@ -2,7 +2,7 @@
     "nav": {
         "explore": "探索活動",
         "ranking": "排行榜",
-        "dashboard": "個人儀表板",
+        "dashboard": "報名",
         "records": "保養紀錄",
         "members": "TCU 會員資料",
         "members_bind": "TCU 綁定",
@@ -41,7 +41,7 @@
         "leaderboard_preview": "目前排行榜",
         "view_full_leaderboard": "查看完整榜單",
         "loading_leaderboard": "載入排行榜...",
-        "check_dashboard": "前往各路段儀表板查看即時排行",
+        "check_dashboard": "前往各路段報名頁面查看即時排行",
         "join_challenge": "立即加入挑戰",
         "details_title": "路段詳情",
         "period": "挑戰期間",

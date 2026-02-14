@@ -420,7 +420,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             >
               <LayoutDashboard className="w-5 h-5 mr-3" />
               {t('nav.dashboard')}
-              {t('nav.dashboard')}
               {(pendingAuthorizations.length > 0 || hasActiveAnnouncements) && (
                 <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               )}
