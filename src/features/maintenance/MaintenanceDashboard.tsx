@@ -773,15 +773,15 @@ const MaintenanceDashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
       {/* 標題 */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="bg-orange-600 p-2.5 rounded-2xl shadow-lg shadow-orange-900/40">
-          <Wrench className="w-6 h-6 text-white" />
+      <div className="flex items-center gap-3 mb-4 sm:mb-8">
+        <div className="bg-orange-600 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-lg shadow-orange-900/40">
+          <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold text-white">腳踏車保養紀錄</h1>
-          <p className="text-orange-200/50 text-sm">根據 Strava 里程追蹤保養狀態</p>
+          <h1 className="text-lg sm:text-2xl font-extrabold text-white">腳踏車保養紀錄</h1>
+          <p className="text-orange-200/50 text-xs sm:text-sm hidden sm:block">根據 Strava 里程追蹤保養狀態</p>
         </div>
       </div>
 
@@ -792,48 +792,81 @@ const MaintenanceDashboard: React.FC = () => {
           <p className="text-orange-200/40">請確認您的 Strava 帳號已連結並設定腳踏車</p>
         </div>
       ) : (
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* 左側：腳踏車列表 */}
-          <div className="lg:col-span-1 space-y-4">
-            <h2 className="text-sm font-bold text-orange-200/60 uppercase tracking-wider mb-4">
+        <div className="grid lg:grid-cols-4 gap-4 lg:gap-8">
+          {/* 左側：腳踏車列表（手機水平滾動 / 桌面垂直列表） */}
+          <div className="lg:col-span-1">
+            <h2 className="text-sm font-bold text-orange-200/60 uppercase tracking-wider mb-3 lg:mb-4 hidden lg:block">
               我的腳踏車
             </h2>
-            {bikes.map(bike => {
-              const alerts = getAlertCount(bike);
-              const isSelected = selectedBikeId === bike.id;
-              return (
-                <button
-                  key={bike.id}
-                  onClick={() => setSelectedBikeId(bike.id)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected
-                    ? 'bg-orange-600/20 border-orange-500/50 shadow-lg shadow-orange-900/20'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-white">{bike.name}</h3>
-                      <p className="text-sm text-orange-200/50">
-                        {Math.round(bike.converted_distance || bike.distance / 1000).toLocaleString()} km
-                      </p>
+            {/* 手機版：水平滾動 pill 按鈕 */}
+            <div className="flex lg:hidden gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+              {bikes.map(bike => {
+                const alerts = getAlertCount(bike);
+                const isSelected = selectedBikeId === bike.id;
+                return (
+                  <button
+                    key={bike.id}
+                    onClick={() => setSelectedBikeId(bike.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full border whitespace-nowrap transition-all shrink-0 min-h-[44px] ${isSelected
+                      ? 'bg-orange-600/20 border-orange-500/50 text-white'
+                      : 'bg-white/5 border-white/10 text-orange-200/60 hover:bg-white/10'
+                      }`}
+                  >
+                    <span className="font-bold text-sm">{bike.name}</span>
+                    <span className="text-xs opacity-60">{Math.round(bike.converted_distance || bike.distance / 1000).toLocaleString()} km</span>
+                    {alerts.overdue > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {alerts.overdue}
+                      </span>
+                    )}
+                    {alerts.dueSoon > 0 && (
+                      <span className="bg-yellow-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {alerts.dueSoon}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {/* 桌面版：垂直列表 */}
+            <div className="hidden lg:block space-y-4">
+              {bikes.map(bike => {
+                const alerts = getAlertCount(bike);
+                const isSelected = selectedBikeId === bike.id;
+                return (
+                  <button
+                    key={bike.id}
+                    onClick={() => setSelectedBikeId(bike.id)}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all ${isSelected
+                      ? 'bg-orange-600/20 border-orange-500/50 shadow-lg shadow-orange-900/20'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-bold text-white">{bike.name}</h3>
+                        <p className="text-sm text-orange-200/50">
+                          {Math.round(bike.converted_distance || bike.distance / 1000).toLocaleString()} km
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {alerts.overdue > 0 && (
+                          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                            {alerts.overdue}
+                          </span>
+                        )}
+                        {alerts.dueSoon > 0 && (
+                          <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
+                            {alerts.dueSoon}
+                          </span>
+                        )}
+                        <ChevronRight className={`w-4 h-4 text-orange-200/40 ${isSelected ? 'rotate-90' : ''}`} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {alerts.overdue > 0 && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {alerts.overdue}
-                        </span>
-                      )}
-                      {alerts.dueSoon > 0 && (
-                        <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {alerts.dueSoon}
-                        </span>
-                      )}
-                      <ChevronRight className={`w-4 h-4 text-orange-200/40 ${isSelected ? 'rotate-90' : ''}`} />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
 
             {/* 輪組設定區塊 (從右側移至於此) */}
             {selectedBike && (
@@ -1015,27 +1048,27 @@ const MaintenanceDashboard: React.FC = () => {
             {selectedBike ? (
               <div className="space-y-6">
                 {/* 車輛資訊卡 */}
-                <div className="bg-gradient-to-br from-orange-600/20 to-orange-900/20 border border-orange-500/30 rounded-3xl p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h2 className="text-2xl font-bold text-white">{selectedBike.name}</h2>
+                <div className="bg-gradient-to-br from-orange-600/20 to-orange-900/20 border border-orange-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                        <h2 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedBike.name}</h2>
                         <button
                           onClick={() => handleEditClick(selectedBike)}
-                          className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-orange-200/60 hover:text-white transition-all"
+                          className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-orange-200/60 hover:text-white transition-all shrink-0 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                           title="編輯詳情"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-orange-200/60 mb-2">
+                      <p className="text-orange-200/60 text-sm sm:text-base">
                         總里程：<span className="text-white font-mono font-bold">
                           {Math.round(selectedBike.converted_distance || selectedBike.distance / 1000).toLocaleString()}
                         </span> km
                       </p>
 
-                      {/* 顯示單車詳細配置 */}
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm mt-4 p-4 bg-black/20 rounded-2xl border border-white/5">
+                      {/* 顯示單車詳細配置 - 手機版隱藏 */}
+                      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm mt-4 p-4 bg-black/20 rounded-2xl border border-white/5">
                         <div className="flex flex-col">
                           <span className="text-orange-200/40 text-xs font-bold uppercase tracking-wider mb-1">品牌</span>
                           <span className="text-white font-medium">{selectedBike.brand || '-'}</span>
@@ -1069,10 +1102,16 @@ const MaintenanceDashboard: React.FC = () => {
                           </div>
                         )}
                       </div>
+                      {/* 手機版：精簡品牌型號 */}
+                      <div className="flex md:hidden flex-wrap gap-x-3 gap-y-1 text-xs text-orange-200/40 mt-1">
+                        {selectedBike.brand && <span>{selectedBike.brand}</span>}
+                        {selectedBike.model && <span>• {selectedBike.model}</span>}
+                        {selectedBike.groupset_name && <span>• {selectedBike.groupset_name}</span>}
+                      </div>
                     </div>
                     <button
                       onClick={() => setIsAddModalOpen(true)}
-                      className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap"
+                      className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2.5 sm:py-2 rounded-xl font-bold transition-all whitespace-nowrap min-h-[44px]"
                     >
                       <Plus className="w-4 h-4" />
                       新增保養
@@ -1082,9 +1121,9 @@ const MaintenanceDashboard: React.FC = () => {
                 </div>
 
                 {/* 標籤切換 */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                   <button
-                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'reminders'
+                    className={`px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap min-h-[44px] shrink-0 text-sm sm:text-base ${activeTab === 'reminders'
                       ? 'bg-orange-600 text-white'
                       : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
@@ -1094,7 +1133,7 @@ const MaintenanceDashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setActiveTab('table')}
-                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'table'
+                    className={`px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap min-h-[44px] shrink-0 text-sm sm:text-base ${activeTab === 'table'
                       ? 'bg-orange-600 text-white'
                       : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
@@ -1103,7 +1142,7 @@ const MaintenanceDashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setActiveTab('history')}
-                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'history'
+                    className={`px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap min-h-[44px] shrink-0 text-sm sm:text-base ${activeTab === 'history'
                       ? 'bg-orange-600 text-white'
                       : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
@@ -1112,7 +1151,7 @@ const MaintenanceDashboard: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setActiveTab('activities')}
-                    className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'activities'
+                    className={`px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap min-h-[44px] shrink-0 text-sm sm:text-base ${activeTab === 'activities'
                       ? 'bg-orange-600 text-white'
                       : 'bg-white/5 text-orange-200/60 hover:bg-white/10'
                       }`}
@@ -1170,7 +1209,7 @@ const MaintenanceDashboard: React.FC = () => {
                               {isReplacement ? (
                                 <div
                                   onClick={() => setSelectedHistoryType(reminder.type)}
-                                  className="p-4 rounded-2xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group h-full aspect-square flex flex-col justify-between overflow-hidden"
+                                  className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group h-full lg:aspect-square flex flex-col justify-between overflow-hidden"
                                 >
                                   <div className="flex items-start justify-between mb-3">
                                     <div>
@@ -1196,7 +1235,7 @@ const MaintenanceDashboard: React.FC = () => {
                               ) : (
                                 <div
                                   onClick={() => setSelectedHistoryType(reminder.type)}
-                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full overflow-hidden aspect-square flex flex-col justify-between`}
+                                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${statusColors[reminder.status]} cursor-pointer transition-transform hover:scale-[1.02] h-full overflow-hidden lg:aspect-square flex flex-col justify-between`}
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                                     <div className="flex-1 min-w-0">

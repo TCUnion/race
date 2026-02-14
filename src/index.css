@@ -67,3 +67,13 @@ body {
 .card-glow:hover::before {
   @apply opacity-100;
 }
+
+/* 隱藏捲軸 - 用於水平滾動元素 */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
