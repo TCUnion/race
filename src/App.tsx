@@ -62,7 +62,7 @@ const App: React.FC = () => {
                   onClick={() => setCurrentView(ViewType.DASHBOARD)}
                   className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
                 >
-                  回到儀表板
+                  回到報名
                 </button>
               </div>
             </div>

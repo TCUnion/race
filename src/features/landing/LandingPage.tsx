@@ -271,7 +271,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
               ) : (
                 <div className="p-12 text-center text-slate-500">
                   <BarChart3 className="w-12 h-12 mb-2 opacity-20 mx-auto" />
-                  <p className="text-sm font-bold uppercase tracking-widest">{t('landing.check_dashboard')}</p>
+                  <p className="text-sm font-bold uppercase tracking-widest">{t('landing.check_registration')}</p>
                   <button
                     onClick={onRegister}
                     className="mt-4 text-tcu-blue text-xs font-black uppercase tracking-widest hover:brightness-110 underline decoration-2 underline-offset-4"

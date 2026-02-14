@@ -463,7 +463,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               )}
               <div className="flex flex-col min-w-0">
                 <h1 className="text-foreground text-[10px] font-black leading-none tracking-tight uppercase italic drop-shadow-sm">
-                  {athlete ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : '個人儀表板'}
+                  {athlete ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim() : '報名'}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary/10 border border-border">

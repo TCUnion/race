@@ -35,7 +35,7 @@ const RaceLeaderboard: React.FC<RaceLeaderboardProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-2xl">
+            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-2xl">
 
                 {/* 關閉按鈕 */}
                 <button
@@ -46,7 +46,7 @@ const RaceLeaderboard: React.FC<RaceLeaderboardProps> = ({
                 </button>
 
                 {/* 地圖 Header */}
-                <div className="relative h-40 overflow-hidden">
+                <div className="relative h-32 sm:h-40 shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900 z-[1]" />
                     <SegmentMap polyline={race.polyline} className="w-full h-full" />
 
@@ -75,7 +75,7 @@ const RaceLeaderboard: React.FC<RaceLeaderboardProps> = ({
                 </div>
 
                 {/* 排行榜列表 */}
-                <div className="overflow-y-auto max-h-[calc(90vh-280px)]">
+                <div className="max-h-none">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
                             <div className="w-8 h-8 border-2 border-tcu-blue border-t-transparent rounded-full animate-spin" />

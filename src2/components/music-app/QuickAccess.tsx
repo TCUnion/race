@@ -9,7 +9,7 @@ interface QuickAccessItem {
 }
 
 const quickItems: QuickAccessItem[] = [
-    { id: 'dashboard', label: '儀表板', icon: LayoutDashboard, color: '#30D158', bgColor: 'rgba(48, 209, 88, 0.2)' },
+    { id: 'dashboard', label: '報名', icon: LayoutDashboard, color: '#30D158', bgColor: 'rgba(48, 209, 88, 0.2)' },
     { id: 'training', label: 'AI 訓練', icon: Zap, color: '#FF3B30', bgColor: 'rgba(255, 59, 48, 0.2)' },
     { id: 'team', label: '車隊', icon: Users, color: '#0A84FF', bgColor: 'rgba(10, 132, 255, 0.2)' },
     { id: 'maintenance', label: '保養紀錄', icon: Wrench, color: '#8E8E93', bgColor: 'rgba(142, 142, 147, 0.2)' },

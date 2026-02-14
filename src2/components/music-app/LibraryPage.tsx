@@ -263,7 +263,7 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
                     {/* Modal Header with Back Button */}
                     <div className="relative">
                         {/* Map Header */}
-                        <div className="h-80 relative overflow-hidden">
+                        <div className="h-48 sm:h-64 md:h-80 relative overflow-hidden">
                             {selectedRace.polyline ? (
                                 <SegmentMap polyline={selectedRace.polyline} className="w-full h-full" minimal={true} />
                             ) : (
