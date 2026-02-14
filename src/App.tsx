@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { useSEO } from './hooks/useSEO';
 import { HomePage, SearchPage, LibraryPage, StatusBar } from './components/music-app';
 
 // 頁面視圖定義
@@ -36,6 +37,7 @@ import AdminPanel from './features/admin/AdminPanel';
 import SkillVerificationPage from './features/skill/SkillVerificationPage';
 
 function App() {
+    useSEO();
     const { athlete, isBound } = useAuth();
     const [view, setView] = useState<V2View>(V2View.HOME);
     const [activeTab, setActiveTab] = useState('home');
