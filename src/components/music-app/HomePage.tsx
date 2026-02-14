@@ -312,11 +312,13 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                         gradient: `${segment.average_grade}%`,
                         imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop",
                         polyline: segment.polyline,
-                        team: segment.team
+                        team: segment.team,
+                        endDate: segment.end_date
                     }))}
-                    onChallengeClick={(id) => {
+                    onChallengeClick={() => {
+                        // NOTE: 點擊近期挑戰直接跳到挑戰頁面
                         if (onNavigate) {
-                            onNavigate(V2View.LEADERBOARD, { segmentId: id });
+                            onNavigate(V2View.LIBRARY);
                         }
                     }}
                 />
