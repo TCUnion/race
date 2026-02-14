@@ -136,7 +136,7 @@ export default defineConfig(({ mode }) => {
           manager: path.resolve(__dirname, 'manager.html'),
           admin: path.resolve(__dirname, 'admin.html'),
           v2: path.resolve(__dirname, 'v2.html'),
-          skill: path.resolve(__dirname, 'skill/index.html'),
+
         },
         output: {
           // 手動分割 Chunk 策略 - 優化 Bundle Size

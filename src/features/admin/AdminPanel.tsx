@@ -1447,9 +1447,9 @@ const AdminPanel: React.FC = () => {
         if (!expires_at) return 'text-slate-400';
         const now = Math.floor(Date.now() / 1000);
         const diff = expires_at - now;
-        if (diff <= 0) return 'text-red-500 font-black bg-red-50 dark:bg-red-900/20 px-1 rounded';
-        if (diff <= 2 * 3600) return 'text-orange-500 font-black bg-orange-50 dark:bg-orange-900/20 px-1 rounded';
-        return 'text-emerald-600 dark:text-emerald-400 font-bold';
+        if (diff <= 0) return 'text-red-500 font-black bg-red-900/20 px-1 rounded';
+        if (diff <= 2 * 3600) return 'text-orange-500 font-black bg-orange-900/20 px-1 rounded';
+        return 'text-emerald-400 font-bold';
     };
 
 
@@ -1466,26 +1466,26 @@ const AdminPanel: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="max-w-md mx-auto my-20 p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800">
-                <h2 className="text-2xl font-black italic mb-6 uppercase tracking-tight">管理員登入</h2>
+            <div className="max-w-md mx-auto my-20 p-8 bg-slate-900 rounded-3xl shadow-xl border border-slate-800">
+                <h2 className="text-2xl font-black italic mb-6 uppercase tracking-tight text-white">管理員登入</h2>
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tcu-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-tcu-blue"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">密碼</label>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">密碼</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-tcu-blue"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-tcu-blue"
                             required
                         />
                     </div>
@@ -1495,11 +1495,11 @@ const AdminPanel: React.FC = () => {
                             id="rememberMe"
                             checked={rememberMe}
                             onChange={(e) => setRememberMe(e.target.checked)}
-                            className="w-4 h-4 rounded border-slate-300 text-tcu-blue focus:ring-tcu-blue"
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-tcu-blue focus:ring-tcu-blue"
                         />
-                        <label htmlFor="rememberMe" className="text-sm font-bold text-slate-500 cursor-pointer">記住密碼</label>
+                        <label htmlFor="rememberMe" className="text-sm font-bold text-slate-400 cursor-pointer">記住密碼</label>
                     </div>
-                    {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+                    {error && <p className="text-red-400 text-sm font-bold">{error}</p>}
                     <button
                         type="submit"
                         disabled={loading}
@@ -1511,9 +1511,9 @@ const AdminPanel: React.FC = () => {
 
                 {/* 分隔線 */}
                 <div className="flex items-center gap-4 my-6">
-                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">或</span>
-                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                    <div className="flex-1 h-px bg-slate-700"></div>
+                    <span className="text-xs font-bold text-slate-500 uppercase">或</span>
+                    <div className="flex-1 h-px bg-slate-700"></div>
                 </div>
 
                 {/* Strava 登入按鈕 */}
@@ -1526,7 +1526,7 @@ const AdminPanel: React.FC = () => {
                     {loading ? '連線中...' : '使用 Strava 登入'}
                 </button>
 
-                <p className="text-center text-xs text-slate-400 mt-4">
+                <p className="text-center text-xs text-slate-500 mt-4">
                     僅限授權管理員使用
                 </p>
             </div>
@@ -1540,7 +1540,7 @@ const AdminPanel: React.FC = () => {
                     <h1 className="text-4xl font-black italic uppercase tracking-tighter">
                         後台總表 <span className="text-tcu-blue text-lg not-italic opacity-50 ml-2">Backend Dashboard</span>
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 font-bold mt-1">
+                    <p className="text-slate-400 font-bold mt-1">
                         目前登入身份: {session?.user?.email || stravaSession?.name || '未知'}
                         {stravaSession && <span className="ml-2 text-[#FC4C02]">（Strava）</span>}
                     </p>
@@ -1548,7 +1548,7 @@ const AdminPanel: React.FC = () => {
                         <span className="text-[10px] font-black uppercase tracking-widest bg-tcu-blue/10 text-tcu-blue px-2 py-0.5 rounded-full">
                             Settings: {siteSettings.find(s => s.key === 'app_version')?.value || 'v1.0.0'}
                         </span>
-                        <span className="text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <History className="w-3 h-3" />
                             Build: {__APP_VERSION__}
                         </span>
@@ -1565,7 +1565,7 @@ const AdminPanel: React.FC = () => {
                 <div className="flex gap-4">
                     <button
                         onClick={handleLogout}
-                        className="px-6 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-red-500 hover:text-white text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all"
+                        className="px-6 py-2 bg-slate-800 hover:bg-red-500 hover:text-white text-slate-300 font-bold rounded-xl transition-all"
                     >
                         登出
                     </button>
@@ -1577,7 +1577,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('managers')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'managers'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Briefcase className="w-4 h-4 inline-block mr-2" />
@@ -1587,7 +1587,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('members')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'members'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Users className="w-4 h-4 inline-block mr-2" />
@@ -1597,7 +1597,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('segments')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'segments'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Database className="w-4 h-4 inline-block mr-2" />
@@ -1607,7 +1607,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('tokens')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'tokens'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Settings className="w-4 h-4 inline-block mr-2" />
@@ -1617,7 +1617,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('seo')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'seo'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Globe className="w-4 h-4 inline-block mr-2" />
@@ -1627,7 +1627,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('footer')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'footer'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Share2 className="w-4 h-4 inline-block mr-2" />
@@ -1637,7 +1637,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('equipment')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'equipment'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <Smartphone className="w-4 h-4 inline-block mr-2" />
@@ -1647,7 +1647,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('races')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'races'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <ClipboardCheck className="w-4 h-4 inline-block mr-2" />
@@ -1657,7 +1657,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => setActiveTab('announcements')}
                     className={`px-4 py-2 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === 'announcements'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
                         }`}
                 >
                     <MessageCircle className="w-4 h-4 inline-block mr-2" />
@@ -1682,7 +1682,7 @@ const AdminPanel: React.FC = () => {
             {/* 管理員管理 Tab */}
             {
                 activeTab === 'managers' && (
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
+                    <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-sm mb-8">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-black">管理員清單</h3>
                             <div className="relative">
@@ -1692,13 +1692,13 @@ const AdminPanel: React.FC = () => {
                                     placeholder="搜尋 Email 或名稱..."
                                     value={managerSearchTerm}
                                     onChange={(e) => setManagerSearchTerm(e.target.value)}
-                                    className="pl-10 pr-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-tcu-blue w-64"
+                                    className="pl-10 pr-4 py-2 rounded-xl bg-slate-800 border-none focus:ring-2 focus:ring-tcu-blue w-64"
                                 />
                             </div>
                         </div>
 
                         {editingManager && (
-                            <div className="mb-8 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-tcu-blue border-dashed">
+                            <div className="mb-8 p-6 bg-slate-800/50 rounded-2xl border-2 border-tcu-blue border-dashed">
                                 <h4 className="font-bold text-tcu-blue mb-4 flex items-center gap-2">
                                     <Edit2 className="w-4 h-4" />
                                     編輯管理員: {editingManager.email}
@@ -1775,7 +1775,7 @@ const AdminPanel: React.FC = () => {
                                     </span>
                                     <h4 className="text-lg font-bold text-red-500">待審核管理員 (Pending Approval)</h4>
                                 </div>
-                                <div className="overflow-x-auto bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-200 dark:border-red-900/30">
+                                <div className="overflow-x-auto bg-red-900/10 rounded-2xl border border-red-900/30">
                                     <table className="w-full text-left">
                                         <thead className="text-red-400 uppercase text-xs font-bold">
                                             <tr>
@@ -1786,11 +1786,11 @@ const AdminPanel: React.FC = () => {
                                                 <th className="px-6 py-4 text-right">操作</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-red-100 dark:divide-red-900/30">
+                                        <tbody className="divide-y divide-red-900/30">
                                             {managers.filter(m => !m.is_active).map((manager) => (
-                                                <tr key={manager.id} className="hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                                <tr key={manager.id} className="hover:bg-red-900/20 transition-colors">
                                                     <td className="px-6 py-4">
-                                                        <div className="font-bold text-slate-900 dark:text-white">
+                                                        <div className="font-bold text-white">
                                                             {manager.real_name || '管理者'}
                                                         </div>
                                                     </td>
@@ -1800,11 +1800,11 @@ const AdminPanel: React.FC = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                                        <span className="px-2 py-1 rounded-lg text-[10px] font-black uppercase bg-slate-800 text-slate-500">
                                                             {manager.role}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
+                                                    <td className="px-4 py-4 font-bold text-sm text-slate-300">
                                                         {manager.shop_name || '-'}
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
@@ -1822,7 +1822,7 @@ const AdminPanel: React.FC = () => {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteManager(manager)}
-                                                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                                                                className="p-1.5 hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
                                                                 title="拒絕/刪除"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -1839,7 +1839,7 @@ const AdminPanel: React.FC = () => {
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
+                                <thead className="bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
                                     <tr>
                                         <th className="px-6 py-4 rounded-l-xl">管理員姓名</th>
                                         <th className="px-6 py-4">Email 帳號</th>
@@ -1851,15 +1851,15 @@ const AdminPanel: React.FC = () => {
                                         <th className="px-6 py-4 rounded-r-xl text-right">操作</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tbody className="divide-y divide-slate-800">
                                     {managers.filter(m =>
                                     (m.email?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
                                         m.shop_name?.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
                                         String(m.athlete_id || '').includes(managerSearchTerm))
                                     ).map((manager) => (
-                                        <tr key={manager.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${!manager.is_active ? 'opacity-50 grayscale' : ''}`}>
+                                        <tr key={manager.id} className={`hover:bg-slate-800/30 transition-colors ${!manager.is_active ? 'opacity-50 grayscale' : ''}`}>
                                             <td className="px-6 py-4">
-                                                <div className="font-bold text-slate-900 dark:text-white">
+                                                <div className="font-bold text-white">
                                                     {manager.real_name || '管理者'}
                                                     {!manager.is_active && <span className="ml-2 text-[10px] bg-slate-200 text-slate-500 px-1 rounded">停用中</span>}
                                                 </div>
@@ -1868,23 +1868,23 @@ const AdminPanel: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="text-sm font-mono text-tcu-blue dark:text-tcu-blue-light">
+                                                <div className="text-sm font-mono text-tcu-blue-light">
                                                     {manager.email || '-'}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase
-                                                ${manager.role === 'shop_owner' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                                                        manager.role === 'team_coach' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
-                                                            manager.role === 'power_coach' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
-                                                                'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                                ${manager.role === 'shop_owner' ? 'bg-blue-900/30 text-blue-400' :
+                                                        manager.role === 'team_coach' ? 'bg-emerald-900/30 text-emerald-400' :
+                                                            manager.role === 'power_coach' ? 'bg-orange-900/30 text-orange-400' :
+                                                                'bg-slate-800 text-slate-500'}`}>
                                                     {manager.role === 'shop_owner' ? 'Shop Owner' :
                                                         manager.role === 'team_coach' ? 'Team Coach' :
                                                             manager.role === 'power_coach' ? 'Power Coach' :
                                                                 manager.role}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-4 font-bold text-sm text-slate-700 dark:text-slate-300">
+                                            <td className="px-4 py-4 font-bold text-sm text-slate-300">
                                                 {manager.shop_name || '-'}
                                             </td>
                                             <td className="px-6 py-4">
@@ -1949,21 +1949,21 @@ const AdminPanel: React.FC = () => {
                                                                 alert('重設失敗: ' + err.message);
                                                             }
                                                         }}
-                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-500 transition-colors"
+                                                        className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-500 transition-colors"
                                                         title="重設密碼"
                                                     >
                                                         <Lock className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleEditManager(manager)}
-                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
+                                                        className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-500 transition-colors"
                                                         title="編輯"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleUpdateManagerStatus(manager.id, !manager.is_active)}
-                                                        className={`p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ${manager.is_active ? 'text-slate-400 hover:text-orange-500' : 'text-slate-400 hover:text-emerald-500'
+                                                        className={`p-2 hover:bg-slate-800 rounded-lg transition-colors ${manager.is_active ? 'text-slate-400 hover:text-orange-500' : 'text-slate-400 hover:text-emerald-500'
                                                             }`}
                                                         title={manager.is_active ? "停用" : "啟用"}
                                                     >
@@ -1971,7 +1971,7 @@ const AdminPanel: React.FC = () => {
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeleteManager(manager)}
-                                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                                                        className="p-2 hover:bg-red-900/20 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
                                                         title="永久刪除"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -1996,7 +1996,7 @@ const AdminPanel: React.FC = () => {
 
                 {/* 路段管理 Tab Content */}
                 {activeTab === 'segments' && (<>
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                    <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-sm md:col-span-2">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-black">路段管理</h3>
                             <div className="flex items-center gap-3">
@@ -2009,12 +2009,12 @@ const AdminPanel: React.FC = () => {
                                     <Database className="w-4 h-4" />
                                     <span>全部同步</span>
                                 </button>
-                                <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">{segments.length} 個路段</span>
+                                <span className="text-xs font-bold bg-slate-800 px-2 py-1 rounded text-slate-500">{segments.length} 個路段</span>
                             </div>
                         </div>
 
                         {editingSegment ? (
-                            <form onSubmit={handleUpdateSegment} className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-tcu-blue">
+                            <form onSubmit={handleUpdateSegment} className="space-y-4 p-4 bg-slate-800 rounded-2xl border border-tcu-blue">
                                 <h4 className="font-bold text-tcu-blue uppercase text-sm">
                                     {editingSegment.id === 'new' ? '新增路段' : `編輯路段: ${editingSegment.strava_id}`}
                                 </h4>
@@ -2025,7 +2025,7 @@ const AdminPanel: React.FC = () => {
                                             type="number"
                                             value={editingSegment.strava_id}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, strava_id: e.target.value })}
-                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
                                             required
                                         />
                                     </div>
@@ -2036,7 +2036,7 @@ const AdminPanel: React.FC = () => {
                                         type="text"
                                         value={editingSegment.name}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, name: e.target.value })}
-                                        className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                        className={`w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                         required
                                         readOnly={editingSegment.id !== 'new'}
                                     />
@@ -2047,7 +2047,7 @@ const AdminPanel: React.FC = () => {
                                         type="text"
                                         value={editingSegment.description || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, description: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
                                         placeholder="例如：台中經典挑戰：136檢定"
                                     />
                                 </div>
@@ -2057,7 +2057,7 @@ const AdminPanel: React.FC = () => {
                                         type="text"
                                         value={editingSegment.link || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, link: e.target.value })}
-                                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
                                         placeholder="https://..."
                                     />
                                 </div>
@@ -2068,7 +2068,7 @@ const AdminPanel: React.FC = () => {
                                             type="number"
                                             value={editingSegment.distance || ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, distance: parseFloat(e.target.value) })}
-                                            className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                            className={`w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                             readOnly={editingSegment.id !== 'new'}
                                         />
                                     </div>
@@ -2079,7 +2079,7 @@ const AdminPanel: React.FC = () => {
                                             step="0.1"
                                             value={editingSegment.average_grade || ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, average_grade: parseFloat(e.target.value) })}
-                                            className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                            className={`w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                             readOnly={editingSegment.id !== 'new'}
                                         />
                                     </div>
@@ -2091,7 +2091,7 @@ const AdminPanel: React.FC = () => {
                                             type="number"
                                             value={editingSegment.elevation_gain || ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, elevation_gain: parseFloat(e.target.value) })}
-                                            className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                            className={`w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm ${editingSegment.id !== 'new' ? 'bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                             readOnly={editingSegment.id !== 'new'}
                                         />
                                     </div>
@@ -2101,7 +2101,7 @@ const AdminPanel: React.FC = () => {
                                     <textarea
                                         value={editingSegment.polyline || ''}
                                         onChange={(e) => setEditingSegment({ ...editingSegment, polyline: e.target.value })}
-                                        className={`w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm h-16 font-mono ${editingSegment.id !== 'new' ? 'bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
+                                        className={`w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm h-16 font-mono ${editingSegment.id !== 'new' ? 'bg-slate-800/50 cursor-not-allowed opacity-70' : ''}`}
                                         readOnly={editingSegment.id !== 'new'}
                                     />
                                 </div>
@@ -2117,7 +2117,7 @@ const AdminPanel: React.FC = () => {
                                                 return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                                             })() : ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, start_date: e.target.value })}
-                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
                                         />
                                     </div>
                                     <div>
@@ -2130,7 +2130,7 @@ const AdminPanel: React.FC = () => {
                                                 return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                                             })() : ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, end_date: e.target.value })}
-                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
                                         />
                                     </div>
                                 </div>
@@ -2144,7 +2144,7 @@ const AdminPanel: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => setEditingSegment(null)}
-                                        className="flex-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2 rounded-lg text-sm"
+                                        className="flex-1 bg-slate-700 text-slate-300 font-bold py-2 rounded-lg text-sm"
                                     >
                                         取消
                                     </button>
@@ -2154,7 +2154,7 @@ const AdminPanel: React.FC = () => {
                             <>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
+                                        <thead className="bg-slate-800 text-slate-500 uppercase font-bold text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 rounded-l-lg">路段名稱</th>
                                                 <th className="px-4 py-3">Strava ID</th>
@@ -2165,9 +2165,9 @@ const AdminPanel: React.FC = () => {
                                                 <th className="px-4 py-3 rounded-r-lg text-center">操作</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        <tbody className="divide-y divide-slate-800">
                                             {segments.map((seg) => (
-                                                <tr key={seg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <tr key={seg.id} className="hover:bg-slate-800/50 transition-colors group">
                                                     <td className="px-4 py-3">
                                                         <p className="font-bold text-sm">{seg.name}</p>
                                                     </td>
@@ -2198,7 +2198,7 @@ const AdminPanel: React.FC = () => {
                                                         <div className="flex items-center justify-center gap-1">
                                                             <button
                                                                 onClick={() => handleRefreshSegment(seg)}
-                                                                className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                                className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-700"
                                                                 title="重新整理路段資料"
                                                             >
                                                                 <RefreshCw className="w-4 h-4" />
@@ -2206,7 +2206,7 @@ const AdminPanel: React.FC = () => {
                                                             <button
                                                                 id={`sync-btn-${seg.id}`}
                                                                 onClick={() => handleSyncEfforts(seg)}
-                                                                className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                                className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-700"
                                                                 title="同步成績至 DB"
                                                             >
                                                                 <Database className="w-4 h-4" />
@@ -2216,7 +2216,7 @@ const AdminPanel: React.FC = () => {
                                                                     ...seg,
                                                                     link: seg.link || `https://www.strava.com/segments/${seg.id}`
                                                                 })}
-                                                                className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                                className="text-slate-400 hover:text-tcu-blue transition-colors p-1.5 rounded-lg hover:bg-slate-700"
                                                                 title="編輯路段"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
@@ -2242,7 +2242,7 @@ const AdminPanel: React.FC = () => {
                                                                         alert('刪除失敗: ' + err.message);
                                                                     }
                                                                 }}
-                                                                className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                                className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-900/20"
                                                                 title="刪除路段"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -2254,7 +2254,7 @@ const AdminPanel: React.FC = () => {
                                         </tbody>
                                     </table>
                                     {segments.length === 0 && !loading && (
-                                        <div className="text-center py-10 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-200 mt-4">
+                                        <div className="text-center py-10 bg-slate-800 rounded-2xl border-2 border-dashed border-slate-700 mt-4">
                                             <p className="text-slate-400 font-bold">目前無路段資料</p>
                                         </div>
                                     )}
@@ -2333,7 +2333,7 @@ const AdminPanel: React.FC = () => {
                                             console.error('Segment fetch error:', err);
                                         }
                                     }}
-                                    className="w-full border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tcu-blue hover:text-tcu-blue transition-all mt-4"
+                                    className="w-full border-2 border-dashed border-slate-700 p-4 rounded-2xl text-slate-400 font-bold hover:border-tcu-blue hover:text-tcu-blue transition-all mt-4"
                                 >
                                     + 新增挑戰路段
                                 </button>
@@ -2342,7 +2342,7 @@ const AdminPanel: React.FC = () => {
                     </div>
 
                     {/* 報名審核列表 */}
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                    <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-sm md:col-span-2">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                             <h3 className="text-xl font-black">報名列表</h3>
                             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -2356,7 +2356,7 @@ const AdminPanel: React.FC = () => {
                                             setRegSearchTerm(e.target.value);
                                             setRegCurrentPage(1);
                                         }}
-                                        className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tcu-blue/20 transition-all"
+                                        className="pl-9 pr-4 py-2 bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tcu-blue/20 transition-all"
                                     />
                                 </div>
                                 <select
@@ -2365,7 +2365,7 @@ const AdminPanel: React.FC = () => {
                                         fetchRegistrations(val);
                                         setRegCurrentPage(1);
                                     }}
-                                    className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold"
+                                    className="px-3 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold"
                                 >
                                     <option value="">全部路段</option>
                                     {segments.map(seg => (
@@ -2378,7 +2378,7 @@ const AdminPanel: React.FC = () => {
                                         setRegPageSize(Number(e.target.value));
                                         setRegCurrentPage(1);
                                     }}
-                                    className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tcu-blue/20 transition-all font-mono"
+                                    className="px-3 py-2 bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tcu-blue/20 transition-all font-mono"
                                 >
                                     <option value={10}>10/page</option>
                                     <option value={20}>20/page</option>
@@ -2393,7 +2393,7 @@ const AdminPanel: React.FC = () => {
                         </div>
 
                         {registrations.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+                            <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-slate-700 rounded-2xl">
                                 <ClipboardCheck className="w-10 h-10 text-slate-300 mb-2" />
                                 <p className="text-slate-400 font-bold">目前無待處理報名</p>
                             </div>
@@ -2401,7 +2401,7 @@ const AdminPanel: React.FC = () => {
                             <>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase font-bold text-xs">
+                                        <thead className="bg-slate-800 text-slate-500 uppercase font-bold text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 rounded-l-lg">選手</th>
                                                 <th className="px-4 py-3">路段</th>
@@ -2412,7 +2412,7 @@ const AdminPanel: React.FC = () => {
                                                 <th className="px-4 py-3 rounded-r-lg">操作</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        <tbody className="divide-y divide-slate-800">
                                             {registrations
                                                 .filter(reg =>
                                                     reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) ||
@@ -2421,7 +2421,7 @@ const AdminPanel: React.FC = () => {
                                                 )
                                                 .slice((regCurrentPage - 1) * regPageSize, regCurrentPage * regPageSize)
                                                 .map((reg) => (
-                                                    <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <tr key={reg.id} className="hover:bg-slate-800/50 transition-colors">
                                                         <td className="px-4 py-3 font-bold">{reg.athlete_name}</td>
                                                         <td className="px-4 py-3 text-slate-500 text-xs">{reg.segments?.name || reg.segment_id}</td>
                                                         <td className="px-4 py-3">
@@ -2472,7 +2472,7 @@ const AdminPanel: React.FC = () => {
                                 </div>
 
                                 {/* Pagination for Registrations */}
-                                <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-100 dark:border-slate-800 pt-8">
+                                <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-800 pt-8">
                                     <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">
                                         Showing {(regCurrentPage - 1) * regPageSize + 1} to {Math.min(regCurrentPage * regPageSize, registrations.filter(reg => reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())).length)} of {registrations.filter(reg => reg.athlete_name.toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.team || '').toLowerCase().includes(regSearchTerm.toLowerCase()) || (reg.tcu_id || '').toLowerCase().includes(regSearchTerm.toLowerCase())).length} registrations
                                     </div>
@@ -2480,7 +2480,7 @@ const AdminPanel: React.FC = () => {
                                         <button
                                             onClick={() => setRegCurrentPage(prev => Math.max(1, prev - 1))}
                                             disabled={regCurrentPage === 1}
-                                            className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-slate-100 transition-colors"
+                                            className="px-4 py-2 bg-slate-800 text-slate-400 rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-slate-700 transition-colors"
                                         >
                                             Previous
                                         </button>
@@ -2499,7 +2499,7 @@ const AdminPanel: React.FC = () => {
                 </>
                 )}
 
-                {activeTab === 'tokens' && (<div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm md:col-span-2">
+                {activeTab === 'tokens' && (<div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-sm md:col-span-2">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <div className="flex items-center gap-3">
                             <Database className="w-5 h-5 text-tcu-blue" />
@@ -2519,7 +2519,7 @@ const AdminPanel: React.FC = () => {
                                         setTokenSearchTerm(e.target.value);
                                         setTokenCurrentPage(1);
                                     }}
-                                    className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tcu-blue/20 transition-all"
+                                    className="pl-9 pr-4 py-2 bg-slate-800 border-none rounded-xl text-sm w-full focus:ring-2 focus:ring-tcu-blue/20 transition-all"
                                 />
                             </div>
                             <select
@@ -2528,7 +2528,7 @@ const AdminPanel: React.FC = () => {
                                     setTokenPageSize(Number(e.target.value));
                                     setTokenCurrentPage(1);
                                 }}
-                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tcu-blue/20 transition-all font-mono"
+                                className="px-3 py-2 bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-tcu-blue/20 transition-all font-mono"
                             >
                                 <option value={10}>10/page</option>
                                 <option value={20}>20/page</option>
@@ -2547,7 +2547,7 @@ const AdminPanel: React.FC = () => {
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <thead className="bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <tr>
                                     <th className="px-4 py-3 rounded-l-lg cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('athleteID')}>
                                         Athlete ID {tokenSortField === 'athleteID' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
@@ -2567,7 +2567,7 @@ const AdminPanel: React.FC = () => {
                                     <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('expires_at')}>
                                         過期時間 {tokenSortField === 'expires_at' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
-                                    <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
+                                    <th className="px-4 py-3 border-x border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
                                         綁定狀態 {tokenSortField === 'isBound' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                     </th>
                                     <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('lastActivityAt')}>
@@ -2578,10 +2578,10 @@ const AdminPanel: React.FC = () => {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tbody className="divide-y divide-slate-800">
                                 {displayedTokens
                                     .map((token) => (
-                                        <tr key={token.athleteID} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!token.hasValidToken ? 'bg-red-50/50 dark:bg-red-900/10' : ''}`}>
+                                        <tr key={token.athleteID} className={`hover:bg-slate-800/50 transition-colors ${!token.hasValidToken ? 'bg-red-900/10' : ''}`}>
                                             <td className="px-4 py-3 font-mono text-xs">
                                                 <div className="flex items-center gap-2">
                                                     <a
@@ -2631,7 +2631,7 @@ const AdminPanel: React.FC = () => {
                                                 {token.isBound ? (
                                                     <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase">Bound</span>
                                                 ) : (
-                                                    <span className="px-2 py-1 bg-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase">Unbound</span>
+                                                    <span className="px-2 py-1 bg-slate-800 text-slate-400 rounded-full text-[10px] font-black uppercase">Unbound</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -2651,7 +2651,7 @@ const AdminPanel: React.FC = () => {
                     </div>
 
                     {/* Pagination for Tokens */}
-                    <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-100 dark:border-slate-800 pt-8">
+                    <div className="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-800 pt-8">
                         <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">
                             Showing {(tokenCurrentPage - 1) * tokenPageSize + 1} to {Math.min(tokenCurrentPage * tokenPageSize, filteredTokens.length)} of {filteredTokens.length} athletes
                         </div>
@@ -2659,7 +2659,7 @@ const AdminPanel: React.FC = () => {
                             <button
                                 onClick={() => setTokenCurrentPage(prev => Math.max(1, prev - 1))}
                                 disabled={tokenCurrentPage === 1}
-                                className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-slate-100 transition-colors"
+                                className="px-4 py-2 bg-slate-800 text-slate-400 rounded-xl text-sm font-bold disabled:opacity-50 hover:bg-slate-700 transition-colors"
                             >
                                 Previous
                             </button>
@@ -2675,7 +2675,7 @@ const AdminPanel: React.FC = () => {
                 </div>)}
 
 
-                {activeTab === 'members' && (<div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                {activeTab === 'members' && (<div className="bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-800 md:col-span-2">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <div className="flex items-center gap-3">
                             <StravaLogo className="w-5 h-5 font-bold text-orange-500 fill-current" />
@@ -2693,7 +2693,7 @@ const AdminPanel: React.FC = () => {
                                         setMemberSearchTerm(e.target.value);
                                         setMemberCurrentPage(1); // 搜尋時重設頁碼
                                     }}
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-4 text-xs focus:ring-2 focus:ring-tcu-blue"
+                                    className="w-full bg-slate-800 border-none rounded-xl h-10 px-4 text-xs focus:ring-2 focus:ring-tcu-blue"
                                 />
                             </div>
 
@@ -2704,7 +2704,7 @@ const AdminPanel: React.FC = () => {
                                     setMemberPageSize(Number(e.target.value));
                                     setMemberCurrentPage(1);
                                 }}
-                                className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-10 px-3 text-xs font-bold focus:ring-tcu-blue"
+                                className="bg-slate-800 border-none rounded-xl h-10 px-3 text-xs font-bold focus:ring-tcu-blue"
                             >
                                 <option value={10}>10 筆/頁</option>
                                 <option value={100}>100 筆/頁</option>
@@ -2806,7 +2806,7 @@ const AdminPanel: React.FC = () => {
                             <>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        <thead className="bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                             <tr>
                                                 <th className="px-4 py-3 rounded-l-lg cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('strava_id')}>
                                                     Strava ID {memberSortField === 'strava_id' && (memberSortOrder === 'asc' ? '↑' : '↓')}
@@ -2823,7 +2823,7 @@ const AdminPanel: React.FC = () => {
                                                 <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('team')}>
                                                     車隊 {memberSortField === 'team' && (memberSortOrder === 'asc' ? '↑' : '↓')}
                                                 </th>
-                                                <th className="px-4 py-3 border-x border-slate-100 dark:border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('member_type')}>
+                                                <th className="px-4 py-3 border-x border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('member_type')}>
                                                     會員類別 {memberSortField === 'member_type' && (memberSortOrder === 'asc' ? '↑' : '↓')}
                                                 </th>
                                                 <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleMemberSort('action')}>
@@ -2831,16 +2831,16 @@ const AdminPanel: React.FC = () => {
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        <tbody className="divide-y divide-slate-800">
                                             {displayedMembers.map((m) => (
-                                                <tr key={m.tcu_id || m.email} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!m.strava_id ? 'opacity-60' : ''}`}>
+                                                <tr key={m.tcu_id || m.email} className={`hover:bg-slate-800/50 transition-colors ${!m.strava_id ? 'opacity-60' : ''}`}>
                                                     <td className="px-4 py-4">
                                                         {m.strava_id ? (
                                                             <a
                                                                 href={`https://www.strava.com/athletes/${m.strava_id}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="text-orange-500 hover:underline font-mono text-xs font-black bg-orange-50 dark:bg-orange-950/20 px-2 py-1 rounded"
+                                                                className="text-orange-500 hover:underline font-mono text-xs font-black bg-orange-950/20 px-2 py-1 rounded"
                                                             >
                                                                 {m.strava_id}
                                                             </a>
@@ -2850,7 +2850,7 @@ const AdminPanel: React.FC = () => {
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         {m.athletes ? (
-                                                            <div className="font-bold text-orange-600 dark:text-orange-400">
+                                                            <div className="font-bold text-orange-400">
                                                                 {m.athletes.firstname} {m.athletes.lastname}
                                                             </div>
                                                         ) : (
@@ -2858,25 +2858,25 @@ const AdminPanel: React.FC = () => {
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-4">
-                                                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                        <div className="font-bold text-white flex items-center gap-2">
                                                             {m.real_name}
-                                                            {!m.strava_id && <span className="text-[8px] font-black uppercase bg-slate-200 dark:bg-slate-700 text-slate-500 px-1 rounded">Offline</span>}
+                                                            {!m.strava_id && <span className="text-[8px] font-black uppercase bg-slate-700 text-slate-500 px-1 rounded">Offline</span>}
                                                         </div>
                                                         <div className="text-[10px] text-slate-400 font-mono">{m.email}</div>
                                                     </td>
                                                     <td className="px-4 py-4">
-                                                        <div className="text-xs font-bold text-slate-600 dark:text-slate-400">{m.tcu_id}</div>
+                                                        <div className="text-xs font-bold text-slate-400">{m.tcu_id}</div>
                                                         <div className="text-[10px] text-slate-400 font-mono">{m.account ? m.account.replace(/(.{3})(.*)(.{3})/, "$1****$3") : '-'}</div>
                                                     </td>
                                                     <td className="px-4 py-4">
-                                                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{m.team || '-'}</div>
+                                                        <div className="text-[10px] font-bold text-slate-400">{m.team || '-'}</div>
                                                     </td>
-                                                    <td className="px-4 py-4 border-x border-slate-100 dark:border-slate-700">
+                                                    <td className="px-4 py-4 border-x border-slate-700">
                                                         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-tighter ${(m.member_type === '付費車隊管理員')
-                                                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                                            ? 'bg-purple-900/30 text-purple-300'
                                                             : (m.member_type === '付費會員')
                                                                 ? 'bg-tcu-blue/10 text-tcu-blue'
-                                                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                                                : 'bg-slate-800 text-slate-400'
                                                             }`}>
                                                             {m.member_type || '一般會員'}
                                                         </span>
@@ -2886,7 +2886,7 @@ const AdminPanel: React.FC = () => {
                                                             <button
                                                                 onClick={(e) => handleUnbindMemberByAdmin(m, e)}
                                                                 disabled={isUnbindingMember === m.email}
-                                                                className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border border-red-100 dark:border-red-900/30 disabled:opacity-50 shadow-sm"
+                                                                className="px-3 py-1 bg-red-900/20 hover:bg-red-900/200 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all border border-red-900/30 disabled:opacity-50 shadow-sm"
                                                             >
                                                                 {isUnbindingMember === m.email ? '處理中...' : '解除綁定'}
                                                             </button>
@@ -2909,7 +2909,7 @@ const AdminPanel: React.FC = () => {
 
                                 {/* 分頁導航 */}
                                 {totalPages > 1 && (
-                                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-800">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                             顯示第 {(memberCurrentPage - 1) * memberPageSize + 1} 至 {Math.min(memberCurrentPage * memberPageSize, filtered.length)} 筆 / 共 {filtered.length} 筆
                                         </p>
@@ -2917,11 +2917,11 @@ const AdminPanel: React.FC = () => {
                                             <button
                                                 onClick={() => setMemberCurrentPage(prev => Math.max(1, prev - 1))}
                                                 disabled={memberCurrentPage === 1}
-                                                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                                className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold text-slate-400 disabled:opacity-30 hover:bg-slate-700 transition-all"
                                             >
                                                 上一頁
                                             </button>
-                                            <div className="flex items-center px-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                            <div className="flex items-center px-4 bg-slate-800 rounded-xl">
                                                 <span className="text-xs font-black text-tcu-blue">{memberCurrentPage}</span>
                                                 <span className="text-xs font-bold text-slate-400 mx-2">/</span>
                                                 <span className="text-xs font-bold text-slate-400">{totalPages}</span>
@@ -2929,7 +2929,7 @@ const AdminPanel: React.FC = () => {
                                             <button
                                                 onClick={() => setMemberCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                                 disabled={memberCurrentPage === totalPages}
-                                                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 disabled:opacity-30 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                                className="px-4 py-2 bg-slate-800 rounded-xl text-xs font-bold text-slate-400 disabled:opacity-30 hover:bg-slate-700 transition-all"
                                             >
                                                 下一頁
                                             </button>
@@ -2943,7 +2943,7 @@ const AdminPanel: React.FC = () => {
 
                 {/* SEO 設定區塊 */}
                 {activeTab === 'seo' && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-800 md:col-span-2">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
                                 <Globe className="w-5 h-5 text-tcu-blue" />
@@ -2971,14 +2971,14 @@ const AdminPanel: React.FC = () => {
                                         <textarea
                                             value={setting.value || ''}
                                             onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                            className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tcu-blue min-h-[100px]"
+                                            className="bg-slate-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-tcu-blue min-h-[100px]"
                                         />
                                     ) : (
                                         <input
                                             type="text"
                                             value={setting.value || ''}
                                             onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
-                                            className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tcu-blue"
+                                            className="bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tcu-blue"
                                         />
                                     )}
                                 </div>
@@ -2989,7 +2989,7 @@ const AdminPanel: React.FC = () => {
 
                 {/* 頁尾連結設定區塊 */}
                 {activeTab === 'footer' && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-800 md:col-span-2">
+                    <div className="bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-800 md:col-span-2">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-black uppercase italic flex items-center gap-2">
                                 <Share2 className="w-5 h-5 text-tcu-blue" />
@@ -3031,7 +3031,7 @@ const AdminPanel: React.FC = () => {
                                             value={setting.value || ''}
                                             onChange={(e) => handleUpdateSetting(setting.key, e.target.value)}
                                             placeholder="https://..."
-                                            className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tcu-blue"
+                                            className="bg-slate-800 border-none rounded-xl h-12 px-4 text-sm focus:ring-2 focus:ring-tcu-blue"
                                         />
                                     </div>
                                 );
@@ -3043,7 +3043,7 @@ const AdminPanel: React.FC = () => {
                 {/* 廣告/公告管理 Tab */}
                 {activeTab === 'announcements' && (
                     <div className="space-y-6 md:col-span-2">
-                        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-black">廣告公告清單</h3>
                                 <button
@@ -3056,7 +3056,7 @@ const AdminPanel: React.FC = () => {
                             </div>
 
                             {editingAnnouncement && (
-                                <div className="mb-8 p-8 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-tcu-blue border-dashed animate-in fade-in slide-in-from-top-4">
+                                <div className="mb-8 p-8 bg-slate-800/50 rounded-3xl border-2 border-tcu-blue border-dashed animate-in fade-in slide-in-from-top-4">
                                     <h4 className="font-bold text-tcu-blue mb-4 flex items-center gap-2">
                                         <Edit2 className="w-4 h-4" />
                                         {editingAnnouncement.id === 'new' ? '新增廣告' : '編輯廣告'}
@@ -3069,7 +3069,7 @@ const AdminPanel: React.FC = () => {
                                                     type="text"
                                                     value={editingAnnouncement.title}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, title: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
                                                     required
                                                 />
                                             </div>
@@ -3078,7 +3078,7 @@ const AdminPanel: React.FC = () => {
                                                 <textarea
                                                     value={editingAnnouncement.content}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, content: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue h-32"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue h-32"
                                                     required
                                                 />
                                             </div>
@@ -3088,7 +3088,7 @@ const AdminPanel: React.FC = () => {
                                                     type="text"
                                                     value={editingAnnouncement.image_url || ''}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, image_url: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
                                                 />
                                             </div>
                                             <div>
@@ -3096,7 +3096,7 @@ const AdminPanel: React.FC = () => {
                                                 <select
                                                     value={editingAnnouncement.target_group}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, target_group: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue font-bold"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue font-bold"
                                                 >
                                                     <option value="all">所有會員 (All)</option>
                                                     <option value="bound">僅限已綁定 (Bound only)</option>
@@ -3109,7 +3109,7 @@ const AdminPanel: React.FC = () => {
                                                     type="text"
                                                     value={editingAnnouncement.button_text || ''}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, button_text: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
                                                     placeholder="了解更多"
                                                 />
                                             </div>
@@ -3119,7 +3119,7 @@ const AdminPanel: React.FC = () => {
                                                     type="text"
                                                     value={editingAnnouncement.button_url || ''}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, button_url: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
                                                 />
                                             </div>
                                             <div>
@@ -3128,7 +3128,7 @@ const AdminPanel: React.FC = () => {
                                                     type="number"
                                                     value={editingAnnouncement.priority}
                                                     onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, priority: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border-none bg-white dark:bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
+                                                    className="w-full px-4 py-3 rounded-xl border-none bg-slate-800 focus:ring-2 focus:ring-tcu-blue"
                                                 />
                                             </div>
                                             <div className="flex items-center gap-4">
@@ -3140,15 +3140,15 @@ const AdminPanel: React.FC = () => {
                                                         onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, is_active: e.target.checked })}
                                                         className="w-5 h-5 rounded border-slate-300 text-tcu-blue focus:ring-tcu-blue"
                                                     />
-                                                    <label htmlFor="isActive" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">啟用公告</label>
+                                                    <label htmlFor="isActive" className="text-sm font-bold text-slate-300 cursor-pointer">啟用公告</label>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">
+                                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 mt-6">
                                             <button
                                                 type="button"
                                                 onClick={() => setEditingAnnouncement(null)}
-                                                className="px-6 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                                className="px-6 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-700 transition-all"
                                             >
                                                 取消編輯
                                             </button>
@@ -3167,7 +3167,7 @@ const AdminPanel: React.FC = () => {
 
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
-                                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
+                                    <thead className="bg-slate-800/50 text-slate-500 uppercase text-xs font-bold">
                                         <tr>
                                             <th className="px-6 py-4 rounded-l-xl">優先級</th>
                                             <th className="px-6 py-4 text-center">狀態</th>
@@ -3177,9 +3177,9 @@ const AdminPanel: React.FC = () => {
                                             <th className="px-6 py-4 rounded-r-xl text-right">操作</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tbody className="divide-y divide-slate-800">
                                         {announcements.map((item) => (
-                                            <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                            <tr key={item.id} className="hover:bg-slate-800/50 transition-colors group">
                                                 <td className="px-6 py-4 font-mono font-bold text-slate-400 group-hover:text-tcu-blue transition-colors">
                                                     {item.priority}
                                                 </td>
@@ -3187,23 +3187,23 @@ const AdminPanel: React.FC = () => {
                                                     {item.is_active ? (
                                                         <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30" title="啟用中"></span>
                                                     ) : (
-                                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" title="已停用"></span>
+                                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-700" title="已停用"></span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-900 dark:text-white truncate max-w-md">{item.title}</div>
+                                                    <div className="font-bold text-white truncate max-w-md">{item.title}</div>
                                                     <div className="text-xs text-slate-500 truncate max-w-md mt-0.5">{item.content}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${item.target_group === 'bound' ? 'bg-blue-100 text-blue-600' :
                                                         item.target_group === 'unbound' ? 'bg-orange-100 text-orange-600' :
-                                                            'bg-slate-100 text-slate-600'
+                                                            'bg-slate-800 text-slate-400'
                                                         }`}>
                                                         {item.target_group}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-xs font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600">
+                                                    <span className="text-xs font-bold px-2 py-1 bg-slate-800 rounded-lg text-slate-600">
                                                         {item.button_text}
                                                     </span>
                                                 </td>
@@ -3218,7 +3218,7 @@ const AdminPanel: React.FC = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteAnnouncement(item.id)}
-                                                            className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-all"
+                                                            className="p-2 hover:bg-red-900/30 rounded-lg text-slate-400 hover:text-red-500 transition-all"
                                                             title="刪除"
                                                         >
                                                             <Trash2 className="w-4 h-4" />

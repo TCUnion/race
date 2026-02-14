@@ -1,145 +1,69 @@
 @import "tailwindcss";
-@import "./globals.css";
+@import "../src/globals.css";
 
-/* Leaflet Map Dark Mode Overrides */
-.leaflet-container {
-  background: #1a1a1a !important;
-  font-family: inherit !important;
+/* V2 Specific Overrides can go here if needed */
+/* Currently globals.css handles the main theme, 
+   but since V2 uses strict dark mode by default (enforced in App.tsx),
+   it will naturally pick up the .dark variables from globals.css */
+
+:root {
+  /* Ensure V2 uses the correct font family variables from globals */
+  font-family: var(--font-body);
+
+  /* V2 色彩別名 - 將舊的 V2 色彩變數對應到語義化 token */
+  --color-bg: hsl(var(--background));
+  --color-bg-dark: hsl(240 10% 3.9%);
+  --color-bg-darker: hsl(240 10% 2%);
+  --color-bg-card: hsl(var(--card));
+  --color-bg-elevated: hsl(240 5.9% 12%);
+  --color-bg-glass: rgba(9, 9, 11, 0.7);
+  --color-bg-alt: hsl(217.2 32.6% 17.5%);
+  --color-text: hsl(var(--foreground));
+  --color-text-secondary: hsl(215 20.2% 65.1%);
+  --color-border: hsl(var(--border));
 }
 
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: #18181b !important;
-  color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+body {
+  overflow-x: hidden;
+  /* Use semantic background */
+  @apply bg-background text-foreground;
 }
 
-.leaflet-bar a {
-  background-color: #18181b !important;
-  color: white !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+.glass {
+  /* Use semantic colors if possible, or keep custom if unique to V2 glass effect */
+  background: var(--color-bg-glass, rgba(9, 9, 11, 0.7));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  @apply border-border;
 }
 
-.leaflet-bar a:hover {
-  background-color: #27272a !important;
+.btn-primary {
+  @apply bg-primary text-primary-foreground px-7 py-3 rounded-full font-semibold border-none cursor-pointer transition-transform duration-200;
 }
 
-/* Date Input Dark Mode Optimization */
-input[type="date"] {
-  color-scheme: dark;
+.btn-primary:hover {
+  @apply scale-105 brightness-110;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2);
-  opacity: 0.8;
-  cursor: pointer;
-  transition: opacity 0.2s;
+/* Sports Tech Aesthetics - Card Glow */
+.card-glow {
+  @apply relative overflow-hidden rounded-3xl bg-[#121212] border border-white/10;
+  box-shadow: 0 0 15px -3px rgba(56, 189, 248, 0.1);
+  transition: all 0.3s ease;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+.card-glow:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 20px -5px rgba(56, 189, 248, 0.3);
 }
 
-/* Toast Slide-in Animation */
-@keyframes slide-in-right {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+/* Inner gloss effect */
+.card-glow::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 pointer-events-none transition-opacity duration-500;
+  z-index: 1;
 }
 
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out forwards;
-}
-
-@layer utilities {
-  .glass-panel {
-    @apply bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
-  }
-
-  .text-glow {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  }
-
-  /* Components Interaction Styles */
-  .btn-primary {
-    @apply transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-primary-foreground shadow-lg bg-primary;
-    box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
-  }
-
-  .btn-primary:hover {
-    @apply -translate-y-0.5 bg-primary/90;
-    box-shadow: 0 0 20px -5px rgba(56, 189, 248, 0.6), 0 0 15px -2px rgba(56, 189, 248, 0.4);
-  }
-
-  .btn-secondary {
-    @apply transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-secondary-foreground backdrop-blur-md border shadow-none bg-secondary/10 border-white/10;
-  }
-
-  .btn-secondary:hover {
-    @apply shadow-lg bg-secondary/20 border-white/30;
-    box-shadow: 0 0 15px -3px rgba(255, 255, 255, 0.1);
-  }
-
-  .btn-accent {
-    @apply transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-white shadow-md bg-accent;
-  }
-
-  .btn-accent:hover {
-    @apply bg-accent/90;
-    box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.4);
-  }
-
-  .input-modern {
-    @apply bg-background border-input rounded-xl px-4 py-3 outline-none transition-all duration-300 focus:ring-2 focus:bg-background focus:shadow-lg text-foreground;
-    --tw-ring-color: rgba(56, 189, 248, 0.5);
-  }
-
-  .input-modern:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.1);
-  }
-
-  /* Accessibility & Usability */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
-  }
-
-  .sr-only {
-    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
-  }
-
-  /* Utility to hide scrollbar */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  /* V2 RWD Utilities */
-  .power-value {
-    font-size: clamp(1rem, 5vw, 2.5rem);
-    font-weight: 900;
-    line-height: 1;
-    @apply tracking-tighter;
-  }
-
-  .responsive-table-container {
-    @apply w-full overflow-x-auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .responsive-table-container::-webkit-scrollbar {
-    display: none;
-  }
+.card-glow:hover::before {
+  @apply opacity-100;
 }

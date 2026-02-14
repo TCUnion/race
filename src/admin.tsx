@@ -4,7 +4,7 @@ import AdminPanel from './features/admin/AdminPanel';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import './lib/i18n';
-import './index.css';
+import './legacy_index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

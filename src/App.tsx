@@ -1,116 +1,233 @@
-
-import React, { useState, Suspense } from 'react';
-import { ViewType } from './types';
-
-// 靜態導入 - 每頁必需的核心組件
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
-import { useSEO } from './hooks/useSEO';
+import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { HomePage, SearchPage, LibraryPage, StatusBar } from './components/music-app';
 
-// 動態載入 - 按需載入頁面組件以減少初始 Bundle Size
-const LandingPage = React.lazy(() => import('./features/landing/LandingPage'));
-const Dashboard = React.lazy(() => import('./features/dashboard/Dashboard'));
-const Leaderboard = React.lazy(() => import('./features/leaderboard/Leaderboard'));
-const AdminPanel = React.lazy(() => import('./features/admin/AdminPanel'));
-const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'));
-const MemberBindingCard = React.lazy(() => import('./features/auth/MemberBindingCard'));
-const MaintenanceDashboard = React.lazy(() => import('./features/maintenance/MaintenanceDashboard'));
-const ACPowerTraining = React.lazy(() => import('./features/dashboard/ACPowerTraining'));
-const TeamDashboard = React.lazy(() => import('./features/dashboard/TeamDashboard'));
-const SettingsPage = React.lazy(() => import('./features/settings/SettingsPage'));
-const RacePage = React.lazy(() => import('./features/race/RacePage'));
+// 頁面視圖定義
+export enum V2View {
+    HOME = 'HOME',
+    DASHBOARD = 'DASHBOARD',
+    LEADERBOARD = 'LEADERBOARD',
+    MAINTENANCE = 'MAINTENANCE',
+    AI_COACH = 'AI_COACH',
+    TEAM_DASHBOARD = 'TEAM_DASHBOARD',
+    SEARCH = 'SEARCH',
+    LIBRARY = 'LIBRARY',
+    MEMBER_BINDING = 'MEMBER_BINDING',
+    SETTINGS = 'SETTINGS',
+    REGISTER = 'REGISTER',
+    MANAGER = 'MANAGER',
+    ADMIN = 'ADMIN',
+    SKILL_VERIFICATION = 'SKILL_VERIFICATION',
+}
 
-// Suspense Fallback 組件
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-  </div>
-);
+import { V2Leaderboard } from './features/V2Leaderboard';
+import { V2Dashboard } from './features/V2Dashboard';
+import { V2Maintenance } from './features/V2Maintenance';
+import { V2TeamDashboard } from './features/V2TeamDashboard';
+import { V2AICoach } from './features/V2AICoach';
+import { V2Settings } from './features/V2Settings';
+import RegisterPage from './features/auth/RegisterPage';
+import { ViewType } from './types';
+import { Sidebar } from './components/music-app/Sidebar';
+import { TabBar } from './components/music-app/TabBar';
+import ManagerDashboard from './features/manager/ManagerDashboard';
+import MaintenanceDashboard from './features/maintenance/MaintenanceDashboard';
+import AdminPanel from './features/admin/AdminPanel';
+import SkillVerificationPage from './features/skill/SkillVerificationPage';
 
+function App() {
+    const { athlete, isBound } = useAuth();
+    const [view, setView] = useState<V2View>(V2View.HOME);
+    const [activeTab, setActiveTab] = useState('home');
+    const [viewParams, setViewParams] = useState<any>({});
 
-const App: React.FC = () => {
-  useSEO();
-  const { isAdmin, isLoading } = useAuth();
-  const [currentView, setCurrentView] = useState<ViewType>(ViewType.LANDING);
+    // 初始化：檢查 URL 參數
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const viewParam = params.get('view');
+        const updateParam = params.get('update'); // Legacy support
 
-  const renderView = () => {
-    switch (currentView) {
-      case ViewType.LANDING:
-        return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
-      case ViewType.DASHBOARD:
-        return <Dashboard onNavigate={setCurrentView} />;
-      case ViewType.LEADERBOARD:
-        return <Leaderboard />;
-      case ViewType.RACE:
-        return <RacePage />;
-      case ViewType.ADMIN:
-        if (isLoading) {
-          return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          );
+        // 檢查路徑是否為 /skill
+        if (window.location.pathname === '/skill') {
+            setView(V2View.SKILL_VERIFICATION);
+            return;
         }
-        if (!isAdmin) {
-          return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-              <div className="p-8 bg-red-500/10 border border-red-500/20 rounded-2xl backdrop-blur-sm max-w-md">
-                <h2 className="text-2xl font-bold text-red-400 mb-4">存取被拒絕</h2>
-                <p className="text-gray-400 mb-6">您沒有存取管理員面板的權限。如果您是管理員，請確保已登入正確的帳號。</p>
-                <button
-                  onClick={() => setCurrentView(ViewType.DASHBOARD)}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
-                >
-                  回到報名
-                </button>
-              </div>
-            </div>
-          );
+
+        if (viewParam === 'manager') {
+            setView(V2View.MANAGER);
+        } else if (viewParam === 'admin') {
+            setView(V2View.ADMIN);
         }
-        return <AdminPanel />;
-      case ViewType.REGISTER:
-        return <RegisterPage onNavigate={setCurrentView} />;
-      case ViewType.MAINTENANCE:
-        return <MaintenanceDashboard />;
-      case ViewType.MEMBER_BINDING:
-        return (
-          <div className="flex flex-col items-center w-full py-20 px-4">
-            <div className="w-full max-w-2xl">
-              <MemberBindingCard
-                onBindingSuccess={() => setCurrentView(ViewType.DASHBOARD)}
-              />
+    }, []);
+
+    // 處理導航
+    const handleNavigation = (targetView: V2View, params?: any) => {
+        setView(targetView);
+        if (params) {
+            setViewParams(params);
+        } else {
+            setViewParams({});
+        }
+    };
+
+    const renderView = () => {
+        switch (view) {
+            case V2View.HOME:
+                return (
+                    <HomePage
+                        activeTab={activeTab}
+                        onTabChange={(tab) => {
+                            setActiveTab(tab);
+                            if (tab === 'search') setView(V2View.SEARCH);
+                            if (tab === 'library') setView(V2View.LIBRARY);
+                            if (tab === 'settings') setView(V2View.SETTINGS);
+                        }}
+                        onNavigate={handleNavigation}
+                    />
+                );
+            case V2View.SEARCH:
+                return <SearchPage activeTab="search" onTabChange={(tab) => {
+                    setActiveTab(tab);
+                    if (tab === 'home') setView(V2View.HOME);
+                    if (tab === 'library') setView(V2View.LIBRARY);
+                    if (tab === 'settings') setView(V2View.SETTINGS);
+                }} />;
+            case V2View.LIBRARY:
+                return <LibraryPage activeTab="library" onTabChange={(tab) => {
+                    setActiveTab(tab);
+                    if (tab === 'home') setView(V2View.HOME);
+                    if (tab === 'search') setView(V2View.SEARCH);
+                    if (tab === 'settings') setView(V2View.SETTINGS);
+                }} />;
+
+            case V2View.MAINTENANCE:
+                return (
+                    <div className="flex flex-col w-full h-full bg-bg overflow-hidden relative">
+                        <StatusBar />
+                        <div className="flex-1 overflow-hidden bg-bg-dark">
+                            {/* 桌面/平板版：顯示完整 MaintenanceDashboard */}
+                            <div className="hidden md:block h-full overflow-y-auto">
+                                <MaintenanceDashboard />
+                            </div>
+                            {/* 手機版：維持原有 V2Maintenance */}
+                            <div className="md:hidden h-full">
+                                <V2Maintenance onBack={() => setView(V2View.HOME)} />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case V2View.SETTINGS:
+                return <V2Settings activeTab="settings" onTabChange={(tab) => {
+                    setActiveTab(tab);
+                    if (tab === 'home') setView(V2View.HOME);
+                    if (tab === 'search') setView(V2View.SEARCH);
+                    if (tab === 'library') setView(V2View.LIBRARY);
+                }} />;
+
+            case V2View.LEADERBOARD:
+                return <V2Leaderboard
+                    onBack={() => setView(V2View.HOME)}
+                    initialSegmentId={viewParams?.segmentId}
+                />;
+
+            case V2View.DASHBOARD:
+                return (
+                    <V2Dashboard
+                        onBack={() => setView(V2View.HOME)}
+                        onNavigate={(v1View) => {
+                            if (v1View === ViewType.REGISTER) {
+                                setView(V2View.REGISTER);
+                            }
+                        }}
+                    />
+                );
+
+            case V2View.REGISTER:
+                return (
+                    <div className="flex flex-col w-full h-full bg-bg overflow-hidden relative">
+                        <StatusBar />
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide bg-bg-dark">
+                            <RegisterPage onNavigate={(v1View) => {
+                                if (v1View === ViewType.DASHBOARD) {
+                                    setView(V2View.DASHBOARD);
+                                } else {
+                                    setView(V2View.HOME);
+                                }
+                            }} />
+                        </div>
+                        <button
+                            onClick={() => setView(V2View.DASHBOARD)}
+                            className="absolute top-12 left-5 w-8 h-8 flex items-center justify-center bg-black/20 backdrop-blur-md rounded-full text-white/50 hover:text-white hover:bg-black/40 transition-all z-50 border border-white/10"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                        </button>
+                    </div>
+                );
+
+            case V2View.TEAM_DASHBOARD:
+                return <V2TeamDashboard onBack={() => setView(V2View.HOME)} />;
+
+            case V2View.AI_COACH:
+                return <V2AICoach onBack={() => setView(V2View.HOME)} />;
+
+            // TODO: 實現原生的 V2 視圖組件
+            case V2View.MEMBER_BINDING:
+                return (
+                    <div className="flex flex-col w-[390px] h-[844px] bg-bg items-center justify-center p-10 text-center">
+                        <div className="text-accent text-4xl mb-4">🚧</div>
+                        <h2 className="text-white text-xl font-bold mb-2">{view} 頁面建置中</h2>
+                        <p className="text-text-secondary text-sm mb-6">正在將 V1 功能移植至原生的 V2 行動介面...</p>
+                        <button
+                            onClick={() => setView(V2View.HOME)}
+                            className="btn-primary py-2 px-6 rounded-xl text-xs"
+                        >
+                            返回首頁
+                        </button>
+                    </div>
+                );
+
+            default:
+                return <HomePage activeTab={activeTab} onTabChange={setActiveTab} />;
+        }
+    };
+
+    // 如果是管理員或後台視圖，直接渲染完整頁面（不使用 Responsive Layout）
+    if (view === V2View.MANAGER) return <ManagerDashboard />;
+    if (view === V2View.ADMIN) return <AdminPanel />;
+    if (view === V2View.SKILL_VERIFICATION) return <SkillVerificationPage />;
+
+    return (
+        <div className="flex h-screen bg-bg dark text-foreground font-sans antialiased selection:bg-accent/30 box-border overflow-hidden">
+            {/* Desktop Sidebar */}
+            <Sidebar activeTab={activeTab} onTabChange={(tab) => {
+                setActiveTab(tab);
+                if (tab === 'home') setView(V2View.HOME);
+                if (tab === 'search') setView(V2View.SEARCH);
+                if (tab === 'library') setView(V2View.LIBRARY);
+                if (tab === 'settings') setView(V2View.SETTINGS);
+                if (tab === 'maintenance') setView(V2View.MAINTENANCE);
+            }} />
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-bg-dark">
+                {renderView()}
+
+                {/* Mobile Bottom Bar - Only visible on mobile/small screens and for main tabs */}
+                <div className="md:hidden absolute bottom-0 left-0 right-0 z-40">
+                    {(view === V2View.HOME || view === V2View.LIBRARY || view === V2View.SEARCH || view === V2View.SETTINGS) && (
+                        <TabBar activeTab={activeTab} onTabChange={(tab) => {
+                            setActiveTab(tab);
+                            if (tab === 'home') setView(V2View.HOME);
+                            if (tab === 'search') setView(V2View.SEARCH);
+                            if (tab === 'library') setView(V2View.LIBRARY);
+                            if (tab === 'settings') setView(V2View.SETTINGS);
+                        }} />
+                    )}
+                </div>
             </div>
-          </div>
-        );
-      case ViewType.AI_COACH:
-        return <ACPowerTraining />;
-      case ViewType.TEAM_DASHBOARD:
-        return <TeamDashboard />;
-      case ViewType.SETTINGS:
-        return <SettingsPage />;
-      default:
-        return <LandingPage onRegister={() => setCurrentView(ViewType.DASHBOARD)} />;
-    }
-  };
-
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar
-        currentView={currentView}
-        onNavigate={(view) => setCurrentView(view)}
-      />
-
-      <main className="flex-grow">
-        <Suspense fallback={<PageLoader />}>
-          {renderView()}
-        </Suspense>
-      </main>
-
-      <Footer onNavigate={(view) => setCurrentView(view)} />
-    </div>
-  );
-};
+        </div>
+    );
+}
 
 export default App;

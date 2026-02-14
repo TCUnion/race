@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "./globals.css";
+
+/* Leaflet Map Dark Mode Overrides */
+.leaflet-container {
+  background: #1a1a1a !important;
+  font-family: inherit !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #18181b !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaflet-bar a {
+  background-color: #18181b !important;
+  color: white !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #27272a !important;
+}
+
+/* Date Input Dark Mode Optimization */
+input[type="date"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Toast Slide-in Animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+
+  /* Components Interaction Styles */
+  .btn-primary {
+    @apply transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-primary-foreground shadow-lg bg-primary;
+    box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.3);
+  }
+
+  .btn-primary:hover {
+    @apply -translate-y-0.5 bg-primary/90;
+    box-shadow: 0 0 20px -5px rgba(56, 189, 248, 0.6), 0 0 15px -2px rgba(56, 189, 248, 0.4);
+  }
+
+  .btn-secondary {
+    @apply transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-secondary-foreground backdrop-blur-md border shadow-none bg-secondary/10 border-white/10;
+  }
+
+  .btn-secondary:hover {
+    @apply shadow-lg bg-secondary/20 border-white/30;
+    box-shadow: 0 0 15px -3px rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-accent {
+    @apply transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-white shadow-md bg-accent;
+  }
+
+  .btn-accent:hover {
+    @apply bg-accent/90;
+    box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.4);
+  }
+
+  .input-modern {
+    @apply bg-background border-input rounded-xl px-4 py-3 outline-none transition-all duration-300 focus:ring-2 focus:bg-background focus:shadow-lg text-foreground;
+    --tw-ring-color: rgba(56, 189, 248, 0.5);
+  }
+
+  .input-modern:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.1);
+  }
+
+  /* Accessibility & Usability */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  }
+
+  /* Utility to hide scrollbar */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* V2 RWD Utilities */
+  .power-value {
+    font-size: clamp(1rem, 5vw, 2.5rem);
+    font-weight: 900;
+    line-height: 1;
+    @apply tracking-tighter;
+  }
+
+  .responsive-table-container {
+    @apply w-full overflow-x-auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .responsive-table-container::-webkit-scrollbar {
+    display: none;
+  }
+}

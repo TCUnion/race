@@ -132,7 +132,7 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
     const latest = data[data.length - 1] || { ctl: 0, atl: 0, tsb: 0 };
 
     // 響應式參數
-    const chartHeight = isMobile ? 220 : 300;
+    // const chartHeight = isMobile ? 220 : 300; // Removed in favor of aspect ratio
     const tickInterval = isMobile ? Math.ceil(displayDays / 5) : Math.ceil(displayDays / 8);
     const barSize = isMobile ? 4 : 6;
     const strokeWidth = isMobile ? 2 : 3;
@@ -217,7 +217,7 @@ export const PMCChart: React.FC<PMCChartProps> = ({ activities, ftp }) => {
             </div>
 
             {/* 圖表區域 - 響應式高度 */}
-            <div style={{ height: chartHeight }} className="w-full">
+            <div className="w-full aspect-[21/9] min-h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                         data={data}

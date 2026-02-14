@@ -6,7 +6,7 @@ import { ThemeProvider } from './hooks/useTheme';
 import { FontSizeProvider } from './hooks/useFontSize';
 import { AuthProvider } from './contexts/AuthContext';
 import './lib/i18n';
-import './index.css';
+import './legacy_index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

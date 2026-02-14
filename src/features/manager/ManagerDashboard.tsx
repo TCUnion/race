@@ -58,7 +58,7 @@ import {
     History,
 } from 'lucide-react';
 import { useManagerData } from '../../hooks/useManagerData';
-import { apiClient } from '../../lib/apiClient';
+
 import { supabase } from '../../lib/supabase';
 import { AthleteSyncControl } from './components/AthleteSyncControl';
 import { MaintenanceStatistics, ActivitySummary, UserAuthorization, ManagerRole, ManagerRoleData } from '../../types';

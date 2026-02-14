@@ -100,7 +100,7 @@ export const DailyTrainingChart: React.FC<DailyTrainingChartProps> = ({ activiti
                 </div>
             </div>
 
-            <div className="h-[200px] w-full">
+            <div className="w-full aspect-[21/9] min-h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
