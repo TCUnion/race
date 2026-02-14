@@ -265,7 +265,8 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                 return {
                     rank: 0, // 稍後重新計算
                     athlete_id: athleteId,
-                    name: entryData?.athlete_name || athleteInfo?.name || `選手 ${athleteId}`,
+                    // NOTE: 優先使用 Strava 帳號名稱（athletes 表），其次才是報名時的名稱
+                    name: athleteInfo?.name || entryData?.athlete_name || `選手 ${athleteId}`,
                     profile_medium: entryData?.profile_medium || entryData?.profile || athleteInfo?.profile,
                     team: entryData?.team || regInfo?.team,
                     best_time: entryData?.best_time || null, // 無成績為 null
