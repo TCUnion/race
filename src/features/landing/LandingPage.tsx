@@ -415,8 +415,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onRegister }) => {
 
         </div>
       </div>
-    </div >
-    </div >
+    </div>
   );
 };
 
