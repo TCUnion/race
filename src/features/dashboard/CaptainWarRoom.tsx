@@ -131,7 +131,95 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
                 </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {members.length > 0 ? members.map((member, idx) => {
+                    // Check if athleteRecentActivities is available in the scope
+                    const activity = (window as any).athleteRecentActivities?.[member.athlete_id];
+                    return (
+                        <div key={`war-card-${idx}`} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm group">
+                            <div className="flex items-center gap-3 mb-4">
+                                {member.avatar ? (
+                                    <img src={resolveAvatarUrl(member.avatar) || ''} alt={member.real_name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                        <User className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-slate-900 dark:text-white truncate">{member.real_name || "Unknown"}</div>
+                                    <div className="text-[10px] text-slate-400 uppercase font-black">{member.member_type || "隊員"}</div>
+                                </div>
+                                {activity && (
+                                    <a
+                                        href={`https://www.strava.com/activities/${activity.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="size-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                )}
+                            </div>
+
+                            {activity ? (
+                                <>
+                                    <div className="mb-3">
+                                        <div className="text-[11px] font-black italic text-slate-800 dark:text-slate-200 line-clamp-1">{activity.name}</div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Calendar className="w-3 h-3 text-slate-400" />
+                                            <span className="text-[10px] text-slate-400 font-bold">
+                                                {new Date(activity.start_date).toLocaleDateString()} {new Date(activity.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 dark:border-slate-800">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[9px] text-slate-400 uppercase font-black">Dist</span>
+                                            <span className="text-xs font-black text-slate-700 dark:text-slate-300">{(activity.distance / 1000).toFixed(1)}km</span>
+                                        </div>
+                                        <div className="flex flex-col items-center border-x border-slate-100 dark:border-slate-800">
+                                            <span className="text-[9px] text-slate-400 uppercase font-black">Elev</span>
+                                            <span className="text-xs font-black text-slate-700 dark:text-slate-300">{Math.round(activity.total_elevation_gain)}m</span>
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[9px] text-slate-400 uppercase font-black">Time</span>
+                                            <span className="text-xs font-black text-slate-700 dark:text-slate-300">{formatDuration(activity.moving_time)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-around pt-3">
+                                        {activity.average_watts > 0 && (
+                                            <div className="flex flex-col items-center">
+                                                <span className="power-value text-amber-600 !text-sm">{Math.round(activity.average_watts)}W</span>
+                                                <span className="text-[8px] uppercase font-black text-amber-600/60">Power</span>
+                                            </div>
+                                        )}
+                                        {activity.average_heartrate && (
+                                            <div className="flex flex-col items-center">
+                                                <span className="font-black text-rose-600 text-sm italic">{Math.round(activity.average_heartrate)}</span>
+                                                <span className="text-[8px] uppercase font-black text-rose-600/60">BPM</span>
+                                            </div>
+                                        )}
+                                        {activity.suffer_score && (
+                                            <div className="flex flex-col items-center">
+                                                <span className="font-black text-red-600 text-sm italic">{activity.suffer_score}</span>
+                                                <span className="text-[8px] uppercase font-black text-red-600/60">Suffer</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-4 text-slate-300 text-[10px] font-black uppercase tracking-widest italic">Stable - No recent activities</div>
+                            )}
+                        </div>
+                    );
+                }) : (
+                    <div className="py-12 text-center text-slate-400 font-bold">尚無隊員資料</div>
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block responsive-table-container">
                 <table className="w-full">
                     <thead>
                         <tr className="bg-slate-50 dark:bg-slate-800/50">
@@ -225,9 +313,9 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
                                     {activity ? (
                                         <div className="flex items-center justify-center gap-3">
                                             {activity.average_watts > 0 && (
-                                                <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 rounded text-amber-600 text-xs font-bold">
+                                                <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 rounded text-amber-600">
                                                     <Zap className="w-3 h-3" />
-                                                    {Math.round(activity.average_watts)}w
+                                                    <span className="power-value !text-xs italic">{Math.round(activity.average_watts)}W</span>
                                                 </div>
                                             )}
                                             {activity.average_heartrate && (

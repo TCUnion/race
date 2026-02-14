@@ -156,7 +156,7 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
         {/* 表格區塊 */}
         {isTableExpanded && (
           <div className="w-full border-t border-slate-50 dark:border-slate-800 pt-6">
-            <div className="overflow-x-auto">
+            <div className="responsive-table-container">
               <table className="w-full">
                 <thead>
                   <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">
@@ -197,8 +197,22 @@ const SegmentLeaderboard: React.FC<SegmentLeaderboardProps> = ({
                       <td className="py-4 text-center">
                         <span className="font-black italic text-sm text-slate-900 dark:text-white">{formatTime(p.elapsed_time)}</span>
                       </td>
-                      <td className="py-4 text-center font-bold text-slate-700 dark:text-slate-300 text-xs hidden md:table-cell">{(p.average_speed * 3.6).toFixed(1)} <span className="text-[9px] opacity-50 uppercase">km/h</span></td>
-                      <td className="py-4 text-center font-bold text-slate-700 dark:text-slate-300 text-xs hidden md:table-cell">{Math.round(p.average_watts || 0)} <span className="text-[9px] opacity-50 uppercase">W</span></td>
+                      <td className="py-4 text-center hidden md:table-cell">
+                        <div className="flex flex-col items-center">
+                          <span className="power-value text-slate-700 dark:text-slate-300">
+                            {(p.average_speed * 3.6).toFixed(1)}
+                          </span>
+                          <span className="text-[9px] opacity-50 uppercase font-black tracking-widest">km/h</span>
+                        </div>
+                      </td>
+                      <td className="py-4 text-center hidden md:table-cell">
+                        <div className="flex flex-col items-center">
+                          <span className="power-value text-slate-700 dark:text-slate-300">
+                            {Math.round(p.average_watts || 0)}
+                          </span>
+                          <span className="text-[9px] opacity-50 uppercase font-black tracking-widest">Watts</span>
+                        </div>
+                      </td>
                       <td className="py-4 text-center text-[10px] font-bold text-slate-500 hidden lg:table-cell">{new Date(p.start_date || 0).toLocaleDateString()}</td>
                       <td className="py-4 text-center">
                         {p.activity_id && (

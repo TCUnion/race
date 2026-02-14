@@ -32,6 +32,7 @@ interface RegistrationFormProps {
     };
     segments: Segment[];
     onSuccess: () => void;
+    initialSegmentId?: number;
 }
 
 
@@ -47,7 +48,7 @@ const generateUUID = () => {
     });
 };
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, onSuccess, initialSegmentId }) => {
     const { isBound, memberData } = useAuth();
     const [selectedSegmentIds, setSelectedSegmentIds] = useState<number[]>([]);
     const [existingRegistrations, setExistingRegistrations] = useState<any[]>([]);
@@ -119,6 +120,16 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
         checkExisting();
     }, [athlete.id]);
+
+    // Handle initial segment selection from URL
+    useEffect(() => {
+        if (initialSegmentId && !isLoadingExisting) {
+            setSelectedSegmentIds(prev => {
+                if (prev.includes(initialSegmentId)) return prev;
+                return [...prev, initialSegmentId];
+            });
+        }
+    }, [initialSegmentId, isLoadingExisting]);
 
     const toggleSegment = (segmentId: number) => {
         setSelectedSegmentIds(prev =>

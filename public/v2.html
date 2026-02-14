@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TCU 小幫手 v2 測試版</title>
+    <meta name="description" content="TCU 小幫手 v2 測試頁面">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png?v=3">
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=Russo+One&family=Chakra+Petch:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+</head>
+
+<body class="bg-slate-100 dark:bg-background-dark text-slate-900 dark:text-slate-100">
+    <!-- V2 測試版標記 -->
+    <div
+        style="position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(90deg, #f97316, #ef4444); color: white; text-align: center; padding: 4px 0; font-size: 12px; font-weight: bold; z-index: 9999;">
+        🚧 V2 測試版 - 開發中
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/src2/main.tsx"></script>
+</body>
+
+</html>

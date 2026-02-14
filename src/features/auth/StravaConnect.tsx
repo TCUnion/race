@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api_config';
+import { apiClient } from '../../lib/apiClient';
 import StravaLogo from '../../components/ui/StravaLogo';
 
 interface StravaAthlete {
@@ -18,7 +19,7 @@ interface StravaAthlete {
 }
 
 const CONFIG = {
-    stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
+    stravaAuthUrl: `${API_BASE_URL}/webhook/strava/auth/start`,
     storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
     pollingTimeout: 120000,
@@ -129,10 +130,8 @@ const StravaConnect: React.FC = () => {
     const handleDisconnect = async () => {
         if (athlete?.id) {
             try {
-                await fetch('https://service.criterium.tw/webhook/strava/auth/cancel', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ athlete_id: athlete.id })
+                await apiClient.post('/webhook/strava/auth/cancel', {
+                    athlete_id: athlete.id
                 });
             } catch (e) {
                 console.error('發送取消連結 Webhook 失敗', e);

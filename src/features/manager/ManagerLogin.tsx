@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { apiClient } from '../../lib/apiClient';
 import { Mail, Lock, LogIn, AlertCircle, CheckCircle2, Store, User, Zap, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 interface ManagerLoginProps {
@@ -106,14 +107,10 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
             // 1. 更新 Supabase Auth 密碼
             // 先用 Email 登入取得 Session，然後更新密碼
             // 或者直接使用 Admin API
-            const response = await fetch('https://service.criterium.tw/webhook/manager-password-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: tokenEmail,
-                    new_password: newPassword,
-                    reset_token: resetToken
-                })
+            const response = await apiClient.post('/webhook/manager-password-update', {
+                email: tokenEmail,
+                new_password: newPassword,
+                reset_token: resetToken
             });
 
             if (!response.ok) {
@@ -243,17 +240,13 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
             // 這裡我們直接呼叫 n8n，讓它處理 Token 儲存和郵件發送
 
             // 4. 呼叫 n8n Webhook 發送重設郵件
-            const response = await fetch('https://service.criterium.tw/webhook/manager-password-reset', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: forgotEmail,
-                    shop_name: managerRole.shop_name || '管理員',
-                    reset_token: resetToken,
-                    expires_at: expiresAt,
-                    reset_url: `${import.meta.env.VITE_APP_URL || 'https://status.criterium.tw'}/manager?reset_token=${resetToken}`,
-                    requested_at: new Date().toISOString()
-                })
+            const response = await apiClient.post('/webhook/manager-password-reset', {
+                email: forgotEmail,
+                shop_name: managerRole.shop_name || '管理員',
+                reset_token: resetToken,
+                expires_at: expiresAt,
+                reset_url: `${import.meta.env.VITE_APP_URL || 'https://status.criterium.tw'}/manager?reset_token=${resetToken}`,
+                requested_at: new Date().toISOString()
             });
 
             if (!response.ok) {

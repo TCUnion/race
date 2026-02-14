@@ -100,7 +100,7 @@ const PowerZoneChart: React.FC<{ zones: PowerZoneAnalysis[] }> = ({ zones }) => 
                             }}
                         />
                     </div>
-                    <div className="w-14 text-right text-xs font-mono text-slate-300">
+                    <div className="w-14 text-right power-value !text-[10px] text-slate-300">
                         {zone.percentageTime}%
                     </div>
                     <div className="w-20 text-right text-xs font-mono text-slate-500">

@@ -353,3 +353,35 @@ def strava_auth_callback(
         return RedirectResponse(n8n_auth_url)
 
     return HTMLResponse(content="<h1>Error: Invalid callback data</h1>", status_code=400)
+
+@router.post("/strava/auth/cancel")
+async def strava_auth_cancel(request: Request):
+    """
+    Handle Strava Disconnect/Cancel
+    URL: /webhook/strava/auth/cancel
+    """
+    try:
+        body = await request.json()
+        athlete_id = body.get("athlete_id")
+        
+        if not athlete_id:
+            return {"status": "error", "message": "Missing athlete_id"}
+            
+        print(f"[Webhook] Strava Disconnect request for athlete {athlete_id}")
+        
+        # 清除 tokens 但保留基本資料? 或是做其他登出處理
+        # 這裡簡單回傳成功，並嘗試更新 DB 狀態 (可選)
+        try:
+             supabase.table("athletes").update({
+                 "access_token": None,
+                 "refresh_token": None,
+                 "expires_at": None
+             }).eq("id", int(athlete_id)).execute()
+        except Exception as e:
+            print(f"[Warn] Failed to clear DB tokens: {e}")
+
+        return {"status": "success", "message": "Disconnected"}
+        
+    except Exception as e:
+        print(f"Error in strava-auth-cancel: {e}")
+        return {"status": "error", "message": str(e)}

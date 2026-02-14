@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { PMCChart } from '../../components/charts/PMCChart';
+import { apiClient } from '../../lib/apiClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Store,
@@ -57,6 +58,7 @@ import {
     History,
 } from 'lucide-react';
 import { useManagerData } from '../../hooks/useManagerData';
+import { apiClient } from '../../lib/apiClient';
 import { supabase } from '../../lib/supabase';
 import { AthleteSyncControl } from './components/AthleteSyncControl';
 import { MaintenanceStatistics, ActivitySummary, UserAuthorization, ManagerRole, ManagerRoleData } from '../../types';
@@ -270,25 +272,62 @@ function ManagerDashboard() {
     const pollingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
     const [syncingActivities, setSyncingActivities] = useState<Set<number>>(new Set());
 
+    // Move checkBindingData here to avoid hoisting issues
+    const checkBindingData = async () => {
+        const tempData = localStorage.getItem('strava_athlete_data_temp');
+        if (tempData) {
+            try {
+                const athleteData = JSON.parse(tempData);
+                localStorage.removeItem('strava_athlete_data_temp');
+
+                // Stop polling
+                if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+                if (authWindowRef.current) authWindowRef.current.close();
+
+                // Update Manager Role
+                if (managerRole?.email) { // Ensure we identify by user_id or email
+                    const { error } = await supabase
+                        .from('manager_roles')
+                        .update({
+                            athlete_id: athleteData.id,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('email', managerRole.email); // Use email as key (safest based on context)
+
+                    if (error) throw error;
+
+                    alert('Strava 帳號連結成功！\n下次您可以使用 Strava ID 直接登入。');
+                    refresh(); // Reload manager data
+                } else {
+                    alert('無法識別當前管理員身份 (Missing User ID/Email)');
+                }
+
+            } catch (e: any) {
+                console.error('Binding failed', e);
+                alert('綁定失敗: ' + e.message);
+            } finally {
+                setIsBindingStrava(false);
+            }
+        }
+    };
+
     const handleSingleActivitySync = async (athleteId: number, activityId: number) => {
         if (syncingActivities.has(activityId)) return;
 
         setSyncingActivities(prev => new Set(prev).add(activityId));
+
         try {
-            const response = await fetch('https://service.criterium.tw/webhook/strava-sync-all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    athlete_id: athleteId,
-                    activity_ids: [activityId],
-                    requested_at: new Date().toISOString()
-                })
+            // 呼叫 Webhook
+            const response = await apiClient.post('/webhook/strava/sync-single-activity', {
+                athlete_id: athleteId,
+                activity_id: activityId
             });
 
-            if (response.ok) {
-                // 即時標記為已同步
-                setSessionSyncedActivities(prev => new Set(prev).add(activityId));
-            }
+            if (!response.ok) throw new Error('同步請求失敗');
+
+            // 即時標記為已同步
+            setSessionSyncedActivities(prev => new Set(prev).add(activityId));
+
         } catch (err) {
             console.error('Single activity sync error:', err);
             alert('同步發生錯誤，請稍後再試。');
@@ -303,6 +342,7 @@ function ManagerDashboard() {
             }, 2000);
         }
     };
+
 
     const handleBatchSyncSuccess = useCallback((activityIds: number[]) => {
         setSessionSyncedActivities(prev => {
@@ -402,43 +442,7 @@ function ManagerDashboard() {
         }
     };
 
-    const checkBindingData = async () => {
-        const tempData = localStorage.getItem('strava_athlete_data_temp');
-        if (tempData) {
-            try {
-                const athleteData = JSON.parse(tempData);
-                localStorage.removeItem('strava_athlete_data_temp');
 
-                // Stop polling
-                if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
-                if (authWindowRef.current) authWindowRef.current.close();
-
-                // Update Manager Role
-                if (managerRole?.email) { // Ensure we identify by user_id or email
-                    const { error } = await supabase
-                        .from('manager_roles')
-                        .update({
-                            athlete_id: athleteData.id,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('email', managerRole.email); // Use email as key (safest based on context)
-
-                    if (error) throw error;
-
-                    alert('Strava 帳號連結成功！\n下次您可以使用 Strava ID 直接登入。');
-                    refresh(); // Reload manager data
-                } else {
-                    alert('無法識別當前管理員身份 (Missing User ID/Email)');
-                }
-
-            } catch (e: any) {
-                console.error('Binding failed', e);
-                alert('綁定失敗: ' + e.message);
-            } finally {
-                setIsBindingStrava(false);
-            }
-        }
-    };
 
     // 取得指定車輛的歷史紀錄
     const fetchHistoryRecords = async (bikeId: string, athleteId: string | number) => {

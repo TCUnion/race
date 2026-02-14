@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { apiClient } from '../../../lib/apiClient';
 import { StravaActivity } from '../../../types';
 import { usePowerAnalysis } from '../../../hooks/usePowerAnalysis';
 
@@ -71,20 +72,7 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
         checkAvailability();
     }, [visibleActivities, checkStreamsAvailability]);
 
-    // Helper: Fetch with retry
-    const fetchWithRetry = async (url: string, options: any, retries = 3) => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                const res = await fetch(url, options);
-                if (res.ok) return res;
-            } catch (err) {
-                if (i === retries - 1) throw err;
-            }
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-        throw new Error('超過重試次數');
-    };
+    // Helper removed in favor of apiClient
 
     // Handle "Sync All" logic
     const handleSyncAllActivities = async () => {
@@ -112,16 +100,14 @@ export const AthleteSyncControl: React.FC<AthleteSyncControlProps> = ({ athleteI
 
             for (let i = 0; i < chunks.length; i += CONCURRENCY) {
                 const batchPromises = chunks.slice(i, i + CONCURRENCY).map(async (currentChunk, idx) => {
-                    await fetchWithRetry('https://service.criterium.tw/webhook/strava-sync-all', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            athlete_id: Number(athleteId),
-                            activity_ids: currentChunk,
-                            is_chunk: true,
-                            requested_at: new Date().toISOString()
-                        })
+                    const response = await apiClient.post('/webhook/strava-sync-all', {
+                        athlete_id: Number(athleteId),
+                        activity_ids: currentChunk,
+                        is_chunk: true,
+                        requested_at: new Date().toISOString()
                     });
+
+                    if (!response.ok) throw new Error(`Sync failed: ${response.statusText}`);
 
                     // Update progress
                     processedCount += currentChunk.length;

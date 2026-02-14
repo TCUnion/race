@@ -36,7 +36,7 @@ interface NavbarProps {
 }
 
 const CONFIG = {
-  stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
+  stravaAuthUrl: `${API_BASE_URL}/webhook/strava/auth/start`,
   storageKey: 'strava_athlete_data', // 與 useAuth 一致
   pollingInterval: 1000,
   pollingTimeout: 120000,

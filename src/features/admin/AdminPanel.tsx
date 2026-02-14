@@ -6,6 +6,7 @@ import { supabaseAdmin, supabaseServiceRole } from '../../lib/supabase';
 // 如果 Service Role 可用則使用它（繞過 RLS），否則退回 supabaseAdmin
 const supabase = supabaseServiceRole || supabaseAdmin;
 import { API_BASE_URL } from '../../lib/api_config';
+import { apiClient } from '../../lib/apiClient';
 import StravaLogo from '../../components/ui/StravaLogo';
 
 // 宣告全域變數 (由 vite.config.ts 注入)
@@ -385,11 +386,7 @@ const AdminPanel: React.FC = () => {
                 return;
             }
 
-            const response = await fetch('https://service.criterium.tw/webhook/segment_set', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ segment_id: sid })
-            });
+            const response = await apiClient.post('/webhook/segment_set', { segment_id: sid });
 
             const responseText = await response.text();
             if (!responseText || responseText.trim() === "") throw new Error("伺服器回傳了空內容");
@@ -450,10 +447,9 @@ const AdminPanel: React.FC = () => {
             const btn = document.getElementById(`sync-btn-${seg.id}`);
             if (btn) btn.classList.add('animate-spin');
 
-            const response = await fetch('https://service.criterium.tw/webhook/segment_effor_syn', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ segment_id: sid })
+            const response = await apiClient.post('/webhook/segment_effor_syn', {
+                segment_id: sid,
+                force_refresh: true
             });
 
             if (btn) btn.classList.remove('animate-spin');
@@ -488,10 +484,8 @@ const AdminPanel: React.FC = () => {
             for (const seg of targetSegments) {
                 try {
                     // 觸發個別同步
-                    await fetch('https://service.criterium.tw/webhook/segment_effor_syn', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ segment_id: seg.strava_id })
+                    await apiClient.post('/webhook/segment_effor_syn', {
+                        segment_id: seg.strava_id
                     });
                     successCount++;
                 } catch (e) {
@@ -784,7 +778,7 @@ const AdminPanel: React.FC = () => {
     const pollingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const STRAVA_AUTH_CONFIG = {
-        stravaAuthUrl: 'https://service.criterium.tw/webhook/strava/auth/start',
+        stravaAuthUrl: `${API_BASE_URL}/webhook/strava/auth/start`,
         storageKey: 'strava_athlete_data',
         pollingInterval: 1000,
         pollingTimeout: 120000
@@ -1144,13 +1138,9 @@ const AdminPanel: React.FC = () => {
             // 1. 呼叫 n8n Webhook 刪除 auth.users (需要 Service Role Key)
             if (manager.user_id || manager.email) {
                 try {
-                    await fetch('https://service.criterium.tw/webhook/delete-auth-user', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: manager.user_id,
-                            email: manager.email
-                        })
+                    await apiClient.post('/webhook/delete-auth-user', {
+                        user_id: manager.user_id,
+                        email: manager.email
                     });
                 } catch (webhookErr) {
                     console.warn('刪除 auth.users Webhook 請求失敗 (但不影響 manager_roles 刪除):', webhookErr);
@@ -1341,13 +1331,9 @@ const AdminPanel: React.FC = () => {
             }
 
             // 呼叫後端 API 進行解綁（包含權限驗證）
-            const response = await fetch(`${API_BASE_URL}/api/auth/unbind`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: member.email,
-                    admin_id: adminId
-                })
+            const response = await apiClient.post('/api/auth/unbind', {
+                email: member.email,
+                admin_id: adminId
             });
 
             // 處理非 OK 回應
@@ -1949,13 +1935,9 @@ const AdminPanel: React.FC = () => {
 
                                                             try {
                                                                 // 2. 呼叫 Webhook 重設密碼
-                                                                const response = await fetch('https://service.criterium.tw/webhook/reset-auth-password', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        email: manager.email,
-                                                                        password: newPassword
-                                                                    })
+                                                                const response = await apiClient.post('/webhook/reset-auth-password', {
+                                                                    email: manager.email,
+                                                                    password: newPassword
                                                                 });
 
                                                                 if (response.ok) {
@@ -2290,11 +2272,7 @@ const AdminPanel: React.FC = () => {
 
                                         try {
                                             // 呼叫 n8n webhook 取得路段資料
-                                            const response = await fetch('https://service.criterium.tw/webhook/segment_set', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ segment_id: parsedId })
-                                            });
+                                            const response = await apiClient.post('/webhook/segment_set', { segment_id: parsedId });
 
                                             const responseText = await response.text();
 

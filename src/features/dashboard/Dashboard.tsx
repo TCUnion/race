@@ -646,7 +646,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       </p>
                       <div className="flex items-center gap-1 text-emerald-500 mt-1">
                         <TrendingDown className="w-3 h-3 font-bold" />
-                        <p className="text-xs font-bold whitespace-nowrap">{athleteEffort?.average_watts ? `${Math.round(athleteEffort.average_watts)}W` : '紀錄同步中'}</p>
+                        <p className="power-value whitespace-nowrap !text-xs">
+                          {athleteEffort?.average_watts ? `${Math.round(athleteEffort.average_watts)}W` : '紀錄同步中'}
+                        </p>
                       </div>
                     </div>
 

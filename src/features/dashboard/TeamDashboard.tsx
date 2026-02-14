@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap, TrendingUp, Mountain, Trash2, Pencil } from 'lucide-react';
-import { API_BASE_URL } from '../../lib/api_config';
+import { apiClient } from '../../lib/apiClient';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
 import SegmentMap from '../map/SegmentMap';
@@ -103,7 +103,7 @@ const TeamDashboard: React.FC = () => {
         try {
             setLoading(true);
             // 1. Get My Team Info
-            const teamRes = await fetch(`${API_BASE_URL}/api/teams/my-team?strava_id=${athlete?.id}`);
+            const teamRes = await apiClient.get(`/api/teams/my-team?strava_id=${athlete?.id}`);
             const teamJson = await teamRes.json();
 
             if (!teamJson.has_team) {
@@ -116,7 +116,7 @@ const TeamDashboard: React.FC = () => {
 
             // 2. Fetch Members
             if (teamJson.team_name) {
-                const membersRes = await fetch(`${API_BASE_URL}/api/teams/members?team_name=${encodeURIComponent(teamJson.team_name)}`);
+                const membersRes = await apiClient.get(`/api/teams/members?team_name=${encodeURIComponent(teamJson.team_name)}`);
                 const membersJson = await membersRes.json();
                 // 防禦性編碼：確保回傳是陣列
                 setMembers(Array.isArray(membersJson) ? membersJson : []);
@@ -125,7 +125,7 @@ const TeamDashboard: React.FC = () => {
             // 3. Fetch Races (using team_name)
             if (teamJson.team_name) {
                 try {
-                    const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamJson.team_name)}`);
+                    const racesRes = await apiClient.get(`/api/teams/races?team_name=${encodeURIComponent(teamJson.team_name)}`);
                     const racesJson = await racesRes.json();
                     // 防禦性編碼：確保 races 是陣列
                     setRaces(Array.isArray(racesJson) ? racesJson : []);
@@ -152,10 +152,8 @@ const TeamDashboard: React.FC = () => {
 
         setFetchingSegment(true);
         try {
-            const response = await fetch('https://service.criterium.tw/webhook/segment_set', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ segment_id: segmentIdInput.trim() })
+            const response = await apiClient.post('/webhook/segment_set', {
+                segment_id: segmentIdInput.trim()
             });
 
             const responseText = await response.text();
@@ -188,19 +186,15 @@ const TeamDashboard: React.FC = () => {
     const handleCreateRace = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${API_BASE_URL}/api/teams/races`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    strava_id: athlete?.id,
-                    team_name: teamData.team_name,
-                    ...newRace,
-                    // 包含路段統計資料
-                    distance: fetchedSegment?.distance,
-                    average_grade: fetchedSegment?.average_grade,
-                    elevation_gain: fetchedSegment?.total_elevation_gain || fetchedSegment?.elevation_gain,
-                    polyline: typeof fetchedSegment?.map === 'string' ? fetchedSegment.map : (fetchedSegment?.map?.polyline || fetchedSegment?.polyline)
-                })
+            const response = await apiClient.post('/api/teams/races', {
+                strava_id: athlete?.id,
+                team_name: teamData.team_name,
+                ...newRace,
+                // 包含路段統計資料
+                distance: fetchedSegment?.distance,
+                average_grade: fetchedSegment?.average_grade,
+                elevation_gain: fetchedSegment?.total_elevation_gain || fetchedSegment?.elevation_gain,
+                polyline: typeof fetchedSegment?.map === 'string' ? fetchedSegment.map : (fetchedSegment?.map?.polyline || fetchedSegment?.polyline)
             });
 
             if (response.ok) {
@@ -218,7 +212,7 @@ const TeamDashboard: React.FC = () => {
                 setNewRace({ name: '', segment_id: '', start_date: '', end_date: '' });
                 // Refresh races
                 try {
-                    const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
+                    const racesRes = await apiClient.get(`/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
                     const racesJson = await racesRes.json();
                     setRaces(Array.isArray(racesJson) ? racesJson : []);
                 } catch {
@@ -273,21 +267,17 @@ const TeamDashboard: React.FC = () => {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/teams/races/${editingRace.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    strava_id: athlete?.id,
-                    team_name: teamData.team_name,
-                    name: editFormData.name,
-                    start_date: editFormData.start_date,
-                    end_date: editFormData.end_date
-                })
+            const response = await apiClient.put(`/api/teams/races/${editingRace.id}`, {
+                strava_id: athlete?.id,
+                team_name: teamData.team_name,
+                name: editFormData.name,
+                start_date: editFormData.start_date,
+                end_date: editFormData.end_date
             });
 
             if (response.ok) {
                 // Refresh races
-                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
+                const racesRes = await apiClient.get(`/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
                 const racesData = await racesRes.json();
                 setRaces(racesData);
                 handleCancelEdit();
@@ -306,9 +296,7 @@ const TeamDashboard: React.FC = () => {
         if (!confirm(`確定要刪除賽事「${raceName}」嗎？此操作無法復原。`)) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/teams/races/${raceId}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+            const response = await apiClient.delete(`/api/teams/races/${raceId}`, {
                 body: JSON.stringify({
                     strava_id: athlete?.id,
                     team_name: teamData.team_name
@@ -317,7 +305,7 @@ const TeamDashboard: React.FC = () => {
 
             if (response.ok) {
                 // Refresh races
-                const racesRes = await fetch(`${API_BASE_URL}/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
+                const racesRes = await apiClient.get(`/api/teams/races?team_name=${encodeURIComponent(teamData.team_name)}`);
                 const racesData = await racesRes.json();
                 setRaces(racesData);
             } else {
@@ -418,169 +406,204 @@ const TeamDashboard: React.FC = () => {
 
             {/* Content */}
             {activeTab === 'members' && (
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg">
-                    {/* Table Header */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-850">
-                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">成員</th>
-                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">暱稱</th>
-                                    <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">年齡</th>
-                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">身份</th>
-                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden md:table-cell">能力分組</th>
-                                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden lg:table-cell">個人說明</th>
-                                    <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">Strava</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {members.map((member, idx) => {
-                                    const isAdmin = member.member_type?.includes('付費車隊管理員');
-                                    const isCaptain = member.member_type?.includes('隊長');
-                                    const isHighlighted = isAdmin || isCaptain;
-
-                                    // Parse skills
-                                    const skillBadges = [];
-                                    if (member.skills) {
-                                        const skillMap = {
-                                            '公路賽': { color: 'bg-indigo-500', label: '公路賽' },
-                                            '公路登山': { color: 'bg-emerald-500', label: '公路登山' },
-                                            '公路繞圈': { color: 'bg-amber-500', label: '公路繞圈' },
-                                            '計時賽TT': { color: 'bg-rose-500', label: '計時賽TT' },
-                                        };
-
-                                        const parts = member.skills.split(/[,，\n]/).map((s: string) => s.trim()).filter(Boolean);
-
-                                        parts.forEach((part: string) => {
-                                            const match = part.match(/^(.*?)[：:][\s]*([A-Za-z0-9\+\-]+)$/);
-                                            if (match) {
-                                                const skillName = match[1].trim();
-                                                const grade = match[2].trim();
-                                                const config = skillMap[skillName as keyof typeof skillMap];
-
-                                                if (config) {
-                                                    skillBadges.push(
-                                                        <div key={skillName} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm shadow-sm group-hover:bg-slate-800/80 transition-colors">
-                                                            <Zap className={`w-3 h-3 ${config.color.replace('bg-', 'text-')}`} fill="currentColor" />
-                                                            <span className="text-[10px] font-medium text-slate-300">{config.label} : </span>
-                                                            <span className="text-xs font-black text-white">{grade}</span>
-                                                        </div>
-                                                    );
-                                                }
-                                            }
-                                        });
-                                    }
-
-                                    return (
-                                        <tr
-                                            key={idx}
-                                            className={`transition-all border-b border-slate-100 dark:border-slate-800 last:border-0 group ${isAdmin
-                                                ? 'bg-purple-500/5 hover:bg-purple-500/10 dark:bg-purple-500/10 dark:hover:bg-purple-500/20'
-                                                : isCaptain
-                                                    ? 'bg-yellow-500/5 hover:bg-yellow-500/10 dark:bg-yellow-500/10 dark:hover:bg-yellow-500/20'
-                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                                                }`}
-                                        >
-                                            {/* 成員 */}
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="relative">
-                                                        <img
-                                                            src={resolveAvatarUrl(member.avatar) || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                                                            alt={member.real_name}
-                                                            referrerPolicy="no-referrer"
-                                                            className={`w-12 h-12 rounded-xl object-cover ${isAdmin ? 'ring-2 ring-purple-500'
-                                                                : isCaptain ? 'ring-2 ring-yellow-500'
-                                                                    : 'ring-1 ring-slate-200 dark:ring-slate-700'
-                                                                }`}
-                                                        />
-                                                        {isHighlighted && (
-                                                            <div className={`absolute -top-1 -right-1 text-white p-1 rounded-full shadow-lg ${isAdmin ? 'bg-purple-500' : 'bg-yellow-500'
-                                                                }`}>
-                                                                <Trophy className="w-3 h-3" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-slate-900 dark:text-white">
-                                                            {member.real_name}
-                                                        </div>
-                                                        <div className="text-[10px] font-mono text-slate-400">
-                                                            {member.tcu_id}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* 暱稱 */}
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm text-slate-600 dark:text-slate-300">
-                                                    {member.nickname || '-'}
-                                                </span>
-                                            </td>
-
-                                            {/* 年齡 */}
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold ${member.age
-                                                    ? 'bg-tcu-blue/10 text-tcu-blue'
-                                                    : 'text-slate-300'
-                                                    }`}>
-                                                    {member.age || '-'}
-                                                </span>
-                                            </td>
-
-                                            {/* 身份 */}
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-black ${isAdmin
-                                                    ? 'bg-gradient-to-r from-purple-400 to-purple-600 text-white shadow-lg shadow-purple-500/30'
-                                                    : isCaptain
-                                                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/30'
-                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                                                    }`}>
-                                                    {member.member_type || '隊員'}
-                                                </span>
-                                            </td>
-
-                                            {/* 能力分組 */}
-                                            <td className="px-6 py-4 hidden md:table-cell">
-                                                <div className="flex flex-wrap gap-2 max-w-[400px]">
-                                                    {skillBadges.length > 0 ? skillBadges : <span className="text-sm text-slate-400">-</span>}
-                                                </div>
-                                            </td>
-
-                                            {/* 個人說明 */}
-                                            <td className="px-6 py-4 hidden lg:table-cell">
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 max-w-xs">
-                                                    {member.self_intro || '-'}
-                                                </p>
-                                            </td>
-
-                                            {/* Strava 狀態 */}
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                {member.strava_id ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/10 text-orange-500 rounded-lg text-xs font-bold">
-                                                        <img src="https://www.strava.com/favicon.ico" alt="strava" className="w-3 h-3" />
-                                                        已綁定
+                <div className="flex flex-col gap-6">
+                    {/* Mobile Card View */}
+                    <div className="grid grid-cols-1 gap-4 md:hidden px-4">
+                        {members.map((member, idx) => {
+                            const isAdmin = member.member_type?.includes('付費車隊管理員');
+                            const isCaptain = member.member_type?.includes('隊長');
+                            return (
+                                <div key={`card-${idx}`} className={`p-4 rounded-2xl border ${isAdmin ? 'border-purple-500/30 bg-purple-500/5' : isCaptain ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'} shadow-sm`}>
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <img
+                                            src={resolveAvatarUrl(member.avatar) || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+                                            alt={member.real_name}
+                                            referrerPolicy="no-referrer"
+                                            className="w-12 h-12 rounded-xl object-cover"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                {member.real_name}
+                                                {member.member_type && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isAdmin ? 'bg-purple-500 text-white' : isCaptain ? 'bg-yellow-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                                                        {member.member_type}
                                                     </span>
-                                                ) : (
-                                                    <span className="text-xs text-slate-300">-</span>
                                                 )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                            </div>
+                                            <div className="text-[10px] font-mono text-slate-400">{member.tcu_id}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {member.nickname && <div className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">暱稱: {member.nickname}</div>}
+                                        {member.age && <div className="text-[10px] font-bold text-tcu-blue bg-tcu-blue/10 px-2 py-1 rounded">年齡: {member.age}</div>}
+                                        {member.strava_id && (
+                                            <div className="text-[10px] font-bold text-orange-500 bg-orange-500/10 px-2 py-1 rounded flex items-center gap-1">
+                                                <img src="https://www.strava.com/favicon.ico" alt="S" className="w-2 h-2" />
+                                                已綁定
+                                            </div>
+                                        )}
+                                    </div>
+                                    {member.self_intro && <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 italic">"{member.self_intro}"</p>}
+                                </div>
+                            );
+                        })}
                     </div>
 
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg">
+                        <div className="responsive-table-container">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-850">
+                                        <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">成員</th>
+                                        <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">暱稱</th>
+                                        <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">年齡</th>
+                                        <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500">身份</th>
+                                        <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden md:table-cell">能力分組</th>
+                                        <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-slate-500 hidden lg:table-cell">個人說明</th>
+                                        <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">Strava</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {members.map((member, idx) => {
+                                        const isAdmin = member.member_type?.includes('付費車隊管理員');
+                                        const isCaptain = member.member_type?.includes('隊長');
+                                        const isHighlighted = isAdmin || isCaptain;
 
-                    {/* Empty State */}
-                    {members.length === 0 && (
-                        <div className="py-16 text-center text-slate-400">
-                            <Users2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p className="font-bold">尚無成員資料</p>
+                                        // Parse skills
+                                        const skillBadges = [];
+                                        if (member.skills) {
+                                            const skillMap = {
+                                                '公路賽': { color: 'bg-indigo-500', label: '公路賽' },
+                                                '公路登山': { color: 'bg-emerald-500', label: '公路登山' },
+                                                '公路繞圈': { color: 'bg-amber-500', label: '公路繞圈' },
+                                                '計時賽TT': { color: 'bg-rose-500', label: '計時賽TT' },
+                                            };
+
+                                            const parts = member.skills.split(/[,，\n]/).map((s: string) => s.trim()).filter(Boolean);
+
+                                            parts.forEach((part: string) => {
+                                                const match = part.match(/^(.*?)[：:][\s]*([A-Za-z0-9\+\-]+)$/);
+                                                if (match) {
+                                                    const skillName = match[1].trim();
+                                                    const grade = match[2].trim();
+                                                    const config = skillMap[skillName as keyof typeof skillMap];
+
+                                                    if (config) {
+                                                        skillBadges.push(
+                                                            <div key={skillName} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm shadow-sm group-hover:bg-slate-800/80 transition-colors">
+                                                                <Zap className={`w-3 h-3 ${config.color.replace('bg-', 'text-')}`} fill="currentColor" />
+                                                                <span className="text-[10px] font-medium text-slate-300">{config.label} : </span>
+                                                                <span className="text-xs font-black text-white">{grade}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                }
+                                            });
+                                        }
+
+                                        return (
+                                            <tr
+                                                key={idx}
+                                                className={`transition-all border-b border-slate-100 dark:border-slate-800 last:border-0 group ${isAdmin
+                                                    ? 'bg-purple-500/5 hover:bg-purple-500/10 dark:bg-purple-500/10 dark:hover:bg-purple-500/20'
+                                                    : isCaptain
+                                                        ? 'bg-yellow-500/5 hover:bg-yellow-500/10 dark:bg-yellow-500/10 dark:hover:bg-yellow-500/20'
+                                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                    }`}
+                                            >
+                                                {/* 成員 */}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="relative">
+                                                            <img
+                                                                src={resolveAvatarUrl(member.avatar) || "https://www.strava.com/assets/users/placeholder_athlete.png"}
+                                                                alt={member.real_name}
+                                                                referrerPolicy="no-referrer"
+                                                                className={`w-12 h-12 rounded-xl object-cover ${isAdmin ? 'ring-2 ring-purple-500'
+                                                                    : isCaptain ? 'ring-2 ring-yellow-500'
+                                                                        : 'ring-1 ring-slate-200 dark:ring-slate-700'
+                                                                    }`}
+                                                            />
+                                                            {isHighlighted && (
+                                                                <div className={`absolute -top-1 -right-1 text-white p-1 rounded-full shadow-lg ${isAdmin ? 'bg-purple-500' : 'bg-yellow-500'
+                                                                    }`}>
+                                                                    <Trophy className="w-3 h-3" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-slate-900 dark:text-white">
+                                                                {member.real_name}
+                                                            </div>
+                                                            <div className="text-[10px] font-mono text-slate-400">
+                                                                {member.tcu_id}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* 暱稱 */}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-300">
+                                                        {member.nickname || '-'}
+                                                    </span>
+                                                </td>
+
+                                                {/* 年齡 */}
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold ${member.age
+                                                        ? 'bg-tcu-blue/10 text-tcu-blue'
+                                                        : 'text-slate-300'
+                                                        }`}>
+                                                        {member.age || '-'}
+                                                    </span>
+                                                </td>
+
+                                                {/* 身份 */}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-black ${isAdmin
+                                                        ? 'bg-gradient-to-r from-purple-400 to-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                                        : isCaptain
+                                                            ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/30'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                                        }`}>
+                                                        {member.member_type || '隊員'}
+                                                    </span>
+                                                </td>
+
+                                                {/* 能力分組 */}
+                                                <td className="px-6 py-4 hidden md:table-cell">
+                                                    <div className="flex flex-wrap gap-2 max-w-[400px]">
+                                                        {skillBadges.length > 0 ? skillBadges : <span className="text-sm text-slate-400">-</span>}
+                                                    </div>
+                                                </td>
+
+                                                {/* 個人說明 */}
+                                                <td className="px-6 py-4 hidden lg:table-cell">
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 max-w-xs">
+                                                        {member.self_intro || '-'}
+                                                    </p>
+                                                </td>
+
+                                                {/* Strava 狀態 */}
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    {member.strava_id ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/10 text-orange-500 rounded-lg text-xs font-bold">
+                                                            <img src="https://www.strava.com/favicon.ico" alt="strava" className="w-3 h-3" />
+                                                            已綁定
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-300">-</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
 

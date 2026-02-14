@@ -65,7 +65,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const numericId = Number(athleteData.id);
         // ✅ 修正：必須同時擁有 access_token 與 refresh_token 才進行同步，避免觸發後端 invalid token 錯誤
-        if (athleteData.access_token && athleteData.refresh_token && !isNaN(numericId) && numericId !== 0) {
+        if (athleteData.access_token && athleteData.refresh_token &&
+            athleteData.access_token !== 'undefined' && athleteData.refresh_token !== 'undefined' &&
+            !isNaN(numericId) && numericId !== 0) {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 await apiClient.post('/api/auth/strava-token', {

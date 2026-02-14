@@ -6,7 +6,7 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useSegmentData } from '../../src/hooks/useSegmentData';
 import { useWeeklyStats } from '../../src/hooks/useWeeklyStats';
 import { generateSvgPath } from '../../src/utils/polylineUtils';
-import AnnouncementBanner from '../../src/features/dashboard/AnnouncementBanner';
+import AnnouncementBanner from '../components/common/AnnouncementBanner';
 
 interface V2DashboardProps {
     onBack: () => void;
@@ -148,7 +148,7 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                                         <div>
                                             <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Strava ID: {segment.strava_id}</span>
                                             <h3 className="text-xl font-bold text-white mt-1 leading-tight max-w-[70%] line-clamp-2">
-                                                {segment.name}
+                                                {segment.description || segment.name}
                                             </h3>
                                         </div>
                                         <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-black/20 backdrop-blur-sm">
