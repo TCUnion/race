@@ -315,10 +315,10 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                         team: segment.team,
                         endDate: segment.end_date
                     }))}
-                    onChallengeClick={() => {
-                        // NOTE: 點擊近期挑戰直接跳到挑戰頁面
+                    onChallengeClick={(id) => {
+                        // NOTE: 點擊近期挑戰直接進入該挑戰排行榜
                         if (onNavigate) {
-                            onNavigate(V2View.LIBRARY);
+                            onNavigate(V2View.LEADERBOARD, { segmentId: id });
                         }
                     }}
                 />

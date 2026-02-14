@@ -1,4 +1,4 @@
-import { Play, Users } from 'lucide-react';
+import { Play, Clock } from 'lucide-react';
 import SegmentMap from '../../features/map/SegmentMap';
 import { getTeamColor } from '../../utils/teamColors';
 
@@ -19,12 +19,29 @@ interface ChallengeListProps {
 }
 
 /**
+ * 計算剩餘天數
+ * @param endDate 結束日期字串（YYYY-MM-DD）
+ * @returns 剩餘天數，負數代表已過期
+ */
+function getDaysRemaining(endDate?: string): number {
+    if (!endDate) return 999; // 無結束日期視為永久
+    const end = new Date(endDate + 'T23:59:59');
+    const now = new Date();
+    return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+/**
  * 近期挑戰列表
- * - 過期挑戰（endDate < 今天）顯示灰色 + 「已結束」標籤
- * - 點擊跳轉至挑戰頁面
+ * - 依剩餘天數由大到小排列
+ * - 進行中顯示剩餘天數（發光效果）
+ * - 已結束灰色 + 「已結束」標籤
+ * - 點擊跳轉至該挑戰的詳情頁
  */
 export function ChallengeList({ challenges, onChallengeClick }: ChallengeListProps) {
-    const today = new Date().toISOString().split('T')[0];
+    // NOTE: 依剩餘天數排列，由大到小（活躍在前，已結束在後）
+    const sortedChallenges = [...challenges].sort((a, b) => {
+        return getDaysRemaining(b.endDate) - getDaysRemaining(a.endDate);
+    });
 
     return (
         <div className="w-full px-5">
@@ -33,9 +50,9 @@ export function ChallengeList({ challenges, onChallengeClick }: ChallengeListPro
             </div>
 
             <div className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-                {challenges.map((challenge) => {
-                    // NOTE: 判斷挑戰是否已結束
-                    const isExpired = challenge.endDate ? challenge.endDate < today : false;
+                {sortedChallenges.map((challenge) => {
+                    const daysRemaining = getDaysRemaining(challenge.endDate);
+                    const isExpired = daysRemaining < 0;
 
                     return (
                         <button
@@ -66,11 +83,17 @@ export function ChallengeList({ challenges, onChallengeClick }: ChallengeListPro
                                     <h3 className={`text-[15px] font-medium truncate ${isExpired ? 'text-white/40' : 'text-white'}`}>
                                         {challenge.name}
                                     </h3>
-                                    {isExpired && (
+                                    {isExpired ? (
                                         <span className="text-[10px] font-bold text-white/30 bg-white/10 px-1.5 py-0.5 rounded-full shrink-0">
                                             已結束
                                         </span>
-                                    )}
+                                    ) : challenge.endDate ? (
+                                        /* NOTE: 剩餘天數發光顯示 */
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 text-emerald-300 bg-emerald-500/15 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+                                            <Clock size={10} />
+                                            {daysRemaining}天
+                                        </span>
+                                    ) : null}
                                     {!isExpired && challenge.team && (
                                         <div
                                             className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full shrink-0"
