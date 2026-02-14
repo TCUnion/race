@@ -141,6 +141,33 @@ async def receive_webhook(event: StravaEvent):
         print(f"Error processing webhook: {e}")
         return {"status": "error", "message": str(e)}
 
+@router.post("/segment_set")
+async def segment_set(request: Request):
+    """
+    設定/更新路段資料 (Admin Panel 使用)
+    """
+    try:
+        body = await request.json()
+        segment_id = body.get("segment_id")
+        
+        if not segment_id:
+            return Response(content="Missing segment_id", status_code=400)
+            
+        print(f"Fetching segment details for {segment_id}...")
+        
+        # 使用 StravaService 取得路段資料
+        segment_data = StravaService.get_segment(int(segment_id))
+        
+        if not segment_data:
+             return Response(content="Failed to fetch segment data from Strava", status_code=404)
+             
+        # 直接回傳 Strava 原始資料，讓前端 normalizeSegment 處理
+        return segment_data
+        
+    except Exception as e:
+        print(f"Error in segment_set: {e}")
+        return Response(content=f"Server error: {str(e)}", status_code=500)
+
 # ====================================================================
 #  MIGRATED OAUTH & BINDING LOGIC (Matching User Requirements)
 #  - URL: /webhook/member-binding

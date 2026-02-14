@@ -125,3 +125,30 @@ class StravaService:
         else:
             print(f"Error fetching activity {activity_id}: {response.status_code} - {response.text}")
             return None
+
+    @staticmethod
+    def get_segment(segment_id: int) -> Optional[Dict[str, Any]]:
+        """
+        取得路段詳細資料
+        """
+        # 隨機取得一個有效的 Token 來查詢公開路段資訊
+        response = supabase.table("strava_tokens").select("*").limit(1).execute()
+        if not response.data:
+            print("No tokens available to fetch segment")
+            return None
+            
+        token_data = StravaService.get_token(response.data[0]["athlete_id"])
+        if not token_data:
+            return None
+
+        headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+        response = requests.get(
+            f"https://www.strava.com/api/v3/segments/{segment_id}",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error fetching segment {segment_id}: {response.status_code} - {response.text}")
+            return None
