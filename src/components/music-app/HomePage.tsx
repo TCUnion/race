@@ -316,9 +316,9 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                         endDate: segment.end_date
                     }))}
                     onChallengeClick={(id) => {
-                        // NOTE: 點擊近期挑戰直接進入該挑戰排行榜
+                        // NOTE: 點擊近期挑戰進入挑戰頁面並自動開啟該挑戰排行榜
                         if (onNavigate) {
-                            onNavigate(V2View.LEADERBOARD, { segmentId: id });
+                            onNavigate(V2View.LIBRARY, { segmentId: id });
                         }
                     }}
                 />

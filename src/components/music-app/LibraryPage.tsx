@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Trophy, Flame, ChevronLeft, ChevronRight, Users, Calendar, TrendingUp, Mountain, ExternalLink, Crown, Medal, RefreshCw } from 'lucide-react';
 import { StatusBar } from './StatusBar';
 
@@ -9,13 +9,14 @@ import { getTeamColor } from '../../utils/teamColors';
 interface LibraryPageProps {
     onTabChange?: (tab: string) => void;
     activeTab?: string;
+    initialSegmentId?: string;
 }
 
 /**
  * 比賽頁面 - V2 行動端
  * 顯示進行中與已結束的路段挑戰
  */
-export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageProps) {
+export function LibraryPage({ onTabChange, activeTab = 'library', initialSegmentId }: LibraryPageProps) {
     const { ongoingRaces, endedRaces, isLoading, error, getLeaderboard, refresh } = useRaceHistory();
 
     // Tab 狀態：進行中 / 歷史挑戰
@@ -36,6 +37,16 @@ export function LibraryPage({ onTabChange, activeTab = 'library' }: LibraryPageP
         setLeaderboard(data);
         setIsLoadingLeaderboard(false);
     }, [getLeaderboard]);
+
+    // NOTE: 從首頁跳轉過來時，自動開啟指定挑戰的排行榜
+    useEffect(() => {
+        if (!initialSegmentId || isLoading) return;
+        const allRaces = [...ongoingRaces, ...endedRaces];
+        const targetRace = allRaces.find(r => String(r.id) === initialSegmentId);
+        if (targetRace) {
+            handleOpenLeaderboard(targetRace);
+        }
+    }, [initialSegmentId, isLoading, ongoingRaces, endedRaces, handleOpenLeaderboard]);
 
     // 關閉排行榜
     const handleCloseLeaderboard = useCallback(() => {

@@ -93,7 +93,7 @@ function App() {
                     if (tab === 'settings') setView(V2View.SETTINGS);
                 }} />;
             case V2View.LIBRARY:
-                return <LibraryPage activeTab="library" onTabChange={(tab) => {
+                return <LibraryPage activeTab="library" initialSegmentId={viewParams?.segmentId} onTabChange={(tab) => {
                     setActiveTab(tab);
                     if (tab === 'home') setView(V2View.HOME);
                     if (tab === 'search') setView(V2View.SEARCH);
