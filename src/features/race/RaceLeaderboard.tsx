@@ -93,8 +93,8 @@ const RaceLeaderboard: React.FC<RaceLeaderboardProps> = ({
                                     className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors group"
                                 >
                                     {/* 排名 */}
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${getRankStyle(entry.rank)}`}>
-                                        {entry.rank}
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${entry.rank ? getRankStyle(entry.rank) : 'bg-slate-800 text-slate-500'}`}>
+                                        {entry.rank || '-'}
                                     </div>
 
                                     {/* 頭像 */}
@@ -132,8 +132,8 @@ const RaceLeaderboard: React.FC<RaceLeaderboardProps> = ({
 
                                     {/* 最佳時間 */}
                                     <div className="flex items-center gap-1.5 min-w-[80px] justify-end">
-                                        <Clock className="w-3.5 h-3.5 text-tcu-blue" />
-                                        <span className="text-sm font-black text-white tabular-nums">
+                                        <Clock className={`w-3.5 h-3.5 ${entry.best_time ? 'text-tcu-blue' : 'text-slate-600'}`} />
+                                        <span className={`text-sm font-black tabular-nums ${entry.best_time ? 'text-white' : 'text-slate-600'}`}>
                                             {formatRaceTime(entry.best_time)}
                                         </span>
                                     </div>
