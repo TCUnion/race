@@ -104,15 +104,8 @@ function App() {
                 return (
                     <div className="flex flex-col w-full h-full bg-bg overflow-hidden relative">
                         <StatusBar />
-                        <div className="flex-1 overflow-hidden bg-bg-dark">
-                            {/* 桌面/平板版：顯示完整 MaintenanceDashboard */}
-                            <div className="hidden md:block h-full overflow-y-auto">
-                                <MaintenanceDashboard />
-                            </div>
-                            {/* 手機版：維持原有 V2Maintenance */}
-                            <div className="md:hidden h-full">
-                                <V2Maintenance onBack={() => setView(V2View.HOME)} />
-                            </div>
+                        <div className="flex-1 overflow-y-auto bg-bg-dark">
+                            <MaintenanceDashboard />
                         </div>
                     </div>
                 );
