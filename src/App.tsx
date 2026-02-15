@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useSEO } from './hooks/useSEO';
 import { HomePage, SearchPage, LibraryPage, StatusBar } from './components/music-app';
+import { useIsMobile } from './hooks/useIsMobile';
 
 // 頁面視圖定義
 export enum V2View {
@@ -42,6 +43,7 @@ function App() {
     const [view, setView] = useState<V2View>(V2View.HOME);
     const [activeTab, setActiveTab] = useState('home');
     const [viewParams, setViewParams] = useState<any>({});
+    const isMobile = useIsMobile();
 
     // 初始化：檢查 URL 參數
     useEffect(() => {
@@ -103,6 +105,9 @@ function App() {
                 }} />;
 
             case V2View.MAINTENANCE:
+                if (isMobile) {
+                    return <V2Maintenance onBack={() => setView(V2View.HOME)} />;
+                }
                 return (
                     <div className="flex flex-col w-full h-full bg-bg overflow-hidden relative">
                         <StatusBar />
@@ -210,7 +215,7 @@ function App() {
 
                 {/* Mobile Bottom Bar - Only visible on mobile/small screens and for main tabs */}
                 <div className="md:hidden absolute bottom-0 left-0 right-0 z-40">
-                    {(view === V2View.HOME || view === V2View.LIBRARY || view === V2View.SEARCH || view === V2View.SETTINGS) && (
+                    {(view === V2View.HOME || view === V2View.LIBRARY || view === V2View.SEARCH || view === V2View.SETTINGS || view === V2View.MAINTENANCE) && (
                         <TabBar activeTab={activeTab} onTabChange={(tab) => {
                             setActiveTab(tab);
                             if (tab === 'home') setView(V2View.HOME);
