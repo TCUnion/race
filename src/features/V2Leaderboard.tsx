@@ -4,6 +4,9 @@ import { useSegmentData, formatTime } from '../hooks/useSegmentData';
 import { StatusBar } from '../components/music-app/StatusBar';
 import { getTeamColor } from '../utils/teamColors';
 
+// NOTE: 內嵌 SVG 預設頭像，避免外部 CDN 無法載入
+const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23334155'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cellipse cx='50' cy='85' rx='30' ry='25' fill='%2394a3b8'/%3E%3C/svg%3E";
+
 interface V2LeaderboardProps {
     onBack: () => void;
     initialSegmentId?: string;
@@ -21,9 +24,17 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
         }
     }, [segments, activeId]);
 
+    // Format date string to YYYY/MM/DD
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+    };
+
     // Current data derivations
     const currentIndex = segments.findIndex(s => String(s.id) === activeId);
     const currentSegment = segments[currentIndex !== -1 ? currentIndex : 0];
+
     const currentLeaderboard = currentSegment ? leaderboardsMap[Number(currentSegment.id)] || [] : [];
     const currentStats = currentSegment ? statsMap[Number(currentSegment.id)] : null;
 
@@ -150,10 +161,31 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                         <div className="flex justify-between items-start mb-2 px-6">
                             <div>
                                 <h3 className="text-white text-sm font-bold truncate max-w-[180px]">{currentSegment.description || currentSegment.name}</h3>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-0.5">
                                     <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: `${currentColor}aa` }}>
                                         {currentSegment.distance ? (currentSegment.distance / 1000).toFixed(1) : '--'} KM · {currentSegment.total_elevation_gain ? Math.round(currentSegment.total_elevation_gain) : '--'}M 爬升 · {currentSegment.average_grade}%
                                     </p>
+                                    {currentSegment.start_date && (
+                                        <p className="text-xs font-bold tracking-wider text-[#FC5200]">
+                                            {(() => {
+                                                try {
+                                                    const getDatePart = (dateStr: string) => {
+                                                        const date = new Date(dateStr);
+                                                        return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+                                                    };
+
+                                                    const startStr = getDatePart(currentSegment.start_date);
+                                                    if (currentSegment.end_date && currentSegment.end_date !== currentSegment.start_date) {
+                                                        const endStr = getDatePart(currentSegment.end_date);
+                                                        return `${startStr} - ${endStr}`;
+                                                    }
+                                                    return startStr;
+                                                } catch (e) {
+                                                    return '';
+                                                }
+                                            })()}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-1">
@@ -228,17 +260,21 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                     }`}
                             >
                                 <div className="w-5 sm:w-6 text-center flex-shrink-0">
-                                    <span className={`text-sm font-black italic ${p.rank === 1 ? 'text-yellow-500' :
-                                        p.rank === 2 ? 'text-gray-400' :
-                                            p.rank === 3 ? 'text-amber-600' : 'text-white/30'
-                                        }`}>
-                                        {p.rank}
-                                    </span>
+                                    {p.rank > 0 ? (
+                                        <span className={`text-sm font-black italic ${p.rank === 1 ? 'text-yellow-500' :
+                                            p.rank === 2 ? 'text-gray-400' :
+                                                p.rank === 3 ? 'text-amber-600' : 'text-white/30'
+                                            }`}>
+                                            {p.rank}
+                                        </span>
+                                    ) : (
+                                        <span className="text-white/10 text-xs font-bold">-</span>
+                                    )}
                                 </div>
-                                <img src={p.profile_medium || 'default_avatar_url'} alt={p.name} referrerPolicy="no-referrer" className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg border border-white/10 flex-shrink-0" />
+                                <img src={p.profile_medium || DEFAULT_AVATAR} alt={p.name} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg border border-white/10 flex-shrink-0" />
                                 <div className="flex-1 min-w-0 overflow-hidden">
                                     <div className="flex items-center gap-1.5 min-w-0">
-                                        <h4 className="text-white text-xs sm:text-sm font-bold truncate">{p.name}</h4>
+                                        <h4 className={`text-xs sm:text-sm font-bold truncate ${p.rank > 0 ? 'text-white' : 'text-white/50'}`}>{p.name}</h4>
                                         {p.is_tcu && <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />}
                                     </div>
                                     <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
@@ -249,12 +285,18 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end flex-shrink-0">
-                                    <span className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold whitespace-nowrap">最佳完成時間</span>
-                                    <span className="text-white text-xs sm:text-sm font-bold tracking-tight whitespace-nowrap">{formatTime(p.elapsed_time)}</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-white/40 text-[9px] sm:text-[10px] whitespace-nowrap">{p.start_date ? new Date(p.start_date).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''}</span>
-                                        <span className="text-primary text-[9px] sm:text-[10px] font-bold whitespace-nowrap">{p.average_watts || '--'}W</span>
-                                    </div>
+                                    {p.rank > 0 ? (
+                                        <>
+                                            <span className="text-white/40 text-[8px] sm:text-[9px] uppercase font-bold whitespace-nowrap">最佳完成時間</span>
+                                            <span className="text-white text-xs sm:text-sm font-bold tracking-tight whitespace-nowrap">{formatTime(p.elapsed_time)}</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-white/40 text-[9px] sm:text-[10px] whitespace-nowrap">{p.start_date ? new Date(p.start_date).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) : ''}</span>
+                                                <span className="text-primary text-[9px] sm:text-[10px] font-bold whitespace-nowrap">{p.average_watts || '--'}W</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <span className="text-white/20 text-xs font-bold">尚未挑戰</span>
+                                    )}
                                 </div>
                                 {/* Strava 連結 */}
                                 {p.activity_id && (

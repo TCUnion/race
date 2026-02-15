@@ -348,7 +348,9 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                             <Heart className="w-3 h-3" /> 緊急聯絡人
                                         </p>
                                         <div className="flex flex-wrap items-center gap-4 text-slate-900 dark:text-white">
-                                            <span className="text-base font-black">{memberData.emergency_contact}</span>
+                                            <span className="text-base font-black">
+                                                {memberData.emergency_contact?.substring(0, 1)}**
+                                            </span>
                                             {memberData.emergency_contact_relation && (
                                                 <span className="text-xs font-bold bg-white dark:bg-rose-900/40 text-rose-600 px-2 py-1 rounded-lg">
                                                     {memberData.emergency_contact_relation}
@@ -356,7 +358,7 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
                                             )}
                                             <div className="flex items-center gap-1 text-rose-600 font-mono font-bold">
                                                 <Phone className="w-3 h-3" />
-                                                {memberData.emergency_contact_phone}
+                                                {memberData.emergency_contact_phone?.replace(/^(\d{2}).*(\d{2})$/, '$1*******$2')}
                                             </div>
                                         </div>
                                     </div>

@@ -186,7 +186,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
             // 1. 取得該路段的已報名選手
             const { data: registrations } = await supabase
                 .from('registrations')
-                .select('strava_athlete_id, tcu_id, team, registered_at')
+                .select('strava_athlete_id, tcu_id, team, registered_at, athlete_name')
                 .eq('segment_id', segmentId)
                 .eq('status', 'approved');
 
@@ -266,7 +266,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                     rank: 0, // 稍後重新計算
                     athlete_id: athleteId,
                     // NOTE: 優先使用 Strava 帳號名稱（athletes 表），其次才是報名時的名稱
-                    name: athleteInfo?.name || entryData?.athlete_name || `選手 ${athleteId}`,
+                    name: athleteInfo?.name || entryData?.athlete_name || regInfo?.athlete_name || `選手 ${athleteId}`,
                     profile_medium: entryData?.profile_medium || entryData?.profile || athleteInfo?.profile,
                     team: entryData?.team || regInfo?.team,
                     best_time: entryData?.best_time || null, // 無成績為 null

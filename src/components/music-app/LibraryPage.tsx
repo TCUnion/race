@@ -6,6 +6,10 @@ import { useRaceHistory, RaceSegment, RaceLeaderboardEntry } from '../../hooks/u
 import SegmentMap from '../../features/map/SegmentMap';
 import AnnouncementBanner from '../../features/dashboard/AnnouncementBanner';
 import { getTeamColor } from '../../utils/teamColors';
+
+// NOTE: 內嵌 SVG 預設頭像，避免外部 CDN 無法載入
+const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23334155'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cellipse cx='50' cy='85' rx='30' ry='25' fill='%2394a3b8'/%3E%3C/svg%3E";
+
 interface LibraryPageProps {
     onTabChange?: (tab: string) => void;
     activeTab?: string;
@@ -65,15 +69,21 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
 
     // 格式化日期
     const formatDateRange = (start?: string, end?: string) => {
-        if (!start || !end) return '';
+        if (!start) return '';
         const startDate = new Date(start);
-        const endDate = new Date(end);
         const formatDate = (d: Date) => `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+
+        if (!end) {
+            return formatDate(startDate);
+        }
+
+        const endDate = new Date(end);
         return `${formatDate(startDate)} - ${formatDate(endDate)}`;
     };
 
     // 排名顯示元素
-    const getRankDisplay = (rank: number) => {
+    const getRankDisplay = (rank: number | null) => {
+        if (!rank) return <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-xs">-</div>;
         if (rank === 1) return <div className="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-yellow-500/30">1</div>;
         if (rank === 2) return <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-300 to-slate-500 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-slate-400/30">2</div>;
         if (rank === 3) return <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-amber-600/30">3</div>;
@@ -309,6 +319,14 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                                 <span>{selectedRace.average_grade.toFixed(1)}%</span>
                                 <span>•</span>
                                 <span>{Math.round(selectedRace.total_elevation_gain)} m</span>
+                                {(selectedRace.start_date) && (
+                                    <>
+                                        <span>•</span>
+                                        <span className="font-bold text-sm" style={{ color: '#FC5200' }}>
+                                            {formatDateRange(selectedRace.start_date, selectedRace.end_date)}
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -334,21 +352,20 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                             </div>
                         ) : (
                             <div className="divide-y divide-slate-800/50">
-                                {(showAllEntries ? leaderboard : leaderboard.slice(0, 10)).map((entry) => (
+                                {(showAllEntries ? leaderboard : leaderboard.slice(0, 100)).map((entry) => (
                                     <div key={entry.athlete_id} className={`flex items-center gap-2 sm:gap-3 px-4 py-3 active:bg-slate-800/30 ${entry.rank === 1 ? 'bg-gradient-to-r from-yellow-500/10 to-transparent' : ''}`}>
                                         {/* 排名 */}
                                         <div className="w-5 text-center flex-shrink-0">
-                                            <span className={`text-sm font-black italic ${entry.rank === 1 ? 'text-yellow-500' : entry.rank === 2 ? 'text-gray-400' : entry.rank === 3 ? 'text-amber-600' : 'text-white/30'}`}>
-                                                {entry.rank}
-                                            </span>
+                                            {getRankDisplay(entry.rank)}
                                         </div>
 
                                         {/* 頭像 */}
                                         <div className="relative flex-shrink-0">
                                             <img
-                                                src={entry.profile_medium || '/placeholder-avatar.png'}
+                                                src={entry.profile_medium || DEFAULT_AVATAR}
                                                 alt=""
                                                 referrerPolicy="no-referrer"
+                                                onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
                                                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-white/10"
                                             />
                                             {entry.is_tcu && (
@@ -401,7 +418,7 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                         )}
 
                         {/* Show More/Less */}
-                        {leaderboard.length > 10 && (
+                        {leaderboard.length > 100 && (
                             <button
                                 onClick={() => setShowAllEntries(!showAllEntries)}
                                 className="w-full py-4 text-center text-sm font-medium text-primary active:bg-slate-800/30"
