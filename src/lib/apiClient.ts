@@ -13,6 +13,11 @@ class ApiClient {
         this.backupUrl = backupUrl.replace(/\/$/, '');
     }
 
+    private notifyStatus(status: 'up' | 'down') {
+        const event = new CustomEvent('api-status-changed', { detail: { status } });
+        window.dispatchEvent(event);
+    }
+
     private async request(endpoint: string, config: RequestConfig = {}): Promise<Response> {
         const { skipBackup, ...fetchConfig } = config;
 
@@ -28,6 +33,7 @@ class ApiClient {
                 console.warn(`[ApiClient] Primary server error (${primaryResponse.status}). Trying backup...`);
                 // Fallthrough to backup logic
             } else {
+                this.notifyStatus('up');
                 return primaryResponse;
             }
         } catch (error) {
@@ -36,6 +42,7 @@ class ApiClient {
                 console.warn(`[ApiClient] Primary server connection failed. Trying backup...`, error);
                 // Fallthrough to backup logic
             } else {
+                this.notifyStatus('down');
                 throw error;
             }
         }
@@ -44,13 +51,16 @@ class ApiClient {
         if (this.backupUrl) {
             try {
                 const backupResponse = await fetch(`${this.backupUrl}${path}`, fetchConfig);
+                this.notifyStatus('up');
                 return backupResponse;
             } catch (backupError) {
                 console.error(`[ApiClient] Backup server also failed.`, backupError);
+                this.notifyStatus('down');
                 throw backupError; // 若備援也失敗，拋出錯誤
             }
         }
 
+        this.notifyStatus('down');
         throw new Error('Request failed and no backup server configured.');
     }
 

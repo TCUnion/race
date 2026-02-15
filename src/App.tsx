@@ -36,6 +36,7 @@ import ManagerDashboard from './features/manager/ManagerDashboard';
 import MaintenanceDashboard from './features/maintenance/MaintenanceDashboard';
 import AdminPanel from './features/admin/AdminPanel';
 import SkillVerificationPage from './features/skill/SkillVerificationPage';
+import { ApiStatusWarning } from './components/ui/ApiStatusWarning';
 
 function App() {
     useSEO();
@@ -199,6 +200,7 @@ function App() {
 
     return (
         <div className="flex h-screen bg-bg dark text-foreground font-sans antialiased selection:bg-accent/30 box-border overflow-hidden">
+            <ApiStatusWarning />
             {/* Desktop Sidebar */}
             <Sidebar activeTab={activeTab} onTabChange={(tab) => {
                 setActiveTab(tab);
