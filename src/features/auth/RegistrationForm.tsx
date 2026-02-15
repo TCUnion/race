@@ -312,7 +312,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
 
                         {/* Name */}
                         <div className="group/field">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tcu-blue-light transition-colors">選手姓名 (顯示於排行榜)</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1 tracking-[0.2em] group-focus-within/field:text-tcu-blue-light transition-colors">選手姓名 (與STRAVA同步，若需要修正。請於STRAVA修正後更新報名)</label>
                             <div className="relative">
                                 <input
                                     type="text"
