@@ -1,4 +1,4 @@
-import { Home, LayoutDashboard, Search, Settings, LogOut, User, Wrench } from 'lucide-react';
+import { Home, LayoutDashboard, Search, Settings, LogOut, User, Wrench, Users, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
 import { useActiveAnnouncements } from '../../hooks/useActiveAnnouncements';
@@ -10,7 +10,9 @@ interface SidebarProps {
 
 const tabs = [
     { id: 'home', label: '探索', icon: Home },
-    { id: 'library', label: '挑戰', icon: LayoutDashboard },
+    { id: 'dashboard', label: '報名', icon: ClipboardList }, // New Registration item
+    { id: 'library', label: '挑戰', icon: LayoutDashboard }, // Challenge (Unchanged)
+    { id: 'team', label: '車隊', icon: Users }, // New Team item
     { id: 'maintenance', label: '保養', icon: Wrench },
     { id: 'search', label: '搜尋', icon: Search },
     { id: 'settings', label: '設定', icon: Settings },

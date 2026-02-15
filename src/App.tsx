@@ -119,12 +119,18 @@ function App() {
                 );
 
             case V2View.SETTINGS:
-                return <V2Settings activeTab="settings" onTabChange={(tab) => {
-                    setActiveTab(tab);
-                    if (tab === 'home') setView(V2View.HOME);
-                    if (tab === 'search') setView(V2View.SEARCH);
-                    if (tab === 'library') setView(V2View.LIBRARY);
-                }} />;
+                return (
+                    <V2Settings
+                        activeTab="settings"
+                        onTabChange={(tab) => {
+                            setActiveTab(tab);
+                            if (tab === 'home') setView(V2View.HOME);
+                            if (tab === 'search') setView(V2View.SEARCH);
+                            if (tab === 'library') setView(V2View.DASHBOARD); // Redirect 'library' (Challenge) to Dashboard
+                        }}
+                        onNavigate={handleNavigation}
+                    />
+                );
 
             case V2View.LEADERBOARD:
                 return <V2Leaderboard
@@ -205,8 +211,10 @@ function App() {
             <Sidebar activeTab={activeTab} onTabChange={(tab) => {
                 setActiveTab(tab);
                 if (tab === 'home') setView(V2View.HOME);
+                if (tab === 'dashboard') setView(V2View.DASHBOARD); // Registration
+                if (tab === 'team') setView(V2View.TEAM_DASHBOARD); // Team
                 if (tab === 'search') setView(V2View.SEARCH);
-                if (tab === 'library') setView(V2View.LIBRARY);
+                if (tab === 'library') setView(V2View.LIBRARY); // Challenge (Unchanged)
                 if (tab === 'settings') setView(V2View.SETTINGS);
                 if (tab === 'maintenance') setView(V2View.MAINTENANCE);
             }} />
@@ -217,10 +225,12 @@ function App() {
 
                 {/* Mobile Bottom Bar - Only visible on mobile/small screens and for main tabs */}
                 <div className="md:hidden absolute bottom-0 left-0 right-0 z-40">
-                    {(view === V2View.HOME || view === V2View.LIBRARY || view === V2View.SEARCH || view === V2View.SETTINGS || view === V2View.MAINTENANCE) && (
+                    {(view === V2View.HOME || view === V2View.LIBRARY || view === V2View.DASHBOARD || view === V2View.TEAM_DASHBOARD || view === V2View.SEARCH || view === V2View.SETTINGS || view === V2View.MAINTENANCE) && (
                         <TabBar activeTab={activeTab} onTabChange={(tab) => {
                             setActiveTab(tab);
                             if (tab === 'home') setView(V2View.HOME);
+                            if (tab === 'dashboard') setView(V2View.DASHBOARD);
+                            if (tab === 'team') setView(V2View.TEAM_DASHBOARD);
                             if (tab === 'search') setView(V2View.SEARCH);
                             if (tab === 'library') setView(V2View.LIBRARY);
                             if (tab === 'settings') setView(V2View.SETTINGS);

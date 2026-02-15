@@ -299,8 +299,8 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                     )}
                 </section>
 
-                {/* 快捷入口 */}
-                <QuickAccess onItemClick={handleQuickAccess} isBound={isBound} />
+                {/* 快捷入口 - Removed per UI restructuring */}
+                {/* <QuickAccess onItemClick={handleQuickAccess} isBound={isBound} /> */}
 
                 {/* 挑戰列表 */}
                 <ChallengeList

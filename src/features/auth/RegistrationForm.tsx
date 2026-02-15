@@ -317,11 +317,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    readOnly={!!isBound} // 綁定會員鎖定姓名
-                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-tcu-blue-light/50 focus:border-tcu-blue-light/50 transition-all duration-300 font-bold ${isBound ? 'cursor-not-allowed opacity-90' : ''}`}
+                                    readOnly={true} // 強制唯讀：已綁定用 TCU Name，未綁定用 Strava Name
+                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-slate-400 placeholder:text-slate-600 focus:outline-none font-bold cursor-not-allowed opacity-90"
                                     placeholder="姓名"
-                                    required
                                 />
                                 {isBound ? (
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -329,7 +327,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-wider hidden sm:inline">TCU Member</span>
                                     </div>
                                 ) : (
-                                    <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Strava Name</span>
+                                        <User className="text-slate-700 w-5 h-5" />
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -341,10 +342,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                 <input
                                     type="text"
                                     value={team}
-                                    onChange={(e) => setTeam(e.target.value)}
-                                    readOnly={!!isBound} // 綁定會員鎖定車隊，未綁定可輸入
-                                    className={`w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:outline-none font-bold ${isBound ? 'cursor-not-allowed opacity-90' : 'focus:ring-2 focus:ring-tcu-blue-light/50'}`}
-                                    placeholder={isBound ? "已自動帶入車隊" : "請輸入車隊名稱 (選填)"}
+                                    readOnly={true} // 強制唯讀：未綁定不可填寫
+                                    className="w-full px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-slate-400 placeholder:text-slate-600 focus:outline-none font-bold cursor-not-allowed opacity-90"
+                                    placeholder={isBound ? "已自動帶入車隊" : "未綁定會員不顯示車隊"}
                                 />
                                 <Users className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 w-5 h-5" />
                             </div>
