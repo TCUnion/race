@@ -35,9 +35,37 @@ const TeamDashboard: React.FC = () => {
     const [editingRace, setEditingRace] = useState<any>(null);
     const [editFormData, setEditFormData] = useState({
         name: '',
+        description: '',
+        link: '',
         start_date: '',
         end_date: ''
     });
+
+    // State for Participants List
+    const [expandedRaceId, setExpandedRaceId] = useState<number | null>(null);
+    const [participants, setParticipants] = useState<any[]>([]);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
+
+    const handleToggleParticipants = async (raceId: number, segmentId: number) => {
+        if (expandedRaceId === raceId) {
+            setExpandedRaceId(null);
+            setParticipants([]);
+            return;
+        }
+
+        setExpandedRaceId(raceId);
+        setLoadingParticipants(true);
+        try {
+            const res = await apiClient.get(`/api/teams/races/${segmentId}/participants`);
+            const data = await res.json();
+            setParticipants(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Error fetching participants:', error);
+            setParticipants([]);
+        } finally {
+            setLoadingParticipants(false);
+        }
+    };
 
     useEffect(() => {
         if (athlete) {
@@ -246,6 +274,8 @@ const TeamDashboard: React.FC = () => {
         setEditingRace(race);
         setEditFormData({
             name: race.name,
+            description: race.description || '',
+            link: race.link || '',
             start_date: startDate.toISOString().slice(0, 16),
             end_date: endDate.toISOString().slice(0, 16)
         });
@@ -254,7 +284,7 @@ const TeamDashboard: React.FC = () => {
     // 編輯賽事 - 取消編輯
     const handleCancelEdit = () => {
         setEditingRace(null);
-        setEditFormData({ name: '', start_date: '', end_date: '' });
+        setEditFormData({ name: '', description: '', link: '', start_date: '', end_date: '' });
     };
 
     // 編輯賽事 - 儲存變更
@@ -271,6 +301,8 @@ const TeamDashboard: React.FC = () => {
                 strava_id: athlete?.id,
                 team_name: teamData.team_name,
                 name: editFormData.name,
+                description: editFormData.description,
+                link: editFormData.link,
                 start_date: editFormData.start_date,
                 end_date: editFormData.end_date
             });
@@ -780,7 +812,7 @@ const TeamDashboard: React.FC = () => {
                                     key={race.id}
                                     className={`
                                         group relative overflow-hidden rounded-2xl border transition-all duration-300
-                                        flex flex-col sm:flex-row
+                                        flex flex-col
                                         ${highlightedRaceId === race.id
                                             ? 'ring-4 ring-strava-orange ring-offset-2 ring-offset-slate-900 animate-pulse'
                                             : ''
@@ -799,103 +831,105 @@ const TeamDashboard: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* Map Preview - Square on All Devices */}
-                                    <div className="relative w-full aspect-square sm:w-40 sm:h-auto sm:aspect-square shrink-0 bg-slate-800/50 border-b sm:border-b-0 sm:border-r border-white/5">
-                                        <SegmentMap polyline={race.polyline} minimal className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="flex flex-col sm:flex-row w-full">
+                                        {/* Map Preview - Square on All Devices */}
+                                        <div className="relative w-full aspect-square sm:w-40 sm:h-auto sm:aspect-square shrink-0 bg-slate-800/50 border-b sm:border-b-0 sm:border-r border-white/5">
+                                            <SegmentMap polyline={race.polyline} minimal className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
 
-                                        {/* Mobile Gradient Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent sm:hidden pointer-events-none" />
+                                            {/* Mobile Gradient Overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent sm:hidden pointer-events-none" />
 
-                                        {/* Desktop Gradient Overlay (Right side fade) */}
-                                        <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-transparent to-slate-900/50 pointer-events-none" />
-                                    </div>
-
-                                    {/* 內容區 */}
-                                    <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between relative">
-                                        <div className="space-y-3">
-                                            <h3 className="text-xl font-black text-white tracking-tight line-clamp-1 group-hover:text-strava-orange transition-colors">
-                                                {race.name}
-                                            </h3>
-
-                                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                                                <span className="flex items-center gap-1">
-                                                    <MapPin className="w-3.5 h-3.5 text-tcu-blue" />
-                                                    {(race.distance / 1000).toFixed(1)}km
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                                                    {race.average_grade}%
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Mountain className="w-3.5 h-3.5 text-amber-500" />
-                                                    {Math.round(race.elevation_gain)}m
-                                                </span>
-                                            </div>
+                                            {/* Desktop Gradient Overlay (Right side fade) */}
+                                            <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-transparent to-slate-900/50 pointer-events-none" />
                                         </div>
 
-                                        {/* 底部資訊區 */}
-                                        <div className="space-y-3 pt-3 mt-2 border-t border-white/5">
-                                            {/* 第一行：日期 + 編輯/刪除按鈕 */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                    <Calendar className="w-3.5 h-3.5" />
-                                                    {formatDate(startDate)} - {formatDate(endDate)}
-                                                </div>
+                                        {/* 內容區 */}
+                                        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between relative">
+                                            <div className="space-y-3">
+                                                <h3 className="text-xl font-black text-white tracking-tight line-clamp-1 group-hover:text-strava-orange transition-colors">
+                                                    {race.name}
+                                                </h3>
 
-                                                {canSeeWarRoom && (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleStartEdit(race);
-                                                            }}
-                                                            className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors"
-                                                            title="編輯賽事"
-                                                        >
-                                                            <Pencil className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteRace(race.id, race.name);
-                                                            }}
-                                                            className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
-                                                            title="刪除賽事"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                                                    <span className="flex items-center gap-1">
+                                                        <MapPin className="w-3.5 h-3.5 text-tcu-blue" />
+                                                        {(race.distance / 1000).toFixed(1)}km
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                                        {race.average_grade}%
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Mountain className="w-3.5 h-3.5 text-amber-500" />
+                                                        {Math.round(race.elevation_gain)}m
+                                                    </span>
+                                                </div>
                                             </div>
 
-                                            {/* 第二行：報名與活動狀態 */}
-                                            <div className="flex items-center gap-4 text-xs">
-                                                <div className="flex items-center gap-1.5 text-slate-400">
-                                                    <Users2 className="w-3.5 h-3.5" />
-                                                    <span className="font-semibold">報名人數:</span>
-                                                    <span className="text-white font-bold">{race.participant_count || 0}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    {isOngoing ? (
-                                                        <span className="px-2 py-0.5 rounded-full bg-strava-orange/20 text-strava-orange text-xs font-bold">進行中</span>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 text-xs font-bold">已結束</span>
+                                            {/* 底部資訊區 */}
+                                            <div className="space-y-3 pt-3 mt-2 border-t border-white/5">
+                                                {/* 第一行：日期 + 編輯/刪除按鈕 */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                        <Calendar className="w-3.5 h-3.5" />
+                                                        {formatDate(startDate)} - {formatDate(endDate)}
+                                                    </div>
+
+                                                    {canSeeWarRoom && (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleStartEdit(race);
+                                                                }}
+                                                                className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 transition-colors"
+                                                                title="編輯賽事"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteRace(race.id, race.name);
+                                                                }}
+                                                                className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                                                                title="刪除賽事"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
-                                            </div>
 
-                                            {/* 第三行：排行榜按鈕 */}
-                                            <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:scale-[1.02]">
-                                                <Users2 className="w-4 h-4" />
-                                                查看排行榜
-                                            </button>
+                                                {/* 第二行：報名與活動狀態 */}
+                                                <div className="flex items-center gap-4 text-xs">
+                                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                                        <Users2 className="w-3.5 h-3.5" />
+                                                        <span className="font-semibold">報名人數:</span>
+                                                        <span className="text-white font-bold">{race.participant_count || 0}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {isOngoing ? (
+                                                            <span className="px-2 py-0.5 rounded-full bg-strava-orange/20 text-strava-orange text-xs font-bold">進行中</span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 text-xs font-bold">已結束</span>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                            {/* 第四行:分享按鈕 */}
-                                            <div className="pt-2 border-t border-white/5">
-                                                <div className="flex items-center justify-center">
+                                                {/* 第三行：排行榜按鈕 + 分享按鈕 */}
+                                                <div className="flex gap-2 pt-2 border-t border-white/5">
+                                                    <button
+                                                        onClick={() => handleToggleParticipants(race.id, race.segment_id)}
+                                                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${expandedRaceId === race.id ? 'bg-indigo-600 text-white' : 'bg-white/5 hover:bg-white/10 text-white'}`}
+                                                    >
+                                                        <Users2 className="w-4 h-4" />
+                                                        {expandedRaceId === race.id ? '隱藏名單' : '查看名單'}
+                                                    </button>
+
                                                     <ShareButtons
                                                         title={race.name}
-                                                        description={`${race.segment_name || ''} | ${formatDate(startDate)} - ${formatDate(endDate)}`}
+                                                        description={`${race.name} | ${formatDate(startDate)} - ${formatDate(endDate)}`}
                                                         url={`${window.location.origin}/dashboard?segment_id=${race.segment_id}`}
                                                         size="sm"
                                                         className="scale-90"
@@ -903,9 +937,46 @@ const TeamDashboard: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Hover Effect */}
+                                    </div>
+                                    {/* Participants List */}
+                                    {expandedRaceId === race.id && (
+                                        <div className="border-t border-slate-700 bg-slate-900/50 p-4 animate-in slide-in-from-top-2 duration-200">
+                                            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                                報名名單
+                                                {loadingParticipants && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+                                            </h4>
+
+                                            {!loadingParticipants && participants.length === 0 ? (
+                                                <p className="text-xs text-slate-500 py-2">尚無報名資料</p>
+                                            ) : (
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left text-xs">
+                                                        <thead className="text-slate-500 border-b border-white/5">
+                                                            <tr>
+                                                                <th className="pb-2 font-bold px-2">姓名</th>
+                                                                <th className="pb-2 font-bold px-2">TCU ID</th>
+                                                                <th className="pb-2 font-bold px-2">車隊</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {participants.map((p, idx) => (
+                                                                <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                                    <td className="py-2 px-2 font-medium text-white flex items-center gap-2">
+                                                                        <img src={p.athlete_profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} className="w-5 h-5 rounded-full" alt="" />
+                                                                        {p.athlete_name}
+                                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.status === 'qualified' ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>{p.status === 'qualified' ? '符合資格' : '一般'}</span>
+                                                                    </td>
+                                                                    <td className="py-2 px-2 text-slate-400 font-mono">{p.tcu_id || '-'}</td>
+                                                                    <td className="py-2 px-2 text-slate-300">{p.team}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="absolute inset-0 bg-gradient-to-r from-strava-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                 </div>
                             );
@@ -927,66 +998,156 @@ const TeamDashboard: React.FC = () => {
 
             {/* 編輯賽事 Modal */}
             {editingRace && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
-                        <h3 className="font-bold text-xl mb-4 text-slate-900 dark:text-white">編輯賽事</h3>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleCancelEdit}>
+                    <div className="bg-slate-900 rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-bold text-xl text-white flex items-center gap-2">
+                                <Pencil className="w-5 h-5 text-tcu-blue" />
+                                編輯賽事
+                            </h3>
+                            <button onClick={handleCancelEdit} className="text-slate-500 hover:text-white transition-colors">
+                                <Plus className="w-6 h-6 rotate-45" />
+                            </button>
+                        </div>
 
-                        <form onSubmit={handleUpdateRace} className="space-y-4">
-                            {/* 賽事名稱 */}
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    賽事名稱
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editFormData.name}
-                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
-                                    required
-                                    placeholder="例如：禮拜三的約會"
-                                />
+                        <form onSubmit={handleUpdateRace} className="space-y-6">
+
+                            {/* Read-only Segment Info */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                                <div className="col-span-2 sm:col-span-4">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">對應路段 ID</label>
+                                    <input
+                                        type="text"
+                                        value={editingRace.segment_id || ''}
+                                        readOnly
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 text-sm font-mono cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">距離 (km)</label>
+                                    <input
+                                        type="number"
+                                        value={((editingRace.distance || 0) / 1000).toFixed(2)}
+                                        readOnly
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 text-sm cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">爬升 (m)</label>
+                                    <input
+                                        type="number"
+                                        value={editingRace.elevation_gain || 0}
+                                        readOnly
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 text-sm cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">坡度 (%)</label>
+                                    <input
+                                        type="number"
+                                        value={editingRace.average_grade || 0}
+                                        readOnly
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 text-sm cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Polyline</label>
+                                    <input
+                                        type="text"
+                                        value="Map Data"
+                                        readOnly
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-400 text-sm cursor-not-allowed text-center italic"
+                                    />
+                                </div>
                             </div>
 
-                            {/* 開始時間 */}
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    開始時間
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    value={editFormData.start_date}
-                                    onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
-                                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
-                                    required
-                                />
-                            </div>
+                            <div className="space-y-4">
+                                {/* 賽事名稱 */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                        賽事名稱
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.name}
+                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
+                                        required
+                                        placeholder="例如：禮拜三的約會"
+                                    />
+                                </div>
 
-                            {/* 結束時間 */}
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    結束時間
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    value={editFormData.end_date}
-                                    onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
-                                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 w-full text-slate-900 dark:text-white"
-                                    required
-                                />
+                                {/* 敘述 */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                        敘述 (副標題)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.description}
+                                        onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
+                                        placeholder="例如：台中經典挑戰：136檢定"
+                                    />
+                                </div>
+
+                                {/* 連結 */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                        詳情連結
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={editFormData.link}
+                                        onChange={(e) => setEditFormData({ ...editFormData, link: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* 開始時間 */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                            開始時間
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            value={editFormData.start_date}
+                                            onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* 結束時間 */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                            結束時間
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            value={editFormData.end_date}
+                                            onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
+                                            required
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             {/* 按鈕 */}
-                            <div className="flex gap-3 pt-2">
+                            <div className="flex gap-3 pt-4 border-t border-slate-800">
                                 <button
                                     type="button"
                                     onClick={handleCancelEdit}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-colors"
                                 >
                                     取消
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-tcu-blue text-white font-bold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
                                 >
                                     <Save className="w-4 h-4" />
                                     儲存變更

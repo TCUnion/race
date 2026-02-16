@@ -1,0 +1,1 @@
+ALTER TABLE segments ADD COLUMN IF NOT EXISTS team_name TEXT;

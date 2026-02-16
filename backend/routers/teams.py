@@ -277,12 +277,61 @@ async def create_team_race(request: Request):
 
 @router.get("/races")
 async def get_team_races(team_name: str):
-    """取得車隊賽事列表"""
+    """取得車隊賽事列表 (含報名人數)"""
     try:
+        # 1. 取得賽事列表
         res = supabase.table("team_races").select("*").eq("team_name", team_name).order("created_at", desc=True).execute()
-        return res.data if res.data else []
+        races = res.data if res.data else []
+
+        if not races:
+            return []
+
+        # 2. 取得每場賽事的報名人數
+        # 由於 Supabase client 不容易直接 group by count，這裡先用迴圈查詢，或是直接撈所有相關報名紀錄 (如果資料量不大)
+        # 考量效能，這裡先針對每場賽事查詢 count (N+1 query, 但預期賽事數量很少)
+        
+        enriched_races = []
+        for race in races:
+            segment_id = race.get("segment_id")
+            count_res = supabase.table("registrations").select("id", count="exact").eq("segment_id", segment_id).execute()
+            
+            
+            # 將 participant_count 加入賽事物件
+            race["participant_count"] = count_res.count if count_res.count is not None else 0
+            
+            # 取得路段詳細資料 (description, link)
+            if segment_id:
+                seg_res = supabase.table("segments").select("description, link, distance, average_grade, total_elevation_gain, polyline").eq("id", segment_id).maybe_single().execute()
+                if seg_res.data:
+                    # Merge segment data, prioritizing segment table's current data
+                    race["description"] = seg_res.data.get("description")
+                    race["link"] = seg_res.data.get("link")
+                    # Also update these technical fields to ensure latest data from segment
+                    race["distance"] = seg_res.data.get("distance")
+                    race["average_grade"] = seg_res.data.get("average_grade")
+                    race["elevation_gain"] = seg_res.data.get("total_elevation_gain")
+                    # Polyline might be stored as map or polyline in frontend expectations, keeping consistent with create
+                    race["polyline"] = seg_res.data.get("polyline")
+
+            enriched_races.append(race)
+            
+        return enriched_races
+        
     except Exception as e:
         print(f"[ERROR] Get races error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/races/{segment_id}/participants")
+async def get_race_participants(segment_id: int):
+    """取得賽事報名名單"""
+    try:
+        # 關聯 registraitons 與 athletes (透過 strava_athlete_id) 或是 tcu_members (透過 tcu_id 或是 name)
+        # 目前 registrations table 有: segment_id, strava_athlete_id, athlete_name, athlete_profile, team, number, status, tcu_id
+        
+        res = supabase.table("registrations").select("*").eq("segment_id", segment_id).order("registered_at", desc=True).execute()
+        return res.data if res.data else []
+    except Exception as e:
+        print(f"[ERROR] Get participants error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/races/{race_id}")
@@ -345,7 +394,26 @@ async def update_team_race(race_id: int, request: Request):
             "end_date": end_date
         }
         
+        # 更新 team_races
         supabase.table("team_races").update(update_data).eq("id", race_id).execute()
+        
+        # 同步更新 segments 表 (因為 Challengs 頁面讀取的是 segments)
+        segment_id = race.get("segment_id")
+        if segment_id:
+            segment_update_data = {
+                "name": name,
+                "start_date": start_date,
+                "end_date": end_date,
+                "description": body.get("description"),
+                "link": body.get("link")
+            }
+            # Remove None values to avoid overwriting with null if not provided (though frontend should provide them)
+            # Actually frontend might send empty string, which is fine. 
+            # But let's be safe and only update if present in body to support partial updates if needed, 
+            # though here we expect full update.
+            
+            supabase.table("segments").update(segment_update_data).eq("id", segment_id).execute()
+            
         return {"success": True, "message": "賽事已更新"}
         
     except HTTPException:

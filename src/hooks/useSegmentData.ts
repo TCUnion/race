@@ -202,7 +202,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                         description: raceInfo?.name || s.description, // 優先使用賽事名稱，否則使用資料庫描述
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        team: raceInfo?.team, // Add team info
+                        team: s.team_name || raceInfo?.team, // 優先使用 segments 表的 team_name，其次是 team_races
                     };
                 });
                 setSegments(mappedSegments);

@@ -30,7 +30,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
         id: s.id,
         name: s.name,
         description: s.description,
-        strava_id: s.strava_id
+        strava_id: s.strava_id,
+        team: s.team,
+        start_date: s.start_date,
+        end_date: s.end_date
       }));
   }, [segments]);
 

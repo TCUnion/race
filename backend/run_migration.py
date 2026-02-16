@@ -13,7 +13,7 @@ def run_migration():
 
     supabase = create_client(url, key)
     
-    migration_file = "migrations/003_create_strava_member_bindings.sql"
+    migration_file = "migrations/005_add_team_name_to_segments.sql"
     if not os.path.exists(migration_file):
         print(f"Error: Migration file {migration_file} not found")
         return

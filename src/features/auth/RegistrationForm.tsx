@@ -18,6 +18,9 @@ interface Segment {
     strava_id: number; // Strava ID
     name: string;
     description?: string; // 路段說明
+    team?: string;
+    start_date?: string;
+    end_date?: string;
 }
 
 interface RegistrationFormProps {
@@ -293,8 +296,25 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                                         )}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-white font-bold">{seg.description || seg.name}</p>
-                                        <p className="text-slate-500 text-xs">Strava ID: {seg.strava_id}</p>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            {seg.team && (
+                                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-tcu-blue text-white shadow-sm">
+                                                    {seg.team}
+                                                </span>
+                                            )}
+                                            <p className="text-white font-bold">{seg.description || seg.name}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <span>ID: {seg.strava_id}</span>
+                                            {seg.end_date && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span className={new Date(seg.end_date) < new Date() ? 'text-red-400' : 'text-emerald-400'}>
+                                                        {new Date(seg.end_date).toLocaleDateString()} 截止
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 </label>
                             ))}

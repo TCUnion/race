@@ -151,7 +151,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                     start_date: s.start_date,
                     end_date: s.end_date,
                     participant_count: countMap.get(s.id) || 0,
-                    team: teamRaceInfo?.team,
+                    team: s.team_name || teamRaceInfo?.team, // 優先使用 segments 表的 team_name，其次是 team_races
                 };
 
                 const startDate = new Date(s.start_date);

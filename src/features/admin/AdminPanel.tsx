@@ -97,7 +97,10 @@ const normalizeSegment = (raw: any): any => {
         pr_elapsed_time: data.pr_elapsed_time || data.athlete_segment_stats?.pr_elapsed_time,
         pr_date: data.pr_date || data.athlete_segment_stats?.pr_date,
         elevation_profile: data.elevation_profile,
-        polyline: findPolyline(data)
+        polyline: findPolyline(data),
+        start_date: data.start_date || null,
+        end_date: data.end_date || null,
+        team_name: data.team_name || null
     };
 };
 
@@ -2155,7 +2158,7 @@ const AdminPanel: React.FC = () => {
                                                 const d = new Date(editingSegment.start_date);
                                                 // 修正: 手動格式化為本地時間字串 (YYYY-MM-DDTHH:mm) 以避免 toISOString 的 UTC 轉換導致時區偏移
                                                 const pad = (n: number) => n.toString().padStart(2, '0');
-                                                return `${d.getFullYear()} -${pad(d.getMonth() + 1)} -${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())} `;
+                                                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                                             })() : ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, start_date: e.target.value })}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
@@ -2168,7 +2171,7 @@ const AdminPanel: React.FC = () => {
                                             value={editingSegment.end_date ? (() => {
                                                 const d = new Date(editingSegment.end_date);
                                                 const pad = (n: number) => n.toString().padStart(2, '0');
-                                                return `${d.getFullYear()} -${pad(d.getMonth() + 1)} -${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())} `;
+                                                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
                                             })() : ''}
                                             onChange={(e) => setEditingSegment({ ...editingSegment, end_date: e.target.value })}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
@@ -2202,6 +2205,9 @@ const AdminPanel: React.FC = () => {
                                                 <th className="px-4 py-3">敘述</th>
                                                 <th className="px-4 py-3">距離</th>
                                                 <th className="px-4 py-3">坡度</th>
+                                                <th className="px-4 py-3">所屬車隊</th>
+                                                <th className="px-4 py-3">開始日期</th>
+                                                <th className="px-4 py-3">結束日期</th>
                                                 <th className="px-4 py-3">狀態</th>
                                                 <th className="px-4 py-3 rounded-r-lg text-center">操作</th>
                                             </tr>
@@ -2216,6 +2222,9 @@ const AdminPanel: React.FC = () => {
                                                     <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate" title={seg.description || ''}>{seg.description || '-'}</td>
                                                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.distance ? `${(seg.distance / 1000).toFixed(2)} km` : '-'}</td>
                                                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.average_grade ? `${seg.average_grade}% ` : '-'}</td>
+                                                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.team_name || '-'}</td>
+                                                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.start_date ? new Date(seg.start_date).toLocaleDateString() : '-'}</td>
+                                                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.end_date ? new Date(seg.end_date).toLocaleDateString() : '-'}</td>
                                                     <td className="px-4 py-3">
                                                         <button
                                                             onClick={async () => {
