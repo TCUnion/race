@@ -63,6 +63,7 @@ async def share_race(segment_id: str):
             <title>{title}</title>
             
             <!-- Open Graph / Facebook -->
+            <meta property="fb:app_id" content="1964978887489880">
             <meta property="og:type" content="website">
             <meta property="og:url" content="https://service.criterium.tw/api/share/race/{segment_id}">
             <meta property="og:title" content="{title}">
