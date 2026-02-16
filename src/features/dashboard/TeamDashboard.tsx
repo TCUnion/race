@@ -2,6 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Users2, Trophy, Loader2, Calendar, MapPin, Plus, Save, AlertCircle, Zap, TrendingUp, Mountain, Trash2, Pencil } from 'lucide-react';
 import { apiClient } from '../../lib/apiClient';
+import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
 import SegmentMap from '../map/SegmentMap';
@@ -37,6 +38,7 @@ const TeamDashboard: React.FC = () => {
         name: '',
         description: '',
         link: '',
+        og_image: '',
         start_date: '',
         end_date: ''
     });
@@ -276,6 +278,7 @@ const TeamDashboard: React.FC = () => {
             name: race.name,
             description: race.description || '',
             link: race.link || '',
+            og_image: race.og_image || '',
             start_date: startDate.toISOString().slice(0, 16),
             end_date: endDate.toISOString().slice(0, 16)
         });
@@ -284,7 +287,7 @@ const TeamDashboard: React.FC = () => {
     // 編輯賽事 - 取消編輯
     const handleCancelEdit = () => {
         setEditingRace(null);
-        setEditFormData({ name: '', description: '', link: '', start_date: '', end_date: '' });
+        setEditFormData({ name: '', description: '', link: '', og_image: '', start_date: '', end_date: '' });
     };
 
     // 編輯賽事 - 儲存變更
@@ -303,6 +306,7 @@ const TeamDashboard: React.FC = () => {
                 name: editFormData.name,
                 description: editFormData.description,
                 link: editFormData.link,
+                og_image: editFormData.og_image,
                 start_date: editFormData.start_date,
                 end_date: editFormData.end_date
             });
@@ -930,7 +934,7 @@ const TeamDashboard: React.FC = () => {
                                                     <ShareButtons
                                                         title={race.name}
                                                         description={`${race.name} | ${formatDate(startDate)} - ${formatDate(endDate)}`}
-                                                        url={`${window.location.origin}/dashboard?segment_id=${race.segment_id}`}
+                                                        url={`${(API_BASE_URL || 'https://service.criterium.tw').replace(/\/$/, '')}/api/share/race/${race.segment_id}`}
                                                         size="sm"
                                                         className="scale-90"
                                                     />
@@ -1102,6 +1106,20 @@ const TeamDashboard: React.FC = () => {
                                         onChange={(e) => setEditFormData({ ...editFormData, link: e.target.value })}
                                         className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
                                         placeholder="https://..."
+                                    />
+                                </div>
+
+                                {/* 分享圖片 */}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                        分享圖片網址 (OG Image)
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={editFormData.og_image}
+                                        onChange={(e) => setEditFormData({ ...editFormData, og_image: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-white text-sm focus:border-tcu-blue focus:ring-1 focus:ring-tcu-blue outline-none transition-all"
+                                        placeholder="https://... (留空則使用預設)"
                                     />
                                 </div>
 

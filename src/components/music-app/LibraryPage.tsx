@@ -6,6 +6,8 @@ import { useRaceHistory, RaceSegment, RaceLeaderboardEntry } from '../../hooks/u
 import SegmentMap from '../../features/map/SegmentMap';
 import AnnouncementBanner from '../../features/dashboard/AnnouncementBanner';
 import { getTeamColor } from '../../utils/teamColors';
+import ShareButtons from '../ui/ShareButtons';
+import { API_BASE_URL } from '../../lib/api_config';
 
 // NOTE: 內嵌 SVG 預設頭像，避免外部 CDN 無法載入
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23334155'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cellipse cx='50' cy='85' rx='30' ry='25' fill='%2394a3b8'/%3E%3C/svg%3E";
@@ -298,6 +300,18 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                             <ChevronLeft className="w-4 h-4" />
                             <span className="text-xs font-medium">返回挑戰</span>
                         </button>
+
+                        {/* Share Button - 右上角 */}
+                        <div className="absolute top-10 right-4 z-10">
+                            <ShareButtons
+                                title={selectedRace.name}
+                                description={selectedRace.description}
+                                url={`${(API_BASE_URL || 'https://service.criterium.tw').replace(/\/$/, '')}/api/share/race/${selectedRace.id}`}
+                                size="sm"
+                                showLabels={false}
+                                className="bg-black/50 backdrop-blur-md rounded-full px-2 py-1"
+                            />
+                        </div>
 
                         {/* 標題區 */}
                         <div className="absolute bottom-4 left-4 right-4">

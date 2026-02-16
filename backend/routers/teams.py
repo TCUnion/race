@@ -391,7 +391,8 @@ async def update_team_race(race_id: int, request: Request):
         update_data = {
             "name": name,
             "start_date": start_date,
-            "end_date": end_date
+            "end_date": end_date,
+            "og_image": body.get("og_image")
         }
         
         # 更新 team_races

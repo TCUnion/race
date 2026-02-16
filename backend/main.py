@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import leaderboard, activities, auth, teams, webhooks
+from routers import leaderboard, activities, auth, teams, webhooks, share
 from database import supabase
 
 app = FastAPI()
@@ -46,6 +46,7 @@ app.include_router(activities.router)
 app.include_router(auth.router)
 app.include_router(teams.router)
 app.include_router(webhooks.router)
+app.include_router(share.router)
 
 @app.get("/")
 def read_root():

@@ -18,6 +18,7 @@ export interface RaceSegment {
     end_date?: string;
     participant_count: number;
     team?: string;
+    og_image?: string;
 }
 
 /**
@@ -98,13 +99,13 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
             // 取得所有進行中的車隊賽事以標記主辦車隊
             const { data: teamRaces } = await supabase
                 .from('team_races')
-                .select('segment_id, team_name, name')
+                .select('segment_id, team_name, name, og_image')
                 .eq('is_active', true);
 
-            const teamRaceMap = new Map<number, { name: string, team: string }>();
+            const teamRaceMap = new Map<number, { name: string, team: string, og_image?: string }>();
             if (teamRaces) {
                 teamRaces.forEach(r => {
-                    teamRaceMap.set(r.segment_id, { name: r.name, team: r.team_name });
+                    teamRaceMap.set(r.segment_id, { name: r.name, team: r.team_name, og_image: r.og_image });
                 });
             }
 
@@ -152,6 +153,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                     end_date: s.end_date,
                     participant_count: countMap.get(s.id) || 0,
                     team: s.team_name || teamRaceInfo?.team, // 優先使用 segments 表的 team_name，其次是 team_races
+                    og_image: teamRaceInfo?.og_image,
                 };
 
                 const startDate = new Date(s.start_date);
