@@ -284,8 +284,8 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
 
             {/* 排行榜 Modal - 全螢幕，模糊透明背景 */}
             {selectedRace && (
-                <div className="fixed inset-0 z-50 animate-in slide-in-from-right duration-300 bg-black/80 backdrop-blur-xl">
-                    {/* Modal Header with Back Button */}
+                <div className="fixed inset-0 z-50 animate-in slide-in-from-right duration-300 bg-black/80 backdrop-blur-xl overflow-y-auto">
+                    {/* Modal 全頁面可滑動 */}
                     <div className="relative">
                         {/* Map Header */}
                         <div className="h-48 sm:h-64 md:h-80 relative overflow-hidden">
@@ -425,8 +425,8 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                         })()}
                     </div>
 
-                    {/* 排行榜內容 */}
-                    <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 240px)' }}>
+                    {/* 排行榜內容 - 不再限制高度，跟隨頁面滑動 */}
+                    <div>
                         {isLoadingLeaderboard ? (
                             <div className="flex items-center justify-center py-16">
                                 <RefreshCw className="w-6 h-6 text-primary animate-spin" />
