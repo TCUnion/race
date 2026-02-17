@@ -48,7 +48,7 @@ async def share_race(segment_id: str):
             image_url = custom_image
         else:
             # Automated generation URL
-            image_url = f"https://service.criterium.tw/api/share/image/{segment_id}"
+            image_url = f"https://tcuapi.zeabur.app/api/share/image/{segment_id}"
         
         # Redirect URL (Frontend Dashboard)
         redirect_url = f"https://strava.criterium.tw/dashboard?segment_id={segment_id}"
@@ -63,14 +63,14 @@ async def share_race(segment_id: str):
             <!-- Open Graph / Facebook -->
             <meta property="fb:app_id" content="1964978887489880">
             <meta property="og:type" content="website">
-            <meta property="og:url" content="https://service.criterium.tw/api/share/race/{segment_id}">
+            <meta property="og:url" content="https://tcuapi.zeabur.app/api/share/race/{segment_id}">
             <meta property="og:title" content="{title}">
             <meta property="og:description" content="{description}">
             <meta property="og:image" content="{image_url}">
             
             <!-- Twitter -->
             <meta property="twitter:card" content="summary_large_image">
-            <meta property="twitter:url" content="https://service.criterium.tw/api/share/race/{segment_id}">
+            <meta property="twitter:url" content="https://tcuapi.zeabur.app/api/share/race/{segment_id}">
             <meta property="twitter:title" content="{title}">
             <meta property="twitter:description" content="{description}">
             <meta property="twitter:image" content="{image_url}">
@@ -234,15 +234,15 @@ async def share_image(segment_id: str):
             <text x="60" y="240" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff" width="1080">{title_text}</text>
             
             <!-- Stats -->
-            <g transform="translate(60, 400)">
-                <text x="0" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b">DISTANCE</text>
-                <text x="0" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">{dist}</text>
+            <g transform="translate(0, 480)">
+                <text x="300" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">DISTANCE</text>
+                <text x="300" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">{dist}</text>
                 
-                <text x="300" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b">ELEVATION</text>
-                <text x="300" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">{elev}</text>
+                <text x="600" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">ELEVATION</text>
+                <text x="600" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">{elev}</text>
                 
-                <text x="600" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b">AVG GRADE</text>
-                <text x="600" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">{grade}</text>
+                <text x="900" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">AVG GRADE</text>
+                <text x="900" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">{grade}</text>
             </g>
             
             <!-- Footer -->
