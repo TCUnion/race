@@ -99,8 +99,7 @@ const normalizeSegment = (raw: any): any => {
         elevation_profile: data.elevation_profile,
         polyline: findPolyline(data),
         start_date: data.start_date || null,
-        end_date: data.end_date || null,
-        team_name: data.team_name || null
+        end_date: data.end_date || null
     };
 };
 
