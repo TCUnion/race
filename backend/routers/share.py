@@ -161,6 +161,3 @@ async def share_image(segment_id: str):
         print(f"Error generating OG image: {e}")
         raise HTTPException(status_code=500, detail="Image generation failed")
 
-@router.get("/race/{segment_id}", response_class=HTMLResponse)
-async def share_race(segment_id: str):
-    # ... (existing content logic)
