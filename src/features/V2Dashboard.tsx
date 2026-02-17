@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { ViewType } from '../types';
 import { StatusBar } from '../components/music-app/StatusBar';
-import { ChevronLeft, User, Share2, CheckCircle2, Timer, Gauge, Trophy, Bookmark } from 'lucide-react';
+import { ChevronLeft, User, Share2, CheckCircle2, Timer, Gauge, Trophy, Bookmark, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSegmentData } from '../hooks/useSegmentData';
 import { useWeeklyStats } from '../hooks/useWeeklyStats';
+import { useRegistration } from '../hooks/useRegistration';
 import { generateSvgPath } from '../utils/polylineUtils';
 import AnnouncementBanner from '../components/common/AnnouncementBanner';
 
@@ -17,6 +18,7 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
     const { athlete, isBound } = useAuth();
     const { segments, leaderboardsMap } = useSegmentData();
     const { stats } = useWeeklyStats(athlete?.id, athlete?.ftp);
+    const { isAuthenticated, isRegistered, register, unregister, processingSegmentId } = useRegistration();
 
     // Mock data for demo if no real data
     const featuredSegment = segments.length > 0 ? segments[0] : null;
@@ -205,6 +207,57 @@ export function V2Dashboard({ onBack, onNavigate }: V2DashboardProps) {
                                             <div className="px-1.5 py-0.5 rounded border border-white/20 text-[9px] font-black text-white/70">PR</div>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* 比賽敘述預覽 + 快速報名 */}
+                                <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                                    {segment.race_description && (
+                                        <p className="text-[10px] text-white/50 line-clamp-2 mb-2 leading-relaxed">
+                                            {segment.race_description}
+                                        </p>
+                                    )}
+                                    {isAuthenticated && (() => {
+                                        const segId = Number(segment.id);
+                                        const isProcessing = processingSegmentId === segId;
+                                        const registered = isRegistered(segId);
+
+                                        if (registered) {
+                                            return (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); unregister(segId); }}
+                                                    disabled={isProcessing}
+                                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all group backdrop-blur-sm"
+                                                >
+                                                    {isProcessing ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle2 className="w-3 h-3 group-hover:hidden" />
+                                                            <span className="group-hover:hidden">已報名 ✓</span>
+                                                            <span className="hidden group-hover:inline">取消報名</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            );
+                                        }
+
+                                        return (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); register(segId); }}
+                                                disabled={isProcessing}
+                                                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-white/20 bg-black/30 backdrop-blur-sm text-white text-[10px] font-bold hover:bg-white/10 transition-all active:scale-[0.98]"
+                                            >
+                                                {isProcessing ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <UserPlus className="w-3 h-3" />
+                                                        <span>快速報名</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         ))}

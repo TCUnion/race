@@ -335,7 +335,8 @@ const AdminPanel: React.FC = () => {
                     ...seg,
                     // Use String(seg.id) to match the keys
                     og_image: metadataMap[String(seg.id)]?.og_image || seg.og_image,
-                    team_name: metadataMap[String(seg.id)]?.team_name || seg.team_name
+                    team_name: metadataMap[String(seg.id)]?.team_name || seg.team_name,
+                    race_description: metadataMap[String(seg.id)]?.race_description || ''
                 }));
                 setSegments(mergedData);
             }
@@ -745,7 +746,8 @@ const AdminPanel: React.FC = () => {
                     const { error: metaError } = await supabase.from('segment_metadata').upsert({
                         segment_id: editingSegment.strava_id,
                         og_image: editingSegment.og_image,
-                        team_name: editingSegment.team_name
+                        team_name: editingSegment.team_name,
+                        race_description: editingSegment.race_description
                     });
                     if (metaError) {
                         console.error('Metadata upsert error:', metaError);
@@ -779,7 +781,8 @@ const AdminPanel: React.FC = () => {
                     const { error: metaError } = await supabase.from('segment_metadata').upsert({
                         segment_id: editingSegment.id,
                         og_image: editingSegment.og_image,
-                        team_name: editingSegment.team_name
+                        team_name: editingSegment.team_name,
+                        race_description: editingSegment.race_description
                     });
                     if (metaError) {
                         console.error('Metadata update error:', metaError);
@@ -2154,6 +2157,16 @@ const AdminPanel: React.FC = () => {
                                     />
                                 </div>
                                 <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">比賽敘述（多行詳細說明）</label>
+                                    <textarea
+                                        value={editingSegment.race_description || ''}
+                                        onChange={(e) => setEditingSegment({ ...editingSegment, race_description: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
+                                        placeholder="輸入比賽的詳細敘述，支援多行文字..."
+                                        rows={4}
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">詳情連結</label>
                                     <input
                                         type="text"
@@ -2313,6 +2326,7 @@ const AdminPanel: React.FC = () => {
                                                 <th className="px-4 py-3 rounded-l-lg">路段名稱</th>
                                                 <th className="px-4 py-3">Strava ID</th>
                                                 <th className="px-4 py-3">敘述</th>
+                                                <th className="px-4 py-3">比賽敘述</th>
                                                 <th className="px-4 py-3">距離</th>
                                                 <th className="px-4 py-3">坡度</th>
                                                 <th className="px-4 py-3">所屬車隊</th>
@@ -2330,6 +2344,7 @@ const AdminPanel: React.FC = () => {
                                                     </td>
                                                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.strava_id || seg.id}</td>
                                                     <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate" title={seg.description || ''}>{seg.description || '-'}</td>
+                                                    <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate" title={seg.race_description || ''}>{seg.race_description ? seg.race_description.substring(0, 30) + '...' : '-'}</td>
                                                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.distance ? `${(seg.distance / 1000).toFixed(2)} km` : '-'}</td>
                                                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.average_grade ? `${seg.average_grade}% ` : '-'}</td>
                                                     <td className="px-4 py-3 font-mono text-xs text-slate-500">{seg.team_name || '-'}</td>

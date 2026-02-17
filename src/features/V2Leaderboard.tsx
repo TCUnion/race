@@ -1,6 +1,7 @@
 import React, { useState, useEffect, TouchEvent } from 'react';
-import { ArrowLeft, Crown, Filter, ChevronLeft, ChevronRight, Users, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Crown, Filter, ChevronLeft, ChevronRight, Users, ExternalLink, ChevronDown, ChevronUp, UserPlus, CheckCircle2, Loader2 } from 'lucide-react';
 import { useSegmentData, formatTime } from '../hooks/useSegmentData';
+import { useRegistration } from '../hooks/useRegistration';
 import { StatusBar } from '../components/music-app/StatusBar';
 import { getTeamColor } from '../utils/teamColors';
 
@@ -14,8 +15,10 @@ interface V2LeaderboardProps {
 
 export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) {
     const { segments, leaderboardsMap, statsMap, isLoading } = useSegmentData();
+    const { isAuthenticated, isRegistered, register, unregister, processingSegmentId } = useRegistration();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeId, setActiveId] = useState<string | null>(initialSegmentId || null);
+    const [showDescription, setShowDescription] = useState(false);
 
     // Initial load logic: if no activeId, default to first available segment
     useEffect(() => {
@@ -238,6 +241,79 @@ export function V2Leaderboard({ onBack, initialSegmentId }: V2LeaderboardProps) 
                                     style={String(s.id) === activeId ? { backgroundColor: isUrgent ? warningColor : currentColor } : {}}
                                 />
                             ))}
+                        </div>
+
+                        {/* 比賽敘述展開/收合 */}
+                        {currentSegment.race_description && (
+                            <div className="mt-3 px-6">
+                                <button
+                                    onClick={() => setShowDescription(!showDescription)}
+                                    className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-white/50 hover:text-white/80 transition-colors"
+                                >
+                                    <span>比賽敘述</span>
+                                    {showDescription ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                </button>
+                                {showDescription && (
+                                    <div className="mt-2 text-xs text-white/70 leading-relaxed whitespace-pre-wrap bg-white/5 rounded-lg p-3 border border-white/10">
+                                        {currentSegment.race_description}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 報名按鈕 */}
+                        <div className="mt-3 px-6">
+                            {(() => {
+                                const segId = Number(currentSegment.id);
+                                const isProcessing = processingSegmentId === segId;
+                                const registered = isRegistered(segId);
+
+                                if (!isAuthenticated) {
+                                    return (
+                                        <div className="text-center text-[10px] text-white/40 py-2">
+                                            請先連結 Strava 帳號以報名
+                                        </div>
+                                    );
+                                }
+
+                                if (registered) {
+                                    return (
+                                        <button
+                                            onClick={() => unregister(segId)}
+                                            disabled={isProcessing}
+                                            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all group"
+                                        >
+                                            {isProcessing ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <CheckCircle2 className="w-3 h-3 group-hover:hidden" />
+                                                    <span className="group-hover:hidden">已報名 ✓</span>
+                                                    <span className="hidden group-hover:inline">取消報名</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    );
+                                }
+
+                                return (
+                                    <button
+                                        onClick={() => register(segId)}
+                                        disabled={isProcessing}
+                                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-all active:scale-[0.98]"
+                                        style={{ borderColor: `${currentColor}40`, background: `${currentColor}15` }}
+                                    >
+                                        {isProcessing ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <UserPlus className="w-3 h-3" />
+                                                <span>立即報名</span>
+                                            </>
+                                        )}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}

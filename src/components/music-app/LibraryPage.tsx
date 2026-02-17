@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Trophy, Flame, ChevronLeft, ChevronRight, Users, Calendar, TrendingUp, Mountain, ExternalLink, Crown, Medal, RefreshCw } from 'lucide-react';
+import { Trophy, Flame, ChevronLeft, ChevronRight, Users, Calendar, TrendingUp, Mountain, ExternalLink, Crown, Medal, RefreshCw, ChevronDown, ChevronUp, UserPlus, CheckCircle2, Loader2 } from 'lucide-react';
 import { StatusBar } from './StatusBar';
 
 import { useRaceHistory, RaceSegment, RaceLeaderboardEntry } from '../../hooks/useRaceHistory';
@@ -8,6 +8,7 @@ import AnnouncementBanner from '../../features/dashboard/AnnouncementBanner';
 import { getTeamColor } from '../../utils/teamColors';
 import ShareButtons from '../ui/ShareButtons';
 import { API_BASE_URL } from '../../lib/api_config';
+import { useRegistration } from '../../hooks/useRegistration';
 
 // NOTE: 內嵌 SVG 預設頭像，避免外部 CDN 無法載入
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23334155'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2394a3b8'/%3E%3Cellipse cx='50' cy='85' rx='30' ry='25' fill='%2394a3b8'/%3E%3C/svg%3E";
@@ -33,6 +34,10 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
     const [leaderboard, setLeaderboard] = useState<RaceLeaderboardEntry[]>([]);
     const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
     const [showAllEntries, setShowAllEntries] = useState(false);
+    const [showDescription, setShowDescription] = useState(false);
+
+    // 報名功能
+    const { isAuthenticated, isRegistered, register, unregister, processingSegmentId } = useRegistration();
 
     // 開啟排行榜
     const handleOpenLeaderboard = useCallback(async (race: RaceSegment) => {
@@ -351,6 +356,73 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                             <h3 className="text-white font-bold text-sm">排行榜</h3>
                             <span className="text-xs text-slate-500">{leaderboard.length} 位參賽者</span>
                         </div>
+
+                        {/* 比賽敘述卡片 */}
+                        {selectedRace.race_description && (
+                            <div className="mt-3">
+                                <button
+                                    onClick={() => setShowDescription(!showDescription)}
+                                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                            <Mountain className="w-4 h-4 text-amber-400" />
+                                        </div>
+                                        <span className="text-sm font-bold text-amber-300">挑戰內容</span>
+                                    </div>
+                                    {showDescription ? <ChevronUp size={16} className="text-amber-400" /> : <ChevronDown size={16} className="text-amber-400" />}
+                                </button>
+                                {showDescription && (
+                                    <div className="mt-2 text-sm text-white/80 leading-relaxed whitespace-pre-wrap bg-slate-800/60 rounded-xl p-4 border border-slate-700/50">
+                                        {selectedRace.race_description}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 報名按鈕 */}
+                        {(() => {
+                            const segId = selectedRace.id;
+                            const isProcessing = processingSegmentId === segId;
+                            const registered = isRegistered(segId);
+
+                            if (!isAuthenticated) {
+                                return (
+                                    <div className="mt-2 text-center text-[10px] text-white/40 py-1.5">
+                                        請先連結 Strava 帳號以報名
+                                    </div>
+                                );
+                            }
+
+                            if (registered) {
+                                return (
+                                    <div className="mt-2">
+                                        <div className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                                            <CheckCircle2 className="w-3 h-3" />
+                                            <span>已報名 ✓</span>
+                                        </div>
+                                        <p className="text-center text-[10px] text-white/30 mt-1">如需取消報名，請前往報名頁面操作</p>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    onClick={() => register(segId)}
+                                    disabled={isProcessing}
+                                    className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-strava-orange/30 bg-strava-orange/10 hover:bg-strava-orange/20 text-white text-xs font-bold transition-all active:scale-[0.98]"
+                                >
+                                    {isProcessing ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <UserPlus className="w-3 h-3" />
+                                            <span>立即報名</span>
+                                        </>
+                                    )}
+                                </button>
+                            );
+                        })()}
                     </div>
 
                     {/* 排行榜內容 */}

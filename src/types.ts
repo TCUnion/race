@@ -105,7 +105,8 @@ export interface Activity {
 export interface SegmentData {
   id: number | string;
   name: string;
-  description?: string;
+  description?: string; // 路段說明（對應首頁標題）
+  race_description?: string; // 比賽敘述（多行長文）
   activity_type: string;
   distance: number;
   average_grade: number;

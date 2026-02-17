@@ -22,6 +22,7 @@ export interface StravaSegment {
     end_date?: string;
     team?: string;
     og_image?: string;
+    race_description?: string; // 比賽敘述（多行長文）
 }
 
 export interface WeatherData {
@@ -217,6 +218,7 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                         end_date: s.end_date,
                         team: s.team_name || meta?.team_name || raceInfo?.team, // 優先使用 segments 表的 team_name，其次是擴充表，最後是 team_races
                         og_image: meta?.og_image || raceInfo?.og_image || s.og_image,
+                        race_description: meta?.race_description, // 比賽敘述（從 segment_metadata 取得）
                     };
                 });
                 setSegments(mappedSegments);

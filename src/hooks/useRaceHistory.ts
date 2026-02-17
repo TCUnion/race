@@ -9,6 +9,7 @@ export interface RaceSegment {
     strava_id: number;
     name: string;
     description?: string;
+    race_description?: string; // 比賽敘述（多行長文，從 segment_metadata 取得）
     distance: number;
     average_grade: number;
     total_elevation_gain: number;
@@ -109,6 +110,16 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                 });
             }
 
+            // 取得路段擴充資訊 (race_description 等)
+            const { data: segmentMeta } = await supabase
+                .from('segment_metadata')
+                .select('segment_id, race_description');
+
+            const metaMap = new Map<number, any>();
+            if (segmentMeta) {
+                segmentMeta.forEach(m => metaMap.set(Number(m.segment_id), m));
+            }
+
             if (!segments || segments.length === 0) {
                 setOngoingRaces([]);
                 setEndedRaces([]);
@@ -144,6 +155,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                     strava_id: s.strava_id || s.id,
                     name: s.name,
                     description: displayDescription,
+                    race_description: metaMap.get(s.id)?.race_description,
                     distance: s.distance || 0,
                     average_grade: s.average_grade || 0,
                     total_elevation_gain: s.elevation_gain || 0,
@@ -152,7 +164,7 @@ export const useRaceHistory = (): UseRaceHistoryReturn => {
                     start_date: s.start_date,
                     end_date: s.end_date,
                     participant_count: countMap.get(s.id) || 0,
-                    team: s.team_name || teamRaceInfo?.team, // 優先使用 segments 表的 team_name，其次是 team_races
+                    team: s.team_name || teamRaceInfo?.team,
                     og_image: teamRaceInfo?.og_image,
                 };
 
