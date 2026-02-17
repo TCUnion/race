@@ -27,6 +27,10 @@ async def share_race(segment_id: str):
             seg_res = supabase.table("segments").select("*").eq("id", segment_id).execute()
             if seg_res.data and len(seg_res.data) > 0:
                 race_data = seg_res.data[0]
+                # Fetch metadata from extension table
+                meta_res = supabase.table("segment_metadata").select("og_image").eq("segment_id", segment_id).execute()
+                if meta_res.data and len(meta_res.data) > 0:
+                    race_data["og_image"] = meta_res.data[0].get("og_image")
         
         if not race_data:
             raise HTTPException(status_code=404, detail="Race or Segment not found")

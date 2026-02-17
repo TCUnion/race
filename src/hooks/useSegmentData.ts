@@ -177,16 +177,28 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                 .select('segment_id, team_name, name, og_image')
                 .eq('is_active', true);
 
+            // [NEW] 取得路段擴充資訊 (OG Image, Team Name)
+            const { data: segmentMeta } = await supabase
+                .from('segment_metadata')
+                .select('*');
+
             const teamRaceMap = new Map<number, { team: string, name: string, og_image?: string }>();
             if (teamRaces) {
                 teamRaces.forEach(r => {
-                    teamRaceMap.set(r.segment_id, { team: r.team_name, name: r.name, og_image: r.og_image });
+                    teamRaceMap.set(Number(r.segment_id), { team: r.team_name, name: r.name, og_image: r.og_image });
                 });
+            }
+
+            const metaMap = new Map<number, any>();
+            if (segmentMeta) {
+                segmentMeta.forEach(m => metaMap.set(Number(m.segment_id), m));
             }
 
             if (data && data.length > 0) {
                 const mappedSegments: StravaSegment[] = data.map(s => {
-                    const raceInfo = teamRaceMap.get(s.id);
+                    const raceInfo = teamRaceMap.get(Number(s.id));
+                    const meta = metaMap.get(Number(s.id));
+
                     return {
                         id: s.id, // Supabase PK
                         strava_id: s.strava_id || s.id, // Fallback if strava_id is null
@@ -203,8 +215,8 @@ export const useSegmentData = (): UseSegmentDataReturn => {
                         description: raceInfo?.name || s.description, // 優先使用賽事名稱，否則使用資料庫描述
                         start_date: s.start_date,
                         end_date: s.end_date,
-                        team: s.team_name || raceInfo?.team, // 優先使用 segments 表的 team_name，其次是 team_races
-                        og_image: raceInfo?.og_image,
+                        team: s.team_name || meta?.team_name || raceInfo?.team, // 優先使用 segments 表的 team_name，其次是擴充表，最後是 team_races
+                        og_image: meta?.og_image || raceInfo?.og_image || s.og_image,
                     };
                 });
                 setSegments(mappedSegments);

@@ -304,22 +304,41 @@ const AdminPanel: React.FC = () => {
 
 
     async function fetchSegments() {
-        const { data, error } = await supabase
-            .from('segments')
-            .select('*, metadata:segment_metadata(*)')
-            .order('created_at', { ascending: false });
+        try {
+            // 1. Fetch core segments
+            const { data: segmentsData, error: segmentsError } = await supabase
+                .from('segments')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Fetch error:', error);
-            setError('讀取路段失敗: ' + error.message);
-        } else if (data) {
-            // Merge metadata into the segment object
-            const mergedData = data.map(seg => ({
-                ...seg,
-                og_image: seg.metadata?.og_image || seg.og_image,
-                team_name: seg.metadata?.team_name || seg.team_name
-            }));
-            setSegments(mergedData);
+            if (segmentsError) throw segmentsError;
+
+            // 2. Fetch metadata
+            const { data: metadataData, error: metadataError } = await supabase
+                .from('segment_metadata')
+                .select('*');
+
+            // Note: We don't throw metadataError because the table might be empty or missing 
+            // during migration transition, though we want it to work.
+            if (metadataError) console.warn('Metadata fetch warning:', metadataError);
+
+            if (segmentsData) {
+                // Merge metadata into the segment objects in memory
+                const metadataMap = (metadataData || []).reduce((acc: any, item: any) => {
+                    acc[item.segment_id] = item;
+                    return acc;
+                }, {});
+
+                const mergedData = segmentsData.map(seg => ({
+                    ...seg,
+                    og_image: metadataMap[seg.id]?.og_image || seg.og_image,
+                    team_name: metadataMap[seg.id]?.team_name || seg.team_name
+                }));
+                setSegments(mergedData);
+            }
+        } catch (err: any) {
+            console.error('Fetch segments error:', err);
+            setError('讀取路段失敗: ' + err.message);
         }
     }
 
