@@ -1,9 +1,48 @@
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from database import supabase
 from datetime import datetime
+from utils.og_generator import generate_race_og_image
 
 router = APIRouter(prefix="/api/teams", tags=["teams"])
+
+async def generate_and_upload_og_image_task(race_id: int, name: str, polyline_str: str, distance: float, elevation: float):
+    """
+    背景任務：產生 OG Image 並上傳至 Supabase Storage
+    """
+    if not polyline_str:
+        print(f"[WARN] No polyline for race {race_id}, skipping OG generation")
+        return
+    
+    # 1. 產生圖片
+    img_data = generate_race_og_image(name, polyline_str, distance, elevation)
+    if not img_data:
+        print(f"[ERROR] Failed to generate OG image for race {race_id}")
+        return
+        
+    # 2. 上傳至 Supabase Storage (Bucket: race-previews)
+    file_path = f"races/{race_id}/og_image.jpg"
+    try:
+        # 使用 upsert=True
+        bucket = supabase.storage.from_("race-previews")
+        bucket.upload(path=file_path, file=img_data, file_options={"content-type": "image/jpeg", "x-upsert": "true"})
+        
+        # 3. 取得公用連結
+        public_url = bucket.get_public_url(file_path)
+        # 有些版本的 get_public_url 回傳可能包含額外資訊，確保取得字串
+        if isinstance(public_url, str):
+            pass
+        elif hasattr(public_url, "public_url"): # 處理不同版本 SDK
+            public_url = public_url.public_url
+        elif isinstance(public_url, dict):
+            public_url = public_url.get("publicURL") or public_url.get("public_url")
+            
+        # 4. 更新資料庫
+        supabase.table("team_races").update({"og_image": public_url}).eq("id", race_id).execute()
+        
+        print(f"[INFO] OG Image generated and uploaded for race {race_id}: {public_url}")
+    except Exception as e:
+        print(f"[ERROR] Upload OG image error for race {race_id}: {str(e)}")
 
 @router.get("/my-team")
 async def get_my_team(strava_id: str):
@@ -162,7 +201,7 @@ async def get_team_members(team_name: str):
 
 
 @router.post("/races")
-async def create_team_race(request: Request):
+async def create_team_race(request: Request, background_tasks: BackgroundTasks):
     """
     建立車隊賽事 (Admin Only)
     使用 team_name + strava_id 驗證權限
@@ -239,6 +278,18 @@ async def create_team_race(request: Request):
         }
         
         res = supabase.table("team_races").insert(data).execute()
+        
+        # 觸發 OG Image 產生
+        if res.data:
+            new_race_id = res.data[0].get("id")
+            background_tasks.add_task(
+                generate_and_upload_og_image_task,
+                new_race_id,
+                name or f"路段 {segment_id}",
+                body.get("polyline"),
+                distance,
+                elevation_gain
+            )
         
         # 7. 同步到 segments 表讓賽事出現在挑戰列表
         # 先檢查 segment 是否已存在
@@ -335,7 +386,7 @@ async def get_race_participants(segment_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/races/{race_id}")
-async def update_team_race(race_id: int, request: Request):
+async def update_team_race(race_id: int, request: Request, background_tasks: BackgroundTasks):
     """
     更新車隊賽事 (僅限隊長)
     """
@@ -397,6 +448,16 @@ async def update_team_race(race_id: int, request: Request):
         
         # 更新 team_races
         supabase.table("team_races").update(update_data).eq("id", race_id).execute()
+        
+        # 觸發 OG Image 產生 (重新產圖以反映可能的名稱變更)
+        background_tasks.add_task(
+            generate_and_upload_og_image_task,
+            race_id,
+            name,
+            race.get("polyline"),
+            race.get("distance", 0),
+            race.get("elevation_gain", 0)
+        )
         
         # 同步更新 segments 表 (因為 Challengs 頁面讀取的是 segments)
         segment_id = race.get("segment_id")
