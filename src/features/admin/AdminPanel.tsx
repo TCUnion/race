@@ -99,7 +99,8 @@ const normalizeSegment = (raw: any): any => {
         elevation_profile: data.elevation_profile,
         polyline: findPolyline(data),
         start_date: data.start_date || null,
-        end_date: data.end_date || null
+        end_date: data.end_date || null,
+        og_image: data.og_image || null
     };
 };
 
@@ -703,7 +704,8 @@ const AdminPanel: React.FC = () => {
                     polyline: editingSegment.polyline,
                     is_active: editingSegment.is_active,
                     start_date: startDate,
-                    end_date: endDate
+                    end_date: endDate,
+                    og_image: editingSegment.og_image
                 });
                 error = insertError;
             } else {
@@ -2177,6 +2179,46 @@ const AdminPanel: React.FC = () => {
                                         />
                                     </div>
                                 </div>
+
+                                <div className="space-y-4 pt-4 border-t border-slate-800">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">OG Image (預覽圖網址)</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={editingSegment.og_image || ''}
+                                                onChange={(e) => setEditingSegment({ ...editingSegment, og_image: e.target.value })}
+                                                className="flex-1 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
+                                                placeholder="https://... (留空則不顯示)"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {editingSegment.og_image && (
+                                        <div className="relative group rounded-xl overflow-hidden border border-slate-700 bg-slate-900/50 aspect-[1200/630]">
+                                            <img
+                                                src={editingSegment.og_image}
+                                                alt="OG Preview"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://placehold.co/1200x630/1e293b/64748b?text=Image+Load+Error';
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-white text-[10px] font-bold uppercase tracking-wider">OG Preview (1200x630)</span>
+                                                <a
+                                                    href={editingSegment.og_image}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-2 py-1 rounded text-[10px] font-bold transition-colors"
+                                                >
+                                                    查看大圖
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="flex gap-2 pt-2">
                                     <button
                                         type="submit"
