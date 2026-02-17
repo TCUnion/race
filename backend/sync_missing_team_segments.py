@@ -47,17 +47,32 @@ def sync_missing_segments():
                     "activity_type": "Ride" # Default
                 }
                 
-                # Insert
+                # Insert core segment
                 insert_res = supabase.table('segments').insert(new_segment).execute()
                 print(f"Inserted segment {segment_id}: {insert_res.data}")
+                
+                # [NEW] Insert metadata to separate table
+                if race.get('team_name'):
+                    supabase.table('segment_metadata').upsert({
+                        "segment_id": segment_id,
+                        "team_name": race.get('team_name')
+                    }).execute()
+                    print(f"Saved metadata for segment {segment_id}")
             else:
                 print(f"Segment {segment_id} exists. Updating team info if needed...")
-                # Optional: Update team info if it's missing in segments but present in team_races
-                # This handles the case where backfill might have missed active races logic
+                # Update core dates
                 supabase.table('segments').update({
                     "start_date": race.get('start_date'),
                     "end_date": race.get('end_date')
                 }).eq('id', segment_id).execute()
+                
+                # [NEW] Update metadata table
+                if race.get('team_name'):
+                    supabase.table('segment_metadata').upsert({
+                        "segment_id": segment_id,
+                        "team_name": race.get('team_name')
+                    }).execute()
+                    print("Updated segment metadata.")
                 print("Updated segment team info.")
                 
         except Exception as e:

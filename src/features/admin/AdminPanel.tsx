@@ -304,12 +304,22 @@ const AdminPanel: React.FC = () => {
 
 
     async function fetchSegments() {
-        const { data, error } = await supabase.from('segments').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+            .from('segments')
+            .select('*, metadata:segment_metadata(*)')
+            .order('created_at', { ascending: false });
+
         if (error) {
             console.error('Fetch error:', error);
             setError('讀取路段失敗: ' + error.message);
         } else if (data) {
-            setSegments(data);
+            // Merge metadata into the segment object
+            const mergedData = data.map(seg => ({
+                ...seg,
+                og_image: seg.metadata?.og_image || seg.og_image,
+                team_name: seg.metadata?.team_name || seg.team_name
+            }));
+            setSegments(mergedData);
         }
     }
 
@@ -704,10 +714,18 @@ const AdminPanel: React.FC = () => {
                     polyline: editingSegment.polyline,
                     is_active: editingSegment.is_active,
                     start_date: startDate,
-                    end_date: endDate,
-                    og_image: editingSegment.og_image
+                    end_date: endDate
                 });
                 error = insertError;
+
+                // [NEW] Upsert metadata
+                if (!error) {
+                    await supabase.from('segment_metadata').upsert({
+                        segment_id: editingSegment.strava_id,
+                        og_image: editingSegment.og_image,
+                        team_name: editingSegment.team_name
+                    });
+                }
             } else {
                 const payload = {
                     strava_id: editingSegment.strava_id,
@@ -729,6 +747,15 @@ const AdminPanel: React.FC = () => {
                     .update(payload)
                     .eq('id', editingSegment.id);
                 error = updateError;
+
+                // [NEW] Upsert metadata
+                if (!error) {
+                    await supabase.from('segment_metadata').upsert({
+                        segment_id: editingSegment.id,
+                        og_image: editingSegment.og_image,
+                        team_name: editingSegment.team_name
+                    });
+                }
             }
 
             if (error) {
