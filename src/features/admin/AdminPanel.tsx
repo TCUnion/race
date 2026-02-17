@@ -2449,8 +2449,10 @@ const AdminPanel: React.FC = () => {
                                             endDate.setHours(0, 0, 0, 0);
 
                                             // 寫入 Supabase (包含所有 Strava 資料與預設日期)
+                                            // 排除擴充欄位以符合 segments 資料表結構
+                                            const { og_image, team_name, ...coreData } = normalized;
                                             const { error } = await supabase.from('segments').insert({
-                                                ...normalized,
+                                                ...coreData,
                                                 is_active: true,
                                                 start_date: startDate.toISOString(),
                                                 end_date: endDate.toISOString()
