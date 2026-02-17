@@ -2245,7 +2245,7 @@ const AdminPanel: React.FC = () => {
                                                 value={editingSegment.og_image || ''}
                                                 onChange={(e) => setEditingSegment({ ...editingSegment, og_image: e.target.value })}
                                                 className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
-                                                placeholder={`預設自動產生: https://service.criterium.tw/api/share/image/${editingSegment.id === 'new' ? '{STRAVA_ID}' : editingSegment.id}`}
+                                                placeholder={`預設自動產生: ${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id === 'new' ? '{STRAVA_ID}' : editingSegment.id}`}
                                             />
                                             {!editingSegment.og_image && (
                                                 <p className="text-[10px] text-slate-500 italic">
@@ -2258,7 +2258,7 @@ const AdminPanel: React.FC = () => {
                                     {(editingSegment.og_image || (editingSegment.id !== 'new')) && (
                                         <div className="relative group rounded-xl overflow-hidden border border-slate-700 bg-slate-900/50 aspect-[1200/630]">
                                             <img
-                                                src={editingSegment.og_image || `https://service.criterium.tw/api/share/image/${editingSegment.id}`}
+                                                src={editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id}`}
                                                 alt="OG Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
@@ -2270,7 +2270,7 @@ const AdminPanel: React.FC = () => {
                                                     {editingSegment.og_image ? '自定義圖片預覽' : '自動產生圖片預覽'}
                                                 </p>
                                                 <a
-                                                    href={editingSegment.og_image || `https://service.criterium.tw/api/share/image/${editingSegment.id}`}
+                                                    href={editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id}`}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-2 py-1 rounded text-[10px] font-bold transition-colors"
