@@ -89,6 +89,12 @@ async def share_race(segment_id: str):
         
         return HTMLResponse(content=html_content)
 
+    except Exception as e:
+        print(f"Error generating share page: {e}")
+        # Identify as server error but still redirect to home if possible as fail-safe
+        fail_safe_url = "https://strava.criterium.tw/dashboard"
+        return HTMLResponse(content=f'<script>window.location.href="{fail_safe_url}";</script>', status_code=500)
+
 @router.get("/image/{segment_id}")
 async def share_image(segment_id: str):
     """
