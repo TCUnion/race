@@ -1,9 +1,18 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Trophy, Flame, ChevronLeft, ChevronRight, Users, Calendar, TrendingUp, Mountain, ExternalLink, Crown, Medal, RefreshCw, ChevronDown, ChevronUp, UserPlus, CheckCircle2, Loader2 } from 'lucide-react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import { Trophy, Flame, ChevronLeft, ChevronRight, Users, Calendar, TrendingUp, Mountain, ExternalLink, Crown, Medal, RefreshCw, ChevronDown, ChevronUp, UserPlus, CheckCircle2, Loader2, Map as MapIcon } from 'lucide-react';
 import { StatusBar } from './StatusBar';
 
 import { useRaceHistory, RaceSegment, RaceLeaderboardEntry } from '../../hooks/useRaceHistory';
-import SegmentMap from '../../features/map/SegmentMap';
+
+// 動態載入地圖組件組以減少首屏體積
+const SegmentMap = lazy(() => import('../../features/map/SegmentMap'));
+
+// 地圖加載佔位組件
+const MapPlaceholder = ({ className }: { className?: string }) => (
+    <div className={`flex items-center justify-center bg-slate-800/50 animate-pulse ${className}`}>
+        <MapIcon className="w-8 h-8 text-slate-700" />
+    </div>
+);
 import AnnouncementBanner from '../../features/dashboard/AnnouncementBanner';
 import { getTeamColor } from '../../utils/teamColors';
 import ShareButtons from '../ui/ShareButtons';
@@ -116,9 +125,11 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
             style={{ backdropFilter: 'blur(12px)' }}
         >
             {/* Polyline Map Cover - 使用 SegmentMap 渲染實際路線 */}
-            <div className="relative h-28 overflow-hidden">
+            <div className="relative h-28 overflow-hidden bg-slate-800">
                 {race.polyline ? (
-                    <SegmentMap polyline={race.polyline} className="w-full h-full" minimal={true} />
+                    <Suspense fallback={<MapPlaceholder className="w-full h-full" />}>
+                        <SegmentMap polyline={race.polyline} className="w-full h-full" minimal={true} />
+                    </Suspense>
                 ) : (
                     <div className={`w-full h-full ${isOngoing
                         ? 'bg-gradient-to-br from-strava-orange/20 via-amber-900/10 to-slate-900'
@@ -288,9 +299,11 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                     {/* Modal 全頁面可滑動 */}
                     <div className="relative">
                         {/* Map Header */}
-                        <div className="h-48 sm:h-64 md:h-80 relative overflow-hidden">
+                        <div className="h-48 sm:h-64 md:h-80 relative overflow-hidden bg-slate-900">
                             {selectedRace.polyline ? (
-                                <SegmentMap polyline={selectedRace.polyline} className="w-full h-full" minimal={true} />
+                                <Suspense fallback={<MapPlaceholder className="w-full h-full" />}>
+                                    <SegmentMap polyline={selectedRace.polyline} className="w-full h-full" minimal={true} />
+                                </Suspense>
                             ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900" />
                             )}
@@ -451,6 +464,7 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                                                 src={entry.profile_medium || DEFAULT_AVATAR}
                                                 alt=""
                                                 referrerPolicy="no-referrer"
+                                                loading="lazy"
                                                 onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
                                                 className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-white/10"
                                             />

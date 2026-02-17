@@ -133,13 +133,14 @@ export function HomePage({ onTabChange, activeTab = 'home', onNavigate }: HomePa
                                     src={athlete.profile || '/strava-logo-white.svg'}
                                     alt={athlete.lastname}
                                     className="w-full h-full object-cover"
+                                    loading="lazy"
                                 />
                                 {pendingAuthorizations.length > 0 && (
                                     <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1a1a1a] animate-pulse"></span>
                                 )}
                             </>
                         ) : (
-                            <img src="/strava-logo-white.svg" alt="Strava" className="w-6 h-6" />
+                            <img src="/strava-logo-white.svg" alt="Strava" className="w-6 h-6" loading="lazy" />
                         )}
                     </button>
 
