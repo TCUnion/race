@@ -120,6 +120,7 @@ interface StravaToken {
 const ADMIN_ATHLETE_WHITELIST = [2838277];
 
 const AdminPanel: React.FC = () => {
+    const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
 
     const [session, setSession] = useState<any>(null);
     const [stravaSession, setStravaSession] = useState<any>(null); // Strava 登入狀態
@@ -2238,46 +2239,51 @@ const AdminPanel: React.FC = () => {
 
                                 <div className="space-y-4 pt-4 border-t border-slate-800">
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">OG Image (預覽圖網址)</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase">OG Image (預覽圖網址)</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewRefreshKey(prev => prev + 1)}
+                                                className="text-[10px] text-tcu-blue hover:text-white flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-slate-700/50"
+                                                title="重新生成預覽圖"
+                                            >
+                                                <RefreshCw className="w-3 h-3" />
+                                                重新生成預覽
+                                            </button>
+                                        </div>
                                         <div className="flex flex-col gap-2">
-                                            <input
-                                                type="text"
-                                                value={editingSegment.og_image || ''}
-                                                onChange={(e) => setEditingSegment({ ...editingSegment, og_image: e.target.value })}
-                                                className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm"
-                                                placeholder={`預設自動產生: ${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id === 'new' ? '{STRAVA_ID}' : editingSegment.id}`}
+                                            <textarea
+                                                value={editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id === 'new' ? '{STRAVA_ID}' : editingSegment.id}`}
+                                                readOnly
+                                                className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 text-sm h-16 font-mono text-slate-400 cursor-default focus:outline-none focus:border-slate-700 resize-none"
                                             />
-                                            {!editingSegment.og_image && (
-                                                <p className="text-[10px] text-slate-500 italic">
-                                                    ※ 目前留空，系統將自動產生動態統計預覽圖。
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
 
                                     {(editingSegment.og_image || (editingSegment.id !== 'new')) && (
                                         <div className="relative group rounded-xl overflow-hidden border border-slate-700 bg-slate-900/50 aspect-[1200/630]">
                                             <img
-                                                src={editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id}`}
+                                                key={previewRefreshKey}
+                                                src={(editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id}`) + `?t=${previewRefreshKey}`}
                                                 alt="OG Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).src = 'https://placehold.co/1200x630/1e293b/64748b?text=Image+Load+Error';
                                                 }}
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex flex-col justify-end p-4">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex flex-col justify-end p-4 pointer-events-none">
                                                 <p className="text-[10px] font-bold text-tcu-blue/80 uppercase tracking-wider mb-1">
                                                     {editingSegment.og_image ? '自定義圖片預覽' : '自動產生圖片預覽'}
                                                 </p>
-                                                <a
-                                                    href={editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-2 py-1 rounded text-[10px] font-bold transition-colors"
-                                                >
-                                                    查看大圖
-                                                </a>
                                             </div>
+                                            <a
+                                                href={(editingSegment.og_image || `${(import.meta.env.VITE_API_URL || 'https://service.criterium.tw')}/api/share/image/${editingSegment.id}`) + `?t=${previewRefreshKey}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="absolute bottom-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-2 py-1 rounded text-[10px] font-bold transition-colors pointer-events-auto"
+                                            >
+                                                查看大圖
+                                            </a>
                                         </div>
                                     )}
                                 </div>

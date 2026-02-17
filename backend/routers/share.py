@@ -109,15 +109,26 @@ async def share_image(segment_id: str):
         if not race_data:
             seg_res = supabase.table("segments").select("*").eq("id", segment_id).execute()
             race_data = seg_res.data[0] if seg_res.data else None
-
+            # Fetch metadata to get description if invalid in segments (though segments has description)
+            # Actually segments table has description.
+        
         if not race_data:
             raise HTTPException(status_code=404, detail="Segment not found")
 
-        title = race_data.get("name", "Unknown Race")
+        # Logic: Use description as main title if available, else name
+        description = race_data.get("description")
+        name = race_data.get("name", "Unknown Race")
+        
+        # If description exists and is not empty, use it. Otherwise use name.
+        title_text = description if description and description.strip() else name
+        
         dist = f"{float(race_data.get('distance', 0)) / 1000:.1f}km"
         elev = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
         grade = f"{race_data.get('average_grade', 0)}%"
         
+        # Logo URL - Assuming hosted on the frontend domain
+        logo_url = "https://strava.criterium.tw/tcu-logo-light.png"
+
         # Simple SVG Template
         svg = f"""
         <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
@@ -130,11 +141,11 @@ async def share_image(segment_id: str):
             </defs>
             <rect width="1200" height="630" fill="url(#grad)"/>
             
-            <!-- Header -->
-            <text x="60" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#38bdf8">TCU STRAVA CHALLENGE</text>
+            <!-- Header Logo -->
+            <image href="{logo_url}" x="60" y="60" height="60" />
             
             <!-- Title -->
-            <text x="60" y="240" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff" width="1080">{title}</text>
+            <text x="60" y="240" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff" width="1080">{title_text}</text>
             
             <!-- Stats -->
             <g transform="translate(60, 400)">
