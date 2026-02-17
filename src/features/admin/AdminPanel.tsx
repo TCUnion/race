@@ -325,14 +325,16 @@ const AdminPanel: React.FC = () => {
             if (segmentsData) {
                 // Merge metadata into the segment objects in memory
                 const metadataMap = (metadataData || []).reduce((acc: any, item: any) => {
-                    acc[item.segment_id] = item;
+                    // Use string keys to ensure matching regardless of number vs string types
+                    acc[String(item.segment_id)] = item;
                     return acc;
                 }, {});
 
                 const mergedData = segmentsData.map(seg => ({
                     ...seg,
-                    og_image: metadataMap[seg.id]?.og_image || seg.og_image,
-                    team_name: metadataMap[seg.id]?.team_name || seg.team_name
+                    // Use String(seg.id) to match the keys
+                    og_image: metadataMap[String(seg.id)]?.og_image || seg.og_image,
+                    team_name: metadataMap[String(seg.id)]?.team_name || seg.team_name
                 }));
                 setSegments(mergedData);
             }
@@ -739,11 +741,15 @@ const AdminPanel: React.FC = () => {
 
                 // [NEW] Upsert metadata
                 if (!error) {
-                    await supabase.from('segment_metadata').upsert({
+                    const { error: metaError } = await supabase.from('segment_metadata').upsert({
                         segment_id: editingSegment.strava_id,
                         og_image: editingSegment.og_image,
                         team_name: editingSegment.team_name
                     });
+                    if (metaError) {
+                        console.error('Metadata upsert error:', metaError);
+                        alert('基本資料已儲存，但擴充資訊 (OG Image/車隊) 儲存失敗: ' + metaError.message);
+                    }
                 }
             } else {
                 const payload = {
@@ -769,11 +775,15 @@ const AdminPanel: React.FC = () => {
 
                 // [NEW] Upsert metadata
                 if (!error) {
-                    await supabase.from('segment_metadata').upsert({
+                    const { error: metaError } = await supabase.from('segment_metadata').upsert({
                         segment_id: editingSegment.id,
                         og_image: editingSegment.og_image,
                         team_name: editingSegment.team_name
                     });
+                    if (metaError) {
+                        console.error('Metadata update error:', metaError);
+                        alert('基本資料已更新，但擴充資訊 (OG Image/車隊) 更新失敗: ' + metaError.message);
+                    }
                 }
             }
 
