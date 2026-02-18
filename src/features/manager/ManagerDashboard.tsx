@@ -190,6 +190,10 @@ const DEFAULT_THEME = ROLE_THEMES.shop_owner;
 function ManagerDashboard() {
     const {
         loading,
+        maintenanceLoading,
+        activityLoading,
+        statisticsLoading,
+        notificationsLoading,
         error,
         isManager,
         isAuthenticated,
@@ -202,6 +206,7 @@ function ManagerDashboard() {
         notificationSettings,
         notificationLogs,
         refresh,
+        fetchDataForTab,
         addAuthorization,
         removeAuthorization,
         updateNotificationSetting,
@@ -212,6 +217,11 @@ function ManagerDashboard() {
     } = useManagerData();
 
     const [activeTab, setActiveTab] = useState<TabType>('activity');
+
+    // 監聽頁籤切換，觸發資料載入
+    useEffect(() => {
+        fetchDataForTab(activeTab);
+    }, [activeTab, fetchDataForTab]);
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddAthleteModal, setShowAddAthleteModal] = useState(false);
     const [addStep, setAddStep] = useState<'search' | 'confirm'>('search');
@@ -1164,192 +1174,203 @@ function ManagerDashboard() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="space-y-6"
                             >
-                                {/* 搜尋與篩選 */}
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="搜尋車友..."
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-12 py-3 text-white font-medium focus:outline-none focus:border-blue-500"
-                                        />
+                                {maintenanceLoading ? (
+                                    <div className="flex items-center justify-center min-h-[400px]">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-10 h-10 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+                                            <p className="text-slate-400 font-bold animate-pulse text-sm">載入保養資料中...</p>
+                                        </div>
                                     </div>
-                                    <button className="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-400 hover:bg-slate-700/50 transition-colors">
-                                        <Filter className="w-5 h-5" />
-                                        <span className="font-bold">篩選</span>
-                                    </button>
-                                    <button className="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-400 hover:bg-slate-700/50 transition-colors">
-                                        <Download className="w-5 h-5" />
-                                        <span className="font-bold">匯出</span>
-                                    </button>
-                                </div>
+                                ) : (
+                                    <>
+                                        {/* 搜尋與篩選 */}
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <div className="relative flex-1">
+                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="搜尋車友..."
+                                                    value={searchQuery}
+                                                    onChange={e => setSearchQuery(e.target.value)}
+                                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-12 py-3 text-white font-medium focus:outline-none focus:border-blue-500"
+                                                />
+                                            </div>
+                                            <button className="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-400 hover:bg-slate-700/50 transition-colors">
+                                                <Filter className="w-5 h-5" />
+                                                <span className="font-bold">篩選</span>
+                                            </button>
+                                            <button className="flex items-center gap-2 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-400 hover:bg-slate-700/50 transition-colors">
+                                                <Download className="w-5 h-5" />
+                                                <span className="font-bold">匯出</span>
+                                            </button>
+                                        </div>
 
-                                {/* 車友保養清單 */}
-                                <div className="space-y-4">
-                                    {filteredSummaries.map(summary => (
-                                        <div
-                                            key={summary.athlete_id}
-                                            className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden"
-                                        >
-                                            <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    {summary.athlete_profile ? (
-                                                        <img
-                                                            src={summary.athlete_profile}
-                                                            alt={summary.athlete_name}
-                                                            className="w-12 h-12 rounded-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center">
-                                                            <Users className="w-6 h-6 text-slate-400" />
+                                        {/* 車友保養清單 */}
+                                        <div className="space-y-4">
+                                            {filteredSummaries.map(summary => (
+                                                <div
+                                                    key={summary.athlete_id}
+                                                    className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden"
+                                                >
+                                                    <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            {summary.athlete_profile ? (
+                                                                <img
+                                                                    src={summary.athlete_profile}
+                                                                    alt={summary.athlete_name}
+                                                                    className="w-12 h-12 rounded-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center">
+                                                                    <Users className="w-6 h-6 text-slate-400" />
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <p className="font-bold text-white text-lg">{summary.athlete_name}</p>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    {summary.totalOverdue > 0 && (
+                                                                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">
+                                                                            {summary.totalOverdue} 超期
+                                                                        </span>
+                                                                    )}
+                                                                    {summary.totalDueSoon > 0 && (
+                                                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-xs font-bold">
+                                                                            {summary.totalDueSoon} 即將到期
+                                                                        </span>
+                                                                    )}
+                                                                    {summary.totalOverdue === 0 && summary.totalDueSoon === 0 && (
+                                                                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold">
+                                                                            狀態良好
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="font-bold text-white text-lg">{summary.athlete_name}</p>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            {summary.totalOverdue > 0 && (
-                                                                <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">
-                                                                    {summary.totalOverdue} 超期
-                                                                </span>
-                                                            )}
-                                                            {summary.totalDueSoon > 0 && (
-                                                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-xs font-bold">
-                                                                    {summary.totalDueSoon} 即將到期
-                                                                </span>
-                                                            )}
-                                                            {summary.totalOverdue === 0 && summary.totalDueSoon === 0 && (
-                                                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold">
-                                                                    狀態良好
-                                                                </span>
-                                                            )}
+
+                                                        <div className="flex items-center gap-3">
+                                                            <button
+                                                                onClick={() => sendNotification(summary.athlete_id, '您有保養項目需要關注，請查看詳情。', 'line')}
+                                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
+                                                            >
+                                                                <Send className="w-4 h-4" />
+                                                                發送提醒
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newSet = new Set(collapsedMaintenanceAthletes);
+                                                                    if (newSet.has(summary.athlete_id)) newSet.delete(summary.athlete_id);
+                                                                    else newSet.add(summary.athlete_id);
+                                                                    setCollapsedMaintenanceAthletes(newSet);
+                                                                }}
+                                                                className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                                title={collapsedMaintenanceAthletes.has(summary.athlete_id) ? "展開列表" : "收合列表"}
+                                                            >
+                                                                {collapsedMaintenanceAthletes.has(summary.athlete_id) ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={() => sendNotification(summary.athlete_id, '您有保養項目需要關注，請查看詳情。', 'line')}
-                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
-                                                    >
-                                                        <Send className="w-4 h-4" />
-                                                        發送提醒
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            const newSet = new Set(collapsedMaintenanceAthletes);
-                                                            if (newSet.has(summary.athlete_id)) newSet.delete(summary.athlete_id);
-                                                            else newSet.add(summary.athlete_id);
-                                                            setCollapsedMaintenanceAthletes(newSet);
-                                                        }}
-                                                        className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white transition-colors"
-                                                        title={collapsedMaintenanceAthletes.has(summary.athlete_id) ? "展開列表" : "收合列表"}
-                                                    >
-                                                        {collapsedMaintenanceAthletes.has(summary.athlete_id) ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-                                                    </button>
-                                                </div>
-                                            </div>
+                                                    {/* 車輛清單 - 使用更高密度的 Grid 佈局 */}
+                                                    {!collapsedMaintenanceAthletes.has(summary.athlete_id) && (
+                                                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                                                            {summary.bikes.map(bike => {
+                                                                const StatusIcon = statusIcons[bike.maintenanceStatus];
+                                                                const isExpanded = expandedBikes.has(bike.id);
+                                                                const toggleBike = () => {
+                                                                    const newSet = new Set(expandedBikes);
+                                                                    if (newSet.has(bike.id)) newSet.delete(bike.id);
+                                                                    else newSet.add(bike.id);
+                                                                    setExpandedBikes(newSet);
+                                                                };
 
-                                            {/* 車輛清單 - 使用更高密度的 Grid 佈局 */}
-                                            {!collapsedMaintenanceAthletes.has(summary.athlete_id) && (
-                                                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                                                    {summary.bikes.map(bike => {
-                                                        const StatusIcon = statusIcons[bike.maintenanceStatus];
-                                                        const isExpanded = expandedBikes.has(bike.id);
-                                                        const toggleBike = () => {
-                                                            const newSet = new Set(expandedBikes);
-                                                            if (newSet.has(bike.id)) newSet.delete(bike.id);
-                                                            else newSet.add(bike.id);
-                                                            setExpandedBikes(newSet);
-                                                        };
-
-                                                        return (
-                                                            <div
-                                                                key={bike.id}
-                                                                className={`p-4 rounded-xl border transition-all ${statusColors[bike.maintenanceStatus]}`}
-                                                            >
-                                                                <div className="flex items-start justify-between mb-3">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Bike className="w-5 h-5" />
-                                                                        <span className="font-bold">{bike.name}</span>
-                                                                    </div>
-                                                                    <StatusIcon className="w-5 h-5" />
-                                                                </div>
-                                                                <p className="text-sm opacity-80">
-                                                                    里程: {bike.distance.toFixed(0)} km
-                                                                </p>
-                                                                {bike.lastServiceDate && (
-                                                                    <p className="text-xs opacity-60 mt-1">
-                                                                        最近保養: {bike.lastServiceDate}
-                                                                    </p>
-                                                                )}
-                                                                <div className="mt-3 flex items-center justify-between">
-                                                                    <div className="text-xs font-bold">
-                                                                        {bike.overdueCount > 0 && <span className="mr-2 text-red-400">{bike.overdueCount} 項超期</span>}
-                                                                        {bike.dueSoonCount > 0 && <span className="text-amber-400">{bike.dueSoonCount} 項即將到期</span>}
-                                                                        {bike.overdueCount === 0 && bike.dueSoonCount === 0 && <span className="text-emerald-400">所有項目正常</span>}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <button
-                                                                            onClick={() => openHistoryModal(bike.id, bike.name, summary.athlete_id)}
-                                                                            className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1 text-blue-400"
-                                                                        >
-                                                                            歷史紀錄
-                                                                        </button>
-                                                                        <span className="text-slate-600">|</span>
-                                                                        <button
-                                                                            onClick={toggleBike}
-                                                                            className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1"
-                                                                        >
-                                                                            {isExpanded ? '收合詳情' : '查看清單'}
-                                                                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* 詳細清單 */}
-                                                                {isExpanded && bike.items && (
-                                                                    <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                                                                        {bike.items.sort((a, b) => b.percentage - a.percentage).map((item, idx) => (
-                                                                            <div key={idx} className="space-y-1">
-                                                                                <div className="flex items-center justify-between text-xs">
-                                                                                    <span className="font-bold text-white/90">{item.name}</span>
-                                                                                    <span className={`font-mono ${item.status === 'overdue' ? 'text-red-400' :
-                                                                                        item.status === 'due_soon' ? 'text-amber-400' : 'text-slate-400'
-                                                                                        }`}>
-                                                                                        {item.mileageSince.toFixed(0)} / {item.interval} km
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                                                                                    <div
-                                                                                        className={`h-full transition-all ${item.status === 'overdue' ? 'bg-red-500' :
-                                                                                            item.status === 'due_soon' ? 'bg-amber-500' : 'bg-emerald-500'
-                                                                                            }`}
-                                                                                        style={{ width: `${Math.min(item.percentage, 100)}%` }}
-                                                                                    />
-                                                                                </div>
+                                                                return (
+                                                                    <div
+                                                                        key={bike.id}
+                                                                        className={`p-4 rounded-xl border transition-all ${statusColors[bike.maintenanceStatus]}`}
+                                                                    >
+                                                                        <div className="flex items-start justify-between mb-3">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Bike className="w-5 h-5" />
+                                                                                <span className="font-bold">{bike.name}</span>
                                                                             </div>
-                                                                        ))}
+                                                                            <StatusIcon className="w-5 h-5" />
+                                                                        </div>
+                                                                        <p className="text-sm opacity-80">
+                                                                            里程: {bike.distance.toFixed(0)} km
+                                                                        </p>
+                                                                        {bike.lastServiceDate && (
+                                                                            <p className="text-xs opacity-60 mt-1">
+                                                                                最近保養: {bike.lastServiceDate}
+                                                                            </p>
+                                                                        )}
+                                                                        <div className="mt-3 flex items-center justify-between">
+                                                                            <div className="text-xs font-bold">
+                                                                                {bike.overdueCount > 0 && <span className="mr-2 text-red-400">{bike.overdueCount} 項超期</span>}
+                                                                                {bike.dueSoonCount > 0 && <span className="text-amber-400">{bike.dueSoonCount} 項即將到期</span>}
+                                                                                {bike.overdueCount === 0 && bike.dueSoonCount === 0 && <span className="text-emerald-400">所有項目正常</span>}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <button
+                                                                                    onClick={() => openHistoryModal(bike.id, bike.name, summary.athlete_id)}
+                                                                                    className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1 text-blue-400"
+                                                                                >
+                                                                                    歷史紀錄
+                                                                                </button>
+                                                                                <span className="text-slate-600">|</span>
+                                                                                <button
+                                                                                    onClick={toggleBike}
+                                                                                    className="text-xs font-bold underline opacity-80 hover:opacity-100 flex items-center gap-1"
+                                                                                >
+                                                                                    {isExpanded ? '收合詳情' : '查看清單'}
+                                                                                    {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* 詳細清單 */}
+                                                                        {isExpanded && bike.items && (
+                                                                            <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                                                                                {bike.items.sort((a, b) => b.percentage - a.percentage).map((item, idx) => (
+                                                                                    <div key={idx} className="space-y-1">
+                                                                                        <div className="flex items-center justify-between text-xs">
+                                                                                            <span className="font-bold text-white/90">{item.name}</span>
+                                                                                            <span className={`font-mono ${item.status === 'overdue' ? 'text-red-400' :
+                                                                                                item.status === 'due_soon' ? 'text-amber-400' : 'text-slate-400'
+                                                                                                }`}>
+                                                                                                {item.mileageSince.toFixed(0)} / {item.interval} km
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                                                                                            <div
+                                                                                                className={`h-full transition-all ${item.status === 'overdue' ? 'bg-red-500' :
+                                                                                                    item.status === 'due_soon' ? 'bg-amber-500' : 'bg-emerald-500'
+                                                                                                    }`}
+                                                                                                style={{ width: `${Math.min(item.percentage, 100)}%` }}
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+
+                                            {filteredSummaries.length === 0 && (
+                                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-12 text-center">
+                                                    <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                                                    <p className="text-slate-400 font-medium">
+                                                        {searchQuery ? '找不到符合的車友' : '尚無授權車友'}
+                                                    </p>
                                                 </div>
                                             )}
                                         </div>
-                                    ))}
-
-                                    {filteredSummaries.length === 0 && (
-                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-12 text-center">
-                                            <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                            <p className="text-slate-400 font-medium">
-                                                {searchQuery ? '找不到符合的車友' : '尚無授權車友'}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
+                                    </>
+                                )}
                             </motion.div>
                         )
                     }
@@ -1363,647 +1384,658 @@ function ManagerDashboard() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="space-y-6"
                             >
-                                {/* 活動統計卡片 - 教練角色不顯示 */}
-                                {managerRole?.role !== 'team_coach' && managerRole?.role !== 'power_coach' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                                    <Activity className="w-6 h-6 text-blue-500" />
-                                                </div>
-                                                <span className="text-sm font-bold text-slate-400">總活動數</span>
-                                            </div>
-                                            <p className="text-4xl font-black text-white">{totalActivities}</p>
-                                        </div>
-
-                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                                                    <MapPin className="w-6 h-6 text-emerald-500" />
-                                                </div>
-                                                <span className="text-sm font-bold text-slate-400">總里程</span>
-                                            </div>
-                                            <p className="text-4xl font-black text-white">
-                                                {activitySummaries.reduce((sum, s) => sum + s.total_distance, 0).toFixed(0)}
-                                                <span className="text-lg text-slate-400 ml-1">km</span>
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                                                    <Mountain className="w-6 h-6 text-amber-500" />
-                                                </div>
-                                                <span className="text-sm font-bold text-slate-400">總爬升</span>
-                                            </div>
-                                            <p className="text-4xl font-black text-white">
-                                                {(activitySummaries.reduce((sum, s) => sum + s.total_elevation, 0) / 1000).toFixed(1)}
-                                                <span className="text-lg text-slate-400 ml-1">km</span>
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                                                    <Timer className="w-6 h-6 text-purple-500" />
-                                                </div>
-                                                <span className="text-sm font-bold text-slate-400">總時數</span>
-                                            </div>
-                                            <p className="text-4xl font-black text-white">
-                                                {activitySummaries.reduce((sum, s) => sum + s.total_time, 0).toFixed(0)}
-                                                <span className="text-lg text-slate-400 ml-1">hr</span>
-                                            </p>
+                                {activityLoading && activitySummaries.length === 0 ? (
+                                    <div className="flex items-center justify-center min-h-[400px]">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-10 h-10 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin" />
+                                            <p className="text-slate-400 font-bold animate-pulse text-sm">載入活動資料中...</p>
                                         </div>
                                     </div>
-                                )}
-
-                                {/* 活動視角切換器 */}
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                    <div className="flex items-center gap-2 p-1 bg-slate-800/80 rounded-xl border border-slate-700/50 w-fit">
-                                        <button
-                                            onClick={() => setActivityView('individual')}
-                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activityView === 'individual' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                                        >
-                                            <Users className="w-3.5 h-3.5" /> 個人概況
-                                        </button>
-                                        <button
-                                            onClick={() => setActivityView('date')}
-                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activityView === 'date' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                                        >
-                                            <Calendar className="w-3.5 h-3.5" /> 依照日期
-                                        </button>
-
-                                    </div>
-
-                                    {activityView === 'date' && (
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 rounded-xl border border-slate-700/50">
-                                            <Filter className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="text-xs font-bold text-slate-400">日期篩選:</span>
-                                            <input
-                                                type="date"
-                                                value={filterDate}
-                                                onChange={(e) => setFilterDate(e.target.value)}
-                                                className="bg-transparent border-none text-xs font-bold text-white focus:ring-0 cursor-pointer"
-                                            />
-                                            {filterDate && (
-                                                <button
-                                                    onClick={() => setFilterDate('')}
-                                                    className="p-1 hover:bg-slate-700 rounded-md transition-colors"
-                                                >
-                                                    <X className="w-3 h-3 text-slate-400" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-
-
-                                {/* 活動清單容器 */}
-                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-slate-700/50 flex flex-col xl:flex-row items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-start">
-                                            <h2 className="font-bold text-white whitespace-nowrap">
-                                                {activityView === 'individual' ? `${athleteLabel}活動概況` : '團隊活動時間軸'}
-                                            </h2>
-                                            {activityView === 'date' && (
-                                                <div className="flex items-center gap-3">
-                                                    {filterDate && (
-                                                        <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px] font-bold">
-                                                            {filterDate}
-                                                        </span>
-                                                    )}
-                                                    <span className="text-xs text-slate-500 font-mono hidden sm:inline-block">
-                                                        共 {activitySummaries.reduce((sum, s) => {
-                                                            const activities = (s.recent_activities || []);
-                                                            const filtered = filterDate
-                                                                ? activities.filter(a => new Date(a.start_date).toLocaleDateString('en-CA') === filterDate)
-                                                                : activities;
-                                                            return sum + filtered.length;
-                                                        }, 0)} 筆
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 分頁控制區塊 - 移至標題列 (教練角色不顯示外層分頁，內層列表已內建分頁) */}
+                                ) : (
+                                    <>
+                                        {/* 活動統計卡片 - 教練角色不顯示 */}
                                         {managerRole?.role !== 'team_coach' && managerRole?.role !== 'power_coach' && (
-                                            <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-end">
-                                                <div className="flex items-center gap-2 text-xs font-bold">
-                                                    <span className="text-slate-500 hidden sm:inline">每頁:</span>
-                                                    <select
-                                                        value={activityRowsPerPage}
-                                                        onChange={(e) => {
-                                                            setActivityRowsPerPage(Number(e.target.value));
-                                                            setActivityPage(1);
-                                                        }}
-                                                        className="bg-slate-700 border-slate-600 text-white rounded-lg focus:ring-blue-500 text-xs py-1 pl-2 pr-8"
-                                                    >
-                                                        <option value={9999}>全部</option>
-                                                        {[10, 20, 50, 100].map(val => (
-                                                            <option key={val} value={val}>{val}</option>
-                                                        ))}
-                                                    </select>
-                                                    <span className="text-slate-400 font-mono text-[10px] sm:text-xs">
-                                                        {Math.min(((activityPage - 1) * activityRowsPerPage) + 1, (activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length))}-{Math.min(activityPage * activityRowsPerPage, (activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length))} / {(activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length)}
-                                                    </span>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                                            <Activity className="w-6 h-6 text-blue-500" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-slate-400">總活動數</span>
+                                                    </div>
+                                                    <p className="text-4xl font-black text-white">{totalActivities}</p>
                                                 </div>
 
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => setActivityPage(p => Math.max(1, p - 1))}
-                                                        disabled={activityPage === 1}
-                                                        className="p-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
-                                                    >
-                                                        <ChevronLeft className="w-3.5 h-3.5" />
-                                                    </button>
-
-                                                    {/* 簡化版頁碼，只顯示當前頁面與前後 */}
-                                                    <div className="hidden sm:flex items-center gap-1">
-                                                        {Array.from({ length: Math.ceil((activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length) / activityRowsPerPage) }, (_, i) => i + 1)
-                                                            .filter(p => {
-                                                                const total = Math.ceil((activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length) / activityRowsPerPage);
-                                                                if (total <= 5) return true;
-                                                                return p === 1 || p === total || (p >= activityPage - 1 && p <= activityPage + 1);
-                                                            })
-                                                            .map((p, idx, arr) => (
-                                                                <React.Fragment key={p}>
-                                                                    {idx > 0 && arr[idx - 1] !== p - 1 && (
-                                                                        <span className="text-slate-600 px-0.5 text-xs">...</span>
-                                                                    )}
-                                                                    <button
-                                                                        onClick={() => setActivityPage(p)}
-                                                                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${activityPage === p ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-                                                                    >
-                                                                        {p}
-                                                                    </button>
-                                                                </React.Fragment>
-                                                            ))
-                                                        }
+                                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                                            <MapPin className="w-6 h-6 text-emerald-500" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-slate-400">總里程</span>
                                                     </div>
+                                                    <p className="text-4xl font-black text-white">
+                                                        {activitySummaries.reduce((sum, s) => sum + s.total_distance, 0).toFixed(0)}
+                                                        <span className="text-lg text-slate-400 ml-1">km</span>
+                                                    </p>
+                                                </div>
 
-                                                    <button
-                                                        onClick={() => setActivityPage(p => p + 1)}
-                                                        disabled={activityPage >= Math.ceil((activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length) / activityRowsPerPage)}
-                                                        className="p-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
-                                                    >
-                                                        <ChevronRight className="w-3.5 h-3.5" />
-                                                    </button>
+                                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                                                            <Mountain className="w-6 h-6 text-amber-500" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-slate-400">總爬升</span>
+                                                    </div>
+                                                    <p className="text-4xl font-black text-white">
+                                                        {(activitySummaries.reduce((sum, s) => sum + s.total_elevation, 0) / 1000).toFixed(1)}
+                                                        <span className="text-lg text-slate-400 ml-1">km</span>
+                                                    </p>
+                                                </div>
+
+                                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                                            <Timer className="w-6 h-6 text-purple-500" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-slate-400">總時數</span>
+                                                    </div>
+                                                    <p className="text-4xl font-black text-white">
+                                                        {activitySummaries.reduce((sum, s) => sum + s.total_time, 0).toFixed(0)}
+                                                        <span className="text-lg text-slate-400 ml-1">hr</span>
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
-                                    </div>
 
-                                    {activityView === 'individual' ? (
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full">
-                                                <thead className="bg-slate-700/30">
-                                                    <tr className="border-b border-slate-700/50">
-                                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">姓名</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日活動數</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日里程 (km)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日爬升 (m)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日時數</th>
-                                                        {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
-                                                            <>
-                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSS (本週)</th>
-                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">CTL (體能)</th>
-                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">ATL (疲勞)</th>
-                                                            </>
-                                                        )}
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSB (狀態)</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-700/50">
-                                                    {activitySummaries
-                                                        .slice((activityPage - 1) * activityRowsPerPage, activityPage * activityRowsPerPage)
-                                                        .map(summary => (
-                                                            <React.Fragment key={summary.athlete_id}>
-                                                                <tr className="hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => toggleActivityRow(summary.athlete_id)}>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="flex items-center gap-2">
-                                                                            {expandedActivityRows.has(summary.athlete_id) ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                                                                            <span className="font-bold text-white">{summary.athlete_name}</span>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300">{summary.total_activities}</td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300">{summary.total_distance.toFixed(0)}</td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300">{summary.total_elevation.toFixed(0)}</td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300">{summary.total_time.toFixed(1)}</td>
+                                        {/* 活動視角切換器 */}
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                            <div className="flex items-center gap-2 p-1 bg-slate-800/80 rounded-xl border border-slate-700/50 w-fit">
+                                                <button
+                                                    onClick={() => setActivityView('individual')}
+                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activityView === 'individual' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                                >
+                                                    <Users className="w-3.5 h-3.5" /> 個人概況
+                                                </button>
+                                                <button
+                                                    onClick={() => setActivityView('date')}
+                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activityView === 'date' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                                >
+                                                    <Calendar className="w-3.5 h-3.5" /> 依照日期
+                                                </button>
 
-                                                                    {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
-                                                                        <>
-                                                                            <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                                <span className="text-white font-bold flex items-center gap-1 justify-end">
-                                                                                    <Zap className="w-3 h-3 text-yellow-500" />
-                                                                                    {Math.round(summary.total_tss ?? 0)}
-                                                                                </span>
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                                <span className="text-white font-bold flex items-center gap-1 justify-end">
-                                                                                    <Activity className="w-3 h-3 text-blue-500" />
-                                                                                    {Math.round(summary.ctl ?? 0)}
-                                                                                </span>
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                                <span className="text-white font-bold flex items-center gap-1 justify-end">
-                                                                                    <div className="w-2 h-2 rounded-full bg-pink-500" />
-                                                                                    {Math.round(summary.atl ?? 0)}
-                                                                                </span>
-                                                                            </td>
-                                                                        </>
-                                                                    )}
+                                            </div>
 
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        <span className={`font-bold font-mono ${(summary.tsb ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                                            {Math.round(summary.tsb ?? 0)}
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                                {expandedActivityRows.has(summary.athlete_id) && summary.recent_activities && (
-                                                                    <tr>
-                                                                        <td colSpan={10} className="px-0 py-0 bg-slate-900/50">
-                                                                            <div className="p-4 space-y-6">
-                                                                                {/* Daily Training Chart Section */}
-                                                                                {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.recent_activities && (
-                                                                                    <div className="mb-6">
-                                                                                        <DailyTrainingChart
-                                                                                            activities={summary.full_history_activities}
-                                                                                            ftp={summary.ftp || 200}
-                                                                                        />
-                                                                                    </div>
-                                                                                )}
-
-                                                                                {/* PMC Chart Section */}
-                                                                                {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.full_history_activities && (
-                                                                                    <div>
-                                                                                        <PMCChart
-                                                                                            activities={summary.full_history_activities}
-                                                                                            ftp={summary.ftp || 200}
-                                                                                        />
-                                                                                    </div>
-                                                                                )}
-
-                                                                                {/* Recent Activities List */}
-                                                                                <div>
-                                                                                    <div className="flex flex-wrap items-center justify-between gap-4 mb-2 pl-2 pr-2">
-                                                                                        <div className="flex items-center gap-4">
-                                                                                            <div>
-                                                                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">近期活動記錄</p>
-                                                                                                <select
-                                                                                                    value={activityViewRanges[summary.athlete_id] === 'all' ? 'all' : (activityViewRanges[summary.athlete_id] || 42)}
-                                                                                                    onChange={(e) => {
-                                                                                                        const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
-                                                                                                        setActivityViewRanges(prev => ({ ...prev, [summary.athlete_id]: val }));
-                                                                                                        setActivitySubPages(prev => ({ ...prev, [summary.athlete_id]: 1 }));
-                                                                                                    }}
-                                                                                                    onClick={e => e.stopPropagation()}
-                                                                                                    className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-1 py-0.5 focus:ring-1 focus:ring-blue-500 outline-none hover:border-slate-500 transition-colors cursor-pointer"
-                                                                                                >
-                                                                                                    <option value={42}>42天</option>
-                                                                                                    <option value={84}>84天</option>
-                                                                                                    <option value={180}>180天</option>
-                                                                                                    <option value="all">全部</option>
-                                                                                                </select>
-                                                                                            </div>
-                                                                                            <AthleteSyncControl
-                                                                                                athleteId={String(summary.athlete_id)}
-                                                                                                activities={summary.full_history_activities || summary.recent_activities || []}
-                                                                                                range={activityViewRanges[summary.athlete_id] || 42}
-                                                                                                onSyncSuccess={handleBatchSyncSuccess}
-                                                                                            />
-                                                                                        </div>
-
-                                                                                        {/* Pagination Controls */}
-                                                                                        {/* Pagination Controls */}
-                                                                                        {(() => {
-                                                                                            const range = activityViewRanges[summary.athlete_id] || 42;
-                                                                                            const filteredActivities = summary.recent_activities.filter(a => {
-                                                                                                if (range === 'all') return true;
-                                                                                                const cutoff = new Date();
-                                                                                                cutoff.setDate(cutoff.getDate() - (range as number));
-                                                                                                return new Date(a.start_date) >= cutoff;
-                                                                                            });
-                                                                                            const totalPages = Math.ceil(filteredActivities.length / activityRowsPerPage);
-                                                                                            const currentPage = activitySubPages[summary.athlete_id] || 1;
-
-                                                                                            if (filteredActivities.length <= activityRowsPerPage) return null;
-
-                                                                                            return (
-                                                                                                <div className="flex items-center gap-2">
-                                                                                                    <span className="text-xs text-slate-500 mr-2">
-                                                                                                        {currentPage} / {totalPages} (共 {filteredActivities.length} 筆)
-                                                                                                    </span>
-                                                                                                    <button
-                                                                                                        onClick={(e) => {
-                                                                                                            e.stopPropagation();
-                                                                                                            setActivitySubPages(prev => ({
-                                                                                                                ...prev,
-                                                                                                                [summary.athlete_id]: Math.max(1, (prev[summary.athlete_id] || 1) - 1)
-                                                                                                            }));
-                                                                                                        }}
-                                                                                                        disabled={currentPage === 1}
-                                                                                                        className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                                                                                    >
-                                                                                                        <ChevronLeft className="w-3 h-3" />
-                                                                                                    </button>
-                                                                                                    <button
-                                                                                                        onClick={(e) => {
-                                                                                                            e.stopPropagation();
-                                                                                                            setActivitySubPages(prev => ({
-                                                                                                                ...prev,
-                                                                                                                [summary.athlete_id]: Math.min(
-                                                                                                                    totalPages,
-                                                                                                                    (prev[summary.athlete_id] || 1) + 1
-                                                                                                                )
-                                                                                                            }));
-                                                                                                        }}
-                                                                                                        disabled={currentPage >= totalPages}
-                                                                                                        className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                                                                                    >
-                                                                                                        <ChevronRight className="w-3 h-3" />
-                                                                                                    </button>
-                                                                                                </div>
-                                                                                            );
-                                                                                        })()}
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                <table className="w-full text-sm">
-                                                                                    <thead>
-                                                                                        <tr className="border-b border-slate-700 text-slate-400">
-                                                                                            <th className="px-4 py-2 text-left w-24">日期</th>
-                                                                                            <th className="px-4 py-2 text-center w-12">同步</th>
-                                                                                            <th className="px-4 py-2 text-left">名稱</th>
-                                                                                            <th className="px-4 py-2 text-left w-20">種類</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">TSS</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">NP</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">IF</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">距離 (km)</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">移動時間</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">總時間</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">均瓦</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">最大瓦</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">均心</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">最大心</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">均轉</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">最高速</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">溫度</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
-                                                                                            <th className="px-4 py-2 text-right w-20">卡路里</th>
-                                                                                            <th className="px-4 py-2 text-right w-32">使用設備</th>
-                                                                                        </tr>
-                                                                                    </thead>
-                                                                                    <tbody className="divide-y divide-slate-800">
-                                                                                        {summary.recent_activities
-                                                                                            .filter(a => {
-                                                                                                const range = activityViewRanges[summary.athlete_id] || 42;
-                                                                                                if (range === 'all') return true;
-                                                                                                const cutoff = new Date();
-                                                                                                cutoff.setDate(cutoff.getDate() - (range as number));
-                                                                                                return new Date(a.start_date) >= cutoff;
-                                                                                            })
-                                                                                            .slice(
-                                                                                                ((activitySubPages[summary.athlete_id] || 1) - 1) * activityRowsPerPage,
-                                                                                                (activitySubPages[summary.athlete_id] || 1) * activityRowsPerPage
-                                                                                            )
-                                                                                            .map(activity => {
-                                                                                                const bikeName = summary.bikes_used.find(b => b.bike_id === activity.gear_id)?.bike_name || '-';
-                                                                                                const formatDuration = (seconds: number) => {
-                                                                                                    if (!seconds) return '-';
-                                                                                                    const h = Math.floor(seconds / 3600);
-                                                                                                    const m = Math.floor((seconds % 3600) / 60);
-                                                                                                    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                                                                                                };
-                                                                                                // m/s to km/h: value * 3.6
-                                                                                                const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
-
-                                                                                                const calories = activity.calories || '-';
-                                                                                                const type = activity.sport_type || (activity as any).type || '';
-
-                                                                                                return (
-                                                                                                    <React.Fragment key={activity.id}>
-                                                                                                        <tr className="hover:bg-slate-800/50">
-                                                                                                            <td className="px-4 py-2 text-slate-300">
-                                                                                                                {new Date(activity.start_date).toLocaleDateString()}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-center">
-                                                                                                                {(activity as any).is_synced || sessionSyncedActivities.has(activity.id) ? (
-                                                                                                                    <button
-                                                                                                                        onClick={() => toggleActivityDetail(activity.id)}
-                                                                                                                        className={`flex justify-center w-full transition-all hover:scale-110 ${expandedDetailActivities.has(activity.id) ? 'text-indigo-400' : 'text-emerald-500'}`}
-                                                                                                                        title={expandedDetailActivities.has(activity.id) ? "收起詳情" : "點擊展開深度分析"}
-                                                                                                                    >
-                                                                                                                        <CheckCircle2 className={`w-4 h-4 ${expandedDetailActivities.has(activity.id) ? 'drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]' : ''}`} />
-                                                                                                                    </button>
-                                                                                                                ) : (
-                                                                                                                    <button
-                                                                                                                        onClick={() => handleSingleActivitySync(summary.athlete_id, activity.id)}
-                                                                                                                        disabled={syncingActivities.has(activity.id)}
-                                                                                                                        className={`flex justify-center w-full transition-all ${syncingActivities.has(activity.id) ? 'text-indigo-400' : 'text-slate-600 hover:text-indigo-400'}`}
-                                                                                                                        title="點擊同步此活動"
-                                                                                                                    >
-                                                                                                                        <RefreshCw className={`w-4 h-4 ${syncingActivities.has(activity.id) ? 'animate-spin' : ''}`} />
-                                                                                                                    </button>
-                                                                                                                )}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
-                                                                                                                <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
-                                                                                                                    {activity.name}
-                                                                                                                </a>
-                                                                                                            </td>
-                                                                                                            <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
-                                                                                                                {ACTIVITY_TYPE_NAMES[type] || type}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right font-mono text-blue-400 font-bold">
-                                                                                                                {Math.round((activity as any).tss || 0) || '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right font-mono text-emerald-400">
-                                                                                                                {Math.round((activity as any).np || 0) || '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right font-mono text-amber-400">
-                                                                                                                {(activity as any).if ? (activity as any).if.toFixed(2) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-amber-400 font-mono">
-                                                                                                                {activity.average_watts ? Math.round(activity.average_watts) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-amber-500 font-mono">
-                                                                                                                {activity.max_watts ? Math.round(activity.max_watts) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-red-400 font-mono">
-                                                                                                                {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-red-500 font-mono">
-                                                                                                                {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-emerald-400 font-mono">
-                                                                                                                {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
-                                                                                                            </td>
-                                                                                                            <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
-                                                                                                            <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
-                                                                                                                {bikeName}
-                                                                                                            </td>
-                                                                                                        </tr>
-                                                                                                        {/* Single Activity Detail Expansion Row */}
-                                                                                                        {expandedDetailActivities.has(activity.id) && (
-                                                                                                            <tr className="bg-slate-900/40">
-                                                                                                                <td colSpan={22} className="p-0">
-                                                                                                                    <div className="p-4 border-l-2 border-indigo-500/50 my-2 mx-4 rounded-xl overflow-hidden">
-                                                                                                                        <SingleActivityAnalysis
-                                                                                                                            activity={activity}
-                                                                                                                            athleteId={summary.athlete_id}
-                                                                                                                            defaultFtp={summary.ftp}
-                                                                                                                            defaultMaxHR={summary.max_heartrate}
-                                                                                                                        />
-                                                                                                                    </div>
-                                                                                                                </td>
-                                                                                                            </tr>
-                                                                                                        )}
-                                                                                                    </React.Fragment>
-                                                                                                );
-                                                                                            })}
-                                                                                    </tbody>
-                                                                                </table>
-                                                                            </div>
-
-                                                                        </td>
-                                                                    </tr>
-                                                                )}
-                                                            </React.Fragment>
-                                                        ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    ) : (
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full">
-                                                <thead className="bg-slate-700/30">
-                                                    <tr>
-                                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">日期</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{athleteLabel}</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">活動名稱</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">種類</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">距離 (km)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">爬升 (m)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">移動時間</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">總時間</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">均瓦</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">最大瓦</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">均心</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">最大心</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">最高速</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">溫度</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">焦耳 (KJ)</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">卡路里</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">使用設備</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-700/50">
-                                                    {activitySummaries
-                                                        .flatMap(s => (s.recent_activities || []).map(a => ({
-                                                            ...a,
-                                                            athlete_name: s.athlete_name,
-                                                            bike_name: s.bikes_used.find(b => b.bike_id === a.gear_id)?.bike_name || '-'
-                                                        })))
-                                                        .filter(activity => {
-                                                            if (!filterDate) return true;
-                                                            const activityDate = new Date(activity.start_date).toLocaleDateString('en-CA');
-                                                            return activityDate === filterDate;
-                                                        })
-                                                        .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime())
-                                                        .slice((activityPage - 1) * activityRowsPerPage, activityPage * activityRowsPerPage)
-                                                        .map(activity => {
-                                                            const formatDuration = (seconds: number) => {
-                                                                if (!seconds) return '-';
-                                                                const h = Math.floor(seconds / 3600);
-                                                                const m = Math.floor((seconds % 3600) / 60);
-                                                                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                                                            };
-                                                            // m/s to km/h: value * 3.6
-                                                            const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
-
-                                                            const calories = activity.calories || '-';
-                                                            const type = activity.sport_type || (activity as any).type || '';
-
-                                                            return (
-                                                                <tr key={`${activity.athlete_name}-${activity.id}`} className="hover:bg-slate-700/20 transition-colors">
-                                                                    <td className="px-6 py-4 text-xs text-slate-400 whitespace-nowrap">
-                                                                        {new Date(activity.start_date).toLocaleDateString()}
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <span className="font-bold text-blue-400 text-sm whitespace-nowrap">{activity.athlete_name}</span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-medium truncate max-w-[200px] block hover:text-blue-400 transition-colors" title={activity.name}>
-                                                                            {activity.name}
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className={`px-6 py-4 font-bold text-sm ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
-                                                                        {ACTIVITY_TYPE_NAMES[type] || type}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                        {(activity.distance / 1000).toFixed(1)}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300 font-mono">
-                                                                        {activity.total_elevation_gain}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300 whitespace-nowrap font-mono">
-                                                                        {formatDuration(activity.moving_time)}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-slate-300 whitespace-nowrap font-mono">
-                                                                        {formatDuration(activity.elapsed_time || 0)}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-emerald-400 font-mono">
-                                                                        {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        {activity.average_watts ? (
-                                                                            <span className="text-amber-400 font-bold font-mono">{Math.round(activity.average_watts)}</span>
-                                                                        ) : <span className="text-slate-600">-</span>}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        {activity.max_watts ? (
-                                                                            <span className="text-amber-500 font-bold font-mono">{Math.round(activity.max_watts)}</span>
-                                                                        ) : <span className="text-slate-600">-</span>}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        {activity.average_heartrate ? (
-                                                                            <span className="text-red-400 font-bold font-mono">{Math.round(activity.average_heartrate)}</span>
-                                                                        ) : <span className="text-slate-600">-</span>}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        {activity.max_heartrate ? (
-                                                                            <span className="text-red-500 font-bold font-mono">{Math.round(activity.max_heartrate)}</span>
-                                                                        ) : <span className="text-slate-600">-</span>}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
-                                                                    <td className="px-6 py-4 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
-                                                                    <td className="px-6 py-4 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
-                                                                    <td className="px-6 py-4 text-right text-slate-400 font-mono">{calories}</td>
-                                                                    <td className="px-6 py-4 text-right text-slate-400 text-sm max-w-[120px] truncate" title={activity.bike_name}>
-                                                                        {activity.bike_name}
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                </tbody>
-                                            </table>
-                                            {filterDate && activitySummaries.flatMap(s => s.recent_activities || []).filter(a => new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length === 0 && (
-                                                <div className="py-12 text-center">
-                                                    <p className="text-slate-500 font-medium">該日期無活動記錄</p>
+                                            {activityView === 'date' && (
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 rounded-xl border border-slate-700/50">
+                                                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                                                    <span className="text-xs font-bold text-slate-400">日期篩選:</span>
+                                                    <input
+                                                        type="date"
+                                                        value={filterDate}
+                                                        onChange={(e) => setFilterDate(e.target.value)}
+                                                        className="bg-transparent border-none text-xs font-bold text-white focus:ring-0 cursor-pointer"
+                                                    />
+                                                    {filterDate && (
+                                                        <button
+                                                            onClick={() => setFilterDate('')}
+                                                            className="p-1 hover:bg-slate-700 rounded-md transition-colors"
+                                                        >
+                                                            <X className="w-3 h-3 text-slate-400" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-                                </div>
+
+
+
+                                        {/* 活動清單容器 */}
+                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
+                                            <div className="px-6 py-4 border-b border-slate-700/50 flex flex-col xl:flex-row items-center justify-between gap-4">
+                                                <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-start">
+                                                    <h2 className="font-bold text-white whitespace-nowrap">
+                                                        {activityView === 'individual' ? `${athleteLabel}活動概況` : '團隊活動時間軸'}
+                                                    </h2>
+                                                    {activityView === 'date' && (
+                                                        <div className="flex items-center gap-3">
+                                                            {filterDate && (
+                                                                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px] font-bold">
+                                                                    {filterDate}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-xs text-slate-500 font-mono hidden sm:inline-block">
+                                                                共 {activitySummaries.reduce((sum, s) => {
+                                                                    const activities = (s.recent_activities || []);
+                                                                    const filtered = filterDate
+                                                                        ? activities.filter(a => new Date(a.start_date).toLocaleDateString('en-CA') === filterDate)
+                                                                        : activities;
+                                                                    return sum + filtered.length;
+                                                                }, 0)} 筆
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 分頁控制區塊 - 移至標題列 (教練角色不顯示外層分頁，內層列表已內建分頁) */}
+                                                {managerRole?.role !== 'team_coach' && managerRole?.role !== 'power_coach' && (
+                                                    <div className="flex items-center gap-4 w-full xl:w-auto justify-between xl:justify-end">
+                                                        <div className="flex items-center gap-2 text-xs font-bold">
+                                                            <span className="text-slate-500 hidden sm:inline">每頁:</span>
+                                                            <select
+                                                                value={activityRowsPerPage}
+                                                                onChange={(e) => {
+                                                                    setActivityRowsPerPage(Number(e.target.value));
+                                                                    setActivityPage(1);
+                                                                }}
+                                                                className="bg-slate-700 border-slate-600 text-white rounded-lg focus:ring-blue-500 text-xs py-1 pl-2 pr-8"
+                                                            >
+                                                                <option value={9999}>全部</option>
+                                                                {[10, 20, 50, 100].map(val => (
+                                                                    <option key={val} value={val}>{val}</option>
+                                                                ))}
+                                                            </select>
+                                                            <span className="text-slate-400 font-mono text-[10px] sm:text-xs">
+                                                                {Math.min(((activityPage - 1) * activityRowsPerPage) + 1, (activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length))}-{Math.min(activityPage * activityRowsPerPage, (activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length))} / {(activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length)}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={() => setActivityPage(p => Math.max(1, p - 1))}
+                                                                disabled={activityPage === 1}
+                                                                className="p-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
+                                                            >
+                                                                <ChevronLeft className="w-3.5 h-3.5" />
+                                                            </button>
+
+                                                            {/* 簡化版頁碼，只顯示當前頁面與前後 */}
+                                                            <div className="hidden sm:flex items-center gap-1">
+                                                                {Array.from({ length: Math.ceil((activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length) / activityRowsPerPage) }, (_, i) => i + 1)
+                                                                    .filter(p => {
+                                                                        const total = Math.ceil((activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length) / activityRowsPerPage);
+                                                                        if (total <= 5) return true;
+                                                                        return p === 1 || p === total || (p >= activityPage - 1 && p <= activityPage + 1);
+                                                                    })
+                                                                    .map((p, idx, arr) => (
+                                                                        <React.Fragment key={p}>
+                                                                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                                                                                <span className="text-slate-600 px-0.5 text-xs">...</span>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={() => setActivityPage(p)}
+                                                                                className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${activityPage === p ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                                                                            >
+                                                                                {p}
+                                                                            </button>
+                                                                        </React.Fragment>
+                                                                    ))
+                                                                }
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => setActivityPage(p => p + 1)}
+                                                                disabled={activityPage >= Math.ceil((activityView === 'individual' ? activitySummaries.length : activitySummaries.flatMap(s => (s.recent_activities || [])).filter(a => !filterDate || new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length) / activityRowsPerPage)}
+                                                                className="p-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
+                                                            >
+                                                                <ChevronRight className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {activityView === 'individual' ? (
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full">
+                                                        <thead className="bg-slate-700/30">
+                                                            <tr className="border-b border-slate-700/50">
+                                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">姓名</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日活動數</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日里程 (km)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日爬升 (m)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">7日時數</th>
+                                                                {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
+                                                                    <>
+                                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSS (本週)</th>
+                                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">CTL (體能)</th>
+                                                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">ATL (疲勞)</th>
+                                                                    </>
+                                                                )}
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">TSB (狀態)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-700/50">
+                                                            {activitySummaries
+                                                                .slice((activityPage - 1) * activityRowsPerPage, activityPage * activityRowsPerPage)
+                                                                .map(summary => (
+                                                                    <React.Fragment key={summary.athlete_id}>
+                                                                        <tr className="hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => toggleActivityRow(summary.athlete_id)}>
+                                                                            <td className="px-6 py-4">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    {expandedActivityRows.has(summary.athlete_id) ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                                                                    <span className="font-bold text-white">{summary.athlete_name}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300">{summary.total_activities}</td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300">{summary.total_distance.toFixed(0)}</td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300">{summary.total_elevation.toFixed(0)}</td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300">{summary.total_time.toFixed(1)}</td>
+
+                                                                            {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && (
+                                                                                <>
+                                                                                    <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                                                                                        <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                            <Zap className="w-3 h-3 text-yellow-500" />
+                                                                                            {Math.round(summary.total_tss ?? 0)}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                                                                                        <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                            <Activity className="w-3 h-3 text-blue-500" />
+                                                                                            {Math.round(summary.ctl ?? 0)}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                                                                                        <span className="text-white font-bold flex items-center gap-1 justify-end">
+                                                                                            <div className="w-2 h-2 rounded-full bg-pink-500" />
+                                                                                            {Math.round(summary.atl ?? 0)}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                </>
+                                                                            )}
+
+                                                                            <td className="px-6 py-4 text-right">
+                                                                                <span className={`font-bold font-mono ${(summary.tsb ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                                    {Math.round(summary.tsb ?? 0)}
+                                                                                </span>
+                                                                            </td>
+                                                                        </tr>
+                                                                        {expandedActivityRows.has(summary.athlete_id) && summary.recent_activities && (
+                                                                            <tr>
+                                                                                <td colSpan={10} className="px-0 py-0 bg-slate-900/50">
+                                                                                    <div className="p-4 space-y-6">
+                                                                                        {/* Daily Training Chart Section */}
+                                                                                        {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.recent_activities && (
+                                                                                            <div className="mb-6">
+                                                                                                <DailyTrainingChart
+                                                                                                    activities={summary.full_history_activities}
+                                                                                                    ftp={summary.ftp || 200}
+                                                                                                />
+                                                                                            </div>
+                                                                                        )}
+
+                                                                                        {/* PMC Chart Section */}
+                                                                                        {(managerRole?.role === 'team_coach' || managerRole?.role === 'power_coach') && summary.full_history_activities && (
+                                                                                            <div>
+                                                                                                <PMCChart
+                                                                                                    activities={summary.full_history_activities}
+                                                                                                    ftp={summary.ftp || 200}
+                                                                                                />
+                                                                                            </div>
+                                                                                        )}
+
+                                                                                        {/* Recent Activities List */}
+                                                                                        <div>
+                                                                                            <div className="flex flex-wrap items-center justify-between gap-4 mb-2 pl-2 pr-2">
+                                                                                                <div className="flex items-center gap-4">
+                                                                                                    <div>
+                                                                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">近期活動記錄</p>
+                                                                                                        <select
+                                                                                                            value={activityViewRanges[summary.athlete_id] === 'all' ? 'all' : (activityViewRanges[summary.athlete_id] || 42)}
+                                                                                                            onChange={(e) => {
+                                                                                                                const val = e.target.value === 'all' ? 'all' : Number(e.target.value);
+                                                                                                                setActivityViewRanges(prev => ({ ...prev, [summary.athlete_id]: val }));
+                                                                                                                setActivitySubPages(prev => ({ ...prev, [summary.athlete_id]: 1 }));
+                                                                                                            }}
+                                                                                                            onClick={e => e.stopPropagation()}
+                                                                                                            className="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded px-1 py-0.5 focus:ring-1 focus:ring-blue-500 outline-none hover:border-slate-500 transition-colors cursor-pointer"
+                                                                                                        >
+                                                                                                            <option value={42}>42天</option>
+                                                                                                            <option value={84}>84天</option>
+                                                                                                            <option value={180}>180天</option>
+                                                                                                            <option value="all">全部</option>
+                                                                                                        </select>
+                                                                                                    </div>
+                                                                                                    <AthleteSyncControl
+                                                                                                        athleteId={String(summary.athlete_id)}
+                                                                                                        activities={summary.full_history_activities || summary.recent_activities || []}
+                                                                                                        range={activityViewRanges[summary.athlete_id] || 42}
+                                                                                                        onSyncSuccess={handleBatchSyncSuccess}
+                                                                                                    />
+                                                                                                </div>
+
+                                                                                                {/* Pagination Controls */}
+                                                                                                {/* Pagination Controls */}
+                                                                                                {(() => {
+                                                                                                    const range = activityViewRanges[summary.athlete_id] || 42;
+                                                                                                    const filteredActivities = summary.recent_activities.filter(a => {
+                                                                                                        if (range === 'all') return true;
+                                                                                                        const cutoff = new Date();
+                                                                                                        cutoff.setDate(cutoff.getDate() - (range as number));
+                                                                                                        return new Date(a.start_date) >= cutoff;
+                                                                                                    });
+                                                                                                    const totalPages = Math.ceil(filteredActivities.length / activityRowsPerPage);
+                                                                                                    const currentPage = activitySubPages[summary.athlete_id] || 1;
+
+                                                                                                    if (filteredActivities.length <= activityRowsPerPage) return null;
+
+                                                                                                    return (
+                                                                                                        <div className="flex items-center gap-2">
+                                                                                                            <span className="text-xs text-slate-500 mr-2">
+                                                                                                                {currentPage} / {totalPages} (共 {filteredActivities.length} 筆)
+                                                                                                            </span>
+                                                                                                            <button
+                                                                                                                onClick={(e) => {
+                                                                                                                    e.stopPropagation();
+                                                                                                                    setActivitySubPages(prev => ({
+                                                                                                                        ...prev,
+                                                                                                                        [summary.athlete_id]: Math.max(1, (prev[summary.athlete_id] || 1) - 1)
+                                                                                                                    }));
+                                                                                                                }}
+                                                                                                                disabled={currentPage === 1}
+                                                                                                                className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                            >
+                                                                                                                <ChevronLeft className="w-3 h-3" />
+                                                                                                            </button>
+                                                                                                            <button
+                                                                                                                onClick={(e) => {
+                                                                                                                    e.stopPropagation();
+                                                                                                                    setActivitySubPages(prev => ({
+                                                                                                                        ...prev,
+                                                                                                                        [summary.athlete_id]: Math.min(
+                                                                                                                            totalPages,
+                                                                                                                            (prev[summary.athlete_id] || 1) + 1
+                                                                                                                        )
+                                                                                                                    }));
+                                                                                                                }}
+                                                                                                                disabled={currentPage >= totalPages}
+                                                                                                                className="p-1 bg-slate-700/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-white transition-colors"
+                                                                                                            >
+                                                                                                                <ChevronRight className="w-3 h-3" />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    );
+                                                                                                })()}
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        <table className="w-full text-sm">
+                                                                                            <thead>
+                                                                                                <tr className="border-b border-slate-700 text-slate-400">
+                                                                                                    <th className="px-4 py-2 text-left w-24">日期</th>
+                                                                                                    <th className="px-4 py-2 text-center w-12">同步</th>
+                                                                                                    <th className="px-4 py-2 text-left">名稱</th>
+                                                                                                    <th className="px-4 py-2 text-left w-20">種類</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">TSS</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">NP</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">IF</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">距離 (km)</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">爬升 (m)</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">移動時間</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">總時間</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">均瓦</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">最大瓦</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">均心</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">最大心</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">均轉</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">最高速</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">溫度</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">焦耳 (KJ)</th>
+                                                                                                    <th className="px-4 py-2 text-right w-20">卡路里</th>
+                                                                                                    <th className="px-4 py-2 text-right w-32">使用設備</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-slate-800">
+                                                                                                {summary.recent_activities
+                                                                                                    .filter(a => {
+                                                                                                        const range = activityViewRanges[summary.athlete_id] || 42;
+                                                                                                        if (range === 'all') return true;
+                                                                                                        const cutoff = new Date();
+                                                                                                        cutoff.setDate(cutoff.getDate() - (range as number));
+                                                                                                        return new Date(a.start_date) >= cutoff;
+                                                                                                    })
+                                                                                                    .slice(
+                                                                                                        ((activitySubPages[summary.athlete_id] || 1) - 1) * activityRowsPerPage,
+                                                                                                        (activitySubPages[summary.athlete_id] || 1) * activityRowsPerPage
+                                                                                                    )
+                                                                                                    .map(activity => {
+                                                                                                        const bikeName = summary.bikes_used.find(b => b.bike_id === activity.gear_id)?.bike_name || '-';
+                                                                                                        const formatDuration = (seconds: number) => {
+                                                                                                            if (!seconds) return '-';
+                                                                                                            const h = Math.floor(seconds / 3600);
+                                                                                                            const m = Math.floor((seconds % 3600) / 60);
+                                                                                                            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                                                                                        };
+                                                                                                        // m/s to km/h: value * 3.6
+                                                                                                        const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
+
+                                                                                                        const calories = activity.calories || '-';
+                                                                                                        const type = activity.sport_type || (activity as any).type || '';
+
+                                                                                                        return (
+                                                                                                            <React.Fragment key={activity.id}>
+                                                                                                                <tr className="hover:bg-slate-800/50">
+                                                                                                                    <td className="px-4 py-2 text-slate-300">
+                                                                                                                        {new Date(activity.start_date).toLocaleDateString()}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-center">
+                                                                                                                        {(activity as any).is_synced || sessionSyncedActivities.has(activity.id) ? (
+                                                                                                                            <button
+                                                                                                                                onClick={() => toggleActivityDetail(activity.id)}
+                                                                                                                                className={`flex justify-center w-full transition-all hover:scale-110 ${expandedDetailActivities.has(activity.id) ? 'text-indigo-400' : 'text-emerald-500'}`}
+                                                                                                                                title={expandedDetailActivities.has(activity.id) ? "收起詳情" : "點擊展開深度分析"}
+                                                                                                                            >
+                                                                                                                                <CheckCircle2 className={`w-4 h-4 ${expandedDetailActivities.has(activity.id) ? 'drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]' : ''}`} />
+                                                                                                                            </button>
+                                                                                                                        ) : (
+                                                                                                                            <button
+                                                                                                                                onClick={() => handleSingleActivitySync(summary.athlete_id, activity.id)}
+                                                                                                                                disabled={syncingActivities.has(activity.id)}
+                                                                                                                                className={`flex justify-center w-full transition-all ${syncingActivities.has(activity.id) ? 'text-indigo-400' : 'text-slate-600 hover:text-indigo-400'}`}
+                                                                                                                                title="點擊同步此活動"
+                                                                                                                            >
+                                                                                                                                <RefreshCw className={`w-4 h-4 ${syncingActivities.has(activity.id) ? 'animate-spin' : ''}`} />
+                                                                                                                            </button>
+                                                                                                                        )}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-white font-medium max-w-[200px] truncate" title={activity.name}>
+                                                                                                                        <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
+                                                                                                                            {activity.name}
+                                                                                                                        </a>
+                                                                                                                    </td>
+                                                                                                                    <td className={`px-4 py-2 font-bold ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
+                                                                                                                        {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right font-mono text-blue-400 font-bold">
+                                                                                                                        {Math.round((activity as any).tss || 0) || '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right font-mono text-emerald-400">
+                                                                                                                        {Math.round((activity as any).np || 0) || '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right font-mono text-amber-400">
+                                                                                                                        {(activity as any).if ? (activity as any).if.toFixed(2) : '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400">{(activity.distance / 1000).toFixed(1)}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400">{activity.total_elevation_gain}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.moving_time)}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400 font-mono">{formatDuration(activity.elapsed_time || 0)}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-amber-400 font-mono">
+                                                                                                                        {activity.average_watts ? Math.round(activity.average_watts) : '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right text-amber-500 font-mono">
+                                                                                                                        {activity.max_watts ? Math.round(activity.max_watts) : '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right text-red-400 font-mono">
+                                                                                                                        {activity.average_heartrate ? Math.round(activity.average_heartrate) : '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right text-red-500 font-mono">
+                                                                                                                        {activity.max_heartrate ? Math.round(activity.max_heartrate) : '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right text-emerald-400 font-mono">
+                                                                                                                        {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
+                                                                                                                    </td>
+                                                                                                                    <td className="px-4 py-2 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400 font-mono">{calories}</td>
+                                                                                                                    <td className="px-4 py-2 text-right text-slate-400 max-w-[120px] truncate" title={bikeName}>
+                                                                                                                        {bikeName}
+                                                                                                                    </td>
+                                                                                                                </tr>
+                                                                                                                {/* Single Activity Detail Expansion Row */}
+                                                                                                                {expandedDetailActivities.has(activity.id) && (
+                                                                                                                    <tr className="bg-slate-900/40">
+                                                                                                                        <td colSpan={22} className="p-0">
+                                                                                                                            <div className="p-4 border-l-2 border-indigo-500/50 my-2 mx-4 rounded-xl overflow-hidden">
+                                                                                                                                <SingleActivityAnalysis
+                                                                                                                                    activity={activity}
+                                                                                                                                    athleteId={summary.athlete_id}
+                                                                                                                                    defaultFtp={summary.ftp}
+                                                                                                                                    defaultMaxHR={summary.max_heartrate}
+                                                                                                                                />
+                                                                                                                            </div>
+                                                                                                                        </td>
+                                                                                                                    </tr>
+                                                                                                                )}
+                                                                                                            </React.Fragment>
+                                                                                                        );
+                                                                                                    })}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+
+                                                                                </td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </React.Fragment>
+                                                                ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ) : (
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full">
+                                                        <thead className="bg-slate-700/30">
+                                                            <tr>
+                                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">日期</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{athleteLabel}</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">活動名稱</th>
+                                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">種類</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">距離 (km)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">爬升 (m)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">移動時間</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">總時間</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">均瓦</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">最大瓦</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">均心</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">最大心</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">最高速</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">溫度</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">焦耳 (KJ)</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">卡路里</th>
+                                                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">使用設備</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-700/50">
+                                                            {activitySummaries
+                                                                .flatMap(s => (s.recent_activities || []).map(a => ({
+                                                                    ...a,
+                                                                    athlete_name: s.athlete_name,
+                                                                    bike_name: s.bikes_used.find(b => b.bike_id === a.gear_id)?.bike_name || '-'
+                                                                })))
+                                                                .filter(activity => {
+                                                                    if (!filterDate) return true;
+                                                                    const activityDate = new Date(activity.start_date).toLocaleDateString('en-CA');
+                                                                    return activityDate === filterDate;
+                                                                })
+                                                                .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime())
+                                                                .slice((activityPage - 1) * activityRowsPerPage, activityPage * activityRowsPerPage)
+                                                                .map(activity => {
+                                                                    const formatDuration = (seconds: number) => {
+                                                                        if (!seconds) return '-';
+                                                                        const h = Math.floor(seconds / 3600);
+                                                                        const m = Math.floor((seconds % 3600) / 60);
+                                                                        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                                                    };
+                                                                    // m/s to km/h: value * 3.6
+                                                                    const maxSpeedKmh = activity.max_speed ? (activity.max_speed * 3.6).toFixed(1) : '-';
+
+                                                                    const calories = activity.calories || '-';
+                                                                    const type = activity.sport_type || (activity as any).type || '';
+
+                                                                    return (
+                                                                        <tr key={`${activity.athlete_name}-${activity.id}`} className="hover:bg-slate-700/20 transition-colors">
+                                                                            <td className="px-6 py-4 text-xs text-slate-400 whitespace-nowrap">
+                                                                                {new Date(activity.start_date).toLocaleDateString()}
+                                                                            </td>
+                                                                            <td className="px-6 py-4">
+                                                                                <span className="font-bold text-blue-400 text-sm whitespace-nowrap">{activity.athlete_name}</span>
+                                                                            </td>
+                                                                            <td className="px-6 py-4">
+                                                                                <a href={`https://www.strava.com/activities/${activity.id}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-medium truncate max-w-[200px] block hover:text-blue-400 transition-colors" title={activity.name}>
+                                                                                    {activity.name}
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className={`px-6 py-4 font-bold text-sm ${ACTIVITY_TYPE_COLORS[type] || 'text-slate-400'}`}>
+                                                                                {ACTIVITY_TYPE_NAMES[type] || type}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                                                                                {(activity.distance / 1000).toFixed(1)}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300 font-mono">
+                                                                                {activity.total_elevation_gain}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300 whitespace-nowrap font-mono">
+                                                                                {formatDuration(activity.moving_time)}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-slate-300 whitespace-nowrap font-mono">
+                                                                                {formatDuration(activity.elapsed_time || 0)}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-emerald-400 font-mono">
+                                                                                {activity.average_cadence ? Math.round(activity.average_cadence) : '-'}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right">
+                                                                                {activity.average_watts ? (
+                                                                                    <span className="text-amber-400 font-bold font-mono">{Math.round(activity.average_watts)}</span>
+                                                                                ) : <span className="text-slate-600">-</span>}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right">
+                                                                                {activity.max_watts ? (
+                                                                                    <span className="text-amber-500 font-bold font-mono">{Math.round(activity.max_watts)}</span>
+                                                                                ) : <span className="text-slate-600">-</span>}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right">
+                                                                                {activity.average_heartrate ? (
+                                                                                    <span className="text-red-400 font-bold font-mono">{Math.round(activity.average_heartrate)}</span>
+                                                                                ) : <span className="text-slate-600">-</span>}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right">
+                                                                                {activity.max_heartrate ? (
+                                                                                    <span className="text-red-500 font-bold font-mono">{Math.round(activity.max_heartrate)}</span>
+                                                                                ) : <span className="text-slate-600">-</span>}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-right text-blue-300 font-mono">{maxSpeedKmh}</td>
+                                                                            <td className="px-6 py-4 text-right text-slate-400 font-mono">{activity.average_temp ? `${Math.round(activity.average_temp)}°C` : '-'}</td>
+                                                                            <td className="px-6 py-4 text-right text-amber-300 font-mono">{activity.kilojoules || '-'}</td>
+                                                                            <td className="px-6 py-4 text-right text-slate-400 font-mono">{calories}</td>
+                                                                            <td className="px-6 py-4 text-right text-slate-400 text-sm max-w-[120px] truncate" title={activity.bike_name}>
+                                                                                {activity.bike_name}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                        </tbody>
+                                                    </table>
+                                                    {filterDate && activitySummaries.flatMap(s => s.recent_activities || []).filter(a => new Date(a.start_date).toLocaleDateString('en-CA') === filterDate).length === 0 && (
+                                                        <div className="py-12 text-center">
+                                                            <p className="text-slate-500 font-medium">該日期無活動記錄</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </motion.div>
                         )
                     }
@@ -2017,13 +2049,24 @@ function ManagerDashboard() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="space-y-6"
                             >
-                                <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="w-10 h-10 border-4 border-slate-600 border-t-violet-500 rounded-full animate-spin" /></div>}>
-                                    <PowerTrainingReport
-                                        activitySummaries={activitySummaries}
-                                        defaultFTP={200}
-                                        defaultMaxHR={190}
-                                    />
-                                </Suspense>
+                                {activityLoading ? (
+                                    <div className="flex items-center justify-center min-h-[400px]">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-10 h-10 border-4 border-slate-700 border-t-violet-500 rounded-full animate-spin" />
+                                            <p className="text-slate-400 font-bold animate-pulse text-sm">正在分析功率數據...</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="w-10 h-10 border-4 border-slate-600 border-t-violet-500 rounded-full animate-spin" /></div>}>
+                                            <PowerTrainingReport
+                                                activitySummaries={activitySummaries}
+                                                defaultFTP={200}
+                                                defaultMaxHR={190}
+                                            />
+                                        </Suspense>
+                                    </>
+                                )}
                             </motion.div>
                         )
                     }
@@ -2037,73 +2080,84 @@ function ManagerDashboard() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="space-y-6"
                             >
-                                {/* 保養項目統計 */}
-                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-slate-700/50">
-                                        <h2 className="font-bold text-white flex items-center gap-2">
-                                            <BarChart3 className="w-5 h-5 text-blue-500" />
-                                            保養項目統計
-                                        </h2>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="space-y-4">
-                                            {maintenanceStatistics.map(stat => (
-                                                <div key={stat.type_id} className="flex items-center gap-4">
-                                                    <div className="w-32 flex-shrink-0">
-                                                        <span className="font-bold text-white">{stat.type_name}</span>
-                                                    </div>
-                                                    <div className="flex-1 h-8 bg-slate-700/50 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full flex items-center justify-end px-3"
-                                                            style={{
-                                                                width: `${Math.min((stat.total_count / Math.max(...maintenanceStatistics.map(s => s.total_count))) * 100, 100)}%`
-                                                            }}
-                                                        >
-                                                            <span className="text-xs font-bold text-white">{stat.total_count}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="w-24 text-right">
-                                                        <span className="text-sm text-slate-400">
-                                                            ${stat.total_cost.toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                {statisticsLoading ? (
+                                    <div className="flex items-center justify-center min-h-[400px]">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-10 h-10 border-4 border-slate-700 border-t-amber-500 rounded-full animate-spin" />
+                                            <p className="text-slate-400 font-bold animate-pulse text-sm">計算統計數據中...</p>
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <>
+                                        {/* 保養項目統計 */}
+                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
+                                            <div className="px-6 py-4 border-b border-slate-700/50">
+                                                <h2 className="font-bold text-white flex items-center gap-2">
+                                                    <BarChart3 className="w-5 h-5 text-blue-500" />
+                                                    保養項目統計
+                                                </h2>
+                                            </div>
+                                            <div className="p-6">
+                                                <div className="space-y-4">
+                                                    {maintenanceStatistics.map(stat => (
+                                                        <div key={stat.type_id} className="flex items-center gap-4">
+                                                            <div className="w-32 flex-shrink-0">
+                                                                <span className="font-bold text-white">{stat.type_name}</span>
+                                                            </div>
+                                                            <div className="flex-1 h-8 bg-slate-700/50 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full flex items-center justify-end px-3"
+                                                                    style={{
+                                                                        width: `${Math.min((stat.total_count / Math.max(...maintenanceStatistics.map(s => s.total_count))) * 100, 100)}%`
+                                                                    }}
+                                                                >
+                                                                    <span className="text-xs font-bold text-white">{stat.total_count}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="w-24 text-right">
+                                                                <span className="text-sm text-slate-400">
+                                                                    ${stat.total_cost.toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                {/* 費用統計 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                                            <DollarSign className="w-5 h-5 text-emerald-500" />
-                                            總花費統計
-                                        </h3>
-                                        <p className="text-4xl font-black text-white">
-                                            ${maintenanceStatistics.reduce((sum, s) => sum + s.total_cost, 0).toLocaleString()}
-                                        </p>
-                                        <p className="text-sm text-slate-400 mt-2">
-                                            {maintenanceStatistics.reduce((sum, s) => sum + s.total_count, 0)} 筆保養紀錄
-                                        </p>
-                                    </div>
+                                        {/* 費用統計 */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                                <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                                                    <DollarSign className="w-5 h-5 text-emerald-500" />
+                                                    總花費統計
+                                                </h3>
+                                                <p className="text-4xl font-black text-white">
+                                                    ${maintenanceStatistics.reduce((sum, s) => sum + s.total_cost, 0).toLocaleString()}
+                                                </p>
+                                                <p className="text-sm text-slate-400 mt-2">
+                                                    {maintenanceStatistics.reduce((sum, s) => sum + s.total_count, 0)} 筆保養紀錄
+                                                </p>
+                                            </div>
 
-                                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                        <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                                            <Calendar className="w-5 h-5 text-blue-500" />
-                                            平均保養週期
-                                        </h3>
-                                        <p className="text-4xl font-black text-white">
-                                            {maintenanceStatistics.length > 0
-                                                ? Math.round(maintenanceStatistics.reduce((sum, s) => sum + s.avg_interval_km, 0) / maintenanceStatistics.length)
-                                                : 0}
-                                            <span className="text-lg text-slate-400 ml-1">km</span>
-                                        </p>
-                                        <p className="text-sm text-slate-400 mt-2">
-                                            平均里程間隔
-                                        </p>
-                                    </div>
-                                </div>
+                                            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                                <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                                                    <Calendar className="w-5 h-5 text-blue-500" />
+                                                    平均保養週期
+                                                </h3>
+                                                <p className="text-4xl font-black text-white">
+                                                    {maintenanceStatistics.length > 0
+                                                        ? Math.round(maintenanceStatistics.reduce((sum, s) => sum + s.avg_interval_km, 0) / maintenanceStatistics.length)
+                                                        : 0}
+                                                    <span className="text-lg text-slate-400 ml-1">km</span>
+                                                </p>
+                                                <p className="text-sm text-slate-400 mt-2">
+                                                    平均里程間隔
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </motion.div>
                         )
                     }
@@ -2117,66 +2171,77 @@ function ManagerDashboard() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="space-y-6"
                             >
-                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div>
-                                            <h2 className="font-bold text-white text-lg">通知與自動化規則</h2>
-                                            <p className="text-sm text-slate-400 mt-1">設定系統自動發送跨平台通知的觸發條件</p>
+                                {notificationsLoading ? (
+                                    <div className="flex items-center justify-center min-h-[400px]">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-10 h-10 border-4 border-slate-700 border-t-pink-500 rounded-full animate-spin" />
+                                            <p className="text-slate-400 font-bold animate-pulse text-sm">載入通知記錄中...</p>
                                         </div>
-                                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                                            <BellRing className="w-4 h-4" /> 新增規則
-                                        </button>
                                     </div>
-
-                                    <div className="space-y-4">
-                                        {/* 模擬通知規則清單 */}
-                                        {[
-                                            { id: 1, name: '零件到期提醒', trigger: '保養進度 > 100%', channel: 'LINE', enabled: true },
-                                            { id: 2, name: '百公里騎乘成就', trigger: '單次活動 > 100km', channel: 'LINE + Email', enabled: true },
-                                            { id: 3, name: '新車友加入審核', trigger: '收到授權申請', channel: 'Browser', enabled: true },
-                                        ].map(rule => (
-                                            <div key={rule.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl border border-slate-600/50">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
-                                                        <Settings2 className="w-5 h-5 text-blue-400" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-white text-sm">{rule.name}</p>
-                                                        <div className="flex items-center gap-3 mt-1">
-                                                            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded uppercase font-mono">觸發: {rule.trigger}</span>
-                                                            <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold">{rule.channel}</span>
-                                                        </div>
-                                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div>
+                                                    <h2 className="font-bold text-white text-lg">通知與自動化規則</h2>
+                                                    <p className="text-sm text-slate-400 mt-1">設定系統自動發送跨平台通知的觸發條件</p>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${rule.enabled ? 'bg-blue-600' : 'bg-slate-600'}`}>
-                                                        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${rule.enabled ? 'right-1' : 'left-1'}`} />
-                                                    </div>
-                                                    <button className="p-2 text-slate-500 hover:text-white transition-colors">
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-                                        <div className="flex gap-4">
-                                            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                                                <BellRing className="w-6 h-6 text-blue-500" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-white font-bold text-sm">串接 LINE Notify</h4>
-                                                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                                    您可以將此系統與團隊 LINE 群組串接。當車友的鏈條或外胎需要更換時，系統會自動在群組中標記相關成員與技師。
-                                                </p>
-                                                <button className="text-xs font-bold text-blue-400 hover:text-blue-300 mt-2 flex items-center gap-1">
-                                                    查看設定指南 <ChevronRight className="w-3 h-3" />
+                                                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                                                    <BellRing className="w-4 h-4" /> 新增規則
                                                 </button>
                                             </div>
+
+                                            <div className="space-y-4">
+                                                {/* 模擬通知規則清單 */}
+                                                {[
+                                                    { id: 1, name: '零件到期提醒', trigger: '保養進度 > 100%', channel: 'LINE', enabled: true },
+                                                    { id: 2, name: '百公里騎乘成就', trigger: '單次活動 > 100km', channel: 'LINE + Email', enabled: true },
+                                                    { id: 3, name: '新車友加入審核', trigger: '收到授權申請', channel: 'Browser', enabled: true },
+                                                ].map(rule => (
+                                                    <div key={rule.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl border border-slate-600/50">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center">
+                                                                <Settings2 className="w-5 h-5 text-blue-400" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-white text-sm">{rule.name}</p>
+                                                                <div className="flex items-center gap-3 mt-1">
+                                                                    <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded uppercase font-mono">觸發: {rule.trigger}</span>
+                                                                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold">{rule.channel}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-5 rounded-full relative transition-colors cursor-pointer ${rule.enabled ? 'bg-blue-600' : 'bg-slate-600'}`}>
+                                                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${rule.enabled ? 'right-1' : 'left-1'}`} />
+                                                            </div>
+                                                            <button className="p-2 text-slate-500 hover:text-white transition-colors">
+                                                                <Edit2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+                                                <div className="flex gap-4">
+                                                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                                        <BellRing className="w-6 h-6 text-blue-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-white font-bold text-sm">串接 LINE Notify</h4>
+                                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                                            您可以將此系統與團隊 LINE 群組串接。當車友的鏈條或外胎需要更換時，系統會自動在群組中標記相關成員與技師。
+                                                        </p>
+                                                        <button className="text-xs font-bold text-blue-400 hover:text-blue-300 mt-2 flex items-center gap-1">
+                                                            查看設定指南 <ChevronRight className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    </>
+                                )}
                             </motion.div>
                         )
                     }
