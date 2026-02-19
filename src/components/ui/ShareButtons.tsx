@@ -48,31 +48,42 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
 
     const iconSize = iconSizes[size];
 
-    // 分享到 Facebook
+    // NOTE: 組合分享文字，包含標題與描述內容
+    const shareText = description
+        ? `${title}\n\n${description}`
+        : title;
+    const encodedShareText = encodeURIComponent(shareText);
+
+    // 分享到 Facebook - 使用 Dialog Share API 以支援 quote 預填文字
     const shareToFacebook = () => {
         trackShare('facebook', 'segment_challenge');
+        const fbAppId = '1964978887489880';
         window.open(
-            `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`,
+            `https://www.facebook.com/dialog/share?app_id=${fbAppId}&display=popup&href=${encodedUrl}&quote=${encodedShareText}&redirect_uri=${encodeURIComponent(shareUrl)}`,
             'facebook-share',
-            'width=580,height=400'
+            'width=580,height=500'
         );
     };
 
-    // 分享到 Twitter/X
+    // 分享到 Twitter/X - 帶入完整分享文字
     const shareToTwitter = () => {
         trackShare('twitter', 'segment_challenge');
+        // NOTE: Twitter text 有字數限制，截取前 200 字
+        const tweetText = shareText.length > 200
+            ? shareText.substring(0, 197) + '...'
+            : shareText;
         window.open(
-            `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
+            `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodedUrl}`,
             'twitter-share',
             'width=580,height=400'
         );
     };
 
-    // 分享到 LINE
+    // 分享到 LINE - 帶入完整分享文字
     const shareToLine = () => {
         trackShare('line', 'segment_challenge');
         window.open(
-            `https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodedTitle}`,
+            `https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodedShareText}`,
             'line-share',
             'width=580,height=400'
         );

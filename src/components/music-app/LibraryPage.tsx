@@ -322,8 +322,8 @@ export function LibraryPage({ onTabChange, activeTab = 'library', initialSegment
                         {/* Share Button - 右上角 */}
                         <div className="absolute top-10 right-4 z-10">
                             <ShareButtons
-                                title={selectedRace.name}
-                                description={selectedRace.description}
+                                title={selectedRace.description || selectedRace.name}
+                                description={selectedRace.race_description || `${(selectedRace.distance / 1000).toFixed(1)}km · ${Math.round(selectedRace.total_elevation_gain)}m 爬升 · ${selectedRace.average_grade.toFixed(1)}%`}
                                 url={`${(API_BASE_URL || 'https://service.criterium.tw').replace(/\/$/, '')}/api/share/race/${selectedRace.id}`}
                                 size="sm"
                                 showLabels={false}
