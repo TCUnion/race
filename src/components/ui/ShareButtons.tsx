@@ -54,12 +54,13 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
         : title;
     const encodedShareText = encodeURIComponent(shareText);
 
-    // 分享到 Facebook - 使用 Dialog Share API 以支援 quote 預填文字
+    // 分享到 Facebook - 使用 Sharer API 以避免 App ID 設定問題
     const shareToFacebook = () => {
         trackShare('facebook', 'segment_challenge');
-        const fbAppId = '1964978887489880';
+        // NOTE: 使用 sharer.php 不強制要求 app_id，相容性較高
+        // quote 參數在 sharer.php 支援度不一，但主要網址分享功能穩定
         window.open(
-            `https://www.facebook.com/dialog/share?app_id=${fbAppId}&display=popup&href=${encodedUrl}&quote=${encodedShareText}&redirect_uri=${encodeURIComponent(shareUrl)}`,
+            `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedShareText}`,
             'facebook-share',
             'width=580,height=500'
         );
