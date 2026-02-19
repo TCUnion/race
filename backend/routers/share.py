@@ -279,7 +279,7 @@ async def share_image(segment_id: str):
                     pixels.append((px, py))
                 
                 if len(pixels) > 1:
-                    draw.line(pixels, fill="#38bdf8", width=5)
+                    draw.line(pixels, fill="#fc4c02", width=5)
         
         # 4. Draw Text
         try:
@@ -299,6 +299,7 @@ async def share_image(segment_id: str):
                     title_font = ImageFont.truetype(font_path, 60)
                     stat_label_font = ImageFont.truetype(font_path, 24)
                     stat_value_font = ImageFont.truetype(font_path, 48)
+                    stat_value_font_large = ImageFont.truetype(font_path, 64)
                     footer_font = ImageFont.truetype(font_path, 20)
                 except Exception as ie:
                     print(f"Failed to load bundled font: {ie}")
@@ -309,6 +310,7 @@ async def share_image(segment_id: str):
                 title_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 60, index=1)
                 stat_label_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 24)
                 stat_value_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 48, index=1)
+                stat_value_font_large = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 64, index=1)
                 footer_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 20, index=1)
         except Exception as e:
             print(f"Font loading error: {e}, using default")
@@ -316,6 +318,7 @@ async def share_image(segment_id: str):
             title_font = ImageFont.load_default()
             stat_label_font = ImageFont.load_default()
             stat_value_font = ImageFont.load_default()
+            stat_value_font_large = ImageFont.load_default()
             footer_font = ImageFont.load_default()
 
         try: # New try block for text drawing
@@ -333,18 +336,42 @@ async def share_image(segment_id: str):
             elev = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
             grade = f"{race_data.get('average_grade', 0)}%"
             
+            # Label Y=480, Value Y=520 -> 530 (move down for bigger font)
+            # Increase Value font size to 64 (loaded below)
+            # Since we can't easily change font size of loaded font object without reloading,
+            # we will reload the value font with size 64 if it's the bundled one.
+            # actually we loaded it with 48 in the try block above.
+            
             draw.text((300, 480), "DISTANCE", font=stat_label_font, fill="#94a3b8", anchor="md")
-            draw.text((300, 520), dist, font=stat_value_font, fill="white", anchor="md")
+            draw.text((300, 530), dist, font=stat_value_font_large, fill="white", anchor="md")
             
             draw.text((600, 480), "ELEVATION", font=stat_label_font, fill="#94a3b8", anchor="md")
-            draw.text((600, 520), elev, font=stat_value_font, fill="white", anchor="md")
+            draw.text((600, 530), elev, font=stat_value_font_large, fill="white", anchor="md")
             
             draw.text((900, 480), "AVG GRADE", font=stat_label_font, fill="#94a3b8", anchor="md")
-            draw.text((900, 520), grade, font=stat_value_font, fill="white", anchor="md")
+            draw.text((900, 530), grade, font=stat_value_font_large, fill="white", anchor="md")
 
             # Footer
             draw.rectangle([(0, 580), (W, 630)], fill="#38bdf8")
             draw.text((600, 605), "JOIN THE CHALLENGE AT STRAVA.CRITERIUM.TW", font=footer_font, fill="#0f172a", anchor="mm")
+            
+            # Draw Logo (Top Left)
+            logo_path = os.path.join(current_dir, "../assets/images/logo.png")
+            if os.path.exists(logo_path):
+                try:
+                     logo_img = Image.open(logo_path).convert("RGBA")
+                     # Resize logo to width 100 or something reasonable
+                     # aspect ratio preserve
+                     logo_h = 80
+                     aspect = logo_img.width / logo_img.height
+                     logo_w = int(logo_h * aspect)
+                     logo_img = logo_img.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
+                     
+                     # Paste at (40, 40)
+                     img.paste(logo_img, (40, 40), logo_img)
+                except Exception as e:
+                    print(f"Failed to load logo: {e}")
+
         except UnicodeEncodeError:
             print("Font encoding error, falling back to ASCII")
             try:
