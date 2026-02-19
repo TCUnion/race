@@ -180,66 +180,56 @@ def find_polyline_in_data(data: dict) -> str:
         
     return ""
 
-def latlon_to_svg_path(polyline_str: str, width: int = 1200, height: int = 630, padding: int = 50) -> str:
-    """
-    Convert a polyline string to an SVG path data string.
-    Scales the route to fit within the given dimensions with padding.
-    """
-    try:
-        points = polyline.decode(polyline_str)
-        if not points:
-            return ""
-            
-        lats = [p[0] for p in points]
-        lons = [p[1] for p in points]
-        
-        min_lat, max_lat = min(lats), max(lats)
-        min_lon, max_lon = min(lons), max(lons)
-        
-        lat_span = max_lat - min_lat
-        lon_span = max_lon - min_lon
-        
-        if lat_span == 0 or lon_span == 0:
-            return ""
-            
-        # Determine scale to fit
-        # SVG Y grows downwards, so Latitude needs to be inverted relative to max_lat
-        available_w = width - (padding * 2)
-        available_h = height - (padding * 2)
-        
-        scale_x = available_w / lon_span
-        scale_y = available_h / lat_span
-        scale = min(scale_x, scale_y)
-        
-        # Center the path
-        # Calculate the actual drawn width/height
-        drawn_w = lon_span * scale
-        drawn_h = lat_span * scale
-        
-        offset_x = padding + (available_w - drawn_w) / 2
-        offset_y = padding + (available_h - drawn_h) / 2
-        
-        path_data = []
-        for lat, lon in points:
-            x = (lon - min_lon) * scale + offset_x
-            y = (max_lat - lat) * scale + offset_y  # Invert Y
-            path_data.append(f"{x:.1f},{y:.1f}")
-            
-        return "M" + " L".join(path_data)
-        
-    except Exception as e:
-        print(f"Error converting polyline to path: {e}")
-        return ""
+from PIL import Image, ImageDraw, ImageFont
+import io
+import math
 
+def latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, width, height, padding):
+    """Convert lat/lon to pixel coordinates"""
+    lat_rad = math.radians(lat)
+    max_lat_rad = math.radians(max_lat)
+    min_lat_rad = math.radians(min_lat)
+    
+    # Mercator projection-like scaling
+    def y_merc(l): return math.log(math.tan(math.pi/4 + l/2))
+    
+    y = y_merc(lat_rad)
+    y_min = y_merc(min_lat_rad)
+    y_max = y_merc(max_lat_rad)
+    
+    # Scale to fit width/height
+    lon_span = max_lon - min_lon
+    y_span = y_max - y_min
+    
+    if lon_span == 0 or y_span == 0:
+        return width/2, height/2
+
+    available_w = width - 2*padding
+    available_h = height - 2*padding
+    
+    scale_x = available_w / lon_span
+    scale_y = available_h / y_span
+    scale = min(scale_x, scale_y)
+    
+    # Center
+    drawn_w = lon_span * scale
+    drawn_h = y_span * scale
+    offset_x = padding + (available_w - drawn_w) / 2
+    offset_y = padding + (available_h - drawn_h) / 2
+    
+    px = (lon - min_lon) * scale + offset_x
+    py = height - ((y - y_min) * scale + offset_y) # Invert Y for image coords
+    
+    return px, py
 
 @router.get("/image/{segment_id}")
 async def share_image(segment_id: str):
     """
-    Dynamically generate a segment summary image.
-    Uses a simple SVG template converted to response.
+    Dynamically generate a PNG image for Open Graph sharing.
+    Uses Pillow to draw text and polyline on a background.
     """
     try:
-        # Fetch data
+        # 1. Fetch Data
         race_res = supabase.table("team_races").select("*").eq("segment_id", segment_id).execute()
         race_data = race_res.data[0] if race_res.data else None
         
@@ -250,68 +240,90 @@ async def share_image(segment_id: str):
         if not race_data:
             raise HTTPException(status_code=404, detail="Segment not found")
             
-        # Generate Polyline Path
-        poly_str = find_polyline_in_data(race_data)
-        path_d = latlon_to_svg_path(poly_str)
-        path_element = f'<path d="{path_d}" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />' if path_d else ""
+        # 2. Setup Image
+        W, H = 1200, 630
+        img = Image.new('RGB', (W, H), color='#0f172a')
+        draw = ImageDraw.Draw(img)
+        
+        # 2.1 Gradient Background (Simple simulation)
+        for y in range(H):
+            r = int(30 - (y/H)*15) # 1e293b -> 0f172a
+            g = int(41 - (y/H)*18)
+            b = int(59 - (y/H)*17)
+            draw.line([(0, y), (W, y)], fill=(r, g, b))
 
-        # Logic: Use description as main title if available, else name
+        # 3. Draw Polyline
+        poly_str = find_polyline_in_data(race_data)
+        if poly_str:
+            points = polyline.decode(poly_str)
+            if points:
+                lats = [p[0] for p in points]
+                lons = [p[1] for p in points]
+                min_lat, max_lat = min(lats), max(lats)
+                min_lon, max_lon = min(lons), max(lons)
+                
+                # Draw path
+                pixels = []
+                for lat, lon in points:
+                    px, py = latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, W, H, 50)
+                    pixels.append((px, py))
+                
+                # Draw thick line with transparency simulation (draw multiple lines)
+                draw.line(pixels, fill="#38bdf8", width=5)
+        
+        # 4. Draw Text
+        # Load fonts (try system fonts or fallback)
+        try:
+            # Try to load a bold font
+            # macOS path / System paths
+            title_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 60, index=1)
+            stat_label_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 24)
+            stat_value_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 48, index=1)
+            footer_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 20, index=1)
+        except:
+            # Fallback to default
+            title_font = ImageFont.load_default()
+            stat_label_font = ImageFont.load_default()
+            stat_value_font = ImageFont.load_default()
+            footer_font = ImageFont.load_default()
+
+        # Title
         description = race_data.get("description")
         name = race_data.get("name", "Unknown Race")
-        
-        # If description exists and is not empty, use it. Otherwise use name.
         title_text = description if description and description.strip() else name
         
+        # Wrap title
+        # Simple wrap logic
+        draw.text((60, 200), title_text, font=title_font, fill="white")
+
+        # Stats
         dist = f"{float(race_data.get('distance', 0)) / 1000:.1f}km"
         elev = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
         grade = f"{race_data.get('average_grade', 0)}%"
         
-        # Logo URL - Assuming hosted on the frontend domain
-        logo_url = "https://strava.criterium.tw/tcu-logo-light.png"
-
-        # Simple SVG Template
-        svg = f"""
-        <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-            <rect width="1200" height="630" fill="#0f172a"/>
-            <defs>
-                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
-                </linearGradient>
-            </defs>
-            <rect width="1200" height="630" fill="url(#grad)"/>
-            
-            <!-- Polyline Path (Behind text) -->
-            {path_element}
-            
-            <!-- Header Logo -->
-            <image href="{logo_url}" x="60" y="60" height="60" />
-            
-            <!-- Title -->
-            <text x="60" y="240" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff" width="1080">{title_text}</text>
-            
-            <!-- Stats -->
-            <g transform="translate(0, 480)">
-                <text x="300" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">DISTANCE</text>
-                <text x="300" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">{dist}</text>
-                
-                <text x="600" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">ELEVATION</text>
-                <text x="600" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">{elev}</text>
-                
-                <text x="900" y="0" font-family="Arial, sans-serif" font-size="24" fill="#64748b" text-anchor="middle">AVG GRADE</text>
-                <text x="900" y="50" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">{grade}</text>
-            </g>
-            
-            <!-- Footer -->
-            <rect x="0" y="580" width="1200" height="50" fill="#38bdf8"/>
-            <text x="600" y="615" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#0f172a" text-anchor="middle">JOIN THE CHALLENGE AT STRAVA.CRITERIUM.TW</text>
-        </svg>
-        """
+        draw.text((300, 480), "DISTANCE", font=stat_label_font, fill="#94a3b8", anchor="md")
+        draw.text((300, 520), dist, font=stat_value_font, fill="white", anchor="md")
         
+        draw.text((600, 480), "ELEVATION", font=stat_label_font, fill="#94a3b8", anchor="md")
+        draw.text((600, 520), elev, font=stat_value_font, fill="white", anchor="md")
+        
+        draw.text((900, 480), "AVG GRADE", font=stat_label_font, fill="#94a3b8", anchor="md")
+        draw.text((900, 520), grade, font=stat_value_font, fill="white", anchor="md")
+
+        # Footer
+        draw.rectangle([(0, 580), (W, 630)], fill="#38bdf8")
+        draw.text((600, 605), "JOIN THE CHALLENGE AT STRAVA.CRITERIUM.TW", font=footer_font, fill="#0f172a", anchor="mm")
+
+        # Save to buffer
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
+
         from fastapi.responses import Response
-        return Response(content=svg, media_type="image/svg+xml")
+        return Response(content=img_byte_arr, media_type="image/png")
 
     except Exception as e:
         print(f"Error generating OG image: {e}")
-        raise HTTPException(status_code=500, detail="Image generation failed")
-
+        # Return a 1x1 transparent PNG as fallback
+        fallback = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+        return Response(content=fallback, media_type="image/png")
