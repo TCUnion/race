@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from database import supabase
 
 router = APIRouter(
@@ -228,26 +228,28 @@ async def share_image(segment_id: str):
     Dynamically generate a PNG image for Open Graph sharing.
     Uses Pillow to draw text and polyline on a background.
     """
+    # from fastapi.responses import Response # Moved to top-level
     try:
         # 1. Fetch Data
         race_res = supabase.table("team_races").select("*").eq("segment_id", segment_id).execute()
         race_data = race_res.data[0] if race_res.data else None
         
         if not race_data:
+            # Fallback to segments table
             seg_res = supabase.table("segments").select("*").eq("id", segment_id).execute()
             race_data = seg_res.data[0] if seg_res.data else None
 
         if not race_data:
-            raise HTTPException(status_code=404, detail="Segment not found")
+            raise Exception("Segment not found")
             
         # 2. Setup Image
         W, H = 1200, 630
         img = Image.new('RGB', (W, H), color='#0f172a')
         draw = ImageDraw.Draw(img)
         
-        # 2.1 Gradient Background (Simple simulation)
+        # Background pattern (subtle lines)
         for y in range(H):
-            r = int(30 - (y/H)*15) # 1e293b -> 0f172a
+            r = int(30 - (y/H)*15)
             g = int(41 - (y/H)*18)
             b = int(59 - (y/H)*17)
             draw.line([(0, y), (W, y)], fill=(r, g, b))
@@ -262,31 +264,38 @@ async def share_image(segment_id: str):
                 min_lat, max_lat = min(lats), max(lats)
                 min_lon, max_lon = min(lons), max(lons)
                 
-                # Draw path
                 pixels = []
                 for lat, lon in points:
                     px, py = latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, W, H, 50)
                     pixels.append((px, py))
                 
-                # Draw thick line with transparency simulation (draw multiple lines)
-                draw.line(pixels, fill="#38bdf8", width=5)
+                if len(pixels) > 1:
+                    draw.line(pixels, fill="#38bdf8", width=5)
         
         # 4. Draw Text
-        # Load fonts (try system fonts or fallback)
         try:
+            # Load fonts (try system fonts or fallback)
             import os
             current_dir = os.path.dirname(__file__)
-            # Path to bundled font: backend/assets/fonts/NotoSansTC-Bold.ttf
+            # Path to bundled font: backend/assets/fonts/NotoSansTC-Bold.otf
             # We are in backend/routers/, so go up one level then to assets/fonts
-            font_path = os.path.join(current_dir, "../assets/fonts/NotoSansTC-Bold.ttf")
+            font_path = os.path.join(current_dir, "../assets/fonts/NotoSansTC-Bold.otf")
+            
+            print(f"DEBUG: Checking font path: {font_path}")
             
             if os.path.exists(font_path):
                 # Use bundled Noto Sans TC
-                title_font = ImageFont.truetype(font_path, 60)
-                stat_label_font = ImageFont.truetype(font_path, 24)
-                stat_value_font = ImageFont.truetype(font_path, 48)
-                footer_font = ImageFont.truetype(font_path, 20)
+                try:
+                    print("DEBUG: Loading bundled font...")
+                    title_font = ImageFont.truetype(font_path, 60)
+                    stat_label_font = ImageFont.truetype(font_path, 24)
+                    stat_value_font = ImageFont.truetype(font_path, 48)
+                    footer_font = ImageFont.truetype(font_path, 20)
+                except Exception as ie:
+                    print(f"Failed to load bundled font: {ie}")
+                    raise ie
             else:
+                print(f"DEBUG: Bundled font not found at {font_path}")
                 # Fallback to macOS system font for local dev
                 title_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 60, index=1)
                 stat_label_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 24)
@@ -300,39 +309,46 @@ async def share_image(segment_id: str):
             stat_value_font = ImageFont.load_default()
             footer_font = ImageFont.load_default()
 
-        # Title
-        description = race_data.get("description")
-        name = race_data.get("name", "Unknown Race")
-        title_text = description if description and description.strip() else name
-        
-        # Wrap title
-        # Simple wrap logic
-        draw.text((60, 200), title_text, font=title_font, fill="white")
+        try: # New try block for text drawing
+            # Title
+            description = race_data.get("description")
+            name = race_data.get("name", "Unknown Race")
+            title_text = description if description and description.strip() else name
+            
+            # Wrap title
+            # Simple wrap logic
+            draw.text((60, 200), title_text, font=title_font, fill="white")
 
-        # Stats
-        dist = f"{float(race_data.get('distance', 0)) / 1000:.1f}km"
-        elev = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
-        grade = f"{race_data.get('average_grade', 0)}%"
-        
-        draw.text((300, 480), "DISTANCE", font=stat_label_font, fill="#94a3b8", anchor="md")
-        draw.text((300, 520), dist, font=stat_value_font, fill="white", anchor="md")
-        
-        draw.text((600, 480), "ELEVATION", font=stat_label_font, fill="#94a3b8", anchor="md")
-        draw.text((600, 520), elev, font=stat_value_font, fill="white", anchor="md")
-        
-        draw.text((900, 480), "AVG GRADE", font=stat_label_font, fill="#94a3b8", anchor="md")
-        draw.text((900, 520), grade, font=stat_value_font, fill="white", anchor="md")
+            # Stats
+            dist = f"{float(race_data.get('distance', 0)) / 1000:.1f}km"
+            elev = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
+            grade = f"{race_data.get('average_grade', 0)}%"
+            
+            draw.text((300, 480), "DISTANCE", font=stat_label_font, fill="#94a3b8", anchor="md")
+            draw.text((300, 520), dist, font=stat_value_font, fill="white", anchor="md")
+            
+            draw.text((600, 480), "ELEVATION", font=stat_label_font, fill="#94a3b8", anchor="md")
+            draw.text((600, 520), elev, font=stat_value_font, fill="white", anchor="md")
+            
+            draw.text((900, 480), "AVG GRADE", font=stat_label_font, fill="#94a3b8", anchor="md")
+            draw.text((900, 520), grade, font=stat_value_font, fill="white", anchor="md")
 
-        # Footer
-        draw.rectangle([(0, 580), (W, 630)], fill="#38bdf8")
-        draw.text((600, 605), "JOIN THE CHALLENGE AT STRAVA.CRITERIUM.TW", font=footer_font, fill="#0f172a", anchor="mm")
+            # Footer
+            draw.rectangle([(0, 580), (W, 630)], fill="#38bdf8")
+            draw.text((600, 605), "JOIN THE CHALLENGE AT STRAVA.CRITERIUM.TW", font=footer_font, fill="#0f172a", anchor="mm")
+        except UnicodeEncodeError:
+            print("Font encoding error, falling back to ASCII")
+            try:
+                draw.text((60, 200), "Race Info Available", font=ImageFont.load_default(), fill="white")
+                draw.text((600, 605), "strava.criterium.tw", font=ImageFont.load_default(), fill="#0f172a", anchor="mm")
+            except Exception as e2:
+                 print(f"Fallback text drawing failed: {e2}")
 
         # Save to buffer
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
 
-        from fastapi.responses import Response
         return Response(content=img_byte_arr, media_type="image/png")
 
     except Exception as e:
