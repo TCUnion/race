@@ -263,27 +263,8 @@ async def share_image(segment_id: str):
             b = int(59 - (y/H)*17)
             draw.line([(0, y), (W, y)], fill=(r, g, b))
 
-        # 3. Draw Polyline
-        poly_str = find_polyline_in_data(race_data)
-        if poly_str:
-            points = polyline.decode(poly_str)
-            if points:
-                lats = [p[0] for p in points]
-                lons = [p[1] for p in points]
-                min_lat, max_lat = min(lats), max(lats)
-                min_lon, max_lon = min(lons), max(lons)
-                
-                pixels = []
-                for lat, lon in points:
-                    px, py = latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, W, H, 50)
-                    pixels.append((px, py))
-                
-                if len(pixels) > 1:
-                    draw.line(pixels, fill="#fc4c02", width=5)
-        
-        # 4. Draw Text
+        # 3. Load Fonts (Moved up)
         try:
-            # Load fonts (try system fonts or fallback)
             import os
             current_dir = os.path.dirname(__file__)
             # Path to bundled font: backend/assets/fonts/NotoSansTC-Bold.otf
@@ -321,35 +302,34 @@ async def share_image(segment_id: str):
             stat_value_font_large = ImageFont.load_default()
             footer_font = ImageFont.load_default()
 
-        try: # New try block for text drawing
+        # 4. Draw Text & Logo (Background Layer)
+        try:
             # Title
             description = race_data.get("description")
             name = race_data.get("name", "Unknown Race")
             title_text = description if description and description.strip() else name
             
-            # Wrap title
-            # Simple wrap logic
-            draw.text((60, 200), title_text, font=title_font, fill="white")
+            # Center Title: X=W/2, anchor='mm' (middle-middle)
+            # Y=200 seems okay, maybe slightly lower if text is big? Keep 200.
+            draw.text((W/2, 200), title_text, font=title_font, fill="white", anchor="mm")
 
             # Stats
             dist = f"{float(race_data.get('distance', 0)) / 1000:.1f}km"
             elev = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
             grade = f"{race_data.get('average_grade', 0)}%"
             
-            # Label Y=480, Value Y=520 -> 530 (move down for bigger font)
-            # Increase Value font size to 64 (loaded below)
-            # Since we can't easily change font size of loaded font object without reloading,
-            # we will reload the value font with size 64 if it's the bundled one.
-            # actually we loaded it with 48 in the try block above.
+            # Label Y=480 -> 510
+            # Value Y=530 -> 560
+            # Footer Bar starts at 580
             
-            draw.text((300, 480), "DISTANCE", font=stat_label_font, fill="#94a3b8", anchor="md")
-            draw.text((300, 530), dist, font=stat_value_font_large, fill="white", anchor="md")
+            draw.text((300, 510), "DISTANCE", font=stat_label_font, fill="#94a3b8", anchor="md")
+            draw.text((300, 560), dist, font=stat_value_font_large, fill="white", anchor="md")
             
-            draw.text((600, 480), "ELEVATION", font=stat_label_font, fill="#94a3b8", anchor="md")
-            draw.text((600, 530), elev, font=stat_value_font_large, fill="white", anchor="md")
+            draw.text((600, 510), "ELEVATION", font=stat_label_font, fill="#94a3b8", anchor="md")
+            draw.text((600, 560), elev, font=stat_value_font_large, fill="white", anchor="md")
             
-            draw.text((900, 480), "AVG GRADE", font=stat_label_font, fill="#94a3b8", anchor="md")
-            draw.text((900, 530), grade, font=stat_value_font_large, fill="white", anchor="md")
+            draw.text((900, 510), "AVG GRADE", font=stat_label_font, fill="#94a3b8", anchor="md")
+            draw.text((900, 560), grade, font=stat_value_font_large, fill="white", anchor="md")
 
             # Footer
             draw.rectangle([(0, 580), (W, 630)], fill="#38bdf8")
@@ -375,10 +355,28 @@ async def share_image(segment_id: str):
         except UnicodeEncodeError:
             print("Font encoding error, falling back to ASCII")
             try:
-                draw.text((60, 200), "Race Info Available", font=ImageFont.load_default(), fill="white")
+                draw.text((W/2, 200), "Race Info Available", font=ImageFont.load_default(), fill="white", anchor="mm")
                 draw.text((600, 605), "strava.criterium.tw", font=ImageFont.load_default(), fill="#0f172a", anchor="mm")
             except Exception as e2:
                  print(f"Fallback text drawing failed: {e2}")
+
+        # 5. Draw Polyline (Foreground Layer - On Top)
+        poly_str = find_polyline_in_data(race_data)
+        if poly_str:
+            points = polyline.decode(poly_str)
+            if points:
+                lats = [p[0] for p in points]
+                lons = [p[1] for p in points]
+                min_lat, max_lat = min(lats), max(lats)
+                min_lon, max_lon = min(lons), max(lons)
+                
+                pixels = []
+                for lat, lon in points:
+                    px, py = latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, W, H, 50)
+                    pixels.append((px, py))
+                
+                if len(pixels) > 1:
+                    draw.line(pixels, fill="#fc4c02", width=5)
 
         # Save to buffer
         img_byte_arr = io.BytesIO()
