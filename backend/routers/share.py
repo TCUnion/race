@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse
 from database import supabase
 
@@ -7,11 +7,32 @@ router = APIRouter(
     tags=["share"]
 )
 
+# NOTE: 社群平台爬蟲 User-Agent 列表，用於區分爬蟲與人類訪客
+BOT_USER_AGENTS = [
+    'facebookexternalhit',  # Facebook 爬蟲
+    'Facebot',              # Facebook 爬蟲
+    'Twitterbot',           # Twitter/X 爬蟲
+    'LinkedInBot',          # LinkedIn 爬蟲
+    'Line',                 # LINE 爬蟲
+    'Slackbot',             # Slack 爬蟲
+    'Discordbot',           # Discord 爬蟲
+    'TelegramBot',          # Telegram 爬蟲
+    'WhatsApp',             # WhatsApp 爬蟲
+    'Googlebot',            # Google 爬蟲
+]
+
+def _is_bot(user_agent: str) -> bool:
+    """判斷 User-Agent 是否為社群平台爬蟲"""
+    if not user_agent:
+        return False
+    ua_lower = user_agent.lower()
+    return any(bot.lower() in ua_lower for bot in BOT_USER_AGENTS)
+
 @router.get("/race/{segment_id}", response_class=HTMLResponse)
-async def share_race(segment_id: str):
+async def share_race(segment_id: str, request: Request):
     """
     Generate an HTML page with Open Graph tags for Facebook sharing.
-    This page will automatically redirect to the frontend dashboard.
+    爬蟲訪問時只回傳 OG 標籤（不重導），人類訪問時自動重導至前端頁面。
     """
     try:
         # 1. Fetch race details from team_races (preferred)
@@ -63,10 +84,12 @@ async def share_race(segment_id: str):
         # Redirect URL (Frontend Dashboard)
         redirect_url = f"https://strava.criterium.tw/dashboard?segment_id={segment_id}"
 
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
+        # NOTE: 偵測是否為社群爬蟲，爬蟲只需要 OG 標籤不需要重導
+        user_agent = request.headers.get("user-agent", "")
+        is_bot = _is_bot(user_agent)
+
+        # OG 標籤區塊（爬蟲和人類共用）
+        og_tags = f"""
             <meta charset="utf-8">
             <title>{title}</title>
             
@@ -77,6 +100,8 @@ async def share_race(segment_id: str):
             <meta property="og:title" content="{title}">
             <meta property="og:description" content="{description}">
             <meta property="og:image" content="{image_url}">
+            <meta property="og:image:width" content="1200">
+            <meta property="og:image:height" content="630">
             
             <!-- Twitter -->
             <meta property="twitter:card" content="summary_large_image">
@@ -84,18 +109,40 @@ async def share_race(segment_id: str):
             <meta property="twitter:title" content="{title}">
             <meta property="twitter:description" content="{description}">
             <meta property="twitter:image" content="{image_url}">
-
-            <!-- Redirect to actual content -->
-            <meta http-equiv="refresh" content="0;url={redirect_url}">
-            <script type="text/javascript">
-                window.location.href = "{redirect_url}";
-            </script>
-        </head>
-        <body>
-            <p>Redirecting to <a href="{redirect_url}">{title}</a>...</p>
-        </body>
-        </html>
         """
+
+        if is_bot:
+            # 爬蟲版本：只有 OG 標籤，不含任何重導邏輯
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                {og_tags}
+            </head>
+            <body>
+                <h1>{title}</h1>
+                <p>{description}</p>
+                <p><a href="{redirect_url}">前往挑戰頁面</a></p>
+            </body>
+            </html>
+            """
+        else:
+            # 人類版本：OG 標籤 + JavaScript 重導至前端頁面
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                {og_tags}
+                <meta http-equiv="refresh" content="1;url={redirect_url}">
+                <script type="text/javascript">
+                    window.location.href = "{redirect_url}";
+                </script>
+            </head>
+            <body>
+                <p>正在前往 <a href="{redirect_url}">{title}</a>...</p>
+            </body>
+            </html>
+            """
         
         return HTMLResponse(content=html_content)
 

@@ -89,17 +89,21 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
         );
     };
 
-    // 複製連結
+    // 複製連結 - 包含標題、挑戰描述與 URL
     const copyLink = async () => {
+        // NOTE: 組合格式化文字，讓貼上時包含完整挑戰資訊
+        const copyText = description
+            ? `${title}\n\n${description}\n\n🔗 ${shareUrl}`
+            : `${title}\n\n🔗 ${shareUrl}`;
+
         try {
-            await navigator.clipboard.writeText(shareUrl);
+            await navigator.clipboard.writeText(copyText);
             trackShare('link', 'segment_challenge');
-            // 可以搭配 Toast 通知顯示複製成功
             alert('連結已複製到剪貼簿！');
         } catch {
             // Fallback 方法
             const textArea = document.createElement('textarea');
-            textArea.value = shareUrl;
+            textArea.value = copyText;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('copy');
