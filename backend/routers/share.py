@@ -376,7 +376,7 @@ async def share_image(segment_id: str):
                     pixels.append((px, py))
                 
                 if len(pixels) > 1:
-                    draw.line(pixels, fill="#fc4c02", width=5)
+                    draw.line(pixels, fill="#fc4c02", width=10)
 
         # Save to buffer
         img_byte_arr = io.BytesIO()
