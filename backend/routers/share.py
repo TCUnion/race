@@ -185,10 +185,14 @@ import io
 import math
 
 def latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, width, height, padding):
-    """Convert lat/lon to pixel coordinates"""
+    """Convert lat/lon to pixel coordinates using Mercator projection"""
+    # Convert all to radians for consistency
     lat_rad = math.radians(lat)
+    lon_rad = math.radians(lon)
     max_lat_rad = math.radians(max_lat)
     min_lat_rad = math.radians(min_lat)
+    max_lon_rad = math.radians(max_lon)
+    min_lon_rad = math.radians(min_lon)
     
     # Mercator projection-like scaling
     def y_merc(l): return math.log(math.tan(math.pi/4 + l/2))
@@ -197,27 +201,32 @@ def latlon_to_pixels(lat, lon, min_lat, max_lat, min_lon, max_lon, width, height
     y_min = y_merc(min_lat_rad)
     y_max = y_merc(max_lat_rad)
     
+    # Use radians for X to match Y's scale
+    x = lon_rad
+    x_min = min_lon_rad
+    x_max = max_lon_rad
+    
     # Scale to fit width/height
-    lon_span = max_lon - min_lon
+    x_span = x_max - x_min
     y_span = y_max - y_min
     
-    if lon_span == 0 or y_span == 0:
+    if x_span == 0 or y_span == 0:
         return width/2, height/2
 
     available_w = width - 2*padding
     available_h = height - 2*padding
     
-    scale_x = available_w / lon_span
+    scale_x = available_w / x_span
     scale_y = available_h / y_span
     scale = min(scale_x, scale_y)
     
     # Center
-    drawn_w = lon_span * scale
+    drawn_w = x_span * scale
     drawn_h = y_span * scale
     offset_x = padding + (available_w - drawn_w) / 2
     offset_y = padding + (available_h - drawn_h) / 2
     
-    px = (lon - min_lon) * scale + offset_x
+    px = (x - x_min) * scale + offset_x
     py = height - ((y - y_min) * scale + offset_y) # Invert Y for image coords
     
     return px, py
