@@ -55,8 +55,6 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
     const encodedShareText = encodeURIComponent(shareText);
 
     // 複製連結 - 包含標題、挑戰描述與 URL
-
-    // 複製連結 - 包含標題、挑戰描述與 URL
     const copyLink = async () => {
         // NOTE: 組合格式化文字，讓貼上時包含完整挑戰資訊
         const copyText = description
@@ -89,23 +87,6 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
 
     return (
         <div className={`flex items-center gap-3 ${className}`}>
-            {/* 複製連結 */}
-            <button
-                onClick={copyLink}
-                className={`${buttonBaseClass} bg-slate-600 hover:bg-slate-500 text-white focus:ring-slate-500/50 w-full`} //Added w-full to make it look better if it's the only one, or maybe just keep it as is? user didn't specify w-full. The image shows it's part of a row. The user circled the button.
-                // Let's stick to the original style but just remove others.
-                // Actually, if it's the only button, "flex items-center gap-3" on the container might be weird if we don't adjust.
-                // But let's just remove the others first.
-                aria-label="複製連結"
-                title="複製連結"
-            >
-                <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-                {showLabels && <span className="ml-2">複製</span>}
-            </button>
-
             {/* 複製連結 */}
             <button
                 onClick={copyLink}
