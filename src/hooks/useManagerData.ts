@@ -42,6 +42,10 @@ interface BikeWithMaintenance {
 interface UseManagerDataReturn {
     // 狀態
     loading: boolean;
+    maintenanceLoading: boolean;
+    activityLoading: boolean;
+    statisticsLoading: boolean;
+    notificationsLoading: boolean;
     error: string | null;
     isManager: boolean;
     isAuthenticated: boolean; // 新增：是否已登入
@@ -62,6 +66,7 @@ interface UseManagerDataReturn {
 
     // 功能方法
     refresh: () => Promise<void>;
+    fetchDataForTab: (tab: string) => Promise<void>;
     addAuthorization: (athleteId: number, type: AuthorizationType, notes?: string) => Promise<void>;
     updateAuthorizationStatus: (id: string, status: AuthorizationStatus) => Promise<void>;
     removeAuthorization: (id: string) => Promise<void>;
@@ -75,6 +80,11 @@ interface UseManagerDataReturn {
 export function useManagerData(): UseManagerDataReturn {
     // 狀態
     const [loading, setLoading] = useState(true);
+    const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+    const [activityLoading, setActivityLoading] = useState(false);
+    const [statisticsLoading, setStatisticsLoading] = useState(false);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+
     const [error, setError] = useState<string | null>(null);
     const [isManager, setIsManager] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false); // 新增
@@ -620,32 +630,160 @@ export function useManagerData(): UseManagerDataReturn {
     }, []);
 
 
-    // 主要載入函數 (優化版：平行處理所有資料)
+    // -------------------------------------------------------------------------
+    // 新增：獨立的資料載入函式 (供按需呼叫)
+    // -------------------------------------------------------------------------
+
+    const fetchMaintenance = useCallback(async (athleteIds: number[]) => {
+        if (athleteIds.length === 0) {
+            setMaintenanceSummaries([]);
+            return;
+        }
+        try {
+            setMaintenanceLoading(true);
+            const data = await loadMaintenanceSummaries(athleteIds);
+            setMaintenanceSummaries(data);
+        } catch (err) {
+            console.error('載入保養報表失敗', err);
+        } finally {
+            setMaintenanceLoading(false);
+        }
+    }, [loadMaintenanceSummaries]);
+
+    const fetchActivities = useCallback(async (athleteIds: number[]) => {
+        if (athleteIds.length === 0) {
+            setActivitySummaries([]);
+            return;
+        }
+        try {
+            setActivityLoading(true);
+            const data = await loadActivitySummaries(athleteIds);
+            setActivitySummaries(data);
+        } catch (err) {
+            console.error('載入活動報表失敗', err);
+        } finally {
+            setActivityLoading(false);
+        }
+    }, [loadActivitySummaries]);
+
+    const fetchStatistics = useCallback(async (athleteIds: number[]) => {
+        if (athleteIds.length === 0) {
+            setMaintenanceStatistics([]);
+            return;
+        }
+        try {
+            setStatisticsLoading(true);
+            const data = await loadMaintenanceStatistics(athleteIds);
+            setMaintenanceStatistics(data);
+        } catch (err) {
+            console.error('載入統計資料失敗', err);
+        } finally {
+            setStatisticsLoading(false);
+        }
+    }, [loadMaintenanceStatistics]);
+
+    const fetchNotifications = useCallback(async (managerAthleteId?: string, managerEmail?: string) => {
+        try {
+            setNotificationsLoading(true);
+            const [settings, logs] = await Promise.all([
+                loadNotificationSettings(managerAthleteId, managerEmail),
+                loadNotificationLogs(managerAthleteId, managerEmail)
+            ]);
+            setNotificationSettings(settings);
+            setNotificationLogs(logs);
+        } catch (err) {
+            console.error('載入通知資料失敗', err);
+        } finally {
+            setNotificationsLoading(false);
+        }
+    }, [loadNotificationSettings, loadNotificationLogs]);
+
+    // -------------------------------------------------------------------------
+    // 核心載入邏輯
+    // -------------------------------------------------------------------------
+
+    // 取得經過批准的 Athlete IDs
+    const getApprovedAthleteIds = useCallback(() => {
+        return authorizations
+            .filter(a => a.status === 'approved')
+            .map(a => a.athlete_id);
+    }, [authorizations]);
+
+    // 依 Tab 載入資料
+    const fetchDataForTab = useCallback(async (tab: string) => {
+        // 必須先確認管理員身分已就緒
+        if (!managerRole || !managerRole.is_active) return;
+
+        const approvedIds = getApprovedAthleteIds();
+        const managerAthleteId = managerRole.athlete_id ? String(managerRole.athlete_id) : undefined;
+        const managerEmail = managerRole.email;
+
+        switch (tab) {
+            case 'maintenance':
+                // 如果已經有資料，可以選擇不重新載入 (目前策略：每次切換都檢查，或是依賴 loading 狀態阻擋)
+                // 這裡選擇：只要不是正在載入中，就更新資料 (確保即時性)
+                if (!maintenanceLoading) {
+                    await fetchMaintenance(approvedIds);
+                }
+                break;
+            case 'activity':
+            case 'power_analysis': // 功率分析依賴活動資料
+                if (!activityLoading) {
+                    await fetchActivities(approvedIds);
+                    // 同時載入車友詳細資訊 (如果尚未載入 completed data)
+                    // loadAthleteInfo 已在 refreshCore 中呼叫，這裡不需要重複
+                }
+                break;
+            case 'statistics':
+                if (!statisticsLoading) {
+                    await fetchStatistics(approvedIds);
+                }
+                break;
+            case 'notifications':
+            case 'settings':
+                if (!notificationsLoading) {
+                    await fetchNotifications(managerAthleteId, managerEmail);
+                }
+                break;
+            case 'members':
+            case 'overview':
+            default:
+                // 概覽與成員頁面主要依賴 authorizations 與 authorizedAthletes (已在核心流程載入)
+                break;
+        }
+    }, [
+        managerRole,
+        getApprovedAthleteIds,
+        maintenanceLoading,
+        activityLoading,
+        statisticsLoading,
+        notificationsLoading,
+        fetchMaintenance,
+        fetchActivities,
+        fetchStatistics,
+        fetchNotifications
+    ]);
+
+    // 重構後的 Refresh：只載入核心身分與授權名單
     const refresh = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
 
             const identity = await getAthleteId();
-            setIsAuthenticated(!!identity); // 設定登入狀態
+            setIsAuthenticated(!!identity);
 
             if (!identity) {
-                // 回傳 null 讓 UI 顯示登入畫面
                 setLoading(false);
                 return;
             }
 
-            // 檢查管理者角色
             const role = await checkManagerRole(identity);
-
             setManagerRole(role);
-
-            // 只有啟用中才視為有效管理員
             const isActiveManager = !!role && role.is_active;
             setIsManager(isActiveManager);
 
-            if (!role || !role.is_active) {
-                // 非管理者或未啟用，清空資料
+            if (!isActiveManager) {
                 setAuthorizations([]);
                 setAuthorizedAthletes([]);
                 setMaintenanceSummaries([]);
@@ -661,34 +799,19 @@ export function useManagerData(): UseManagerDataReturn {
             const managerEmail = role.email || identity.email;
 
             try {
-                // 1. 先載入授權清單 (這是核心依賴)
+                // 1. 載入授權清單
                 const auths = await loadAuthorizations(managerAthleteId, managerEmail);
                 setAuthorizations(auths);
 
-                // 2. 準備車友 ID 清單
-                const approvedAthleteIds = auths
-                    .filter(a => a.status === 'approved')
-                    .map(a => a.athlete_id);
+                // 2. 載入所有關聯車友的基本資料 (這是顯示成員列表所需的)
                 const allAthleteIds = auths.map(a => a.athlete_id);
-
-                // 3. 平行載入所有報表與統計資料 (極速模式)
-                const [athletes, summaries, activities, stats, settings, logs] = await Promise.all([
-                    loadAthleteInfo(allAthleteIds),
-                    loadMaintenanceSummaries(approvedAthleteIds),
-                    loadActivitySummaries(approvedAthleteIds),
-                    loadMaintenanceStatistics(approvedAthleteIds),
-                    loadNotificationSettings(managerAthleteId, managerEmail),
-                    loadNotificationLogs(managerAthleteId, managerEmail),
-                ]);
-
+                const athletes = await loadAthleteInfo(allAthleteIds);
                 setAuthorizedAthletes(athletes);
-                setMaintenanceSummaries(summaries);
-                setActivitySummaries(activities);
-                setMaintenanceStatistics(stats);
-                setNotificationSettings(settings);
-                setNotificationLogs(logs);
+
+                // 注意：不再自動載入 maintenance, activity 等重型資料
+
             } catch (dataError) {
-                console.error('載入詳細資料失敗:', dataError);
+                console.error('載入核心資料失敗:', dataError);
             }
 
         } catch (err: any) {
@@ -701,12 +824,7 @@ export function useManagerData(): UseManagerDataReturn {
         getAthleteId,
         checkManagerRole,
         loadAuthorizations,
-        loadAthleteInfo,
-        loadMaintenanceSummaries,
-        loadActivitySummaries,
-        loadMaintenanceStatistics,
-        loadNotificationSettings,
-        loadNotificationLogs,
+        loadAthleteInfo
     ]);
 
 
@@ -945,11 +1063,18 @@ export function useManagerData(): UseManagerDataReturn {
     }, []);
 
     return {
+        // 狀態
         loading,
+        maintenanceLoading,
+        activityLoading,
+        statisticsLoading,
+        notificationsLoading,
         error,
         isManager,
-        isAuthenticated, // 回傳
+        isAuthenticated,
         managerRole,
+
+        // 資料
         authorizations,
         authorizedAthletes,
         maintenanceSummaries,
@@ -957,7 +1082,10 @@ export function useManagerData(): UseManagerDataReturn {
         maintenanceStatistics,
         notificationSettings,
         notificationLogs,
+
+        // 方法
         refresh,
+        fetchDataForTab,
         addAuthorization,
         updateAuthorizationStatus,
         removeAuthorization,

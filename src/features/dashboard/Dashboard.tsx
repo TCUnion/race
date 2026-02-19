@@ -452,9 +452,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {athlete && (
                 <div className="relative shrink-0">
                   <img
-                    src={athlete.profile_medium || athlete.profile || "https://www.strava.com/assets/users/placeholder_athlete.png"}
-                    alt={athlete.firstname}
+                    src={athlete?.profile}
+                    alt={athlete?.lastname}
                     className="w-14 h-14 md:w-20 md:h-20 rounded-full border-4 border-white dark:border-slate-800 shadow-xl object-cover"
+                    loading="lazy"
                   />
                   <div className={`absolute -bottom-1 -right-1 bg-${theme.primary} text-white rounded-full p-1 shadow-lg border-2 border-white dark:border-slate-900`}>
                     <UserCheck className="w-3 h-3" />

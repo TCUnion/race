@@ -1,5 +1,13 @@
+import React, { Suspense } from 'react';
 import { ChevronRight } from 'lucide-react';
-import SegmentMap from '../../features/map/SegmentMap';
+
+const SegmentMap = React.lazy(() => import('../../features/map/SegmentMap'));
+
+const MapLoading = () => (
+    <div className="absolute inset-0 bg-slate-800 animate-pulse flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+    </div>
+);
 
 interface FeaturedCardProps {
     title: string;
@@ -25,17 +33,20 @@ export function FeaturedCard({
     return (
         <div className="card-glow relative w-full h-[200px] md:h-[360px] rounded-2xl overflow-hidden">
             {/* Background Layer */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 bg-slate-900">
                 {polyline ? (
-                    <SegmentMap
-                        polyline={polyline}
-                        className="!min-h-0 h-full w-full pointer-events-none"
-                    />
+                    <Suspense fallback={<MapLoading />}>
+                        <SegmentMap
+                            polyline={polyline}
+                            className="!min-h-0 h-full w-full pointer-events-none"
+                        />
+                    </Suspense>
                 ) : (
                     <img
                         src={imageUrl}
                         alt={title}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                     />
                 )}
             </div>

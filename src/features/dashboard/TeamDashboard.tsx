@@ -5,9 +5,16 @@ import { apiClient } from '../../lib/apiClient';
 import { API_BASE_URL } from '../../lib/api_config';
 import { useAuth } from '../../hooks/useAuth';
 import { resolveAvatarUrl } from '../../lib/imageUtils';
-import SegmentMap from '../map/SegmentMap';
 import ShareButtons from '../../components/ui/ShareButtons';
+
+const SegmentMap = React.lazy(() => import('../map/SegmentMap'));
 const CaptainWarRoom = React.lazy(() => import('./CaptainWarRoom'));
+
+const MapPlaceholder = () => (
+    <div className="w-full h-full bg-slate-800 animate-pulse flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-slate-600" />
+    </div>
+);
 
 const TeamDashboard: React.FC = () => {
     const { athlete, isAdmin } = useAuth();
@@ -96,11 +103,6 @@ const TeamDashboard: React.FC = () => {
         const params = new URLSearchParams(window.location.search);
         const segmentIdParam = params.get('segment_id');
 
-        console.log('[TeamDashboard] URL Param Check:', {
-            segmentIdParam,
-            racesCount: races.length,
-            races: races.map(r => ({ id: r.id, segment_id: r.segment_id, name: r.name }))
-        });
 
         if (segmentIdParam && races.length > 0) {
             // 找到對應的賽事 (支援字串和數字比對)
@@ -108,7 +110,6 @@ const TeamDashboard: React.FC = () => {
                 String(r.segment_id) === String(segmentIdParam)
             );
 
-            console.log('[TeamDashboard] Target Race:', targetRace);
 
             if (targetRace) {
                 // 自動切換到「車隊賽事」頁籤
@@ -116,12 +117,10 @@ const TeamDashboard: React.FC = () => {
                 // 設定高亮顯示
                 setHighlightedRaceId(targetRace.id);
 
-                console.log('[TeamDashboard] Highlighting race:', targetRace.id);
 
                 // 3 秒後取消高亮
                 const timer = setTimeout(() => {
                     setHighlightedRaceId(null);
-                    console.log('[TeamDashboard] Highlight cleared');
                 }, 3000);
 
                 return () => clearTimeout(timer);
@@ -456,6 +455,7 @@ const TeamDashboard: React.FC = () => {
                                             alt={member.real_name}
                                             referrerPolicy="no-referrer"
                                             className="w-12 h-12 rounded-xl object-cover"
+                                            loading="lazy"
                                         />
                                         <div className="flex-1">
                                             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -560,6 +560,7 @@ const TeamDashboard: React.FC = () => {
                                                                     : isCaptain ? 'ring-2 ring-yellow-500'
                                                                         : 'ring-1 ring-slate-200 dark:ring-slate-700'
                                                                     }`}
+                                                                loading="lazy"
                                                             />
                                                             {isHighlighted && (
                                                                 <div className={`absolute -top-1 -right-1 text-white p-1 rounded-full shadow-lg ${isAdmin ? 'bg-purple-500' : 'bg-yellow-500'
@@ -838,7 +839,9 @@ const TeamDashboard: React.FC = () => {
                                     <div className="flex flex-col sm:flex-row w-full">
                                         {/* Map Preview - Square on All Devices */}
                                         <div className="relative w-full aspect-square sm:w-40 sm:h-auto sm:aspect-square shrink-0 bg-slate-800/50 border-b sm:border-b-0 sm:border-r border-white/5">
-                                            <SegmentMap polyline={race.polyline} minimal className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+                                            <Suspense fallback={<MapPlaceholder />}>
+                                                <SegmentMap polyline={race.polyline} minimal className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+                                            </Suspense>
 
                                             {/* Mobile Gradient Overlay */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent sm:hidden pointer-events-none" />
@@ -933,7 +936,7 @@ const TeamDashboard: React.FC = () => {
 
                                                     <ShareButtons
                                                         title={race.name}
-                                                        description={`${race.name} | ${formatDate(startDate)} - ${formatDate(endDate)}`}
+                                                        description={`${race.name} | ${(race.distance / 1000).toFixed(1)}km · ${Math.round(race.elevation_gain)}m 爬升 | ${formatDate(startDate)} - ${formatDate(endDate)}`}
                                                         url={`${(API_BASE_URL || 'https://service.criterium.tw').replace(/\/$/, '')}/api/share/race/${race.segment_id}`}
                                                         size="sm"
                                                         className="scale-90"
@@ -967,7 +970,7 @@ const TeamDashboard: React.FC = () => {
                                                             {participants.map((p, idx) => (
                                                                 <tr key={idx} className="hover:bg-white/5 transition-colors">
                                                                     <td className="py-2 px-2 font-medium text-white flex items-center gap-2">
-                                                                        <img src={p.athlete_profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} className="w-5 h-5 rounded-full" alt="" />
+                                                                        <img src={p.athlete_profile || "https://www.strava.com/assets/users/placeholder_athlete.png"} className="w-5 h-5 rounded-full" alt="" loading="lazy" />
                                                                         {p.athlete_name}
                                                                         <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.status === 'qualified' ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>{p.status === 'qualified' ? '符合資格' : '一般'}</span>
                                                                     </td>

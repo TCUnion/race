@@ -1,6 +1,12 @@
+import React, { Suspense } from 'react';
 import { Play, Clock } from 'lucide-react';
-import SegmentMap from '../../features/map/SegmentMap';
 import { getTeamColor } from '../../utils/teamColors';
+
+const SegmentMap = React.lazy(() => import('../../features/map/SegmentMap'));
+
+const TinyMapLoading = () => (
+    <div className="w-full h-full bg-slate-800 animate-pulse" />
+);
 
 interface Challenge {
     id: string;
@@ -67,22 +73,25 @@ export function ChallengeList({ challenges, onChallengeClick }: ChallengeListPro
                             key={challenge.id}
                             onClick={() => onChallengeClick?.(challenge.id)}
                             className={`flex items-center gap-3 p-3 text-left w-full rounded-3xl border transition-all ${isExpired
-                                    ? 'bg-white/[0.03] border-white/5 opacity-50'
-                                    : 'card-glow'
+                                ? 'bg-white/[0.03] border-white/5 opacity-50'
+                                : 'card-glow'
                                 }`}
                         >
                             <div className={`w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative bg-bg-darker ${isExpired ? 'grayscale' : ''}`}>
                                 {challenge.polyline ? (
-                                    <SegmentMap
-                                        polyline={challenge.polyline}
-                                        className="w-full h-full !min-h-0 pointer-events-none"
-                                        minimal={true}
-                                    />
+                                    <Suspense fallback={<TinyMapLoading />}>
+                                        <SegmentMap
+                                            polyline={challenge.polyline}
+                                            className="w-full h-full !min-h-0 pointer-events-none"
+                                            minimal={true}
+                                        />
+                                    </Suspense>
                                 ) : (
                                     <img
                                         src={challenge.imageUrl}
                                         alt={challenge.name}
                                         className="w-full h-full object-cover"
+                                        loading="lazy"
                                     />
                                 )}
                             </div>

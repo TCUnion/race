@@ -48,47 +48,62 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({
 
     const iconSize = iconSizes[size];
 
-    // 分享到 Facebook
+    // NOTE: 組合分享文字，包含標題與描述內容
+    const shareText = description
+        ? `${title}\n\n${description}`
+        : title;
+    const encodedShareText = encodeURIComponent(shareText);
+
+    // 分享到 Facebook - 使用 Dialog Share API 以支援 quote 預填文字
     const shareToFacebook = () => {
         trackShare('facebook', 'segment_challenge');
+        const fbAppId = '1964978887489880';
         window.open(
-            `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`,
+            `https://www.facebook.com/dialog/share?app_id=${fbAppId}&display=popup&href=${encodedUrl}&quote=${encodedShareText}&redirect_uri=${encodeURIComponent(shareUrl)}`,
             'facebook-share',
-            'width=580,height=400'
+            'width=580,height=500'
         );
     };
 
-    // 分享到 Twitter/X
+    // 分享到 Twitter/X - 帶入完整分享文字
     const shareToTwitter = () => {
         trackShare('twitter', 'segment_challenge');
+        // NOTE: Twitter text 有字數限制，截取前 200 字
+        const tweetText = shareText.length > 200
+            ? shareText.substring(0, 197) + '...'
+            : shareText;
         window.open(
-            `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
+            `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodedUrl}`,
             'twitter-share',
             'width=580,height=400'
         );
     };
 
-    // 分享到 LINE
+    // 分享到 LINE - 帶入完整分享文字
     const shareToLine = () => {
         trackShare('line', 'segment_challenge');
         window.open(
-            `https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodedTitle}`,
+            `https://social-plugins.line.me/lineit/share?url=${encodedUrl}&text=${encodedShareText}`,
             'line-share',
             'width=580,height=400'
         );
     };
 
-    // 複製連結
+    // 複製連結 - 包含標題、挑戰描述與 URL
     const copyLink = async () => {
+        // NOTE: 組合格式化文字，讓貼上時包含完整挑戰資訊
+        const copyText = description
+            ? `${title}\n\n${description}\n\n🔗 ${shareUrl}`
+            : `${title}\n\n🔗 ${shareUrl}`;
+
         try {
-            await navigator.clipboard.writeText(shareUrl);
+            await navigator.clipboard.writeText(copyText);
             trackShare('link', 'segment_challenge');
-            // 可以搭配 Toast 通知顯示複製成功
             alert('連結已複製到剪貼簿！');
         } catch {
             // Fallback 方法
             const textArea = document.createElement('textarea');
-            textArea.value = shareUrl;
+            textArea.value = copyText;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('copy');

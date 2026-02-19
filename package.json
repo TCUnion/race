@@ -29,7 +29,8 @@
     "react-i18next": "^16.5.3",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.7.0",
-    "serve": "^14.2.5"
+    "serve": "^14.2.5",
+    "web-vitals": "^5.1.0"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

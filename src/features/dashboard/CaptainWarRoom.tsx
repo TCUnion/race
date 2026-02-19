@@ -56,13 +56,17 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
 
             if (memberIds.length > 0) {
                 // Fetch latest activity for each member from our new table
-                // Fetch last 100 activities for these athletes
+                // OPTIMIZATION: Handle active teams by adding date filter and increasing limit
+                const twoWeeksAgo = new Date();
+                twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
                 const { data, error } = await supabase
                     .from('strava_activities')
                     .select('*')
                     .in('athlete_id', memberIds)
+                    .gte('start_date', twoWeeksAgo.toISOString())
                     .order('start_date', { ascending: false })
-                    .limit(100);
+                    .limit(500); // Increase limit to avoid missing members in active teams
 
                 if (error) throw error;
 
@@ -83,7 +87,6 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
                     activity
                 };
             });
-
             // Sort logic:
             // 1. Members with Activity come first, sorted by date DESC
             // 2. Members without Activity come last
@@ -133,14 +136,18 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
-                {members.length > 0 ? members.map((member, idx) => {
-                    // Check if athleteRecentActivities is available in the scope
-                    const activity = (window as any).athleteRecentActivities?.[member.athlete_id];
+                {entries.length > 0 ? entries.map(({ member, activity }, idx) => {
                     return (
                         <div key={`war-card-${idx}`} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm group">
                             <div className="flex items-center gap-3 mb-4">
                                 {member.avatar ? (
-                                    <img src={resolveAvatarUrl(member.avatar) || ''} alt={member.real_name} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700" />
+                                    <img
+                                        src={resolveAvatarUrl(member.avatar) || ''}
+                                        alt={member.real_name}
+                                        referrerPolicy="no-referrer"
+                                        className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700"
+                                        loading="lazy"
+                                    />
                                 ) : (
                                     <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                         <User className="w-5 h-5 text-slate-400" />
@@ -238,7 +245,13 @@ const CaptainWarRoom: React.FC<Props> = ({ members }) => {
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center gap-3">
                                         {member.avatar ? (
-                                            <img src={resolveAvatarUrl(member.avatar) || ''} alt={member.real_name} referrerPolicy="no-referrer" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" />
+                                            <img
+                                                src={resolveAvatarUrl(member.avatar) || ''}
+                                                alt={member.real_name}
+                                                referrerPolicy="no-referrer"
+                                                className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700"
+                                                loading="lazy"
+                                            />
                                         ) : (
                                             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                                 <User className="w-4 h-4 text-slate-400" />
