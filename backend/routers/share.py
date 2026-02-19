@@ -78,8 +78,10 @@ async def share_race(segment_id: str, request: Request):
         if custom_image and custom_image.startswith('http'):
             image_url = custom_image
         else:
-            # Automated generation URL
-            image_url = f"https://tcuapi.zeabur.app/api/share/image/{segment_id}"
+            # Automated generation URL (Add ?v=2 to bust FB cache)
+            import time
+            ts = int(time.time())
+            image_url = f"https://tcuapi.zeabur.app/api/share/image/{segment_id}?v={ts}"
         
         # Redirect URL (Frontend Dashboard)
         redirect_url = f"https://strava.criterium.tw/dashboard?segment_id={segment_id}"
