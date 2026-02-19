@@ -936,7 +936,7 @@ const TeamDashboard: React.FC = () => {
 
                                                     <ShareButtons
                                                         title={race.name}
-                                                        description={`${race.name} | ${formatDate(startDate)} - ${formatDate(endDate)}`}
+                                                        description={`${race.name} | ${(race.distance / 1000).toFixed(1)}km · ${Math.round(race.elevation_gain)}m 爬升 | ${formatDate(startDate)} - ${formatDate(endDate)}`}
                                                         url={`${(API_BASE_URL || 'https://service.criterium.tw').replace(/\/$/, '')}/api/share/race/${race.segment_id}`}
                                                         size="sm"
                                                         className="scale-90"

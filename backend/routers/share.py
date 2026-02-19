@@ -35,9 +35,19 @@ async def share_race(segment_id: str):
             raise HTTPException(status_code=404, detail="Race or Segment not found")
 
         # 3. Construct OG Tag Content
-        title = race_data.get("name", "Unknown Race")
-        description = race_data.get("description", "")
-        if not description:
+        # NOTE: OG 標題優先使用 description（賽事副標題），再回退至 name（Strava 路段原名）
+        title = race_data.get("description") or race_data.get("name", "Unknown Race")
+
+        # 從 segment_metadata 取得 race_description（挑戰內容長文）作為 OG 描述
+        meta_desc_res = supabase.table("segment_metadata").select("race_description").eq("segment_id", segment_id).execute()
+        race_description = ""
+        if meta_desc_res.data and len(meta_desc_res.data) > 0:
+            race_description = meta_desc_res.data[0].get("race_description", "") or ""
+
+        # OG 描述：優先使用 race_description，再回退至距離/爬升摘要
+        if race_description.strip():
+            description = race_description.strip()
+        else:
             distance_km = f"{float(race_data.get('distance', 0)) / 1000:.1f}km"
             elevation = f"{race_data.get('total_elevation_gain', race_data.get('elevation_gain', 0))}m"
             description = f"挑戰賽事：{title} | 距離：{distance_km} | 爬升：{elevation}"
