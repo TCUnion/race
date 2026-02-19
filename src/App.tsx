@@ -210,6 +210,8 @@ function App() {
             {/* Desktop Sidebar */}
             <Sidebar activeTab={activeTab} onTabChange={(tab) => {
                 setActiveTab(tab);
+                // NOTE: 切換 Tab 時必須清空 viewParams，避免 LibraryPage 的 initialSegmentId 殘留导致 Modal 自動開啟
+                setViewParams({});
                 if (tab === 'home') setView(V2View.HOME);
                 if (tab === 'dashboard') setView(V2View.DASHBOARD); // Registration
                 if (tab === 'team') setView(V2View.TEAM_DASHBOARD); // Team
@@ -228,6 +230,8 @@ function App() {
                     {(view === V2View.HOME || view === V2View.LIBRARY || view === V2View.DASHBOARD || view === V2View.TEAM_DASHBOARD || view === V2View.SEARCH || view === V2View.SETTINGS || view === V2View.MAINTENANCE) && (
                         <TabBar activeTab={activeTab} onTabChange={(tab) => {
                             setActiveTab(tab);
+                            // NOTE: 切換 Tab 時必須清空 viewParams
+                            setViewParams({});
                             if (tab === 'home') setView(V2View.HOME);
                             if (tab === 'dashboard') setView(V2View.DASHBOARD);
                             if (tab === 'team') setView(V2View.TEAM_DASHBOARD);
