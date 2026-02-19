@@ -274,13 +274,26 @@ async def share_image(segment_id: str):
         # 4. Draw Text
         # Load fonts (try system fonts or fallback)
         try:
-            # Try to load a bold font
-            # macOS path / System paths
-            title_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 60, index=1)
-            stat_label_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 24)
-            stat_value_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 48, index=1)
-            footer_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 20, index=1)
-        except:
+            import os
+            current_dir = os.path.dirname(__file__)
+            # Path to bundled font: backend/assets/fonts/NotoSansTC-Bold.ttf
+            # We are in backend/routers/, so go up one level then to assets/fonts
+            font_path = os.path.join(current_dir, "../assets/fonts/NotoSansTC-Bold.ttf")
+            
+            if os.path.exists(font_path):
+                # Use bundled Noto Sans TC
+                title_font = ImageFont.truetype(font_path, 60)
+                stat_label_font = ImageFont.truetype(font_path, 24)
+                stat_value_font = ImageFont.truetype(font_path, 48)
+                footer_font = ImageFont.truetype(font_path, 20)
+            else:
+                # Fallback to macOS system font for local dev
+                title_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 60, index=1)
+                stat_label_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 24)
+                stat_value_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 48, index=1)
+                footer_font = ImageFont.truetype("/System/Library/Fonts/HelveticaNeue.ttc", 20, index=1)
+        except Exception as e:
+            print(f"Font loading error: {e}, using default")
             # Fallback to default
             title_font = ImageFont.load_default()
             stat_label_font = ImageFont.load_default()
