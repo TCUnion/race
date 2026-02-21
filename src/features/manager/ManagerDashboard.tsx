@@ -68,6 +68,7 @@ const PowerTrainingReport = React.lazy(() => import('./PowerTrainingReport'));
 import { DailyTrainingChart } from '../../components/charts/DailyTrainingChart';
 import { MaintenanceRecord } from '../../types';
 import { SingleActivityAnalysis } from './components/SingleActivityAnalysis';
+import { ActivityRepair } from './components/ActivityRepair';
 
 const ROLE_NAMES: Record<string, string> = {
     shop_owner: '車店老闆',
@@ -2511,6 +2512,7 @@ function ManagerDashboard() {
                                         </div>
                                     </div>
                                 </div>
+                                <ActivityRepair />
                                 <button
                                     onClick={handleLogout}
                                     className="w-full py-4 bg-red-600/10 text-red-500 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all mt-8"

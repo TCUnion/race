@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle, Smartphone, ExternalLink } from 'lucide-react';
 import EquipmentList from './EquipmentList';
 import { RaceAdminPanel } from './RaceAdminPanel';
+import { ActivityRepair } from '../manager/components/ActivityRepair';
 import { supabaseAdmin, supabaseServiceRole } from '../../lib/supabase';
 // 如果 Service Role 可用則使用它（繞過 RLS），否則退回 supabaseAdmin
 const supabase = supabaseServiceRole || supabaseAdmin;
@@ -1717,6 +1718,16 @@ const AdminPanel: React.FC = () => {
                     Strava Tokens
                 </button>
                 <button
+                    onClick={() => setActiveTab('repair')}
+                    className={`px - 4 py - 2 rounded - xl font - bold transition - all whitespace - nowrap ${activeTab === 'repair'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                        } `}
+                >
+                    <RefreshCw className="w-4 h-4 inline-block mr-2" />
+                    活動修復
+                </button>
+                <button
                     onClick={() => setActiveTab('seo')}
                     className={`px - 4 py - 2 rounded - xl font - bold transition - all whitespace - nowrap ${activeTab === 'seo'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
@@ -2876,6 +2887,15 @@ const AdminPanel: React.FC = () => {
                             </div>
                         </div>
                     </div>)
+                }
+
+                {/* 活動手動修復 Tab */}
+                {
+                    activeTab === 'repair' && (
+                        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-sm md:col-span-2">
+                            <ActivityRepair />
+                        </div>
+                    )
                 }
 
 

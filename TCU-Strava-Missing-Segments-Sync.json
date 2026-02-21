@@ -1,0 +1,216 @@
+{
+    "name": "TCU-Strava-Missing-Segments-Sync",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 15
+                        }
+                    ]
+                }
+            },
+            "id": "e6aedecc-05eb-42d4-bb2f-2c0deab08fae",
+            "name": "Schedule Trigger 15分",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                0,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "WITH active_periods AS (\n  SELECT \n    MIN(start_date) AS min_start_date, \n    MAX(end_date) AS max_end_date\n  FROM (\n    SELECT start_date::timestamptz, end_date::timestamptz FROM team_races WHERE is_active = true\n    UNION ALL\n    SELECT start_date::timestamptz, end_date::timestamptz FROM segments WHERE is_active = true\n  ) all_races\n),\napproved_athletes AS (\n  SELECT DISTINCT strava_athlete_id AS athlete_id\n  FROM registrations\n  WHERE status = 'approved' AND strava_athlete_id IS NOT NULL\n)\nSELECT \n  sa.id::text AS activity_id, \n  sa.athlete_id::text AS athlete_id \nFROM strava_activities sa\nJOIN approved_athletes aa ON sa.athlete_id = aa.athlete_id\nCROSS JOIN active_periods ap\nWHERE \n  sa.start_date::timestamptz >= ap.min_start_date \n  AND sa.start_date::timestamptz <= COALESCE(ap.max_end_date, NOW())\n  AND sa.segment_efforts_dump IS NULL\nORDER BY sa.start_date DESC \nLIMIT 50;"
+            },
+            "id": "18fbd8fe-e15d-4f05-8e7c-474c05f77bae",
+            "name": "Get Activities without Segments (RPC)",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                200,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "batchSize": 1,
+                "options": {}
+            },
+            "id": "a9e6af45-b4aa-49c0-96f7-c5d9bd2a1dd0",
+            "name": "Split In Batches (1 Loop)",
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 1,
+            "position": [
+                400,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT access_token FROM strava_tokens WHERE athlete_id = {{$json.athlete_id}};"
+            },
+            "id": "3cc708be-f1c5-43ea-bfb0-b3bd3116599b",
+            "name": "Get Athlete Token",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                600,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "url": "=https://www.strava.com/api/v3/activities/{{ $('Split In Batches (1 Loop)').item.json.activity_id }}",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "include_all_efforts",
+                            "value": "true"
+                        }
+                    ]
+                },
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $json.access_token }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "dc2ea7f9-2b02-4749-81f7-e2fe9a3a91bb",
+            "name": "Strava Get Activity Detail",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                0
+            ],
+            "onError": "continueErrorOutput"
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE strava_activities SET segment_efforts_dump = '{{JSON.stringify($json.segment_efforts || [])}}'::jsonb WHERE id = {{$('Split In Batches (1 Loop)').item.json.activity_id}};"
+            },
+            "id": "c1fcf011-8c43-441d-af2f-7634f19810ef",
+            "name": "Update Activity with Details",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                1000,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "amount": 10,
+                "unit": "seconds"
+            },
+            "id": "e1f132e0-f203-490b-ba65-8b2b73ec437a",
+            "name": "Wait (Rate Limit 10s)",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                0
+            ]
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Schedule Trigger 15分": {
+            "main": [
+                [
+                    {
+                        "node": "Get Activities without Segments (RPC)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Activities without Segments (RPC)": {
+            "main": [
+                [
+                    {
+                        "node": "Split In Batches (1 Loop)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split In Batches (1 Loop)": {
+            "main": [
+                [
+                    {
+                        "node": "Get Athlete Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Athlete Token": {
+            "main": [
+                [
+                    {
+                        "node": "Strava Get Activity Detail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Strava Get Activity Detail": {
+            "main": [
+                [
+                    {
+                        "node": "Update Activity with Details",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Activity with Details": {
+            "main": [
+                [
+                    {
+                        "node": "Wait (Rate Limit 10s)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait (Rate Limit 10s)": {
+            "main": [
+                [
+                    {
+                        "node": "Split In Batches (1 Loop)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "versionId": "f12e8412-1d54-47dd-b542-a80ac57351ad",
+    "meta": {
+        "templateCredsSetupCompleted": true
+    },
+    "id": "m1hE8l9zYvPxRqNt",
+    "tags": []
+}
