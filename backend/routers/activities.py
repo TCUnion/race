@@ -6,7 +6,13 @@ router = APIRouter(prefix="/api/activities", tags=["activities"])
 
 @router.get("")
 def get_activities():
-    response = supabase.table("strava_activities").select("*").order("date", desc=True).execute()
+    # 使用明確的欄位清單取代 selcet("*")，提升效能
+    response = supabase.table("strava_activities").select(
+        "id, athlete_id, name, distance, moving_time, elapsed_time, "
+        "start_date, start_date_local, type, sport_type, average_speed, max_speed, "
+        "average_heartrate, max_heartrate, average_watts, max_watts, weighted_average_watts, "
+        "kilojoules, total_elevation_gain, device_watts, has_heartrate, suffer_score"
+    ).order("date", desc=True).execute()
     return response.data
 
 @router.get("/{activity_id}/check")

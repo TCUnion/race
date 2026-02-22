@@ -461,7 +461,7 @@ function ManagerDashboard() {
         try {
             const { data, error } = await supabase
                 .from('bike_maintenance')
-                .select('*')
+                .select('id, vehicle_id, date, mileage, total_cost, description, service_type, created_at, other')
                 .eq('bike_id', bikeId)
                 .eq('athlete_id', athleteId) // 確保權限驗證通過 (RLS 需要 athlete_id)
                 .order('service_date', { ascending: false });
@@ -616,13 +616,26 @@ function ManagerDashboard() {
         return true;
     });
 
-    // 計算統計數據
-    const totalOverdue = maintenanceSummaries.reduce((sum, s) => sum + s.totalOverdue, 0);
-    const totalDueSoon = maintenanceSummaries.reduce((sum, s) => sum + s.totalDueSoon, 0);
-    const totalAthletes = authorizations.length;
-    const authorizedCount = authorizations.filter(a => a.status === 'approved').length;
-    const pendingCount = authorizations.filter(a => a.status === 'pending').length;
-    const totalActivities = activitySummaries.reduce((sum, s) => sum + s.total_activities, 0);
+    // 計算統計數據 (加入 useMemo 優化渲染效能)
+    const stats = React.useMemo(() => {
+        return {
+            totalOverdue: maintenanceSummaries.reduce((sum, s) => sum + s.totalOverdue, 0),
+            totalDueSoon: maintenanceSummaries.reduce((sum, s) => sum + s.totalDueSoon, 0),
+            totalAthletes: authorizations.length,
+            authorizedCount: authorizations.filter(a => a.status === 'approved').length,
+            pendingCount: authorizations.filter(a => a.status === 'pending').length,
+            totalActivities: activitySummaries.reduce((sum, s) => sum + s.total_activities, 0)
+        };
+    }, [maintenanceSummaries, authorizations, activitySummaries]);
+
+    const {
+        totalOverdue,
+        totalDueSoon,
+        totalAthletes,
+        authorizedCount,
+        pendingCount,
+        totalActivities
+    } = stats;
 
     // 取得當前角色主題
     const theme = ROLE_THEMES[managerRole?.role || ''] || DEFAULT_THEME;
