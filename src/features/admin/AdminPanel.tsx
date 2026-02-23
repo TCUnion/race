@@ -3,9 +3,14 @@ import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, Clipb
 import EquipmentList from './EquipmentList';
 import { RaceAdminPanel } from './RaceAdminPanel';
 import { ActivityRepair } from '../manager/components/ActivityRepair';
-import { supabaseAdmin, supabaseServiceRole } from '../../lib/supabase';
-// 如果 Service Role 可用則使用它（繞過 RLS），否則退回 supabaseAdmin
-const supabase = supabaseServiceRole || supabaseAdmin;
+import { supabaseAdmin } from '../../lib/supabase';
+// [FIX] 移除 Service Role 功能，防止前端程式碼洩漏特權存取
+const supabase = supabaseAdmin;
+
+const getWebhookAuthHeader = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ? { headers: { Authorization: `Bearer ${session.access_token}` } } : {};
+};
 import { API_BASE_URL } from '../../lib/api_config';
 import { apiClient } from '../../lib/apiClient';
 import StravaLogo from '../../components/ui/StravaLogo';
@@ -118,7 +123,7 @@ interface StravaToken {
 }
 
 // 🔐 管理員白名單 (athlete_id)
-const ADMIN_ATHLETE_WHITELIST = [2838277];
+
 
 const AdminPanel: React.FC = () => {
     const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
@@ -180,15 +185,11 @@ const AdminPanel: React.FC = () => {
                 }
             } else {
                 if (mounted) {
-                    // 嘗試從 localStorage 讀取記住的登入資訊
+                    // [FIX] 只保留 email，不嘗試讀取 admin_password，防止憑證外洩
                     const savedEmail = localStorage.getItem('admin_email');
-                    const savedPassword = localStorage.getItem('admin_password');
                     if (savedEmail) {
                         setEmail(savedEmail);
                         setRememberMe(true);
-                    }
-                    if (savedPassword) {
-                        setPassword(savedPassword);
                     }
                 }
             }
@@ -462,7 +463,7 @@ const AdminPanel: React.FC = () => {
                 return;
             }
 
-            const response = await apiClient.post('/webhook/segment_set', { segment_id: sid });
+            const response = await apiClient.post('/webhook/segment_set', { segment_id: sid }, await getWebhookAuthHeader());
 
             const responseText = await response.text();
             if (!responseText || responseText.trim() === "") throw new Error("伺服器回傳了空內容");
@@ -526,7 +527,7 @@ const AdminPanel: React.FC = () => {
             const response = await apiClient.post('/webhook/segment_effor_syn', {
                 segment_id: sid,
                 force_refresh: true
-            });
+            }, await getWebhookAuthHeader());
 
             if (btn) btn.classList.remove('animate-spin');
 
@@ -562,7 +563,7 @@ const AdminPanel: React.FC = () => {
                     // 觸發個別同步
                     await apiClient.post('/webhook/segment_effor_syn', {
                         segment_id: seg.strava_id
-                    });
+                    }, await getWebhookAuthHeader());
                     successCount++;
                 } catch (e) {
                     console.error(`Segment ${seg.name} sync failed`, e);
@@ -854,10 +855,8 @@ const AdminPanel: React.FC = () => {
             // 3. 通過驗證，處理「記住我」
             if (rememberMe) {
                 localStorage.setItem('admin_email', email);
-                localStorage.setItem('admin_password', password);
             } else {
                 localStorage.removeItem('admin_email');
-                localStorage.removeItem('admin_password');
             }
 
             // 登入後重整資料
@@ -981,20 +980,17 @@ const AdminPanel: React.FC = () => {
             return;
         }
 
-        // 檢查是否在白名單中
-        if (!ADMIN_ATHLETE_WHITELIST.includes(athleteId)) {
-            // 也檢查 manager_roles 表
-            const { data: managerData } = await supabase
-                .from('manager_roles')
-                .select('role, is_active')
-                .eq('athlete_id', athleteId)
-                .maybeSingle();
+        // [FIX] 移除硬編碼的 ADMIN_ATHLETE_WHITELIST，純粹依賴資料庫 manager_roles
+        const { data: managerData } = await supabase
+            .from('manager_roles')
+            .select('role, is_active')
+            .eq('athlete_id', athleteId)
+            .maybeSingle();
 
-            if (!managerData || managerData.role !== 'admin' || !managerData.is_active) {
-                setError('權限不足：此 Strava 帳號未獲得管理員授權。');
-                setLoading(false);
-                return;
-            }
+        if (!managerData || managerData.role !== 'admin' || !managerData.is_active) {
+            setError('權限不足：此 Strava 帳號未獲得管理員授權。');
+            setLoading(false);
+            return;
         }
 
         // 驗證通過
@@ -1239,13 +1235,13 @@ const AdminPanel: React.FC = () => {
         }
 
         try {
-            // 1. 呼叫 n8n Webhook 刪除 auth.users (需要 Service Role Key)
+            // 1. 呼叫 n8n Webhook 刪除 auth.users
             if (manager.user_id || manager.email) {
                 try {
                     await apiClient.post('/webhook/delete-auth-user', {
-                        user_id: manager.user_id,
-                        email: manager.email
-                    });
+                        uid: manager.user_id,
+                        admin_email: session?.user?.email
+                    }, await getWebhookAuthHeader());
                 } catch (webhookErr) {
                     console.warn('刪除 auth.users Webhook 請求失敗 (但不影響 manager_roles 刪除):', webhookErr);
                 }
@@ -2054,8 +2050,7 @@ const AdminPanel: React.FC = () => {
                                                                 const response = await apiClient.post('/webhook/reset-auth-password', {
                                                                     email: manager.email,
                                                                     password: newPassword
-                                                                });
-
+                                                                }, await getWebhookAuthHeader());
                                                                 if (response.ok) {
                                                                     alert('密碼重設成功！請通知使用者使用新密碼登入。');
                                                                 } else {
@@ -2460,7 +2455,7 @@ const AdminPanel: React.FC = () => {
 
                                         try {
                                             // 呼叫 n8n webhook 取得路段資料
-                                            const response = await apiClient.post('/webhook/segment_set', { segment_id: parsedId });
+                                            const response = await apiClient.post('/webhook/segment_set', { segment_id: parsedId }, await getWebhookAuthHeader());
 
                                             const responseText = await response.text();
 

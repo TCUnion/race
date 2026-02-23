@@ -46,22 +46,14 @@ function App() {
     const [viewParams, setViewParams] = useState<any>({});
     const isMobile = useIsMobile();
 
-    // 初始化：檢查 URL 參數
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const viewParam = params.get('view');
-        const updateParam = params.get('update'); // Legacy support
+        // [FIX] 移除不安全的前端 URL 參數繞過，強制使用者使用正規的 /admin.html 或 /manager.html 實體路徑進入
+        // 已刪除 ?view=admin 與 ?view=manager 的跳轉邏輯
 
         // 檢查路徑是否為 /skill
         if (window.location.pathname === '/skill') {
             setView(V2View.SKILL_VERIFICATION);
             return;
-        }
-
-        if (viewParam === 'manager') {
-            setView(V2View.MANAGER);
-        } else if (viewParam === 'admin') {
-            setView(V2View.ADMIN);
         }
     }, []);
 
