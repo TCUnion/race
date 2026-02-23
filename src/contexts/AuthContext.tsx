@@ -166,8 +166,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [athlete?.id, checkBindingStatus]);
 
     useEffect(() => {
-        const handleAuthChange = async () => {
+        const handleAuthChange = async (event?: Event) => {
+            const detailData = event instanceof CustomEvent ? event.detail : null;
             const current = loadAthleteFromStorage();
+
+            if (detailData && detailData.access_token && detailData.refresh_token) {
+                syncToken(detailData);
+            }
+
             if (current) {
                 setIsLoading(true);
                 const aid = Number(current.id);
@@ -181,7 +187,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     setIsLoading(false);
                 }
                 // 背景同步 token
-                syncToken(current);
+                if (!detailData) {
+                    syncToken(current);
+                }
             } else {
                 setIsLoading(false);
             }

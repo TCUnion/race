@@ -1,5 +1,4 @@
 {
-    "name": "TCU-Strava-Missing-Segments-Sync",
     "nodes": [
         {
             "parameters": {
@@ -12,60 +11,138 @@
                     ]
                 }
             },
-            "id": "e6aedecc-05eb-42d4-bb2f-2c0deab08fae",
+            "id": "2de0f774-a218-4e54-95a8-2b93daadfc40",
             "name": "Schedule Trigger 15分",
             "type": "n8n-nodes-base.scheduleTrigger",
             "typeVersion": 1,
             "position": [
-                0,
-                0
+                -432,
+                -304
             ]
         },
         {
             "parameters": {
                 "operation": "executeQuery",
-                "query": "WITH active_periods AS (\n  SELECT \n    MIN(start_date) AS min_start_date, \n    MAX(end_date) AS max_end_date\n  FROM (\n    SELECT start_date::timestamptz, end_date::timestamptz FROM team_races WHERE is_active = true\n    UNION ALL\n    SELECT start_date::timestamptz, end_date::timestamptz FROM segments WHERE is_active = true\n  ) all_races\n),\napproved_athletes AS (\n  SELECT DISTINCT strava_athlete_id AS athlete_id\n  FROM registrations\n  WHERE status = 'approved' AND strava_athlete_id IS NOT NULL\n)\nSELECT \n  sa.id::text AS activity_id, \n  sa.athlete_id::text AS athlete_id \nFROM strava_activities sa\nJOIN approved_athletes aa ON sa.athlete_id = aa.athlete_id\nCROSS JOIN active_periods ap\nWHERE \n  sa.start_date::timestamptz >= ap.min_start_date \n  AND sa.start_date::timestamptz <= COALESCE(ap.max_end_date, NOW())\n  AND sa.segment_efforts_dump IS NULL\nORDER BY sa.start_date DESC \nLIMIT 50;"
+                "query": "WITH active_periods AS (\n  SELECT \n    MIN(start_date) AS min_start_date, \n    MAX(end_date) AS max_end_date\n  FROM (\n    SELECT start_date::timestamptz, end_date::timestamptz FROM team_races WHERE is_active = true\n    UNION ALL\n    SELECT start_date::timestamptz, end_date::timestamptz FROM segments WHERE is_active = true\n  ) all_races\n),\napproved_athletes AS (\n  SELECT DISTINCT strava_athlete_id AS athlete_id\n  FROM registrations\n  WHERE status = 'approved' AND strava_athlete_id IS NOT NULL\n)\nSELECT \n  sa.id AS activity_id, \n  sa.athlete_id \nFROM strava_activities sa\nJOIN approved_athletes aa ON sa.athlete_id = aa.athlete_id\nCROSS JOIN active_periods ap\nWHERE \n  sa.start_date::timestamptz >= ap.min_start_date \n  AND sa.start_date::timestamptz <= COALESCE(ap.max_end_date, NOW())\n  AND sa.segment_efforts_dump IS NULL\nORDER BY sa.start_date DESC \nLIMIT 50;\n",
+                "options": {}
             },
-            "id": "18fbd8fe-e15d-4f05-8e7c-474c05f77bae",
+            "id": "993de44f-6427-4816-b0ba-3751cbad07ec",
             "name": "Get Activities without Segments (RPC)",
             "type": "n8n-nodes-base.postgres",
             "typeVersion": 2.4,
             "position": [
-                200,
-                0
-            ]
-        },
-        {
-            "parameters": {
-                "batchSize": 1,
-                "options": {}
-            },
-            "id": "a9e6af45-b4aa-49c0-96f7-c5d9bd2a1dd0",
-            "name": "Split In Batches (1 Loop)",
-            "type": "n8n-nodes-base.splitInBatches",
-            "typeVersion": 1,
-            "position": [
-                400,
-                0
-            ]
+                -208,
+                -304
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "EyymWfYG639Eg1jJ",
+                    "name": "Postgres account"
+                }
+            }
         },
         {
             "parameters": {
                 "operation": "executeQuery",
-                "query": "SELECT access_token FROM strava_tokens WHERE athlete_id = {{$json.athlete_id}};"
+                "query": "SELECT access_token FROM strava_tokens WHERE athlete_id = {{$json.athlete_id}};",
+                "options": {}
             },
-            "id": "3cc708be-f1c5-43ea-bfb0-b3bd3116599b",
+            "id": "ce731b80-521f-4de4-be5d-7f9b0af3bd50",
             "name": "Get Athlete Token",
             "type": "n8n-nodes-base.postgres",
             "typeVersion": 2.4,
             "position": [
-                600,
-                0
+                480,
+                -176
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "EyymWfYG639Eg1jJ",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "amount": 10,
+                "unit": "seconds"
+            },
+            "id": "a1f9399e-df46-4185-9636-2b7af9141d1c",
+            "name": "Wait (Rate Limit 10s)",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1,
+            "position": [
+                1104,
+                112
+            ],
+            "webhookId": "846c40c3-c502-4e7c-a1f5-5153fa68b76e"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                272,
+                -336
+            ],
+            "id": "b3ae6ba8-d568-4a60-a4e7-fe5718a235b3",
+            "name": "Loop Over Items"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prepare data for update\nconst strava = items[0].json;\nconst activityId = $('Loop Over Items').first().json.activity_id;\n\nif (!strava || strava.error) {\n  return [{json: {error: \"Failed to fetch\", id: activityId}}];\n}\n\nreturn [{\n  json: {\n    id: activityId,\n    segment_efforts_dump: strava.segment_efforts,\n    splits_metric: strava.splits_metric,\n    laps_data: strava.laps,\n    calories: strava.calories,\n    updated_at: new Date().toISOString()\n  }\n}];"
+            },
+            "id": "773b7f6e-50b3-4d4f-9a25-6b612708cb71",
+            "name": "Prepare Update Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1248,
+                -144
             ]
         },
         {
             "parameters": {
-                "url": "=https://www.strava.com/api/v3/activities/{{ $('Split In Batches (1 Loop)').item.json.activity_id }}",
+                "operation": "update",
+                "tableId": "strava_activities",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "condition": "eq",
+                            "keyValue": "={{ $('Loop Over Items').item.json.activity_id }}"
+                        }
+                    ]
+                },
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "segment_efforts_dump",
+                            "fieldValue": "={{ $json.segment_efforts_dump }}"
+                        }
+                    ]
+                }
+            },
+            "id": "67ece0fd-1093-4f57-a073-e1e04af4a87b",
+            "name": "Update Activity with Details1",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1488,
+                -80
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "PGm6MwZtGB3EWxS8",
+                    "name": "TCUDB"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "=https://www.strava.com/api/v3/activities/{{ $('Loop Over Items').item.json.activity_id }}",
                 "sendQuery": true,
                 "queryParameters": {
                     "parameters": [
@@ -86,46 +163,147 @@
                 },
                 "options": {}
             },
-            "id": "dc2ea7f9-2b02-4749-81f7-e2fe9a3a91bb",
+            "id": "e60b7c78-b482-46fd-9cef-2d9f8f3d2a10",
             "name": "Strava Get Activity Detail",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [
-                800,
-                0
+                704,
+                -96
             ],
             "onError": "continueErrorOutput"
         },
         {
             "parameters": {
-                "operation": "executeQuery",
-                "query": "UPDATE strava_activities SET segment_efforts_dump = '{{JSON.stringify($json.segment_efforts || [])}}'::jsonb WHERE id = {{$('Split In Batches (1 Loop)').item.json.activity_id}};"
+                "operation": "append",
+                "documentId": {
+                    "__rl": true,
+                    "value": "1Df6BtVw_-n9rH9G6o0555S014zWX7V4WRyNdMmrQFFA",
+                    "mode": "list",
+                    "cachedResultName": "debug",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Df6BtVw_-n9rH9G6o0555S014zWX7V4WRyNdMmrQFFA/edit?usp=drivesdk"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": 1329310993,
+                    "mode": "list",
+                    "cachedResultName": "確認異常activity",
+                    "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Df6BtVw_-n9rH9G6o0555S014zWX7V4WRyNdMmrQFFA/edit#gid=1329310993"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "ACTIVITY_ID": "={{ $('Loop Over Items').item.json.activity_id }}",
+                        "Athlete_id": "={{ $('Loop Over Items').item.json.athlete_id }}",
+                        "name": "={{ $workflow.name }}",
+                        "error message": "={{ $json.error.message }}",
+                        "error name": "={{ $json.error.name }}",
+                        "error stack": "={{ $json.error.stack }}"
+                    },
+                    "matchingColumns": [],
+                    "schema": [
+                        {
+                            "id": "ACTIVITY_ID",
+                            "displayName": "ACTIVITY_ID",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "Athlete_id",
+                            "displayName": "Athlete_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "error message",
+                            "displayName": "error message",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "error name",
+                            "displayName": "error name",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "error stack",
+                            "displayName": "error stack",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "name",
+                            "displayName": "name",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
             },
-            "id": "c1fcf011-8c43-441d-af2f-7634f19810ef",
-            "name": "Update Activity with Details",
-            "type": "n8n-nodes-base.postgres",
-            "typeVersion": 2.4,
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.7,
             "position": [
-                1000,
-                0
-            ]
+                848,
+                80
+            ],
+            "id": "e883cab2-f8fc-430f-8fc7-514cd21c6dcd",
+            "name": "Append row in sheet",
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "iC6iuoTSGnyLKZtG",
+                    "name": "Google Sheets account"
+                }
+            }
         },
         {
             "parameters": {
-                "amount": 10,
-                "unit": "seconds"
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.athlete_id }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
             },
-            "id": "e1f132e0-f203-490b-ba65-8b2b73ec437a",
-            "name": "Wait (Rate Limit 10s)",
-            "type": "n8n-nodes-base.wait",
+            "id": "e4aabc12-3456-7890-abcd-1234567890ab",
+            "name": "Check Has Data",
+            "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                1200,
-                0
+                32,
+                -304
             ]
         }
     ],
-    "pinData": {},
     "connections": {
         "Schedule Trigger 15分": {
             "main": [
@@ -142,18 +320,7 @@
             "main": [
                 [
                     {
-                        "node": "Split In Batches (1 Loop)",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Split In Batches (1 Loop)": {
-            "main": [
-                [
-                    {
-                        "node": "Get Athlete Token",
+                        "node": "Check Has Data",
                         "type": "main",
                         "index": 0
                     }
@@ -171,18 +338,41 @@
                 ]
             ]
         },
-        "Strava Get Activity Detail": {
+        "Wait (Rate Limit 10s)": {
             "main": [
                 [
                     {
-                        "node": "Update Activity with Details",
+                        "node": "Loop Over Items",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Update Activity with Details": {
+        "Loop Over Items": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "Get Athlete Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Update Data": {
+            "main": [
+                [
+                    {
+                        "node": "Update Activity with Details1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Activity with Details1": {
             "main": [
                 [
                     {
@@ -193,11 +383,40 @@
                 ]
             ]
         },
-        "Wait (Rate Limit 10s)": {
+        "Strava Get Activity Detail": {
             "main": [
                 [
                     {
-                        "node": "Split In Batches (1 Loop)",
+                        "node": "Prepare Update Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Append row in sheet",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Append row in sheet": {
+            "main": [
+                [
+                    {
+                        "node": "Wait (Rate Limit 10s)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Has Data": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
                         "type": "main",
                         "index": 0
                     }
@@ -205,12 +424,10 @@
             ]
         }
     },
-    "active": false,
-    "settings": {},
-    "versionId": "f12e8412-1d54-47dd-b542-a80ac57351ad",
+    "pinData": {},
     "meta": {
-        "templateCredsSetupCompleted": true
+        "templateCredsSetupCompleted": true,
+        "instanceId": "5b24bcf19ee3995c870dc7be87e249d30dd788931f2003542783f93183d9c036"
     },
-    "id": "m1hE8l9zYvPxRqNt",
-    "tags": []
+    "name": "TCU-Strava-Missing-Segments-Sync"
 }

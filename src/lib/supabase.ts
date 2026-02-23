@@ -40,21 +40,5 @@ export const supabaseAdmin = createClient(
     }
 );
 
-/**
- * [DEV ONLY] 使用 Service Role Key 的客戶端，可繞過 RLS 政策。
- * 僅用於開發環境和 Admin Panel。
- * 警告：請勿在前端生產環境使用 Service Role Key！
- */
-const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
-
-export const supabaseServiceRole = serviceRoleKey ? createClient(
-    supabaseUrl,
-    serviceRoleKey,
-    {
-        auth: {
-            storageKey: 'sb-service-role',
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    }
-) : null;
+// 移除 Service Role 功能，防止前端程式碼洩漏特權存取
+// 如果前端需要特殊權限操作，請改由呼叫自建之後端 API (如 n8n Webhook) 處理。

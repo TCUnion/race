@@ -58,12 +58,18 @@ const StravaConnect: React.FC = () => {
             lastname: athleteData.lastname || athleteData.lastName || '',
             ts: Date.now()
         };
-        localStorage.setItem(CONFIG.storageKey, JSON.stringify(fullData));
-        setAthlete(fullData);
+
+        // 分離敏感資訊，不存入 localStorage
+        const safeData = { ...fullData };
+        delete safeData.access_token;
+        delete safeData.refresh_token;
+
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(safeData));
+        setAthlete(safeData);
         setIsLoading(false);
 
-        // 通知全局狀態更新 (由 useAuth 監聽並同步 Token)
-        window.dispatchEvent(new Event('strava-auth-changed'));
+        // 通知全局狀態更新 (由 useAuth 監聽並同步 Token)，使用 CustomEvent 傳遞完整包含 tokens 的資料
+        window.dispatchEvent(new CustomEvent('strava-auth-changed', { detail: fullData }));
     };
 
     const checkStoredData = () => {
@@ -141,7 +147,7 @@ const StravaConnect: React.FC = () => {
         localStorage.removeItem(CONFIG.storageKey);
         localStorage.removeItem(CONFIG.storageKey + '_temp');
         setAthlete(null);
-        window.dispatchEvent(new Event('strava-auth-changed'));
+        window.dispatchEvent(new CustomEvent('strava-auth-changed'));
     };
 
     useEffect(() => {
