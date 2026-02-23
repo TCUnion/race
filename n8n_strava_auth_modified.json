@@ -1,0 +1,1726 @@
+{
+  "id": "KcWmCZTWdHamkAQD",
+  "name": "TCUSTRAVA主系統 與登入",
+  "active": true,
+  "isArchived": false,
+  "versionId": "00b87b31-2de5-4df9-b393-c0005d7692ea",
+  "triggerCount": 4,
+  "createdAt": "2025-12-18T07:07:01.462Z",
+  "updatedAt": "2026-02-21T07:43:25.700Z",
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true,
+    "errorWorkflow": "DXHhcqkm8SfM4sjGYYnY0",
+    "timeSavedMode": "fixed",
+    "binaryMode": "separate"
+  },
+  "connections": {
+    "Prepare Token Request": {
+      "main": [
+        [
+          {
+            "node": "Strava 令牌交換",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Token Data": {
+      "main": [
+        [
+          {
+            "node": "獲取運動員詳情",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Error": {
+      "main": [
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Auth URL1": {
+      "main": [
+        [
+          {
+            "node": "Redirect to Strava1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STRAVA授權成功畫面": {
+      "main": [
+        [
+          {
+            "node": "Respond Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "取消 Strava": {
+      "main": [
+        [
+          {
+            "node": "TCU賽事授權-所有已授權運動員2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TCU賽事授權-取消",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "移除strava_tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OAuth cancel": {
+      "main": [
+        [
+          {
+            "node": "Respond Success2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get Tokens",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get My STRAVA TOKEN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get Tokens": {
+      "main": [
+        []
+      ]
+    },
+    "TCU賽事授權-所有已授權運動員2": {
+      "main": [
+        [
+          {
+            "node": "Respond Success2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strava 授權啟動 Webhook": {
+      "main": [
+        [
+          {
+            "node": "get My STRAVA TOKEN8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strava 令牌交換": {
+      "main": [
+        [
+          {
+            "node": "Extract Token Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "獲取運動員詳情": {
+      "main": [
+        [
+          {
+            "node": "STRAVA授權成功畫面",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "登入通知1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "get My STRAVA TOKEN4": {
+      "main": [
+        [
+          {
+            "node": "Prepare Token Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get My STRAVA TOKEN": {
+      "main": [
+        []
+      ]
+    },
+    "get My STRAVA TOKEN8": {
+      "main": [
+        [
+          {
+            "node": "Build Auth URL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond Success1": {
+      "main": [
+        []
+      ]
+    },
+    "Redirect to Strava1": {
+      "main": [
+        [
+          {
+            "node": "refresh_token1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Call '獲取運動員詳情'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "get My STRAVA TOKEN4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond Error": {
+      "main": [
+        [
+          {
+            "node": "登入通知",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "strava/auth/callback": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rest/oauth2-credential/callback": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "client_id",
+              "value": "={{ $json.client_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "client_secret",
+              "value": "={{ $json.client_secret }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "authorization_code",
+              "value": "={{ $('Code in JavaScript1').item.json.code }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4e2e48d9-8f80-410c-9bcd-adc00c8b21a2",
+      "name": "Prepare Token Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -7152,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "refresh_token",
+              "value": "={{ $json.refresh_token }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "expires_at",
+              "value": "={{ $json.expires_at }}",
+              "type": "number"
+            },
+            {
+              "id": "4",
+              "name": "athlete_id",
+              "value": "={{ $json.athlete.id }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cff947b2-b12e-4b93-8aa3-4aa517553024",
+      "name": "Extract Token Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -6704,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html>\n<html lang=\"zh-TW\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>系統提示</title>\n    <style>\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);\n            min-height: 100vh;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            color: #333;\n            overflow: hidden;\n        }\n\n        .container {\n            text-align: center;\n            padding: 40px;\n            background: rgba(255, 255, 255, 0.9);\n            border-radius: 24px;\n            backdrop-filter: blur(12px);\n            -webkit-backdrop-filter: blur(12px);\n            max-width: 400px;\n            width: 90%;\n            border: 1px solid rgba(255, 255, 255, 0.4);\n            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);\n        }\n\n        .icon {\n            width: 80px;\n            height: 80px;\n            background: #fee2e2;\n            border-radius: 50%;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            margin: 0 auto 20px;\n        }\n\n        .icon svg {\n            width: 40px;\n            height: 40px;\n            color: #ef4444;\n        }\n\n        h1 {\n            font-size: 24px;\n            margin-bottom: 12px;\n            font-weight: 700;\n            color: #0f172a;\n        }\n\n        p {\n            opacity: 0.8;\n            font-size: 15px;\n            line-height: 1.6;\n            color: #475569;\n        }\n        \n        .details {\n            margin-top: 15px;\n            font-size: 12px;\n            background: #f8fafc;\n            padding: 10px;\n            border-radius: 8px;\n            border: 1px solid #e2e8f0;\n            color: #64748b;\n            word-break: break-all;\n            text-align: left;\n        }\n\n        .countdown {\n            margin-top: 24px;\n            font-size: 13px;\n            opacity: 0.8;\n            background: rgba(0, 0, 0, 0.05);\n            padding: 6px 16px;\n            border-radius: 20px;\n            display: inline-block;\n            color: #475569;\n        }\n    </style>\n</head>\n\n<body>\n    <div class=\"container\">\n        <div class=\"icon\">\n            <svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\" />\n            </svg>\n        </div>\n        <h1>系統忙碌中</h1>\n        <p>目前系統處理的請求過多，或是發生錯誤，請稍後再試。</p>\n        <div class=\"details\">Error: {{ $json.error?.message || $json.message || \"OAuth failed or Rate Limit Exceeded\" }}<br/>Details: {{ $json.error?.details || $json.description || \"Unknown error\" }}</div>\n        <p class=\"countdown\">視窗將在 <span id=\"timer\">5</span> 秒後自動關閉...</p>\n    </div>\n\n    <script>\n        // 通知母視窗發生錯誤\n        if (window.opener) {\n            try {\n                window.opener.postMessage({\n                    type: 'STRAVA_AUTH_ERROR',\n                    error: true\n                }, '*');\n            } catch (e) {\n                console.error('postMessage 失敗:', e);\n            }\n        }\n\n        // 倒數計時關閉視窗\n        let seconds = 5;\n        const timerEl = document.getElementById('timer');\n        const countdown = setInterval(() => {\n            seconds--;\n            if (timerEl) timerEl.textContent = seconds;\n            if (seconds <= 0) {\n                clearInterval(countdown);\n                window.close();\n            }\n        }, 1000);\n        \n        // 如果 6 秒後還沒關閉，強制關閉\n        setTimeout(() => window.close(), 6000);\n    </script>\n</body>\n</html>",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "990af5ab-7731-45f6-88dd-d420d79a849c",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -8048,
+        288
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "50c61532-1bdd-4134-b7d7-1c6bc57724b8",
+      "name": "On Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -8272,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "client_id",
+              "value": "={{ $json.client_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "callback_url",
+              "value": "={{ $json.callback || 'https://service.criterium.tw/webhook/rest/oauth2-credential/callback' }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "scope",
+              "value": "activity:read_all,profile:read_all",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "authUrl",
+              "value": "=https://www.strava.com/oauth/authorize?client_id={{ $json.client_id }}&response_type=code&redirect_uri={{ $json.callback || 'https://service.criterium.tw/webhook/rest/oauth2-credential/callback' }}&approval_prompt=force&scope=activity:read_all,profile:read_all",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "state",
+              "value": "={{ $now.toISO() }}_{{ $runIndex }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5ddd914c-7e1a-49f5-8f2d-85f4b7a12979",
+      "name": "Build Auth URL1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -7824,
+        -592
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ $json.authUrl }}",
+        "options": {
+          "responseCode": 302,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-cache, no-store, must-revalidate"
+              }
+            ]
+          }
+        }
+      },
+      "id": "0b6f2930-d710-4ae0-961d-33b43be69141",
+      "name": "Redirect to Strava1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -7600,
+        -592
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "37bf7622-dd0a-452a-8988-87fd53f6fb17",
+      "name": "Respond Success1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -6032,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"zh-TW\">\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Strava 授權成功</title>\n    <style>\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n            background: linear-gradient(135deg, #fc4c02 0%, #e34402 100%);\n            min-height: 100vh;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            color: white;\n            overflow: hidden;\n        }\n\n        .container {\n            text-align: center;\n            padding: 40px;\n            background: rgba(0, 0, 0, 0.2);\n            border-radius: 24px;\n            backdrop-filter: blur(12px);\n            -webkit-backdrop-filter: blur(12px);\n            max-width: 400px;\n            width: 90%;\n            border: 1px solid rgba(255, 255, 255, 0.1);\n            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);\n        }\n\n        .checkmark {\n            width: 80px;\n            height: 80px;\n            background: white;\n            border-radius: 50%;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            margin: 0 auto 20px;\n            animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);\n        }\n\n        .checkmark svg {\n            width: 40px;\n            height: 40px;\n            color: #fc4c02;\n        }\n\n        h1 {\n            font-size: 24px;\n            margin-bottom: 12px;\n            font-weight: 700;\n        }\n\n        p {\n            opacity: 0.9;\n            font-size: 15px;\n            line-height: 1.6;\n        }\n\n        .countdown {\n            margin-top: 24px;\n            font-size: 13px;\n            opacity: 0.6;\n            background: rgba(255, 255, 255, 0.1);\n            padding: 6px 16px;\n            border-radius: 20px;\n            display: inline-block;\n        }\n\n        @keyframes pop {\n            0% { transform: scale(0); }\n            100% { transform: scale(1); }\n        }\n    </style>\n</head>\n\n<body>\n    <div class=\"container\">\n        <div class=\"checkmark\">\n            <svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"3\" d=\"M5 13l4 4L19 7\" />\n            </svg>\n        </div>\n        <h1>授權成功！</h1>\n        <p>您的 Strava 帳號已與 TCU 成功連結 <br>\n           <b>{{ $json.firstname }} {{ $json.lastname }}</b>，歡迎回來！</p>\n        <p class=\"countdown\">視窗將在 <span id=\"timer\">3</span> 秒後自動關閉...</p>\n    </div>\n\n    <script>\n        // 1. 整理運動員資料 (確保數字與字串格式正確)\n        const athleteData = {\n            id: {{ $json.id }}, // Strava ID (數字)\n            username: '{{ $json.username }}',\n            firstname: '{{ $json.firstname }}', // 修正為小寫\n            lastname: '{{ $json.lastname }}',   // 修正為小寫\n            profile: '{{ $json.profile }}',\n            profile_medium: '{{ $json.profile_medium }}',\n            \n            // 下方 Token 資訊確保讀取正確\n            access_token: '{{ $json.access_token }}',\n            refresh_token: '{{ $json.refresh_token }}',\n            expires_at: {{ $json.expires_at || 0 }} \n        };\n\n        console.log('[TCU] 準備傳送資料:', athleteData);\n\n        // 2. 方法一：透過 postMessage 發送給母視窗 (Navbar.tsx)\n        if (window.opener) {\n            try {\n                window.opener.postMessage({\n                    type: 'STRAVA_AUTH_SUCCESS',\n                    athlete: athleteData,\n                    ...athleteData // 同時展開欄位，讓前端更好讀取\n                }, '*');\n                console.log('[TCU] postMessage 發送成功');\n            } catch (e) {\n                console.error('[TCU] postMessage 失敗:', e);\n            }\n        }\n\n        // 3. 方法二：LocalStorage 存檔 (備援/同步狀態)\n        try {\n            localStorage.setItem('strava_athlete_data', JSON.stringify(athleteData));\n            // 觸發 Auth 變更事件\n            window.dispatchEvent(new Event('strava-auth-changed'));\n        } catch (e) {\n            console.warn('[TCU] LocalStorage 寫入受限');\n        }\n\n        // 4. 倒數計時關閉視窗\n        let seconds = 3;\n        const timerEl = document.getElementById('timer');\n        const countdown = setInterval(() => {\n            seconds--;\n            if (timerEl) timerEl.textContent = seconds;\n            if (seconds <= 0) {\n                clearInterval(countdown);\n                window.close();\n            }\n        }, 1000);\n        \n        // 如果 5 秒後還沒關閉，強制關閉\n        setTimeout(() => window.close(), 5000);\n    </script>\n</body>\n\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -6256,
+        -368
+      ],
+      "id": "9c14db4e-d37d-49cf-8b44-6826c3248c45",
+      "name": "STRAVA授權成功畫面"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.strava.com/oauth/deauthorize?access_token={{ $json.access_token }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -8272,
+        608
+      ],
+      "id": "c2fc999b-bfbc-4eeb-be83-beeaba4cc07d",
+      "name": "取消 Strava",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "strava/auth/cancel",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "X-Frame-Options",
+                "value": "DENY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2c5d33f6-89ce-4387-a31e-b108d57e8de4",
+      "name": "OAuth cancel",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -8048,
+        1088
+      ],
+      "webhookId": "64021788-0e50-412e-a222-1355843f7d68"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3e9d4f14-b017-44e1-b798-7a9b1068d776",
+      "name": "Respond Success2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -7824,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "8gqI95JDE8KFIAfQ",
+          "mode": "list",
+          "cachedResultName": "Strava OAuth",
+          "cachedResultUrl": "/projects/U9bkaq7JPh4XmxuY/datatables/8gqI95JDE8KFIAfQ"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=athlete_id",
+              "condition": "=eq",
+              "keyValue": "={{ $json.body.athlete_id }}"
+            }
+          ]
+        }
+      },
+      "id": "37c1880f-1273-4a2b-8bd4-b85c61c431d1",
+      "name": "get Tokens",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -7824,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "14HuMUxITy6IEB2OgLZig-rXH_ytmI-q5hpwAUNJJK8I",
+          "mode": "list",
+          "cachedResultName": "TCU賽事授權",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14HuMUxITy6IEB2OgLZig-rXH_ytmI-q5hpwAUNJJK8I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "所有已授權運動員",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14HuMUxITy6IEB2OgLZig-rXH_ytmI-q5hpwAUNJJK8I/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('get Tokens').item.json.athlete_id }}",
+            "取消授權": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "最新授權",
+              "displayName": "最新授權",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "取消授權",
+              "displayName": "取消授權",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resource_state",
+              "displayName": "resource_state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "firstname",
+              "displayName": "firstname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lastname",
+              "displayName": "lastname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "bio",
+              "displayName": "bio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sex",
+              "displayName": "sex",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "premium",
+              "displayName": "premium",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summit",
+              "displayName": "summit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "badge_type_id",
+              "displayName": "badge_type_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "weight",
+              "displayName": "weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profile_medium",
+              "displayName": "profile_medium",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "profile",
+              "displayName": "profile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "friend",
+              "displayName": "friend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "follower",
+              "displayName": "follower",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "blocked",
+              "displayName": "blocked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "can_follow",
+              "displayName": "can_follow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "follower_count",
+              "displayName": "follower_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "friend_count",
+              "displayName": "friend_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "mutual_friend_count",
+              "displayName": "mutual_friend_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "athlete_type",
+              "displayName": "athlete_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "date_preference",
+              "displayName": "date_preference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "measurement_preference",
+              "displayName": "measurement_preference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "clubs",
+              "displayName": "clubs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "postable_clubs_count",
+              "displayName": "postable_clubs_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ftp",
+              "displayName": "ftp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "bikes",
+              "displayName": "bikes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "shoes",
+              "displayName": "shoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -8048,
+        512
+      ],
+      "id": "28df3e15-8073-4709-bae3-42d66f82f21b",
+      "name": "TCU賽事授權-所有已授權運動員2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "path": "strava/auth/start",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://status.criterium.tw",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS, GET"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              },
+              {
+                "name": "X-Frame-Options",
+                "value": "DENY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "1ae4c7cb-b8aa-4512-88d0-095172b3cd37",
+      "name": "Strava 授權啟動 Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -8272,
+        -592
+      ],
+      "webhookId": "64021788-0e50-412e-a222-1355843f7d68"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.strava.com/oauth/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "={{ $json.client_id }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.client_secret }}"
+            },
+            {
+              "name": "code",
+              "value": "={{ $json.authorization_code }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "c01056c3-728d-4110-a280-b4e5d0cbe6f7",
+      "name": "Strava 令牌交換",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -6928,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.strava.com/api/v3/athletes/{{ $('Extract Token Data').item.json.athlete_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "528d5532-c7e5-4beb-94d8-593aaec1ce52",
+      "name": "獲取運動員詳情",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -6480,
+        -176
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "14HuMUxITy6IEB2OgLZig-rXH_ytmI-q5hpwAUNJJK8I",
+          "mode": "list",
+          "cachedResultName": "TCU賽事授權",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14HuMUxITy6IEB2OgLZig-rXH_ytmI-q5hpwAUNJJK8I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 458979872,
+          "mode": "list",
+          "cachedResultName": "授權debug",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14HuMUxITy6IEB2OgLZig-rXH_ytmI-q5hpwAUNJJK8I/edit#gid=458979872"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('get Tokens').item.json.athlete_id }}",
+            "ip": "={{ $('OAuth cancel').item.json.headers['x-forwarded-for'] }}",
+            "授權時間": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "username": "={{ $('get Tokens').item.json.userName }}",
+            "resource_state": "=",
+            "firstname": "={{ $('get Tokens').item.json.firstName }}",
+            "lastname": "={{ $('get Tokens').item.json.lastName }}",
+            "授權取消": "取消"
+          },
+          "matchingColumns": [
+            "授權時間"
+          ],
+          "schema": [
+            {
+              "id": "授權時間",
+              "displayName": "授權時間",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "授權取消",
+              "displayName": "授權取消",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ip",
+              "displayName": "ip",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "resource_state",
+              "displayName": "resource_state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "firstname",
+              "displayName": "firstname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "lastname",
+              "displayName": "lastname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -8048,
+        704
+      ],
+      "id": "18fb8743-8b47-422f-b3ed-2293519a6cc1",
+      "name": "TCU賽事授權-取消",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "strava_tokens",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "athlete_id",
+              "condition": "eq",
+              "keyValue": "={{ $('get Tokens').item.json.athlete_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -8048,
+        896
+      ],
+      "id": "17249fb1-5563-4626-891a-1c49a6666ef5",
+      "name": "移除strava_tokens",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "MyStravaToken",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "=113184"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -7376,
+        -80
+      ],
+      "id": "f6ca069a-2bb8-4074-afdc-32a5375361b1",
+      "name": "get My STRAVA TOKEN4"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "MyStravaToken",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "=113184"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -7824,
+        1184
+      ],
+      "id": "d040ad0b-8f41-4ca3-acf1-3dd461365c16",
+      "name": "get My STRAVA TOKEN"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "MyStravaToken",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "client_id",
+              "keyValue": "=113184"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -8048,
+        -592
+      ],
+      "id": "fc9b8848-0fe2-4b29-ad86-d19b61e0fdf3",
+      "name": "get My STRAVA TOKEN8"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1439509951793070122",
+          "mode": "list",
+          "cachedResultName": "TCU 的伺服器",
+          "cachedResultUrl": "https://discord.com/channels/1439509951793070122"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1468418696941801647",
+          "mode": "list",
+          "cachedResultName": "小幫手登入",
+          "cachedResultUrl": "https://discord.com/channels/1439509951793070122/1468418696941801647"
+        },
+        "content": "={{ $workflow.name }}\n--------------------------\n\n{{ $('獲取運動員詳情').item.json.firstname }}{{ $('獲取運動員詳情').item.json.lastname }} 登入\nhttps://www.strava.com/athletes/{{ $json.id }}\n登入時間 : {{ $now.format('yyyy-MM-dd HH:mm:ss') }}\nhttps://service.criterium.tw/workflow/{{ $workflow.id }}\n\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -6256,
+        -176
+      ],
+      "id": "c6917f80-6b2b-4913-ae07-665f923486c0",
+      "name": "登入通知1",
+      "webhookId": "319afae2-32f5-4a97-b404-9187a0a62f0a"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "11TMtcbQrybINO6S1Ly2TpGOg1Wr-8tbJeERyrkclvno",
+          "mode": "list",
+          "cachedResultName": "STRAVA refresh_token",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11TMtcbQrybINO6S1Ly2TpGOg1Wr-8tbJeERyrkclvno/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1975965947,
+          "mode": "list",
+          "cachedResultName": "login",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11TMtcbQrybINO6S1Ly2TpGOg1Wr-8tbJeERyrkclvno/edit#gid=1975965947"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "headers": "={{ $json.headers }}",
+            "params": "={{ $json.params }}",
+            "query": "={{ $json.query }}",
+            "body": "={{ $json.body }}",
+            "webhookUrl": "={{ $json.webhookUrl }}",
+            "executionMode": "={{ $json.executionMode }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "headers",
+              "displayName": "headers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "params",
+              "displayName": "params",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "webhookUrl",
+              "displayName": "webhookUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "executionMode",
+              "displayName": "executionMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -7376,
+        -592
+      ],
+      "id": "74c320b6-0202-4641-8b5e-61ce7c395c36",
+      "name": "refresh_token1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "DcqMRjcWoQlpLxZvAB2pb"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -6032,
+        16
+      ],
+      "id": "42ddd38b-d1a5-45be-ae3b-0c63220f470b",
+      "name": "Call '獲取運動員詳情'"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 位置：放在「Strava 令牌交換」之後\nreturn [{\n  json: {\n    access_token: $json.access_token,\n    refresh_token: $json.refresh_token,\n    expires_at: $json.expires_at,\n    athlete_id: $json.athlete.id,\n    // 同時保留原始資料，供後續節點參考\n    athlete: $json.athlete \n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6480,
+        64
+      ],
+      "id": "01bcb10b-cc90-4377-8cf0-e91cb01c6a88",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -6256,
+        16
+      ],
+      "id": "751aeb5d-6a9b-4dd9-a0ec-5870459d0f12",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f9a604d8-78da-4f22-80be-9697ba05992f",
+              "leftValue": "={{ $json.code }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -7600,
+        -80
+      ],
+      "id": "03afc3e4-4353-4d49-b6c9-27de410e6165",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1439509951793070122",
+          "mode": "list",
+          "cachedResultName": "TCU 的伺服器",
+          "cachedResultUrl": "https://discord.com/channels/1439509951793070122"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1468418696941801647",
+          "mode": "list",
+          "cachedResultName": "小幫手登入",
+          "cachedResultUrl": "https://discord.com/channels/1439509951793070122/1468418696941801647"
+        },
+        "content": "={{ $workflow.name }} error\n--------------------------\n\n\n登入時間 : {{ $now.format('yyyy-MM-dd HH:mm:ss') }}\nhttps://service.criterium.tw/workflow/{{ $workflow.id }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -7824,
+        288
+      ],
+      "id": "c6c47616-b627-46c5-9311-886b20ca9562",
+      "name": "登入通知",
+      "webhookId": "319afae2-32f5-4a97-b404-9187a0a62f0a"
+    },
+    {
+      "parameters": {
+        "path": "strava/auth/callback",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "2e7299fb-6232-4f99-9291-f074b1dbae2b",
+      "name": "strava/auth/callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -8272,
+        16
+      ],
+      "webhookId": "eff8daf7-ec59-4d9e-a5cb-2600d73581dd"
+    },
+    {
+      "parameters": {
+        "path": "rest/oauth2-credential/callback",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "78939b40-9930-4362-86cc-c2bb96b40865",
+      "name": "rest/oauth2-credential/callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -8272,
+        -176
+      ],
+      "webhookId": "eff8daf7-ec59-4d9e-a5cb-2600d73581dd"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "835baacc-ab9f-4997-a083-8a469ef03552",
+              "name": "code",
+              "value": "={{ $json.query.code }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -8048,
+        16
+      ],
+      "id": "480a89af-ba11-41ec-81e1-a99856aaef44",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f04bf43e-b9f7-4d18-afee-9fb3301b0c14",
+              "name": "code",
+              "value": "={{ $json.query.code }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -8048,
+        -176
+      ],
+      "id": "bc3f9f9a-f80a-48d2-938a-3c3a9c80478a",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 取得輸入的資料 (來自 Edit Fields 或 Edit Fields1)\nreturn $input.all().map(item => {\n  return {\n    json: {\n      // 直接回傳 code，統一輸出格式\n      code: item.json.code\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7824,
+        -80
+      ],
+      "id": "bf39d929-c53f-4d65-b8cd-ac49b31a613e",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "parentFolderId": null,
+  "scopes": [
+    "workflow:create",
+    "workflow:delete",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:update"
+  ],
+  "canExecute": true
+}

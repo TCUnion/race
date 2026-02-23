@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統提示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .icon svg {
+            width: 40px;
+            height: 40px;
+            color: #ef4444;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        p {
+            opacity: 0.8;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #475569;
+        }
+
+        .details {
+            margin-top: 15px;
+            font-size: 12px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        .countdown {
+            margin-top: 24px;
+            font-size: 13px;
+            opacity: 0.8;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            color: #475569;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h1>系統忙碌中</h1>
+        <p>目前系統處理的請求過多，或是發生錯誤，請稍後再試。</p>
+        <div class="details">Error: Rate Limit Exceeded<br />Details: Too Many Requests</div>
+        <p class="countdown">視窗將在 <span id="timer">5</span> 秒後自動關閉...</p>
+    </div>
+
+    <script>
+        // 通知母視窗發生錯誤
+        if (window.opener) {
+            try {
+                window.opener.postMessage({
+                    type: 'STRAVA_AUTH_ERROR',
+                    error: true
+                }, '*');
+            } catch (e) {
+                console.error('postMessage 失敗:', e);
+            }
+        }
+
+        // 倒數計時關閉視窗 (測試版拉長到 15 秒方便預覽)
+        let seconds = 15;
+        const timerEl = document.getElementById('timer');
+        const countdown = setInterval(() => {
+            seconds--;
+            if (timerEl) timerEl.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                window.close();
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>

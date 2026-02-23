@@ -19,7 +19,7 @@ REQUIRED_ORIGINS = [
     "https://strava.criterium.tw",
     "https://status-8wp.pages.dev",
     "https://status.criterium.tw",
-    "https://n8n.criterium.tw",
+    "https://service.criterium.tw",
     "https://service.criterium.tw"
 ]
 
