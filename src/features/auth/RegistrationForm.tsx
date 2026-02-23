@@ -150,6 +150,19 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
         setSuccessMessage(null);
 
         try {
+            // [FIX] Vulnerability 5: 強化前端提交前的資料驗證 - 防止送出已過期的挑戰
+            const now = new Date();
+            const expiredSegments = selectedSegmentIds.map(id => segments.find(s => s.id === id)).filter(s => {
+                if (!s || !s.end_date) return false;
+                const endDate = new Date(s.end_date);
+                endDate.setHours(23, 59, 59, 999);
+                return endDate < now;
+            });
+
+            if (expiredSegments.length > 0) {
+                throw new Error(`包含已過期的挑戰 (${expiredSegments.map(s => s?.name).join(', ')})，請取消勾選後再試一次。`);
+            }
+
             const existingSegmentIds = existingRegistrations.map(r => r.segment_id);
             const currentSegmentIds = selectedSegmentIds;
 
