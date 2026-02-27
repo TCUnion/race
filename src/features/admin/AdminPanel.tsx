@@ -3,6 +3,7 @@ import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, Clipb
 import EquipmentList from './EquipmentList';
 import { RaceAdminPanel } from './RaceAdminPanel';
 import { ActivityRepair } from '../manager/components/ActivityRepair';
+import StravaRateLimitPanel from './StravaRateLimitPanel';
 import { supabaseAdmin } from '../../lib/supabase';
 // [FIX] 移除 Service Role 功能，防止前端程式碼洩漏特權存取
 const supabase = supabaseAdmin;
@@ -292,7 +293,7 @@ const AdminPanel: React.FC = () => {
     const [managers, setManagers] = useState<any[]>([]);
     const [editingManager, setEditingManager] = useState<any>(null); // New editing state
     const [managerSearchTerm, setManagerSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'team_races' | 'announcements'>('managers'); // 預設顯示管理員管理
+    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'team_races' | 'announcements' | 'api_quota'>('managers'); // 預設顯示管理員管理
 
     // 車隊賽事管理
     const [teamRaces, setTeamRaces] = useState<any[]>([]);
@@ -1772,6 +1773,16 @@ const AdminPanel: React.FC = () => {
                 >
                     <MessageCircle className="w-4 h-4 inline-block mr-2" />
                     廣告推送
+                </button>
+                <button
+                    onClick={() => setActiveTab('api_quota')}
+                    className={`px - 4 py - 2 rounded - xl font - bold transition - all whitespace - nowrap ${activeTab === 'api_quota'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                        } `}
+                >
+                    <Globe className="w-4 h-4 inline-block mr-2" />
+                    API 額度
                 </button>
             </div>
 
@@ -3465,6 +3476,13 @@ const AdminPanel: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+                    )
+                }
+
+                {/* Strava API 額度監控 Tab */}
+                {
+                    activeTab === 'api_quota' && (
+                        <StravaRateLimitPanel />
                     )
                 }
             </div >
