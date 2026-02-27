@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCU Strava API 額度監控</title>
+    <meta name="description" content="TCU Strava API 速率限制即時監控儀表板">
+    <link rel="icon" type="image/png" href="/icon-192x192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        /* NOTE: 使用與主應用一致的深色主題色彩系統 */
+        :root {
+            --bg-primary: #09090b;
+            --bg-card: #18181b;
+            --bg-elevated: #1e1e22;
+            --bg-glass: rgba(9, 9, 11, 0.85);
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border: #27272a;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-orange: #fb923c;
+            --accent-red: #f87171;
+            --accent-purple: #a78bfa;
+            --ring-glow: rgba(56, 189, 248, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 背景動態光暈 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(56, 189, 248, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(167, 139, 250, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .header h1 span {
+            color: var(--text-secondary);
+            font-weight: 400;
+            font-size: 14px;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            color: var(--accent-green);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        .refresh-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.1);
+        }
+
+        .refresh-btn.loading svg {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 狀態總覽卡片 */
+        .status-hero {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 20px 20px 0 0;
+            transition: background 0.5s;
+        }
+
+        .status-hero.normal::before {
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        }
+
+        .status-hero.warning::before {
+            background: linear-gradient(90deg, var(--accent-orange), #fbbf24);
+        }
+
+        .status-hero.danger::before {
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-orange));
+        }
+
+        .status-hero.exceeded::before {
+            background: linear-gradient(90deg, #dc2626, var(--accent-red));
+            animation: dangerPulse 1s infinite;
+        }
+
+        @keyframes dangerPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .status-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 24px;
+        }
+
+        .status-label.normal {
+            color: var(--accent-green);
+        }
+
+        .status-label.warning {
+            color: var(--accent-orange);
+        }
+
+        .status-label.danger {
+            color: var(--accent-red);
+        }
+
+        .status-label.exceeded {
+            color: #dc2626;
+        }
+
+        /* 雙環形圖容器 */
+        .gauges-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 640px) {
+            .gauges-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        .gauge-card {
+            text-align: center;
+        }
+
+        .gauge-card h3 {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            letter-spacing: 0.05em;
+        }
+
+        .gauge-svg-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 16px;
+        }
+
+        .gauge-svg-container svg {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-pct {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .gauge-pct-unit {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .gauge-detail {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .gauge-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .gauge-info strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* 重置倒數 */
+        .reset-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .reset-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .reset-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reset-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .reset-icon.min {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .reset-icon.daily {
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .reset-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 2px;
+        }
+
+        .reset-value {
+            font-size: 18px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 歷史圖表 */
+        .chart-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .chart-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .chart-legend span::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .chart-legend .l15::before {
+            background: var(--accent-blue);
+        }
+
+        .chart-legend .ld::before {
+            background: var(--accent-purple);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 220px;
+            position: relative;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* 歷史紀錄表格 */
+        .history-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+        }
+
+        .history-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .history-table th {
+            text-align: left;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(39, 39, 42, 0.5);
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .history-table tr:hover td {
+            background: rgba(56, 189, 248, 0.03);
+        }
+
+        .alert-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .alert-badge.normal {
+            background: rgba(74, 222, 128, 0.1);
+            color: var(--accent-green);
+        }
+
+        .alert-badge.warning {
+            background: rgba(251, 146, 60, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .alert-badge.danger {
+            background: rgba(248, 113, 113, 0.1);
+            color: var(--accent-red);
+        }
+
+        .alert-badge.exceeded {
+            background: rgba(220, 38, 38, 0.15);
+            color: #dc2626;
+        }
+
+        /* 載入與錯誤狀態 */
+        .loading-state,
+        .error-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        .error-state {
+            color: var(--accent-red);
+        }
+
+        .error-state button {
+            margin-top: 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* 響應式表格 */
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-wrapper::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 32px 0 16px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .footer img {
+            height: 24px;
+            margin-top: 8px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-icon">⚡</div>
+                <h1>
+                    API 額度監控
+                    <span>Strava Rate Limit Dashboard</span>
+                </h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="live-badge">
+                    <div class="live-dot"></div>
+                    LIVE
+                </div>
+                <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    重新整理
+                </button>
+            </div>
+        </div>
+
+        <!-- 主要內容 -->
+        <div id="mainContent">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p style="color: var(--text-secondary);">載入額度資料...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // NOTE: 儀表板 API 端點，對應 n8n 工作流的區塊 C
+        const API_BASE = 'https://service.criterium.tw';
+        const DASHBOARD_ENDPOINT = `${API_BASE}/webhook/strava-rate-dashboard`;
+        // FIXME: 替換為正確的 Webhook path（如果與預設不同）
+
+        let chartInstance = null;
+        let autoRefreshTimer = null;
+
+        /**
+         * 從 n8n 儀表板 API 拉取額度資料
+         */
+        async function fetchData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('loading');
+
+            try {
+                const response = await fetch(DASHBOARD_ENDPOINT);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                renderDashboard(data);
+            } catch (err) {
+                console.error('無法取得額度資料:', err);
+                renderError(err.message);
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        /**
+         * 渲染主要儀表板
+         * @param data 從 API 回傳的額度資料
+         */
+        function renderDashboard(data) {
+            const status = data.current_status || {};
+            const resets = data.resets || {};
+            const history = data.history || [];
+            const alertLevel = status.alert_level || 'normal';
+
+            const ALERT_EMOJI = {
+                normal: '✅', warning: '⚠️', danger: '🔴', exceeded: '🚨', unknown: '❓'
+            };
+
+            const ALERT_LABEL = {
+                normal: '正常', warning: '警告', danger: '危險', exceeded: '超限', unknown: '未知'
+            };
+
+            // 計算百分比
+            const pct15 = status.limit_15min > 0
+                ? Math.round((status.usage_15min / status.limit_15min) * 100)
+                : parseFloat(status.usage_15min_pct) || 0;
+            const pctD = status.limit_daily > 0
+                ? Math.round((status.usage_daily / status.limit_daily) * 100)
+                : parseFloat(status.usage_daily_pct) || 0;
+
+            document.getElementById('mainContent').innerHTML = `
+        <!-- 狀態總覽 -->
+        <div class="status-hero ${alertLevel}">
+            <div class="status-label ${alertLevel}">
+                ${ALERT_EMOJI[alertLevel] || '❓'} ${ALERT_LABEL[alertLevel] || alertLevel}
+            </div>
+
+            <div class="gauges-row">
+                <div class="gauge-card">
+                    <h3>⏱ 15 分鐘額度</h3>
+                    ${renderGauge(pct15, status.usage_15min || 0, status.limit_15min || 100, 'min')}
+                    <p class="gauge-info"><strong>${status.usage_15min || 0}</strong> / ${status.limit_15min || 100} 次</p>
+                </div>
+                <div class="gauge-card">
+                    <h3>📅 每日額度</h3>
+                    ${renderGauge(pctD, status.usage_daily || 0, status.limit_daily || 1000, 'daily')}
+                    <p class="gauge-info"><strong>${status.usage_daily || 0}</strong> / ${status.limit_daily || 1000} 次</p>
+                </div>
+            </div>
+
+            <div class="reset-cards">
+                <div class="reset-card">
+                    <div class="reset-icon min">⏱</div>
+                    <div>
+                        <div class="reset-label">15 分鐘重置</div>
+                        <div class="reset-value" id="reset15min">${resets.minutes_to_15min_reset || '--'} 分鐘</div>
+                    </div>
+                </div>
+                <div class="reset-card">
+                    <div class="reset-icon daily">🌙</div>
+                    <div>
+                        <div class="reset-label">每日重置 (UTC 00:00)</div>
+                        <div class="reset-value" id="resetDaily">${formatTimeUntil(resets.next_daily_reset)}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歷史趨勢圖 -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <h2>📈 使用趨勢</h2>
+                <div class="chart-legend">
+                    <span class="l15">15 分鐘 %</span>
+                    <span class="ld">每日 %</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 歷史紀錄 -->
+        <div class="history-section">
+            <h2>📋 最近紀錄</h2>
+            <div class="table-wrapper">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>15分鐘</th>
+                            <th>每日</th>
+                            <th>狀態</th>
+                            <th>來源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${history.slice(0, 20).map(row => `
+                            <tr>
+                                <td>${formatTime(row.recorded_at)}</td>
+                                <td>${row.usage_15min}/${row.limit_15min} (${row.usage_15min_pct || '?'}%)</td>
+                                <td>${row.usage_daily}/${row.limit_daily} (${row.usage_daily_pct || '?'}%)</td>
+                                <td><span class="alert-badge ${row.alert_level}">${ALERT_LABEL[row.alert_level] || row.alert_level}</span></td>
+                                <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${row.source_workflow || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>最後更新：${formatTime(status.last_updated || data.generated_at)}</p>
+            <img src="/logo_pwrdBy_strava_horiz_orange.png" alt="Powered by Strava" loading="lazy" width="140" height="24">
+        </div>
+    `;
+
+            // 繪製趨勢圖
+            renderChart(history);
+
+            // 啟動倒數計時
+            startCountdown(resets);
+        }
+
+        /**
+         * 渲染環形量表 SVG
+         */
+        function renderGauge(pct, used, total, type) {
+            const size = 180;
+            const strokeWidth = 10;
+            const radius = (size - strokeWidth) / 2;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (Math.min(pct, 100) / 100) * circumference;
+
+            let color;
+            if (pct >= 95) color = '#dc2626';
+            else if (pct >= 80) color = 'var(--accent-red)';
+            else if (pct >= 60) color = 'var(--accent-orange)';
+            else color = type === 'min' ? 'var(--accent-blue)' : 'var(--accent-purple)';
+
+            return `
+        <div class="gauge-svg-container">
+            <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="none" stroke="var(--border)" stroke-width="${strokeWidth}" opacity="0.3"/>
+                <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+                    stroke-linecap="round" style="transition: stroke-dashoffset 1s ease, stroke 0.5s ease;"/>
+            </svg>
+            <div class="gauge-center-text">
+                <div class="gauge-pct" style="color: ${color};">${pct}<span class="gauge-pct-unit">%</span></div>
+                <div class="gauge-detail">${used} / ${total}</div>
+            </div>
+        </div>
+    `;
+        }
+
+        /**
+         * 使用 Chart.js 繪製歷史趨勢圖
+         */
+        function renderChart(history) {
+            const canvas = document.getElementById('trendChart');
+            if (!canvas) return;
+
+            if (chartInstance) chartInstance.destroy();
+
+            // 反轉：最舊的在左邊
+            const reversed = [...history].reverse();
+            const labels = reversed.map(r => formatTimeShort(r.recorded_at));
+            const data15 = reversed.map(r => parseFloat(r.usage_15min_pct) || 0);
+            const dataD = reversed.map(r => parseFloat(r.usage_daily_pct) || 0);
+
+            chartInstance = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: '15 分鐘 %',
+                            data: data15,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 5,
+                            borderWidth: 2,
+                        },
+                        {
+                            label: '每日 %',
+                            data: dataD,
+                            borderColor: '#a78bfa',
+                            backgroundColor: 'rgba(167, 139, 250, 0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 5,
+                            borderWidth: 2,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#18181b',
+                            borderColor: '#27272a',
+                            borderWidth: 1,
+                            titleColor: '#fafafa',
+                            bodyColor: '#a1a1aa',
+                            padding: 12,
+                            cornerRadius: 8,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#71717a', font: { size: 10 }, maxTicksLimit: 10 },
+                            grid: { color: 'rgba(39, 39, 42, 0.3)' },
+                            border: { color: 'transparent' },
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                color: '#71717a',
+                                font: { size: 10 },
+                                callback: v => v + '%',
+                                stepSize: 25,
+                            },
+                            grid: { color: 'rgba(39, 39, 42, 0.3)' },
+                            border: { color: 'transparent' },
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * 啟動重置倒數計時器
+         */
+        function startCountdown(resets) {
+            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
+            autoRefreshTimer = setInterval(() => {
+                const now = new Date();
+
+                // 15 分鐘倒數
+                const min15El = document.getElementById('reset15min');
+                if (min15El) {
+                    const minutesPast = now.getMinutes() % 15;
+                    const secsPast = now.getSeconds();
+                    const remaining = (15 - minutesPast) * 60 - secsPast;
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    min15El.textContent = `${m}:${String(s).padStart(2, '0')}`;
+                }
+
+                // 每日倒數
+                const dailyEl = document.getElementById('resetDaily');
+                if (dailyEl && resets.next_daily_reset) {
+                    dailyEl.textContent = formatTimeUntil(resets.next_daily_reset);
+                }
+            }, 1000);
+        }
+
+        /* 工具函式 */
+        function formatTime(isoStr) {
+            if (!isoStr) return '--';
+            const d = new Date(isoStr);
+            return d.toLocaleString('zh-TW', {
+                month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            });
+        }
+
+        function formatTimeShort(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        function formatTimeUntil(isoStr) {
+            if (!isoStr) return '--';
+            const diff = new Date(isoStr) - new Date();
+            if (diff <= 0) return '即將重置';
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            return `${hours} 時 ${mins} 分`;
+        }
+
+        function renderError(msg) {
+            document.getElementById('mainContent').innerHTML = `
+        <div class="error-state">
+            <p style="font-size: 48px; margin-bottom: 16px;">⚠️</p>
+            <h2 style="margin-bottom: 8px;">無法連線至額度管理 API</h2>
+            <p style="color: var(--text-muted); font-size: 14px;">${msg}</p>
+            <p style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">
+                請確認 n8n 工作流「TCU-Strava-API額度管理」已啟用
+            </p>
+            <button onclick="fetchData()">重試</button>
+        </div>
+    `;
+        }
+
+        // 自動載入 + 每 60 秒重新整理
+        fetchData();
+        setInterval(fetchData, 60000);
+    </script>
+</body>
+
+</html>
