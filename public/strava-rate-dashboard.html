@@ -952,9 +952,8 @@
     `;
         }
 
-        // 自動載入 + 每 60 秒重新整理
+        // 只有開啟時自動載入，不進行定時整理
         fetchData();
-        setInterval(fetchData, 60000);
     </script>
 </body>
 
