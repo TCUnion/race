@@ -667,13 +667,30 @@
                 normal: '正常', warning: '警告', danger: '危險', exceeded: '超限', unknown: '未知'
             };
 
-            // 計算百分比
-            const pct15 = status.limit_15min > 0
+            // 計算百分比 (整體)
+            const overallPct15 = status.limit_15min > 0
                 ? Math.round((status.usage_15min / status.limit_15min) * 100)
                 : parseFloat(status.usage_15min_pct) || 0;
-            const pctD = status.limit_daily > 0
+            const overallPctD = status.limit_daily > 0
                 ? Math.round((status.usage_daily / status.limit_daily) * 100)
                 : parseFloat(status.usage_daily_pct) || 0;
+
+            // 計算百分比 (讀取)
+            const readPct15 = status.read_limit_15min > 0
+                ? Math.round((status.read_usage_15min / status.read_limit_15min) * 100)
+                : parseFloat(status.read_usage_15min_pct) || 0;
+            const readPctD = status.read_limit_daily > 0
+                ? Math.round((status.read_usage_daily / status.read_limit_daily) * 100)
+                : parseFloat(status.read_usage_daily_pct) || 0;
+
+            // 選擇較高者顯示在主量表
+            const display15 = readPct15 > overallPct15
+                ? { pct: readPct15, used: status.read_usage_15min, limit: status.read_limit_15min, label: '讀取 (Read)' }
+                : { pct: overallPct15, used: status.usage_15min, limit: status.limit_15min, label: '整體 (Overall)' };
+
+            const displayD = readPctD > overallPctD
+                ? { pct: readPctD, used: status.read_usage_daily, limit: status.read_limit_daily, label: '讀取 (Read)' }
+                : { pct: overallPctD, used: status.usage_daily, limit: status.limit_daily, label: '整體 (Overall)' };
 
             document.getElementById('mainContent').innerHTML = `
         <!-- 狀態總覽 -->
@@ -685,13 +702,15 @@
             <div class="gauges-row">
                 <div class="gauge-card">
                     <h3>⏱ 15 分鐘額度</h3>
-                    ${renderGauge(pct15, status.usage_15min || 0, status.limit_15min || 100, 'min')}
-                    <p class="gauge-info"><strong>${status.usage_15min || 0}</strong> / ${status.limit_15min || 100} 次</p>
+                    ${renderGauge(display15.pct, display15.used || 0, display15.limit || 100, 'min')}
+                    <p class="gauge-info"><strong>${display15.used || 0}</strong> / ${display15.limit || 100} 次</p>
+                    <div class="gauge-detail" style="margin-top: 8px;">主導限制: ${display15.label}</div>
                 </div>
                 <div class="gauge-card">
                     <h3>📅 每日額度</h3>
-                    ${renderGauge(pctD, status.usage_daily || 0, status.limit_daily || 1000, 'daily')}
-                    <p class="gauge-info"><strong>${status.usage_daily || 0}</strong> / ${status.limit_daily || 1000} 次</p>
+                    ${renderGauge(displayD.pct, displayD.used || 0, displayD.limit || 1000, 'daily')}
+                    <p class="gauge-info"><strong>${displayD.used || 0}</strong> / ${displayD.limit || 1000} 次</p>
+                    <div class="gauge-detail" style="margin-top: 8px;">主導限制: ${displayD.label}</div>
                 </div>
             </div>
 
