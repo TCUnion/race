@@ -124,6 +124,7 @@ interface StravaToken {
     aiCoachSent?: boolean; // [NEW] 是否已發送 AI Coach 郵件
     aiCoachSummary?: string; // [NEW] AI Coach 摘要內容（tooltip 用）
     aiCoachSentAt?: string; // [NEW] AI Coach 發送時間
+    lastActivityId?: string; // [NEW] 最新活動 ID（Strava 連結用）
 }
 
 // 🔐 管理員白名單 (athlete_id)
@@ -292,6 +293,18 @@ const AdminPanel: React.FC = () => {
     const [tokenSortField, setTokenSortField] = useState<string>('isBound');
     const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('desc');
     const [tokenBindFilter, setTokenBindFilter] = useState<'all' | 'bound' | 'unbound'>('all');
+    const [aiCoachPreview, setAiCoachPreview] = useState<{ name: string; sentAt: string; summary: string } | null>(null);
+
+    // NOTE: 按 ESC 關閉 AI Coach 預覽 Modal
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setAiCoachPreview(null);
+        };
+        if (aiCoachPreview) {
+            window.addEventListener('keydown', handleEsc);
+            return () => window.removeEventListener('keydown', handleEsc);
+        }
+    }, [aiCoachPreview]);
 
     // 管理員管理
     const [managers, setManagers] = useState<any[]>([]);
@@ -1311,14 +1324,30 @@ const AdminPanel: React.FC = () => {
             // 4. [NEW] 抓取每個 athlete 的 strava_activities 數量
             const { data: activitiesCounts, error: actError } = await supabase
                 .from('strava_activities')
-                .select('athlete_id');
+                .select('athlete_id, id, start_date_local')
+                .order('start_date_local', { ascending: false });
 
             const activitiesCountMap = new Map<string, number>();
+            // [NEW] 同時記錄每人最新活動 ID（用於 Strava 連結）
+            const latestActivityMap = new Map<string, { id: string; date: string }>();
             if (!actError && activitiesCounts) {
                 activitiesCounts.forEach(a => {
                     const id = a.athlete_id?.toString();
                     if (id) {
                         activitiesCountMap.set(id, (activitiesCountMap.get(id) || 0) + 1);
+                    }
+                });
+            }
+
+            // NOTE: 從已排序的活動清單中，每人僅保留第一筆（最新）作為最新活動 ID
+            if (!actError && activitiesCounts) {
+                activitiesCounts.forEach(a => {
+                    const athleteId = a.athlete_id?.toString();
+                    if (athleteId && !latestActivityMap.has(athleteId)) {
+                        latestActivityMap.set(athleteId, {
+                            id: a.id?.toString(),
+                            date: a.start_date_local || ''
+                        });
                     }
                 });
             }
@@ -1406,6 +1435,8 @@ const AdminPanel: React.FC = () => {
                     lastActivityAt: token?.last_activity_at || null,
                     // @ts-ignore
                     loginTime: token?.login_time || null,
+                    // [NEW] 最新活動 ID（Strava 連結用）
+                    lastActivityId: latestActivityMap.get(id)?.id || null,
                     // [NEW] AI Coach 郵件發送狀態
                     aiCoachSent: aiCoachMap.has(id),
                     aiCoachSummary: aiCoachMap.get(id)?.summary || '',
@@ -2903,27 +2934,52 @@ const AdminPanel: React.FC = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    {token.aiCoachSent ? (
-                                                        <span
-                                                            className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black cursor-help"
-                                                            title={`📅 ${token.aiCoachSentAt ? new Date(token.aiCoachSentAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : ''}\n\n${(token.aiCoachSummary || '').substring(0, 200)}${(token.aiCoachSummary || '').length > 200 ? '...' : ''}`}
-                                                        >
-                                                            ✉ 已發送
-                                                        </span>
-                                                    ) : (
+                                                    {token.aiCoachSent ? (() => {
+                                                        // NOTE: 若 AI Coach 發送時間早於最後活動時間，表示有新活動尚未分析，以紅色警示
+                                                        const sentTime = token.aiCoachSentAt ? new Date(token.aiCoachSentAt).getTime() : 0;
+                                                        const lastActTime = token.lastActivityAt ? new Date(token.lastActivityAt).getTime() : 0;
+                                                        const isOutdated = lastActTime > 0 && sentTime < lastActTime;
+                                                        return (
+                                                            <span
+                                                                className={`px-2 py-1 rounded-full text-[10px] font-black cursor-pointer transition-colors whitespace-nowrap ${isOutdated
+                                                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                                    }`}
+                                                                onClick={() => setAiCoachPreview({
+                                                                    name: token.name || token.athleteID,
+                                                                    sentAt: token.aiCoachSentAt || '',
+                                                                    summary: token.aiCoachSummary || ''
+                                                                })}
+                                                            >
+                                                                {token.aiCoachSentAt ? new Date(token.aiCoachSentAt).toLocaleString('zh-TW', {
+                                                                    timeZone: 'Asia/Taipei', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                                }) : '已發送'}
+                                                            </span>
+                                                        );
+                                                    })() : (
                                                         <span className="text-[10px] text-slate-600">-</span>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="text-[10px] font-bold text-slate-500">
-                                                        {token.lastActivityAt ? new Date(token.lastActivityAt).toLocaleString('zh-TW', {
-                                                            timeZone: 'Asia/Taipei',
-                                                            year: 'numeric',
-                                                            month: '2-digit',
-                                                            day: '2-digit',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        }) : '-'}
+                                                        {token.lastActivityAt ? (
+                                                            token.lastActivityId ? (
+                                                                <a
+                                                                    href={`https://www.strava.com/activities/${token.lastActivityId}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-tcu-blue hover:text-tcu-blue-light hover:underline transition-colors"
+                                                                >
+                                                                    {new Date(token.lastActivityAt).toLocaleString('zh-TW', {
+                                                                        timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                                    })}
+                                                                </a>
+                                                            ) : (
+                                                                new Date(token.lastActivityAt).toLocaleString('zh-TW', {
+                                                                    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                                })
+                                                            )
+                                                        ) : '-'}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
@@ -2959,6 +3015,43 @@ const AdminPanel: React.FC = () => {
                                 </button>
                             </div>
                         </div>
+
+                        {/* AI Coach 預覽 Modal - 點擊「✉ 已發送」badge 後彈出 */}
+                        {aiCoachPreview && (
+                            <div
+                                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                                onClick={() => setAiCoachPreview(null)}
+                            >
+                                <div
+                                    className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col"
+                                    style={{ width: '80vw', height: '80vh' }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {/* Modal 標題列 */}
+                                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">AI Coach 日誌 — {aiCoachPreview.name}</h3>
+                                            <div className="text-xs text-indigo-400 font-bold mt-1">
+                                                📅 {aiCoachPreview.sentAt ? new Date(aiCoachPreview.sentAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : ''}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setAiCoachPreview(null)}
+                                            className="text-slate-400 hover:text-white text-2xl font-bold transition-colors px-2"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    {/* Modal 內容 */}
+                                    <div className="flex-1 overflow-y-auto px-6 py-4">
+                                        <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
+                                            {aiCoachPreview.summary}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                     </div>)
                 }
 
