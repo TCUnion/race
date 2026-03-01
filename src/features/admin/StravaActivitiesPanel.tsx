@@ -26,18 +26,26 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
     const [pageSize, setPageSize] = useState(20);
     const [searchTerm, setSearchTerm] = useState('');
     const [bindFilter, setBindFilter] = useState<'all' | 'bound' | 'unbound'>('all');
+    const [streamFilter, setStreamFilter] = useState<'all' | 'yes' | 'no'>('all');
+    const [sortField, setSortField] = useState<'start_date' | 'distance' | 'moving_time'>('start_date');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (session) {
             fetchActivities();
         }
-    }, [session, currentPage, pageSize, bindFilter]);
+    }, [session, currentPage, pageSize, bindFilter, streamFilter, sortField, sortOrder]);
 
     const fetchActivities = async () => {
         setLoading(true);
         try {
-            let query = supabase.from('strava_activities').select('*', { count: 'exact' });
+            // 基本查詢：如果需要篩選「有 stream」，我們使用 inner join (確保有關聯)
+            const selectQuery = streamFilter === 'yes'
+                ? '*, strava_streams!inner(activity_id)'
+                : '*';
+
+            let query = supabase.from('strava_activities').select(selectQuery, { count: 'exact' });
 
             let athleteIdsFromNameMatch: string[] | null = null;
             const term = searchTerm.trim();
@@ -110,13 +118,19 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                 }
             }
 
-            // Pagination Options
+            // Pagination and Sorting Options
             const from = (currentPage - 1) * pageSize;
             const to = from + pageSize - 1;
-            query = query.order('start_date', { ascending: false }).range(from, to);
+            query = query.order(sortField, { ascending: sortOrder === 'asc' }).range(from, to);
 
-            const { data: acts, count, error } = await query;
-            if (error) throw error;
+            const { data, count, error } = await query;
+            if (error) {
+                // Supabase API errors usually contain hints
+                console.error("Query Error: ", error);
+                throw error;
+            }
+
+            const acts = data as any[];
 
             setTotalCount(count || 0);
 
@@ -152,13 +166,19 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
             const boundConfirmSet = new Set(bindingsConfirm?.map(b => b.strava_id?.toString()));
 
             // 3. Fetch streams existence
-            const { data: streamsData } = await supabase
-                .from('strava_streams')
-                .select('activity_id')
-                .in('activity_id', activityIds);
-            const streamsSet = new Set(streamsData?.map(s => s.activity_id?.toString()));
+            let streamsSet = new Set<string>();
+            if (streamFilter === 'yes') {
+                // 已經過濾為有 stream 的活動，可以直接標記
+                activityIds.forEach(id => streamsSet.add(id));
+            } else {
+                const { data: streamsData } = await supabase
+                    .from('strava_streams')
+                    .select('activity_id')
+                    .in('activity_id', activityIds);
+                streamsSet = new Set(streamsData?.map(s => s.activity_id?.toString()));
+            }
 
-            const merged = acts.map(a => {
+            let merged = acts.map(a => {
                 const aId = a.athlete_id?.toString();
                 return {
                     ...a,
@@ -167,6 +187,11 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                     has_stream: streamsSet.has(a.id?.toString())
                 };
             });
+
+            // 針對 'no' stream 進行本地端過濾 (如果需要的話，因為 Supabase JS 無法直接 !left/not_exists)
+            if (streamFilter === 'no') {
+                merged = merged.filter(a => !a.has_stream);
+            }
 
             setActivities(merged);
 
@@ -181,6 +206,21 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
         e.preventDefault();
         setCurrentPage(1);
         fetchActivities();
+    };
+
+    const handleSort = (field: 'start_date' | 'distance' | 'moving_time') => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortOrder('desc'); // 換欄位時預設降幕
+        }
+        setCurrentPage(1);
+    };
+
+    const SortIcon = ({ field }: { field: 'start_date' | 'distance' | 'moving_time' }) => {
+        if (sortField !== field) return <span className="text-slate-600 ml-1">↕</span>;
+        return <span className="text-tcu-blue ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>;
     };
 
     const totalPages = Math.ceil(totalCount / pageSize) || 1;
@@ -238,9 +278,22 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                         }}
                         className="px-3 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold"
                     >
-                        <option value="all">全部狀態</option>
+                        <option value="all">全部綁定狀態</option>
                         <option value="bound">已綁定 (Bound)</option>
                         <option value="unbound">未綁定 (Unbound)</option>
+                    </select>
+
+                    <select
+                        value={streamFilter}
+                        onChange={(e) => {
+                            setStreamFilter(e.target.value as 'all' | 'yes' | 'no');
+                            setCurrentPage(1);
+                        }}
+                        className="px-3 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold"
+                    >
+                        <option value="all">全部活動 (Stream)</option>
+                        <option value="yes">有 Stream</option>
+                        <option value="no">無 Stream (本地處理)</option>
                     </select>
 
                     <select
@@ -274,8 +327,12 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                             <th className="px-4 py-3">運動員名稱</th>
                             <th className="px-4 py-3">活動 ID</th>
                             <th className="px-4 py-3">活動名稱</th>
-                            <th className="px-4 py-3">活動時間</th>
-                            <th className="px-4 py-3">活動距離</th>
+                            <th className="px-4 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('start_date')}>
+                                活動時間 <SortIcon field="start_date" />
+                            </th>
+                            <th className="px-4 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('distance')}>
+                                活動距離 <SortIcon field="distance" />
+                            </th>
                             <th className="px-4 py-3 text-center">是否有 Stream</th>
                             <th className="px-4 py-3 rounded-r-lg text-center">綁定狀態</th>
                         </tr>
@@ -377,8 +434,8 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                                 onClick={() => setCurrentPage(p)}
                                 disabled={loading}
                                 className={`w-8 h-8 flex items-center justify-center text-xs font-bold rounded-lg transition-colors ${currentPage === p
-                                        ? 'bg-tcu-blue text-white shadow-md'
-                                        : 'hover:bg-slate-700 text-slate-400'
+                                    ? 'bg-tcu-blue text-white shadow-md'
+                                    : 'hover:bg-slate-700 text-slate-400'
                                     }`}
                             >
                                 {p}
