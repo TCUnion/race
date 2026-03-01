@@ -1431,8 +1431,8 @@ const AdminPanel: React.FC = () => {
                     hasValidToken: hasValidToken, // [NEW] Token 有效性標記
                     activitiesCount: activitiesCountMap.get(id) || 0, // [NEW] 活動數量
                     streamsCount: streamsCountMap.get(id) || 0, // [NEW] 已同步串流數量
-                    // @ts-ignore
-                    lastActivityAt: token?.last_activity_at || null,
+                    // NOTE: 統一從 strava_activities 取最新活動時間，避免與 strava_tokens.last_activity_at 不一致
+                    lastActivityAt: latestActivityMap.get(id)?.date || null,
                     // @ts-ignore
                     loginTime: token?.login_time || null,
                     // [NEW] 最新活動 ID（Strava 連結用）
