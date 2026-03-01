@@ -288,6 +288,7 @@ const AdminPanel: React.FC = () => {
     const [tokenCurrentPage, setTokenCurrentPage] = useState(1);
     const [tokenSortField, setTokenSortField] = useState<string>('isBound');
     const [tokenSortOrder, setTokenSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [tokenBindFilter, setTokenBindFilter] = useState<'all' | 'bound' | 'unbound'>('all');
 
     // 管理員管理
     const [managers, setManagers] = useState<any[]>([]);
@@ -1517,11 +1518,15 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    // 根據搜尋條件過濾後的權杖
-    const filteredTokens = stravaTokens.filter(t =>
-        String(t.athleteID).toLowerCase().includes(tokenSearchTerm.toLowerCase()) ||
-        (t.name || '').toLowerCase().includes(tokenSearchTerm.toLowerCase())
-    ).sort((a, b) => {
+    // 根據搜尋條件與綁定狀態過濾後的權杖
+    const filteredTokens = stravaTokens.filter(t => {
+        // 綁定狀態篩選
+        if (tokenBindFilter === 'bound' && !t.isBound) return false;
+        if (tokenBindFilter === 'unbound' && t.isBound) return false;
+        // 關鍵字搜尋
+        return String(t.athleteID).toLowerCase().includes(tokenSearchTerm.toLowerCase()) ||
+            (t.name || '').toLowerCase().includes(tokenSearchTerm.toLowerCase());
+    }).sort((a, b) => {
         const factor = tokenSortOrder === 'asc' ? 1 : -1;
         const valA = a[tokenSortField] || '';
         const valB = b[tokenSortField] || '';
@@ -2743,6 +2748,18 @@ const AdminPanel: React.FC = () => {
                                     />
                                 </div>
                                 <select
+                                    value={tokenBindFilter}
+                                    onChange={(e) => {
+                                        setTokenBindFilter(e.target.value as 'all' | 'bound' | 'unbound');
+                                        setTokenCurrentPage(1);
+                                    }}
+                                    className="px-3 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold"
+                                >
+                                    <option value="all">全部狀態</option>
+                                    <option value="bound">已綁定 (Bound)</option>
+                                    <option value="unbound">未綁定 (Unbound)</option>
+                                </select>
+                                <select
                                     value={tokenPageSize}
                                     onChange={(e) => {
                                         setTokenPageSize(Number(e.target.value));
@@ -2856,7 +2873,14 @@ const AdminPanel: React.FC = () => {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="text-[10px] font-bold text-slate-500">
-                                                        {token.lastActivityAt ? new Date(token.lastActivityAt).toLocaleDateString('zh-TW') : '-'}
+                                                        {token.lastActivityAt ? new Date(token.lastActivityAt).toLocaleString('zh-TW', {
+                                                            timeZone: 'Asia/Taipei',
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        }) : '-'}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
