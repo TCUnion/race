@@ -419,7 +419,7 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-center">
-                                        {act.segment_efforts_dump ? (
+                                        {act.segment_efforts_dump && act.segment_efforts_dump.length > 0 ? (
                                             <span className="inline-block px-2 py-1 bg-yellow-900/40 text-yellow-400 text-[10px] font-black rounded-lg">
                                                 YES
                                             </span>
