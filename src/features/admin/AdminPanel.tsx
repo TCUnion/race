@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle, Smartphone, ExternalLink } from 'lucide-react';
+import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle, Smartphone, ExternalLink, Activity } from 'lucide-react';
 import EquipmentList from './EquipmentList';
 import { RaceAdminPanel } from './RaceAdminPanel';
 import { ActivityRepair } from '../manager/components/ActivityRepair';
 import StravaRateLimitPanel from './StravaRateLimitPanel';
+import StravaActivitiesPanel from './StravaActivitiesPanel';
 import { supabaseAdmin } from '../../lib/supabase';
 // [FIX] 移除 Service Role 功能，防止前端程式碼洩漏特權存取
 const supabase = supabaseAdmin;
@@ -311,7 +312,7 @@ const AdminPanel: React.FC = () => {
     const [managers, setManagers] = useState<any[]>([]);
     const [editingManager, setEditingManager] = useState<any>(null); // New editing state
     const [managerSearchTerm, setManagerSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'team_races' | 'announcements' | 'api_quota'>('managers'); // 預設顯示管理員管理
+    const [activeTab, setActiveTab] = useState<'segments' | 'members' | 'tokens' | 'activities' | 'managers' | 'seo' | 'footer' | 'equipment' | 'races' | 'team_races' | 'announcements' | 'api_quota' | 'repair'>('managers'); // 預設顯示管理員管理
 
     // 車隊賽事管理
     const [teamRaces, setTeamRaces] = useState<any[]>([]);
@@ -1782,6 +1783,16 @@ const AdminPanel: React.FC = () => {
                     Strava Tokens
                 </button>
                 <button
+                    onClick={() => setActiveTab('activities')}
+                    className={`px - 4 py - 2 rounded - xl font - bold transition - all whitespace - nowrap ${activeTab === 'activities'
+                        ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
+                        : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+                        } `}
+                >
+                    <Activity className="w-4 h-4 inline-block mr-2" />
+                    活動一覽
+                </button>
+                <button
                     onClick={() => setActiveTab('repair')}
                     className={`px - 4 py - 2 rounded - xl font - bold transition - all whitespace - nowrap ${activeTab === 'repair'
                         ? 'bg-tcu-blue text-white shadow-lg shadow-tcu-blue/30'
@@ -3067,6 +3078,11 @@ const AdminPanel: React.FC = () => {
 
                     </div>)
                 }
+
+                {/* 後台活動一覽分頁 */}
+                {activeTab === 'activities' && session && (
+                    <StravaActivitiesPanel session={session} />
+                )}
 
                 {/* 活動手動修復 Tab */}
                 {
