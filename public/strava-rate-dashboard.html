@@ -847,6 +847,20 @@
                 return Math.max(overallPct, readPct);
             });
 
+            const getColorForValue = (val, baseColor) => {
+                if (val >= 95) return '#dc2626'; // 超限
+                if (val >= 80) return 'rgba(248, 113, 113, 1)'; // 危險
+                if (val >= 60) return 'rgba(251, 146, 60, 1)'; // 警告
+                return baseColor;
+            };
+
+            const getBgColorForValue = (val, baseBgColor) => {
+                if (val >= 95) return 'rgba(220, 38, 38, 0.15)';
+                if (val >= 80) return 'rgba(248, 113, 113, 0.1)';
+                if (val >= 60) return 'rgba(251, 146, 60, 0.1)';
+                return baseBgColor;
+            };
+
             chartInstance = new Chart(canvas, {
                 type: 'line',
                 data: {
@@ -855,8 +869,12 @@
                         {
                             label: '15 分鐘 %',
                             data: data15,
-                            borderColor: '#38bdf8',
-                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderColor: (ctx) => getColorForValue(ctx.raw, '#38bdf8'),
+                            backgroundColor: (ctx) => getBgColorForValue(ctx.raw, 'rgba(56, 189, 248, 0.1)'),
+                            segment: {
+                                borderColor: ctx => getColorForValue(ctx.p1.parsed.y, '#38bdf8'),
+                            },
+                            pointBackgroundColor: (ctx) => getColorForValue(ctx.raw, '#38bdf8'),
                             fill: true,
                             tension: 0.4,
                             pointRadius: 2,
@@ -866,8 +884,12 @@
                         {
                             label: '每日 %',
                             data: dataD,
-                            borderColor: '#a78bfa',
-                            backgroundColor: 'rgba(167, 139, 250, 0.08)',
+                            borderColor: (ctx) => getColorForValue(ctx.raw, '#a78bfa'),
+                            backgroundColor: (ctx) => getBgColorForValue(ctx.raw, 'rgba(167, 139, 250, 0.08)'),
+                            segment: {
+                                borderColor: ctx => getColorForValue(ctx.p1.parsed.y, '#a78bfa'),
+                            },
+                            pointBackgroundColor: (ctx) => getColorForValue(ctx.raw, '#a78bfa'),
                             fill: true,
                             tension: 0.4,
                             pointRadius: 2,
