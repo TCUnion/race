@@ -28,6 +28,7 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
     const [searchTerm, setSearchTerm] = useState('');
     const [bindFilter, setBindFilter] = useState<'all' | 'bound' | 'unbound'>('all');
     const [streamFilter, setStreamFilter] = useState<'all' | 'yes' | 'no'>('all');
+    const [segmentFilter, setSegmentFilter] = useState<'all' | 'yes' | 'no'>('all');
     const [sortField, setSortField] = useState<'start_date' | 'distance' | 'moving_time'>('start_date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [loading, setLoading] = useState(false);
@@ -36,7 +37,7 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
         if (session) {
             fetchActivities();
         }
-    }, [session, currentPage, pageSize, bindFilter, streamFilter, sortField, sortOrder]);
+    }, [session, currentPage, pageSize, bindFilter, streamFilter, segmentFilter, sortField, sortOrder]);
 
     const fetchActivities = async () => {
         setLoading(true);
@@ -117,6 +118,13 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                 } else if (bindFilter === 'unbound' && boundIds.length > 0) {
                     query = query.not('athlete_id', 'in', `(${boundIds.join(',')})`);
                 }
+            }
+
+            // Segment Filter (Server-side)
+            if (segmentFilter === 'yes') {
+                query = query.not('segment_efforts_dump', 'is', null).neq('segment_efforts_dump', '[]');
+            } else if (segmentFilter === 'no') {
+                query = query.or('segment_efforts_dump.is.null,segment_efforts_dump.eq.[]');
             }
 
             // Pagination and Sorting Options
@@ -295,6 +303,19 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                         <option value="all">全部活動 (Stream)</option>
                         <option value="yes">有 Stream</option>
                         <option value="no">無 Stream (本地處理)</option>
+                    </select>
+
+                    <select
+                        value={segmentFilter}
+                        onChange={(e) => {
+                            setSegmentFilter(e.target.value as 'all' | 'yes' | 'no');
+                            setCurrentPage(1);
+                        }}
+                        className="px-3 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl focus:ring-2 focus:ring-tcu-blue/20 transition-all font-bold cursor-pointer"
+                    >
+                        <option value="all">全部活動 (Segment)</option>
+                        <option value="yes">有 Segment</option>
+                        <option value="no">無 Segment</option>
                     </select>
 
                     <select
