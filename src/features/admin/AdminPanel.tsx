@@ -125,6 +125,7 @@ interface StravaToken {
     aiCoachSummary?: string; // [NEW] AI Coach 摘要內容（tooltip 用）
     aiCoachSentAt?: string; // [NEW] AI Coach 發送時間
     lastActivityId?: string; // [NEW] 最新活動 ID（Strava 連結用）
+    lastUploadAt?: string; // [NEW] 最後上傳時間（strava_activities.created_at）
 }
 
 // 🔐 管理員白名單 (athlete_id)
@@ -1324,12 +1325,12 @@ const AdminPanel: React.FC = () => {
             // 4. [NEW] 抓取每個 athlete 的 strava_activities 數量
             const { data: activitiesCounts, error: actError } = await supabase
                 .from('strava_activities')
-                .select('athlete_id, id, start_date')
+                .select('athlete_id, id, start_date, created_at')
                 .order('start_date', { ascending: false });
 
             const activitiesCountMap = new Map<string, number>();
             // [NEW] 同時記錄每人最新活動 ID（用於 Strava 連結）
-            const latestActivityMap = new Map<string, { id: string; date: string }>();
+            const latestActivityMap = new Map<string, { id: string; date: string; uploadDate: string }>();
             if (!actError && activitiesCounts) {
                 activitiesCounts.forEach(a => {
                     const id = a.athlete_id?.toString();
@@ -1346,7 +1347,8 @@ const AdminPanel: React.FC = () => {
                     if (athleteId && !latestActivityMap.has(athleteId)) {
                         latestActivityMap.set(athleteId, {
                             id: a.id?.toString(),
-                            date: a.start_date || ''
+                            date: a.start_date || '',
+                            uploadDate: a.created_at || ''
                         });
                     }
                 });
@@ -1437,6 +1439,7 @@ const AdminPanel: React.FC = () => {
                     loginTime: token?.login_time || null,
                     // [NEW] 最新活動 ID（Strava 連結用）
                     lastActivityId: latestActivityMap.get(id)?.id || null,
+                    lastUploadAt: latestActivityMap.get(id)?.uploadDate || null,
                     // [NEW] AI Coach 郵件發送狀態
                     aiCoachSent: aiCoachMap.has(id),
                     aiCoachSummary: aiCoachMap.get(id)?.summary || '',
@@ -2872,6 +2875,9 @@ const AdminPanel: React.FC = () => {
                                         <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('lastActivityAt')}>
                                             最後活動 {tokenSortField === 'lastActivityAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                         </th>
+                                        <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('lastUploadAt')}>
+                                            最後上傳 {tokenSortField === 'lastUploadAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                        </th>
                                         <th className="px-4 py-3 rounded-r-lg text-right cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('loginTime')}>
                                             最後登入 {tokenSortField === 'loginTime' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                         </th>
@@ -2980,6 +2986,13 @@ const AdminPanel: React.FC = () => {
                                                                 })
                                                             )
                                                         ) : '-'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="text-[10px] font-bold text-slate-500">
+                                                        {token.lastUploadAt ? new Date(token.lastUploadAt).toLocaleString('zh-TW', {
+                                                            timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                        }) : '-'}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
