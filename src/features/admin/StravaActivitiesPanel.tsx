@@ -17,6 +17,7 @@ interface ActivityData {
     has_stream?: boolean;
     owner_name?: string;
     is_bound?: boolean;
+    segment_efforts_dump?: any;
 }
 
 const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }) => {
@@ -334,6 +335,7 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                                 活動距離 <SortIcon field="distance" />
                             </th>
                             <th className="px-4 py-3 text-center">是否有 Stream</th>
+                            <th className="px-4 py-3 text-center">是否有 Segment</th>
                             <th className="px-4 py-3 rounded-r-lg text-center">綁定狀態</th>
                         </tr>
                     </thead>
@@ -387,6 +389,17 @@ const StravaActivitiesPanel: React.FC<StravaActivitiesPanelProps> = ({ session }
                                     <td className="px-4 py-3 text-center">
                                         {act.has_stream ? (
                                             <span className="inline-block px-2 py-1 bg-emerald-900/40 text-emerald-400 text-[10px] font-black rounded-lg">
+                                                YES
+                                            </span>
+                                        ) : (
+                                            <span className="inline-block px-2 py-1 bg-slate-800 text-slate-500 text-[10px] font-bold rounded-lg">
+                                                NO
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        {act.segment_efforts_dump ? (
+                                            <span className="inline-block px-2 py-1 bg-yellow-900/40 text-yellow-400 text-[10px] font-black rounded-lg">
                                                 YES
                                             </span>
                                         ) : (
