@@ -121,6 +121,9 @@ interface StravaToken {
     isBound?: boolean;
     lastActivityAt?: string;
     loginTime?: string; // [NEW] Add loginTime
+    aiCoachSent?: boolean; // [NEW] 是否已發送 AI Coach 郵件
+    aiCoachSummary?: string; // [NEW] AI Coach 摘要內容（tooltip 用）
+    aiCoachSentAt?: string; // [NEW] AI Coach 發送時間
 }
 
 // 🔐 管理員白名單 (athlete_id)
@@ -1347,7 +1350,28 @@ const AdminPanel: React.FC = () => {
                 });
             }
 
-            // 6. 合併資料 - 改為以 strava_tokens 為主，確保顯示所有權杖
+            // 6. [NEW] 抓取 AI Coach 日誌（每人最新一筆 summary）
+            const { data: aiCoachLogs, error: aiLogError } = await supabase
+                .from('ai_coach_logs')
+                .select('athlete_id, ai_response, created_at')
+                .eq('type', 'summary')
+                .order('created_at', { ascending: false });
+
+            // NOTE: 由於 Supabase JS SDK 不支援 DISTINCT ON，以 Map 取代，僅保留每人最新一筆
+            const aiCoachMap = new Map<string, { summary: string; sentAt: string }>();
+            if (!aiLogError && aiCoachLogs) {
+                aiCoachLogs.forEach(log => {
+                    const id = log.athlete_id?.toString();
+                    if (id && !aiCoachMap.has(id)) {
+                        aiCoachMap.set(id, {
+                            summary: log.ai_response || '',
+                            sentAt: log.created_at || ''
+                        });
+                    }
+                });
+            }
+
+            // 7. 合併資料 - 改為以 strava_tokens 為主，確保顯示所有權杖
             // 建立所有獨特的 IDSet (聯集)
             const allIds = new Set<string>();
             (athletes || []).forEach(a => allIds.add(a.id.toString()));
@@ -1381,7 +1405,11 @@ const AdminPanel: React.FC = () => {
                     // @ts-ignore
                     lastActivityAt: token?.last_activity_at || null,
                     // @ts-ignore
-                    loginTime: token?.login_time || null
+                    loginTime: token?.login_time || null,
+                    // [NEW] AI Coach 郵件發送狀態
+                    aiCoachSent: aiCoachMap.has(id),
+                    aiCoachSummary: aiCoachMap.get(id)?.summary || '',
+                    aiCoachSentAt: aiCoachMap.get(id)?.sentAt || ''
                 };
             })
                 // 過濾掉沒有 Token 的資料 (如果只想看有 Token 的)
@@ -2807,6 +2835,9 @@ const AdminPanel: React.FC = () => {
                                         <th className="px-4 py-3 border-x border-slate-700 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('isBound')}>
                                             綁定狀態 {tokenSortField === 'isBound' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                         </th>
+                                        <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors text-center" onClick={() => toggleTokenSort('aiCoachSent')}>
+                                            AI Coach {tokenSortField === 'aiCoachSent' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
+                                        </th>
                                         <th className="px-4 py-3 cursor-pointer hover:text-tcu-blue transition-colors" onClick={() => toggleTokenSort('lastActivityAt')}>
                                             最後活動 {tokenSortField === 'lastActivityAt' && (tokenSortOrder === 'asc' ? '↑' : '↓')}
                                         </th>
@@ -2869,6 +2900,18 @@ const AdminPanel: React.FC = () => {
                                                         <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase">Bound</span>
                                                     ) : (
                                                         <span className="px-2 py-1 bg-slate-800 text-slate-400 rounded-full text-[10px] font-black uppercase">Unbound</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {token.aiCoachSent ? (
+                                                        <span
+                                                            className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black cursor-help"
+                                                            title={`📅 ${token.aiCoachSentAt ? new Date(token.aiCoachSentAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : ''}\n\n${(token.aiCoachSummary || '').substring(0, 200)}${(token.aiCoachSummary || '').length > 200 ? '...' : ''}`}
+                                                        >
+                                                            ✉ 已發送
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-600">-</span>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3">
