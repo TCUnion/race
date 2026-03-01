@@ -1324,8 +1324,8 @@ const AdminPanel: React.FC = () => {
             // 4. [NEW] 抓取每個 athlete 的 strava_activities 數量
             const { data: activitiesCounts, error: actError } = await supabase
                 .from('strava_activities')
-                .select('athlete_id, id, start_date_local')
-                .order('start_date_local', { ascending: false });
+                .select('athlete_id, id, start_date')
+                .order('start_date', { ascending: false });
 
             const activitiesCountMap = new Map<string, number>();
             // [NEW] 同時記錄每人最新活動 ID（用於 Strava 連結）
@@ -1346,7 +1346,7 @@ const AdminPanel: React.FC = () => {
                     if (athleteId && !latestActivityMap.has(athleteId)) {
                         latestActivityMap.set(athleteId, {
                             id: a.id?.toString(),
-                            date: a.start_date_local || ''
+                            date: a.start_date || ''
                         });
                     }
                 });
@@ -2935,15 +2935,15 @@ const AdminPanel: React.FC = () => {
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     {token.aiCoachSent ? (() => {
-                                                        // NOTE: 若 AI Coach 發送時間早於最後活動時間，表示有新活動尚未分析，以紅色警示
+                                                        // NOTE: AI Coach 發送時間 >= 最後活動時間 → 綠色（已分析）；反之 → 紅色（有新活動未分析）
                                                         const sentTime = token.aiCoachSentAt ? new Date(token.aiCoachSentAt).getTime() : 0;
                                                         const lastActTime = token.lastActivityAt ? new Date(token.lastActivityAt).getTime() : 0;
-                                                        const isOutdated = lastActTime > 0 && sentTime < lastActTime;
+                                                        const isUpToDate = sentTime >= lastActTime || lastActTime === 0;
                                                         return (
                                                             <span
-                                                                className={`px-2 py-1 rounded-full text-[10px] font-black cursor-pointer transition-colors whitespace-nowrap ${isOutdated
-                                                                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                                className={`px-2 py-1 rounded-full text-[10px] font-black cursor-pointer transition-colors whitespace-nowrap ${isUpToDate
+                                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                                    : 'bg-red-100 text-red-700 hover:bg-red-200'
                                                                     }`}
                                                                 onClick={() => setAiCoachPreview({
                                                                     name: token.name || token.athleteID,
