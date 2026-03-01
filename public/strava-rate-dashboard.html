@@ -832,8 +832,20 @@
             // 反轉：最舊的在左邊
             const reversed = [...history].reverse();
             const labels = reversed.map(r => formatTimeShort(r.recorded_at));
-            const data15 = reversed.map(r => parseFloat(r.usage_15min_pct) || 0);
-            const dataD = reversed.map(r => parseFloat(r.usage_daily_pct) || 0);
+            const data15 = reversed.map(r => {
+                const overallPct = parseFloat(r.usage_15min_pct) || 0;
+                const readPct = r.read_limit_15min > 0
+                    ? Math.round((r.read_usage_15min / r.read_limit_15min) * 100)
+                    : (parseFloat(r.read_usage_15min_pct) || 0);
+                return Math.max(overallPct, readPct);
+            });
+            const dataD = reversed.map(r => {
+                const overallPct = parseFloat(r.usage_daily_pct) || 0;
+                const readPct = r.read_limit_daily > 0
+                    ? Math.round((r.read_usage_daily / r.read_limit_daily) * 100)
+                    : (parseFloat(r.read_usage_daily_pct) || 0);
+                return Math.max(overallPct, readPct);
+            });
 
             chartInstance = new Chart(canvas, {
                 type: 'line',
