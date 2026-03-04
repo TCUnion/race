@@ -1496,7 +1496,7 @@ const AdminPanel: React.FC = () => {
             const response = await apiClient.post('/api/auth/unbind', {
                 email: member.email,
                 admin_id: adminId
-            });
+            }, await getWebhookAuthHeader());
 
             // 處理非 OK 回應
             if (!response.ok) {

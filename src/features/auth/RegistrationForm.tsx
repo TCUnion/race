@@ -198,7 +198,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ athlete, segments, 
                         athlete_profile: athlete.profile,
                         team: team,
                         tcu_id: memberData?.tcu_id || null,
-                        status: 'approved'
+                        status: 'pending'
                     }));
 
                     const { error: insertError } = await supabase

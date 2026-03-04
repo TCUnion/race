@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 /**
  * Strava API 額度資料介面定義
@@ -136,7 +137,12 @@ const StravaRateLimitPanel: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(DASHBOARD_ENDPOINT);
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(DASHBOARD_ENDPOINT, {
+                headers: {
+                    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+                }
+            });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json: DashboardData = await res.json();
             setData(json);
