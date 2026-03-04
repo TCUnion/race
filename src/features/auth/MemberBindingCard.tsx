@@ -154,45 +154,52 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
         setError(null);
 
         try {
-            // 呼叫後端 API 驗證 OTP
-            const otpResponse = await apiClient.post('/api/auth/verify-otp', {
-                email: memberData.email,
-                otp: otp
-            });
-            const otpResult = await otpResponse.json();
+            // 驗證 OTP (仍從 tcu_members 檢查)
+            const { data, error } = await supabase
+                .from('tcu_members')
+                .select('*')
+                .eq('email', memberData.email)
+                .eq('otp_code', otp)
+                .maybeSingle();
 
-            if (!otpResult.success) {
-                setError(otpResult.message || '驗證碼錯誤或已過期。');
-                return;
+            if (error) throw error;
+
+            if (!data) {
+                setError('驗證碼錯誤或已過期。');
+            } else {
+                // 取得當前 Supabase Auth User ID (若有的話)
+                const { data: { user } } = await supabase.auth.getUser();
+
+                // 呼叫 confirm-binding API 寫入 strava_member_bindings 表格
+                const response = await apiClient.post('/api/auth/confirm-binding', {
+                    email: data.email,
+                    stravaId: athlete.id,
+                    tcu_account: data.account || tcuId,
+                    member_name: data.real_name,
+                    user_id: user?.id // 傳遞 Auth ID 建立綁定
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || '綁定確認失敗');
+                }
+
+                // 清除 OTP (可選，保持 tcu_members 乾淨)
+                await supabase
+                    .from('tcu_members')
+                    .update({ otp_code: null, otp_expires_at: null })
+                    .eq('email', data.email);
+
+                setStep('success');
+                setSuccess('綁定成功！');
+                setLocalMemberData(result.member_data || data); // 使用回傳的最新資料
+
+                // 主動觸發全局狀態刷新
+                if (refreshBinding) refreshBinding();
+                window.dispatchEvent(new Event('tcu-binding-success'));
+                // onBindingSuccess(); // 移除自動跳轉，改由按鈕觸發
             }
-
-            // OTP 驗證成功，繼續後續綁定流程
-            // 取得當前 Supabase Auth User ID (若有的話)
-            const { data: { user } } = await supabase.auth.getUser();
-
-            // 呼叫 confirm-binding API 寫入 strava_member_bindings 表格
-            const response = await apiClient.post('/api/auth/confirm-binding', {
-                email: memberData.email,
-                stravaId: athlete?.id,
-                tcu_account: memberData.account || tcuId,
-                member_name: memberData.real_name,
-                user_id: user?.id // 傳遞 Auth ID 建立綁定
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.message || '綁定確認失敗');
-            }
-
-            setStep('success');
-            setSuccess('綁定成功！');
-            setLocalMemberData(result.member_data || memberData); // 使用回傳的最新資料
-
-            // 主動觸發全局狀態刷新
-            if (refreshBinding) refreshBinding();
-            window.dispatchEvent(new Event('tcu-binding-success'));
-            // onBindingSuccess(); // 移除自動跳轉，改由按鈕觸發
         } catch (err: any) {
             console.error('驗證錯誤:', err);
             setError(err.message || '驗證失敗，請重新嘗試。');
