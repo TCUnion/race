@@ -215,7 +215,25 @@ async def proxy_member_binding(request: Request):
                     "message": f"此會員身份已綁定其他 Strava 帳號 (ID: {existing_strava_id})。如有疑問，請洽 TCU Line@ 官方：https://page.line.me/criterium"
                 }
             else:
-                print("[DEBUG] No existing binding, proceeding to n8n webhook...")
+                print("[DEBUG] No existing binding, proceeding to generate OTP...")
+                import random
+                import hashlib
+                import datetime
+
+                # Generate secure OTP
+                otp_code = f"{random.randint(0, 999999):06d}"
+                otp_hash = hashlib.sha256(otp_code.encode()).hexdigest()
+                expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=5)).isoformat()
+
+                # Store hash in DB
+                print(f"[DEBUG] Saving OTP hash to DB for email: {email}")
+                supabase.table("tcu_members").update({
+                    "otp_code": otp_hash,
+                    "otp_expires_at": expires_at
+                }).eq("email", email).execute()
+
+                # Pass plain OTP to n8n webhook
+                body["otp_code"] = otp_code
 
         # --- 進入 Proxy 邏輯 (代理至 n8n) ---
         import os
@@ -262,6 +280,53 @@ async def proxy_member_binding(request: Request):
     except Exception as e:
         print(f"[DEBUG] General error in proxy_member_binding: {str(e)}")
         return {"success": False, "message": f"處理請求時發生錯誤: {str(e)}"}
+
+class VerifyOtpRequest(BaseModel):
+    email: str
+    otp: str
+
+@router.post("/verify-otp")
+async def verify_otp(req: VerifyOtpRequest):
+    """
+    Verify OTP submitted by the user.
+    """
+    import hashlib
+    from datetime import datetime, timezone
+
+    try:
+        res = supabase.table("tcu_members").select("otp_code, otp_expires_at").eq("email", req.email).execute()
+        if not res.data:
+            return {"success": False, "message": "找不到該會員，請確認信箱是否正確"}
+        
+        member = res.data[0]
+        stored_hash = member.get("otp_code")
+        expires_at_str = member.get("otp_expires_at")
+
+        if not stored_hash or not expires_at_str:
+            return {"success": False, "message": "驗證碼未產生或已失效，請重新獲取"}
+
+        # Check expiry
+        expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expires_at:
+            return {"success": False, "message": "驗證碼已過期，請重新獲取"}
+
+        # Check hash
+        input_hash = hashlib.sha256(req.otp.encode()).hexdigest()
+        if input_hash != stored_hash:
+            return {"success": False, "message": "驗證碼錯誤"}
+
+        # Clear OTP after successful verification
+        supabase.table("tcu_members").update({
+            "otp_code": None,
+            "otp_expires_at": None
+        }).eq("email", req.email).execute()
+
+        return {"success": True, "message": "驗證成功"}
+
+    except Exception as e:
+        print(f"[DEBUG] OTP verification error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"驗證失敗: {str(e)}")
+
 
 
 # ========== 綁定確認 (OTP 驗證後寫入 strava_member_bindings) ==========

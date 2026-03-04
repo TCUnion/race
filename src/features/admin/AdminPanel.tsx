@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { Settings, Save, AlertCircle, CheckCircle2, History, ChevronRight, ClipboardCheck, RefreshCw, Edit2, Globe, Trash2, Database, Share2, FileText, LifeBuoy, MessageCircle, Search, Briefcase, Plus, Users, LogOut, Lock, XCircle, Smartphone, ExternalLink, Activity } from 'lucide-react';
 import EquipmentList from './EquipmentList';
 import { RaceAdminPanel } from './RaceAdminPanel';
@@ -406,9 +407,9 @@ const AdminPanel: React.FC = () => {
         setIsSavingTeamRace(true);
         try {
             const payload = {
-                team_name: editingTeamRace.team_name,
+                team_name: DOMPurify.sanitize(editingTeamRace.team_name || ''),
                 segment_id: editingTeamRace.segment_id, // Must be selected from existing segments
-                name: editingTeamRace.name,
+                name: DOMPurify.sanitize(editingTeamRace.name || ''),
                 start_date: editingTeamRace.start_date,
                 end_date: editingTeamRace.end_date,
                 is_active: editingTeamRace.is_active,
@@ -446,7 +447,7 @@ const AdminPanel: React.FC = () => {
             fetchTeamRaces();
         } catch (err: any) {
             console.error('Save team race error:', err);
-            alert('儲存失敗: ' + err.message);
+            console.error('儲存失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         } finally {
             setIsSavingTeamRace(false);
         }
@@ -466,7 +467,7 @@ const AdminPanel: React.FC = () => {
             fetchTeamRaces();
         } catch (err: any) {
             console.error('Delete team race error:', err);
-            alert('刪除失敗: ' + err.message);
+            console.error('刪除失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         }
     };
 
@@ -524,7 +525,7 @@ const AdminPanel: React.FC = () => {
             alert('路段資料更新成功！');
             fetchSegments();
         } catch (err: any) {
-            alert('更新失敗: ' + err.message);
+            console.error('更新失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         }
     };
     const handleSyncEfforts = async (seg: any) => {
@@ -554,7 +555,7 @@ const AdminPanel: React.FC = () => {
                 throw new Error(`伺服器回傳錯誤: ${response.status} `);
             }
         } catch (err: any) {
-            alert('同步失敗: ' + err.message);
+            console.error('同步失敗: ' + err.message); alert('操作失敗，請稍後再試。');
             const btn = document.getElementById(`sync - btn - ${seg.id} `);
             if (btn) btn.classList.remove('animate-spin');
         }
@@ -596,7 +597,7 @@ const AdminPanel: React.FC = () => {
                 btn.removeAttribute('disabled');
             }
         } catch (err: any) {
-            alert('批量同步發生異常: ' + err.message);
+            console.error('批量同步發生異常: ' + err.message); alert('操作失敗，請稍後再試。');
             const btn = document.getElementById('bulk-sync-btn');
             if (btn) btn.removeAttribute('disabled');
         }
@@ -673,8 +674,8 @@ const AdminPanel: React.FC = () => {
         setIsSavingAnnouncement(true);
         try {
             const payload = {
-                title: editingAnnouncement.title,
-                content: editingAnnouncement.content,
+                title: DOMPurify.sanitize(editingAnnouncement.title || ''),
+                content: DOMPurify.sanitize(editingAnnouncement.content || ''),
                 image_url: editingAnnouncement.image_url,
                 button_url: editingAnnouncement.button_url,
                 button_text: editingAnnouncement.button_text || '了解更多',
@@ -703,7 +704,7 @@ const AdminPanel: React.FC = () => {
             setEditingAnnouncement(null);
             fetchAnnouncements();
         } catch (err: any) {
-            alert('儲存失敗: ' + err.message);
+            console.error('儲存失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         } finally {
             setIsSavingAnnouncement(false);
         }
@@ -716,7 +717,7 @@ const AdminPanel: React.FC = () => {
             if (error) throw error;
             fetchAnnouncements();
         } catch (err: any) {
-            alert('刪除失敗: ' + err.message);
+            console.error('刪除失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         }
     };
 
@@ -746,8 +747,8 @@ const AdminPanel: React.FC = () => {
                 const { error: insertError } = await supabase.from('segments').insert({
                     id: editingSegment.strava_id,
                     strava_id: editingSegment.strava_id,
-                    name: editingSegment.name,
-                    description: editingSegment.description,
+                    name: DOMPurify.sanitize(editingSegment.name || ''),
+                    description: DOMPurify.sanitize(editingSegment.description || ''),
                     link: editingSegment.link,
                     distance: editingSegment.distance,
                     average_grade: editingSegment.average_grade,
@@ -765,8 +766,8 @@ const AdminPanel: React.FC = () => {
                     const { error: metaError } = await supabase.from('segment_metadata').upsert({
                         segment_id: editingSegment.strava_id,
                         og_image: editingSegment.og_image,
-                        team_name: editingSegment.team_name,
-                        race_description: editingSegment.race_description
+                        team_name: DOMPurify.sanitize(editingSegment.team_name || ''),
+                        race_description: DOMPurify.sanitize(editingSegment.race_description || ''),
                     });
                     if (metaError) {
                         console.error('Metadata upsert error:', metaError);
@@ -776,8 +777,8 @@ const AdminPanel: React.FC = () => {
             } else {
                 const payload = {
                     strava_id: editingSegment.strava_id,
-                    name: editingSegment.name,
-                    description: editingSegment.description,
+                    name: DOMPurify.sanitize(editingSegment.name || ''),
+                    description: DOMPurify.sanitize(editingSegment.description || ''),
                     link: editingSegment.link,
                     distance: editingSegment.distance,
                     average_grade: editingSegment.average_grade,
@@ -800,8 +801,8 @@ const AdminPanel: React.FC = () => {
                     const { error: metaError } = await supabase.from('segment_metadata').upsert({
                         segment_id: editingSegment.id,
                         og_image: editingSegment.og_image,
-                        team_name: editingSegment.team_name,
-                        race_description: editingSegment.race_description
+                        team_name: DOMPurify.sanitize(editingSegment.team_name || ''),
+                        race_description: DOMPurify.sanitize(editingSegment.race_description || ''),
                     });
                     if (metaError) {
                         console.error('Metadata update error:', metaError);
@@ -821,7 +822,7 @@ const AdminPanel: React.FC = () => {
             }
         } catch (err: any) {
             console.error("💥 Critical error in handleUpdateSegment:", err);
-            alert('系統發生嚴重錯誤: ' + err.message);
+            console.error('系統發生嚴重錯誤: ' + err.message); alert('操作失敗，請稍後再試。');
         }
     };
 
@@ -1176,7 +1177,7 @@ const AdminPanel: React.FC = () => {
             .eq('id', id);
 
         if (error) {
-            alert('更新失敗: ' + error.message);
+            console.error('更新失敗: ' + error.message); alert('操作失敗，請稍後再試。');
         } else {
             fetchManagers();
         }
@@ -1193,13 +1194,13 @@ const AdminPanel: React.FC = () => {
         const { error } = await supabase
             .from('manager_roles')
             .update({
-                shop_name: editingManager.shop_name,
+                shop_name: DOMPurify.sanitize(editingManager.shop_name || ''),
                 role: editingManager.role
             })
             .eq('id', editingManager.id);
 
         if (error) {
-            alert('更新失敗: ' + error.message);
+            console.error('更新失敗: ' + error.message); alert('操作失敗，請稍後再試。');
         } else {
             alert('管理員資料已更新');
             setEditingManager(null);
@@ -1226,7 +1227,7 @@ const AdminPanel: React.FC = () => {
             // Refresh main list
             fetchManagers();
         } catch (err: any) {
-            alert('解除綁定失敗: ' + err.message);
+            console.error('解除綁定失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         }
     };
 
@@ -1281,7 +1282,7 @@ const AdminPanel: React.FC = () => {
             alert('管理員已永久刪除');
             fetchManagers();
         } catch (err: any) {
-            alert('刪除失敗: ' + err.message);
+            console.error('刪除失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         }
     };
 
@@ -1516,7 +1517,7 @@ const AdminPanel: React.FC = () => {
             }
         } catch (error: any) {
             console.error('解除綁定失敗:', error);
-            alert(`解除綁定失敗: ${error.message || '未知錯誤'} `);
+            console.error(`解除綁定失敗: ${error.message || '未知錯誤'} `); alert('操作失敗，請稍後再試。');
         } finally {
             setIsUnbindingMember(null);
         }
@@ -1548,7 +1549,7 @@ const AdminPanel: React.FC = () => {
             if (error) throw error;
             alert('設定已儲存');
         } catch (err: any) {
-            alert('儲存失敗: ' + err.message);
+            console.error('儲存失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         } finally {
             setIsSavingSettings(false);
         }
@@ -1572,7 +1573,7 @@ const AdminPanel: React.FC = () => {
             alert(`版本已更新至 ${newVersion} `);
             fetchSiteSettings();
         } catch (err: any) {
-            alert('更新版本失敗: ' + err.message);
+            console.error('更新版本失敗: ' + err.message); alert('操作失敗，請稍後再試。');
         } finally {
             setIsUpdatingVersion(false);
         }
@@ -2143,7 +2144,7 @@ const AdminPanel: React.FC = () => {
                                                                     throw new Error('Webhook 回傳錯誤');
                                                                 }
                                                             } catch (err: any) {
-                                                                alert('重設失敗: ' + err.message);
+                                                                console.error('重設失敗: ' + err.message); alert('操作失敗，請稍後再試。');
                                                             }
                                                         }}
                                                         className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-amber-500 transition-colors"
@@ -2453,7 +2454,7 @@ const AdminPanel: React.FC = () => {
                                                                     if (error) throw error;
                                                                     fetchSegments();
                                                                 } catch (err: any) {
-                                                                    alert('更新失敗: ' + err.message);
+                                                                    console.error('更新失敗: ' + err.message); alert('操作失敗，請稍後再試。');
                                                                 }
                                                             }}
                                                             className={`px - 2 py - 1 ${seg.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'} text - xs font - bold rounded - full transition - colors cursor - pointer whitespace - nowrap`}
@@ -2506,7 +2507,7 @@ const AdminPanel: React.FC = () => {
                                                                         fetchSegments();
                                                                         fetchRegistrations();
                                                                     } catch (err: any) {
-                                                                        alert('刪除失敗: ' + err.message);
+                                                                        console.error('刪除失敗: ' + err.message); alert('操作失敗，請稍後再試。');
                                                                     }
                                                                 }}
                                                                 className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-900/20"
@@ -2593,7 +2594,7 @@ const AdminPanel: React.FC = () => {
                                                 if (error.code === '23505') {
                                                     alert('新增失敗: 此路段 ID 已存在於系統中，請勿重複新增。');
                                                 } else {
-                                                    alert('新增失敗: ' + error.message);
+                                                    console.error('新增失敗: ' + error.message); alert('操作失敗，請稍後再試。');
                                                 }
                                             } else {
                                                 alert('路段新增成功！');
@@ -2723,7 +2724,7 @@ const AdminPanel: React.FC = () => {
                                                                                 .update({ number: newNum })
                                                                                 .eq('id', reg.id)
                                                                                 .then(({ error }) => {
-                                                                                    if (error) alert('更新失敗:' + error.message);
+                                                                                    if (error) console.error('更新失敗:' + error.message); alert('操作失敗，請稍後再試。');
                                                                                     else fetchRegistrations();
                                                                                 });
                                                                         }
