@@ -40,7 +40,7 @@ import { ApiStatusWarning } from './components/ui/ApiStatusWarning';
 
 function App() {
     useSEO();
-    const { athlete, isBound } = useAuth();
+    const { athlete, isBound, isAdmin, memberData } = useAuth();
     const [view, setView] = useState<V2View>(V2View.HOME);
     const [activeTab, setActiveTab] = useState('home');
     const [viewParams, setViewParams] = useState<any>({});
@@ -192,8 +192,27 @@ function App() {
     };
 
     // 如果是管理員或後台視圖，直接渲染完整頁面（不使用 Responsive Layout）
-    if (view === V2View.MANAGER) return <ManagerDashboard />;
-    if (view === V2View.ADMIN) return <AdminPanel />;
+    // 增加權限防護：如果未經授權，則拒絕渲染管理介面
+    if (view === V2View.MANAGER) {
+        if (!isAdmin && memberData?.role !== 'manager' && memberData?.role !== 'shop_owner' && memberData?.role !== 'team_coach') {
+            return (
+                <div className="flex h-screen items-center justify-center bg-bg text-red-500 font-bold">
+                    未經授權的存取 (Unauthorized Access)
+                </div>
+            );
+        }
+        return <ManagerDashboard />;
+    }
+    if (view === V2View.ADMIN) {
+        if (!isAdmin) {
+            return (
+                <div className="flex h-screen items-center justify-center bg-bg text-red-500 font-bold">
+                    未經授權的存取 (Unauthorized Access)
+                </div>
+            );
+        }
+        return <AdminPanel />;
+    }
     if (view === V2View.SKILL_VERIFICATION) return <SkillVerificationPage />;
 
     return (

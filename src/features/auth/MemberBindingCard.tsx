@@ -213,9 +213,14 @@ const MemberBindingCard: React.FC<MemberBindingCardProps> = ({ onBindingSuccess 
 
         setIsUnbinding(true);
         try {
+            const { data: { session } } = await supabase.auth.getSession();
             const response = await apiClient.post('/api/auth/unbind', {
                 email: memberData.email,
                 admin_id: athlete.id.toString()
+            }, {
+                headers: {
+                    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+                }
             });
             const result = await response.json();
             if (result.success) {

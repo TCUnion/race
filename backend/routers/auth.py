@@ -324,46 +324,56 @@ ADMIN_ATHLETE_IDS = [x.strip() for x in admin_ids_str.split(",") if x.strip()]
 async def unbind_member(request: Request):
     """
     解除會員綁定（從 strava_member_bindings 刪除記錄）。
-    僅限 Admin 權限操作。
+    增強安全驗證：使用 JWT Token 確認身份。
     """
     try:
-        body = await request.json()
-        email = body.get("email")
-        admin_id = body.get("admin_id")
-        
-        print(f"[DEBUG] Unbind request: email={email}, admin_id={admin_id}")
-        
-        if not email or not admin_id:
-            return {"success": False, "message": "Missing email or admin_id"}
+        # 1. 驗證 Authorization Header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+            
+        token = auth_header.split(" ")[1]
+        try:
+            user_response = supabase.auth.get_user(token)
+            user = user_response.user
+            if not user or not user.email:
+                 raise HTTPException(status_code=401, detail="Invalid token or missing email")
+            caller_email = user.email
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Token verification failed: {str(e)}")
 
-        # 1. 查詢現有綁定以進行權限驗證
-        binding_res = supabase.table("strava_member_bindings").select("*").eq("tcu_member_email", email).execute()
-        existing_binding = binding_res.data[0] if binding_res.data else None
+        body = await request.json()
+        target_email = body.get("email")
         
-        is_admin = str(admin_id) in ADMIN_ATHLETE_IDS
+        print(f"[DEBUG] Unbind request: caller_email={caller_email}, target_email={target_email}")
         
-        # [NEW] 若環境變數未包含，則搜尋資料庫確認是否為 Admin 角色
-        if not is_admin:
+        if not target_email:
+            return {"success": False, "message": "Missing target email"}
+
+        # 2. 權限檢查：是否為本人
+        is_self = (caller_email == target_email)
+        is_admin = False
+
+        # 3. 權限檢查：是否為管理員
+        if not is_self:
             try:
-                # 查詢 manager_roles 表，確認該 athlete_id 是否具備 admin 權限
+                # 查詢 manager_roles 表，確認該呼叫者是否具備 admin 權限
                 admin_check = supabase.table("manager_roles")\
-                    .select("email, role, is_active, athlete_id")\
+                    .select("role, is_active")\
+                    .eq("email", caller_email)\
                     .execute()
                 
-                for mgr in (admin_check.data or []):
-                    mgr_athlete_id = mgr.get("athlete_id")
-                    if mgr_athlete_id and str(mgr_athlete_id) == str(admin_id):
-                        if mgr.get("role") == "admin" and mgr.get("is_active"):
-                            is_admin = True
-                            print(f"[DEBUG] Admin access granted via DB for athlete_id: {admin_id}")
-                            break
+                if admin_check.data and len(admin_check.data) > 0:
+                    mgr = admin_check.data[0]
+                    if mgr.get("role") == "admin" and mgr.get("is_active"):
+                        is_admin = True
+                        print(f"[DEBUG] Admin access granted via DB for email: {caller_email}")
             except Exception as db_err:
                 print(f"[WARN] Failed to verify admin status via DB: {db_err}")
 
-        # 檢查是否為資料擁有者
-        binding_strava_id = existing_binding.get("strava_id") if existing_binding else None
-        is_self = binding_strava_id is not None and str(binding_strava_id) == str(admin_id)
-        
+        # 若環境變數 ADMIN_ATHLETE_IDS 仍需支援（歷史包袱，通常綁定 athlete_id），這裡可以保留原本的邏輯
+        # 但既然我們有 JWT，最好以 email 為準
+        # 如果不是本人且不是 DB admin，拒絕存取
         if not is_admin and not is_self:
             return {"success": False, "message": "Permission denied"}
 
