@@ -5,10 +5,7 @@ import { RaceAdminPanel } from './RaceAdminPanel';
 import { ActivityRepair } from '../manager/components/ActivityRepair';
 import StravaRateLimitPanel from './StravaRateLimitPanel';
 import StravaActivitiesPanel from './StravaActivitiesPanel';
-import { supabaseAdmin } from '../../lib/supabase';
-// [FIX] 移除 Service Role 功能，防止前端程式碼洩漏特權存取
-const supabase = supabaseAdmin;
-
+import { supabase } from '../../lib/supabase';
 const getWebhookAuthHeader = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token ? { headers: { Authorization: `Bearer ${session.access_token}` } } : {};

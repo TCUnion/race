@@ -23,22 +23,7 @@ export const supabase = createClient(
     supabaseAnonKey
 );
 
-/**
- * 建立獨立的 Admin Supabase 客戶端。
- * 使用自定義 storageKey ('sb-admin-auth-token') 來與一般會員/Manager 的 Session 隔離。
- * 這樣允許同一瀏覽器同時登入 Admin 和 Manager。
- */
-export const supabaseAdmin = createClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-        auth: {
-            storageKey: 'sb-admin-auth-token',
-            persistSession: true,
-            detectSessionInUrl: true, // 允許 Strava OAuth 登入後自動讀取 Session
-        }
-    }
-);
 
-// 移除 Service Role 功能，防止前端程式碼洩漏特權存取
-// 如果前端需要特殊權限操作，請改由呼叫自建之後端 API (如 n8n Webhook) 處理。
+// 若有需要 Admin 與 Manager 隔離瀏覽器 Session 狀態，
+// 建議直接在各自的系統入口創建自帶不同 storageKey 的 Supabase Client，
+// 而非在 `src/lib/supabase.ts` 中導出 `supabaseAdmin` 造成語意混淆（讓人以為是使用 Service Role Key）。

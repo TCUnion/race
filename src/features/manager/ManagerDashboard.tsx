@@ -380,8 +380,14 @@ function ManagerDashboard() {
         const handleMessage = (e: MessageEvent) => {
             if (e.data && e.data.type === 'STRAVA_AUTH_SUCCESS' && e.data.athlete) {
                 console.log('ManagerDashboard: Received postMessage with athlete data');
+
+                // 移除敏感 Token
+                const safeAthlete = { ...e.data.athlete };
+                delete safeAthlete.access_token;
+                delete safeAthlete.refresh_token;
+
                 // Save to temp storage to unify processing logic
-                localStorage.setItem('strava_athlete_data_temp', JSON.stringify(e.data.athlete));
+                localStorage.setItem('strava_athlete_data_temp', JSON.stringify(safeAthlete));
                 checkBindingData();
             }
         };

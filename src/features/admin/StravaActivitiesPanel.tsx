@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Activity, RefreshCw } from 'lucide-react';
-import { supabaseAdmin as supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface StravaActivitiesPanelProps {
     session: any;

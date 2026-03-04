@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, RefreshCw } from 'lucide-react';
-import { API_BASE_URL } from '../../lib/api_config';
+import { API_BASE_URL, ALLOWED_ORIGINS } from '../../lib/api_config';
 import { apiClient } from '../../lib/apiClient';
 import StravaLogo from '../../components/ui/StravaLogo';
 
@@ -23,14 +23,7 @@ const CONFIG = {
     storageKey: 'strava_athlete_data',
     pollingInterval: 1000,
     pollingTimeout: 120000,
-    allowedOrigins: [
-        'https://service.criterium.tw',
-        'https://criterium.tw',
-        'https://strava.criterium.tw',
-        'http://localhost:3000',
-        'http://localhost:5173',
-        API_BASE_URL,
-    ]
+    allowedOrigins: ALLOWED_ORIGINS
 };
 
 const StravaConnect: React.FC = () => {

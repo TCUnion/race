@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, RefreshCw, Bike, Smartphone, ExternalLink } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface EquipmentRow {
     athlete_id: string; // Strava ID or TCU ID if not linked
@@ -30,8 +30,7 @@ const EquipmentList: React.FC = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch TCU Members for names
-            const { data: members, error: mError } = await supabaseAdmin
+            const { data: members, error: mError } = await supabase
                 .from('tcu_members')
                 .select('tcu_id, real_name, email, account')
                 .order('real_name');
@@ -39,7 +38,7 @@ const EquipmentList: React.FC = () => {
             if (mError) throw mError;
 
             // 2. Fetch Strava Bindings to link TCU -> Strava
-            const { data: bindings, error: bError } = await supabaseAdmin
+            const { data: bindings, error: bError } = await supabase
                 .from('strava_member_bindings')
                 .select('strava_id, tcu_member_email, tcu_account');
 
@@ -67,7 +66,7 @@ const EquipmentList: React.FC = () => {
             });
 
             // 3. Fetch Bikes
-            const { data: bikesData, error: bikesError } = await supabaseAdmin
+            const { data: bikesData, error: bikesError } = await supabase
                 .from('bikes')
                 .select('id, athlete_id, name, distance, primary_gear')
                 .order('distance', { ascending: false });
@@ -78,7 +77,7 @@ const EquipmentList: React.FC = () => {
             // We can't easily "group by" in standard Supabase client without writing a View or RPC.
             // So we'll fetch recent activities and deduce the device.
             // Fetching last 1000 activities should cover most active users.
-            const { data: activitiesData, error: actError } = await supabaseAdmin
+            const { data: activitiesData, error: actError } = await supabase
                 .from('strava_activities')
                 .select('athlete_id, device_name, start_date')
                 .order('start_date', { ascending: false })
@@ -132,7 +131,7 @@ const EquipmentList: React.FC = () => {
                 .map(r => r.athlete_id);
 
             if (unknownIds.length > 0) {
-                const { data: ethData } = await supabaseAdmin
+                const { data: ethData } = await supabase
                     .from('athletes')
                     .select('id, firstname, lastname')
                     .in('id', unknownIds);

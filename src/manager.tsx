@@ -22,11 +22,16 @@ if (!rootElement) {
     if (athleteParam) {
         try {
             // Verify it's valid JSON
-            JSON.parse(athleteParam);
+            const parsedData = JSON.parse(athleteParam);
 
-            // Save to LocalStorage for the main window to pick up
-            localStorage.setItem('strava_athlete_data_temp', athleteParam);
-            console.log('Manager Entry: Strava data trapped and saved.');
+            // Remove sensitive tokens before saving
+            delete parsedData.access_token;
+            delete parsedData.refresh_token;
+
+            // Save to LocalStorage for the main window to pick up (TEMPORARY)
+            // 這裡寫入的是暫存，主視窗讀取後應立即刪除
+            localStorage.setItem('strava_athlete_data_temp', JSON.stringify(parsedData));
+            console.log('Manager Entry: Strava data trapped and safely saved.');
 
             // Force notify storage event (for same window or other tabs)
             window.localStorage.setItem('strava_callback_timestamp', Date.now().toString());
