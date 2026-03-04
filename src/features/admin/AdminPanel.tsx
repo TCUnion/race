@@ -2724,8 +2724,12 @@ const AdminPanel: React.FC = () => {
                                                                                 .update({ number: newNum })
                                                                                 .eq('id', reg.id)
                                                                                 .then(({ error }) => {
-                                                                                    if (error) console.error('更新失敗:' + error.message); alert('操作失敗，請稍後再試。');
-                                                                                    else fetchRegistrations();
+                                                                                    if (error) {
+                                                                                        console.error('更新失敗:' + error.message);
+                                                                                        alert('操作失敗，請稍後再試。');
+                                                                                    } else {
+                                                                                        fetchRegistrations();
+                                                                                    }
                                                                                 });
                                                                         }
                                                                     }}
