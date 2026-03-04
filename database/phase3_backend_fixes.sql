@@ -4,6 +4,7 @@
 -- ==============================================================================
 
 -- Apply to segments table
+ALTER TABLE public.segments OWNER TO postgres;
 ALTER TABLE public.segments ENABLE ROW LEVEL SECURITY;
 
 -- Allow public to select segments
@@ -32,6 +33,7 @@ WITH CHECK (
 );
 
 -- Apply to manager_roles table (Security Config)
+ALTER TABLE public.manager_roles OWNER TO postgres;
 ALTER TABLE public.manager_roles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public can read manager_roles"
