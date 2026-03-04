@@ -3,37 +3,45 @@
 --    This ensures that ONLY authenticated admins/managers can modify data.
 -- ==============================================================================
 
-/* 
-⚠️ 注意：因為 segments 表格目前隸屬於 supabase_admin，
-無法透過 SQL Editor 直接啟用 RLS 與新增 Policy。
-請依照小幫手提供的步驟，改在 Supabase Dashboard UI 手動操作。
+-- Protect segments table via Trigger (Bypass supabase_admin ownership restrictions)
+--    This ensures that ONLY authenticated admins/managers can modify data.
+-- ==============================================================================
 
--- Apply to segments table
-ALTER TABLE public.segments ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION enforce_admin_segments()
+RETURNS trigger AS $$
+BEGIN
+    -- Bypass protection for postgres, service_role, and supabase_admin
+    -- This allows the Supabase Dashboard UI and backend services to manage the table
+    IF current_user IN ('postgres', 'service_role', 'supabase_admin') THEN
+        IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+        RETURN NEW;
+    END IF;
 
--- Allow public to select segments
-CREATE POLICY "Public can read segments"
-ON public.segments FOR SELECT
-USING (true);
+    -- Only authenticated API users can attempt to modify
+    IF auth.role() != 'authenticated' THEN
+        RAISE EXCEPTION 'Access denied: You must be logged in to modify segments.';
+    END IF;
 
--- Allow authenticated admins to INSERT/UPDATE/DELETE segments
-CREATE POLICY "Admins can modify segments"
-ON public.segments FOR ALL
-USING (
-  auth.role() = 'authenticated' AND 
-  EXISTS (
-    SELECT 1 FROM public.manager_roles 
-    WHERE email = auth.email() AND role IN ('admin', 'manager') AND is_active = true
-  )
-)
-WITH CHECK (
-  auth.role() = 'authenticated' AND 
-  EXISTS (
-    SELECT 1 FROM public.manager_roles 
-    WHERE email = auth.email() AND role IN ('admin', 'manager') AND is_active = true
-  )
-);
-*/
+    -- Check if user is active admin or manager
+    IF NOT EXISTS (
+        SELECT 1 FROM public.manager_roles 
+        WHERE email = auth.email() AND role IN ('admin', 'manager') AND is_active = true
+    ) THEN
+        RAISE EXCEPTION 'Access denied: You must be an admin or manager to modify segments.';
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_enforce_admin_segments ON public.segments;
+CREATE TRIGGER trigger_enforce_admin_segments
+BEFORE INSERT OR UPDATE OR DELETE ON public.segments
+FOR EACH ROW EXECUTE FUNCTION enforce_admin_segments();
 
 -- Apply to manager_roles table (Security Config)
 ALTER TABLE public.manager_roles OWNER TO postgres;
