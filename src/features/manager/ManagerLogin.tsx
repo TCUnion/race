@@ -175,8 +175,14 @@ export default function ManagerLogin({ onLoginSuccess }: ManagerLoginProps) {
                 }
 
                 // Login Success
-                localStorage.setItem('strava_athlete_meta', JSON.stringify(athleteData));
-                localStorage.setItem('strava_athlete_data', JSON.stringify(athleteData)); // Sync for consistency
+                const { access_token, refresh_token, ...safeAthleteData } = athleteData;
+
+                // 僅將安全資料存入 localStorage
+                localStorage.setItem('strava_athlete_meta', JSON.stringify(safeAthleteData));
+                localStorage.setItem('strava_athlete_data', JSON.stringify(safeAthleteData)); // Sync for consistency
+
+                // 將完整資料透過 CustomEvent 傳遞給 AuthContext 讓它可以在背景同步 Token
+                window.dispatchEvent(new CustomEvent('strava-auth-changed', { detail: athleteData }));
 
                 // Clear any leftover temp data
                 localStorage.removeItem('strava_athlete_data_temp');

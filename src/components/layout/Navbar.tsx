@@ -26,7 +26,7 @@ import { useAuth, StravaAthlete } from '../../hooks/useAuth';
 // useTheme removed - dark mode only
 import { useFontSize, FontSize } from '../../hooks/useFontSize';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../../lib/api_config';
+import { API_BASE_URL, ALLOWED_ORIGINS } from '../../lib/api_config';
 import { useMemberAuthorizations } from '../../hooks/useMemberAuthorizations';
 import { useActiveAnnouncements } from '../../hooks/useActiveAnnouncements';
 
@@ -40,13 +40,7 @@ const CONFIG = {
   storageKey: 'strava_athlete_data', // 與 useAuth 一致
   pollingInterval: 1000,
   pollingTimeout: 120000,
-  allowedOrigins: [
-    'https://service.criterium.tw',
-    'https://criterium.tw',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-  ]
+  allowedOrigins: ALLOWED_ORIGINS
 };
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
@@ -97,17 +91,22 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const logoSrc = '/tcu-logo-light.png';
 
   const saveAndSetAthlete = (athleteData: any) => {
+    // 移除敏感 Token
+    const safeData = { ...athleteData };
+    delete safeData.access_token;
+    delete safeData.refresh_token;
+
     // 規範化資料
     const normalizedData = {
-      ...athleteData,
-      firstname: athleteData.firstname || athleteData.firstName || '',
-      lastname: athleteData.lastname || athleteData.lastName || '',
+      ...safeData,
+      firstname: safeData.firstname || safeData.firstName || '',
+      lastname: safeData.lastname || safeData.lastName || '',
       ts: Date.now()
     };
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalizedData));
 
-    // 發送事件通知 useAuth
-    window.dispatchEvent(new Event('strava-auth-changed'));
+    // 發送包含完整 Token 的事件通知 useAuth 進行同步
+    window.dispatchEvent(new CustomEvent('strava-auth-changed', { detail: athleteData }));
     setIsLoading(false);
   };
 

@@ -27,7 +27,9 @@ class ErrorBoundary extends Component<Props, State> {
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error('ErrorBoundary caught an error:', error, errorInfo);
+        if (process.env.NODE_ENV !== 'production') {
+            console.error('ErrorBoundary caught an error:', error, errorInfo);
+        }
 
         // TODO: 如果日後整合 Sentry，可在此處上報錯誤
         // Sentry.captureException(error, { extra: errorInfo });
@@ -43,8 +45,8 @@ class ErrorBoundary extends Component<Props, State> {
 
     public render() {
         if (this.state.hasError) {
-            if (this.props.fallback) {
-                return this.props.fallback;
+            if ((this.props as any).fallback) {
+                return (this.props as any).fallback;
             }
 
             return (
@@ -61,7 +63,7 @@ class ErrorBoundary extends Component<Props, State> {
                             很抱歉，頁面載入過程中發生了問題。請嘗試重新整理頁面，或回到首頁。
                         </p>
 
-                        {process.env.NODE_ENV === 'development' && this.state.error && (
+                        {process.env.NODE_ENV !== 'production' && this.state.error && (
                             <details className="text-left mb-6 bg-slate-900/50 rounded-lg p-4">
                                 <summary className="text-red-400 text-xs font-mono cursor-pointer">
                                     錯誤詳情 (開發模式)
@@ -94,7 +96,7 @@ class ErrorBoundary extends Component<Props, State> {
             );
         }
 
-        return this.props.children;
+        return (this.props as any).children;
     }
 }
 
