@@ -12,6 +12,8 @@ const tabs = [
     { id: 'dashboard', label: '報名', icon: ClipboardList },
     { id: 'library', label: '挑戰', icon: LayoutDashboard },
     { id: 'team', label: '車隊', icon: Users },
+    { id: 'maintenance', label: '保養', icon: Wrench },
+    { id: 'search', label: '搜尋', icon: Search },
     { id: 'settings', label: '設定', icon: Settings },
 ];
 
