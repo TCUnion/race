@@ -3,8 +3,12 @@
 --    This ensures that ONLY authenticated admins/managers can modify data.
 -- ==============================================================================
 
+/* 
+⚠️ 注意：因為 segments 表格目前隸屬於 supabase_admin，
+無法透過 SQL Editor 直接啟用 RLS 與新增 Policy。
+請依照小幫手提供的步驟，改在 Supabase Dashboard UI 手動操作。
+
 -- Apply to segments table
-ALTER TABLE public.segments OWNER TO postgres;
 ALTER TABLE public.segments ENABLE ROW LEVEL SECURITY;
 
 -- Allow public to select segments
@@ -13,8 +17,6 @@ ON public.segments FOR SELECT
 USING (true);
 
 -- Allow authenticated admins to INSERT/UPDATE/DELETE segments
--- Only users who are logged in via Supabase Auth (authenticated role)
--- and have an 'admin' or 'manager' role in manager_roles table.
 CREATE POLICY "Admins can modify segments"
 ON public.segments FOR ALL
 USING (
@@ -31,6 +33,7 @@ WITH CHECK (
     WHERE email = auth.email() AND role IN ('admin', 'manager') AND is_active = true
   )
 );
+*/
 
 -- Apply to manager_roles table (Security Config)
 ALTER TABLE public.manager_roles OWNER TO postgres;
